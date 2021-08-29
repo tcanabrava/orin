@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>Qml/main.qml</file>
         <file>Qml/InitialScreen.qml</file>
+        <file>Images/flute.png</file>
+        <file>Images/harmonica.png</file>
     </qresource>
 </RCC>
