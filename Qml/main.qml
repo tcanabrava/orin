@@ -7,8 +7,10 @@ Window {
     height: 480
     visible: true
     title: qsTr("Hello World")
+
     QQC2.StackView {
         id: mainStack
+        initialItem: InitialScreen{}
         anchors.fill: parent
     }
 }
