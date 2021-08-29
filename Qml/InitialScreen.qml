@@ -6,6 +6,9 @@ import org.kde.kirigami 2.18 as Kirigami
 
 Kirigami.Page {
     property variant instruments: [qsTr("Flute"), qsTr("Blues Harmonica")]
+
+    signal instrumentSelected(string instrument)
+
     ColumnLayout {
         anchors.centerIn: parent
         width: 300
@@ -24,19 +27,9 @@ Kirigami.Page {
 
                 // TODO: Load the model via plugins.
                 model: instruments
-                delegate: MouseArea {
-                    width: internalData.width
-                    height: internalData.height
-
-                    RowLayout  {
-                        id: internalData
-                        Text {
-                            text: modelData
-                        }
-                    }
-                    onClicked: {
-                        instrumentView.currentIndex = index
-                    }
+                delegate: Kirigami.BasicListItem {
+                    label: modelData
+                    onClicked: instrumentSelected(modelData)
                 }
             }
         }

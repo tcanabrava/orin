@@ -9,5 +9,7 @@ Kirigami.ApplicationWindow {
     visible: true
     title: qsTr("Hello World")
 
-    pageStack.initialPage: InitialScreen {}
+    pageStack.initialPage: InitialScreen {
+        onInstrumentSelected: console.log(instrument)
+    }
 }
