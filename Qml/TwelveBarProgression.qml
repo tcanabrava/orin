@@ -14,15 +14,13 @@ Grid {
     property int cellHeight: twelveBarBluesGrid.height / 3
     property bool playing: false
     property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
-    property int currentRectangle: -1;
+    property int currentRectangle: 0;
     property int beatsPerMinute: 1000
 
     onPlayingChanged: {
-        if (currentRectangle != -1) {
-            rectangles[currentRectangle].playing = false
-        }
-
-        currentRectangle = -1
+        rectangles[currentRectangle].playing = false
+        currentRectangle = 0
+        rectangles[currentRectangle].playing = true
     }
 
     Timer {
