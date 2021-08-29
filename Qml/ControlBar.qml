@@ -16,7 +16,7 @@ RowLayout {
     QQC2.Button {
         text: playing ? qsTr("Stop") : qsTr("Start")
         onClicked: {
-            playing != playing
+            playing = !playing
             playing ? stop() : start()
         }
     }

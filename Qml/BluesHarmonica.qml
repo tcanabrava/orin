@@ -16,9 +16,9 @@ Kirigami.Page {
                 Layout.preferredWidth: mainLayout.width * 0.5
             }
             TwelveBarBlues {
-                id: bar
                 Layout.preferredHeight: mainLayout.height * 0.33
                 Layout.preferredWidth: mainLayout.width * 0.5
+                playing: controlBar.playing
             }
         }
         ColumnLayout {
@@ -28,6 +28,7 @@ Kirigami.Page {
                 Layout.fillHeight: true
             }
             ControlBar {
+                id: controlBar
                 Layout.fillWidth: true
             }
         }
