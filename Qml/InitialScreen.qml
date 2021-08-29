@@ -2,11 +2,10 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.12
+import org.kde.kirigami 2.18 as Kirigami
 
-Item {
+Kirigami.Page {
     property variant instruments: [qsTr("Flute"), qsTr("Blues Harmonica")]
-    anchors.fill: parent
-
     ColumnLayout {
         anchors.centerIn: parent
         width: 300

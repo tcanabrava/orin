@@ -24,8 +24,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #    endif()
 #endif()
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick REQUIRED)
+find_package(QT NAMES Qt5 COMPONENTS Core Quick REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick REQUIRED)
+find_package(KF5Kirigami2)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -51,8 +52,12 @@ endif()
 
 target_compile_definitions(Orin
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+
 target_link_libraries(Orin
-  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
+  PRIVATE Qt${QT_VERSION_MAJOR}::Core
+  Qt${QT_VERSION_MAJOR}::Quick
+  KF5::Kirigami2
+ )
 
 set_target_properties(Orin PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER orin.tcanabrava.org
