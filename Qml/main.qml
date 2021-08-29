@@ -11,7 +11,7 @@ Kirigami.ApplicationWindow {
 
     pageStack.initialPage: InitialScreen {
         onInstrumentSelected: {
-            pageStack.push("qrc:/Qml/" + instrumentPage)
+            pageStack.replace("qrc:/Qml/" + instrumentPage)
         }
     }
 
