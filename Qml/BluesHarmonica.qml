@@ -6,6 +6,12 @@ import QtQuick.Layouts 1.12
 
 Kirigami.Page {
     // TODO: Harmonica Visualizer
+    property int beatsPerMinute: 1000
+
+    onBeatsPerMinuteChanged: {
+        console.log("Bpm changed to", beatsPerMinute)
+    }
+
     RowLayout {
         anchors.fill: parent
         id: mainLayout
@@ -19,6 +25,7 @@ Kirigami.Page {
                 Layout.preferredHeight: mainLayout.height * 0.33
                 Layout.preferredWidth: mainLayout.width * 0.5
                 playing: controlBar.playing
+                beatsPerMinute: parent.beatsPerMinute
             }
         }
         ColumnLayout {
@@ -29,8 +36,12 @@ Kirigami.Page {
             }
             ControlBar {
                 id: controlBar
+                beatsPerMinute: parent.beatsPerMinute
                 Layout.fillWidth: true
             }
         }
+    }
+    Component.onCompleted: {
+        console.log("Received", beatsPerMinute )
     }
 }

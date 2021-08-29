@@ -7,7 +7,7 @@ import QtQuick.Layouts 1.12
 Rectangle {
     id: rect
     property bool playing: false
-    property int bpm: 1000
+    property int beatsPerMinute: 1000
 
     property variant beats: [b1, b2, b3, b4]
     property int currentBeat: 0
@@ -32,7 +32,7 @@ Rectangle {
         id: internalTimer
         running: parent.playing
         repeat: true
-        interval: bpm
+        interval: beatsPerMinute
         onRunningChanged: {
             if (!running) {
                 beats[currentBeat].color = innerRectInactive;
