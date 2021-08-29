@@ -10,6 +10,9 @@ Kirigami.ApplicationWindow {
     title: qsTr("Hello World")
 
     pageStack.initialPage: InitialScreen {
-        onInstrumentSelected: console.log(instrument)
+        onInstrumentSelected: {
+            pageStack.push("qrc:/Qml/" + instrumentPage)
+        }
     }
+
 }

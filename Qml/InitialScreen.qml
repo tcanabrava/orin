@@ -20,7 +20,7 @@ Kirigami.Page {
         }
     ]
 
-    signal instrumentSelected(string instrument)
+    signal instrumentSelected(string instrumentPage)
 
     ColumnLayout {
         anchors.centerIn: parent
@@ -33,7 +33,7 @@ Kirigami.Page {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            ListView {
+            Kirigami.CardsListView {
                 id: instrumentView
                 anchors.fill: parent
                 anchors.margins: 1
