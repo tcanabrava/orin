@@ -8,10 +8,6 @@ Kirigami.Page {
     // TODO: Harmonica Visualizer
     property int beatsPerMinute: 6000 / preferences.general.beats_per_minute
 
-    onBeatsPerMinuteChanged: {
-        console.log("Bpm changed to", beatsPerMinute)
-    }
-
     RowLayout {
         anchors.fill: parent
         id: mainLayout

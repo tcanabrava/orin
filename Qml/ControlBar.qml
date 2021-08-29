@@ -8,21 +8,13 @@ RowLayout {
     property bool playing: false
     property int beatsPerMinute: 1000
 
-    signal start()
-    signal stop()
-
     Item{
         Layout.fillWidth: true
-    }
-    Timer {
-
     }
     QQC2.Button {
         text: playing ? qsTr("Stop") : qsTr("Start")
         onClicked: {
-            console.log("Bpm", parent.beatsPerMinute)
             playing = !playing
-            playing ? stop() : start()
         }
     }
 

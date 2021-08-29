@@ -43,7 +43,6 @@ Rectangle {
             }
         }
         onTriggered: {
-            console.log(beatsPerMinute)
             beats[currentBeat].color = innerRectInactive;
             currentBeat = (currentBeat + 1) % 4
             beats[currentBeat].color = innerRectActive
