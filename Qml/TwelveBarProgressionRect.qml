@@ -7,7 +7,14 @@ import QtQuick.Layouts 1.12
 Rectangle {
     id: rect
     property bool playing: false
+    property alias text: internalText.text
+
     state: "inactive"
+    Text {
+        id: internalText
+        anchors.centerIn: parent
+        text: parent.text
+    }
 
     onPlayingChanged: {
         rect.state = rect.state == "inactive" ? "active" : "inactive";
