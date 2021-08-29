@@ -5,7 +5,20 @@ import QtQuick.Layouts 1.12
 import org.kde.kirigami 2.18 as Kirigami
 
 Kirigami.Page {
-    property variant instruments: [qsTr("Flute"), qsTr("Blues Harmonica")]
+    property variant instruments: [
+        {
+            name: qsTr("Flute"),
+            icon: "",
+            description: "",
+            qmlPage: "Flute.qml"
+        },
+        {
+            name: qsTr("Blues Harmonica"),
+            icon: "",
+            description: "",
+            qmlPage: "BluesHarmonica.qml"
+        }
+    ]
 
     signal instrumentSelected(string instrument)
 
@@ -28,8 +41,9 @@ Kirigami.Page {
                 // TODO: Load the model via plugins.
                 model: instruments
                 delegate: Kirigami.BasicListItem {
-                    label: modelData
-                    onClicked: instrumentSelected(modelData)
+                    label: modelData.name
+                    icon: modelData.icon
+                    onClicked: instrumentSelected(modelData.qmlPage)
                 }
             }
         }
