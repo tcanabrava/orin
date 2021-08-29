@@ -8,7 +8,7 @@ Grid {
     id: twelveBarBluesGrid
     rows: 3
     columns: 4
-    spacing: 0
+    spacing: 1
 
     property int cellWidth: twelveBarBluesGrid.width / 4
     property int cellHeight: twelveBarBluesGrid.height / 3
@@ -19,7 +19,7 @@ Grid {
 
     onPlayingChanged: {
         if (currentRectangle != -1) {
-            rectangles[currentRectangle].color = "white"
+            rectangles[currentRectangle].playing = false
         }
 
         currentRectangle = -1
@@ -31,84 +31,72 @@ Grid {
         interval: bpm
         onTriggered: {
             if (currentRectangle != -1) {
-                rectangles[currentRectangle].color = "white"
+                rectangles[currentRectangle].playing = false;
             }
             currentRectangle = (currentRectangle + 1) % 12
             if (currentRectangle != -1) {
-                rectangles[currentRectangle].color = "cyan"
+                rectangles[currentRectangle].playing = true
             }
         }
     }
 
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r1
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r2
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r3
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r4
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r5
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r6
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r7
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r8
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r9
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r10
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r11
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
-    Rectangle {
+    TwelveBarProgressionRect {
         id: r12
-        border.color: "black"
         width: cellWidth
         height: cellHeight
     }
