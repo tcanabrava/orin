@@ -9,12 +9,11 @@ Kirigami.ApplicationWindow {
     visible: true
 
     // TODO: set this as a configuration.
-    property int beatsPerMinute: 1000
     title: qsTr("Hello World")
 
     pageStack.initialPage: InitialScreen {
         onInstrumentSelected: {
-            pageStack.replace("qrc:/Qml/" + instrumentPage, {beatsPerMinute: parent.beatsPerMinute})
+            pageStack.replace("qrc:/Qml/" + instrumentPage)
         }
     }
 

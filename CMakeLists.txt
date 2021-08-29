@@ -30,6 +30,7 @@ find_package(KF5Kirigami2)
 
 set(PROJECT_SOURCES
         main.cpp
+        preferences.cpp
         qml.qrc
 )
 

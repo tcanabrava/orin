@@ -7,7 +7,7 @@ import QtQuick.Layouts 1.12
 Rectangle {
     id: rect
     property bool playing: false
-    property int beatsPerMinute: 1000
+    property int beatsPerMinute: (60000 / preferences.general.beats_per_minute)
 
     property variant beats: [b1, b2, b3, b4]
     property int currentBeat: 0
@@ -43,6 +43,7 @@ Rectangle {
             }
         }
         onTriggered: {
+            console.log(beatsPerMinute)
             beats[currentBeat].color = innerRectInactive;
             currentBeat = (currentBeat + 1) % 4
             beats[currentBeat].color = innerRectActive

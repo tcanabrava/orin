@@ -15,7 +15,6 @@ Grid {
     property bool playing: false
     property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
     property int currentRectangle: 0;
-    property int beatsPerMinute: 1000
 
     onPlayingChanged: {
         rectangles[currentRectangle].playing = false
@@ -26,7 +25,7 @@ Grid {
     Timer {
         running: parent.playing
         repeat: true
-        interval: beatsPerMinute * 4
+        interval: (60000 / preferences.general.beats_per_minute) * 4
         onTriggered: {
             if (currentRectangle != -1) {
                 rectangles[currentRectangle].playing = false;
@@ -42,95 +41,72 @@ Grid {
     TwelveBarProgressionRect {
         id: r1
         text: "I"
-        beatsPerMinute: beatsPerMinute
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r2
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r3
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r4
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r5
         text: "IV"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r6
         text: "IV"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r7
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r8
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r9
         text: "V"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r10
         text: "IV"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r11
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r12
         text: "I"
-        beatsPerMinute: beatsPerMinute
-
         width: cellWidth
         height: cellHeight
     }
