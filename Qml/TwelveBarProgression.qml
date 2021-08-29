@@ -15,7 +15,7 @@ Grid {
     property bool playing: false
     property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
     property int currentRectangle: -1;
-    property int bpm: (1000 * 60) / 85 // beats per minute. defaults to 85
+    property int bpm: 1000 // beats per minute. defaults to 60
 
     onPlayingChanged: {
         if (currentRectangle != -1) {
@@ -28,7 +28,7 @@ Grid {
     Timer {
         running: parent.playing
         repeat: true
-        interval: bpm
+        interval: bpm * 4
         onTriggered: {
             if (currentRectangle != -1) {
                 rectangles[currentRectangle].playing = false;
@@ -44,72 +44,95 @@ Grid {
     TwelveBarProgressionRect {
         id: r1
         text: "I"
+        bpm: bpm
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r2
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r3
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r4
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r5
         text: "IV"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r6
         text: "IV"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r7
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r8
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r9
         text: "V"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r10
         text: "IV"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r11
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
     TwelveBarProgressionRect {
         id: r12
         text: "I"
+        bpm: bpm
+
         width: cellWidth
         height: cellHeight
     }
