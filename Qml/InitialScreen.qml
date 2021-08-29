@@ -8,13 +8,13 @@ Kirigami.Page {
     property variant instruments: [
         {
             name: qsTr("Flute"),
-            icon: "",
+            icon: "flute.png",
             description: "",
             qmlPage: "Flute.qml"
         },
         {
             name: qsTr("Blues Harmonica"),
-            icon: "",
+            icon: "harmonica.png",
             description: "",
             qmlPage: "BluesHarmonica.qml"
         }
@@ -42,7 +42,7 @@ Kirigami.Page {
                 model: instruments
                 delegate: Kirigami.BasicListItem {
                     label: modelData.name
-                    icon: modelData.icon
+                    icon: ":/Images/" + modelData.icon
                     onClicked: instrumentSelected(modelData.qmlPage)
                 }
             }
