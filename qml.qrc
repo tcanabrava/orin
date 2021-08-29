@@ -4,7 +4,7 @@
         <file>Qml/InitialScreen.qml</file>
         <file>Qml/Flute.qml</file>
         <file>Qml/BluesHarmonica.qml</file>
-        <file>Qml/TwelveBarBlues.qml</file>
+        <file>Qml/TwelveBarProgression.qml</file>
         <file>Qml/ControlBar.qml</file>
         <file>Images/flute.png</file>
         <file>Images/harmonica.png</file>

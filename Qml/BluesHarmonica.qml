@@ -15,7 +15,7 @@ Kirigami.Page {
                 Layout.fillHeight: true
                 Layout.preferredWidth: mainLayout.width * 0.5
             }
-            TwelveBarBlues {
+            TwelveBarProgression {
                 Layout.preferredHeight: mainLayout.height * 0.33
                 Layout.preferredWidth: mainLayout.width * 0.5
                 playing: controlBar.playing
