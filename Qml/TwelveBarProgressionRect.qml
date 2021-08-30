@@ -34,14 +34,10 @@ Rectangle {
         repeat: true
         interval: beatsPerMinute
         onRunningChanged: {
-            if (!running) {
-                beats[currentBeat].color = innerRectInactive;
-                currentBeat = 0
-            } else {
-                currentBeat = 0
-                beats[currentBeat].color = innerRectActive;
-            }
+            beats[currentBeat].color = running ? innerRectActive : innerRectInactive
+            currentBeat = 0
         }
+
         onTriggered: {
             beats[currentBeat].color = innerRectInactive;
             currentBeat = (currentBeat + 1) % 4

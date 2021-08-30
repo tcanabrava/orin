@@ -17,9 +17,8 @@ Grid {
     property int currentRectangle: 0;
 
     onPlayingChanged: {
-        rectangles[currentRectangle].playing = false
+        rectangles[currentRectangle].playing = playing
         currentRectangle = 0
-        rectangles[currentRectangle].playing = true
     }
 
     Timer {
