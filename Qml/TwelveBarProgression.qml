@@ -105,7 +105,7 @@ Grid {
     }
     TwelveBarProgressionRect {
         id: r12
-        text: "I"
+        text: "I or IV"
         width: cellWidth
         height: cellHeight
     }
