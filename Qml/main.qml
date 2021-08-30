@@ -9,12 +9,11 @@ Kirigami.ApplicationWindow {
     visible: true
 
     // TODO: set this as a configuration.
-    title: qsTr("Hello World")
+    title: qsTr("Tacagaita")
 
     pageStack.initialPage: InitialScreen {
         onInstrumentSelected: {
             pageStack.replace("qrc:/Qml/" + instrumentPage)
         }
     }
-
 }
