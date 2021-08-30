@@ -12,6 +12,25 @@ Rectangle {
 
     property variant holes: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
 
+    function paintHoles(text, type) {
+        for (let i = 0; i < holes.length; i++) {
+            holes[i].color = silentColor;
+        }
+
+        let keys = text.split(';')
+        if (keys.length === 0) {
+            return;
+        }
+
+        for (let hole in keys) {
+            let index = parseInt(keys[hole])
+            if (Number.isNaN(index)) {
+                return
+            }
+            holes[index].color = type === "draw" ? drawColor : blowColor
+        }
+    }
+
     Image {
         id: svg
         source: "qrc:/Images/harmonica_bg.svg"
@@ -39,27 +58,5 @@ Rectangle {
         Rectangle { id: r8;  color: silentColor; width: 10; height: 18}
         Rectangle { id: r9;  color: silentColor; width: 10; height: 18}
         Rectangle { id: r10; color: silentColor; width: 10; height: 18}
-    }
-
-    RowLayout {
-        anchors.bottom: parent.bottom
-        QQC2.TextField {
-            id: testText
-            Layout.fillWidth: true
-        }
-        QQC2.Button {
-            text: "test"
-            onClicked: {
-                for (let i = 0; i < holes.length; i++) {
-                    holes[i].color = silentColor;
-                }
-
-                let keys = testText.text.split(';')
-                for (let hole in keys) {
-                    let index = parseInt(keys[hole])
-                    holes[index].color = drawColor
-                }
-            }
-        }
     }
 }
