@@ -12,8 +12,7 @@ Kirigami.Page {
         anchors.fill: parent
         id: mainLayout
         ColumnLayout {
-            Rectangle {
-                border.color: "red"
+            BluesHarmonicaChordProgression {
                 Layout.fillHeight: true
                 Layout.preferredWidth: mainLayout.width * 0.5
             }
