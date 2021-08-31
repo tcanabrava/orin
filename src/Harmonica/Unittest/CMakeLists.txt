@@ -1,0 +1,4 @@
+add_executable(test_parsing test_parsing.cpp)
+target_link_libraries(test_parsing OrinHarmonica)
+target_compile_definitions(test_parsing PUBLIC TEST_BUILD)
+add_test(NAME test_parsing COMMAND test_parsing)
