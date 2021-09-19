@@ -23,6 +23,7 @@ bool HarmonicaParser::parse()
         return false;
     }
 
+    int lineNr = 0;
     QTextStream streamReader(&harmonicaFile);
     while (!streamReader.atEnd()) {
         const QString line = streamReader.readLine().trimmed().toLower();
@@ -34,7 +35,7 @@ bool HarmonicaParser::parse()
         }
 
         if (line.startsWith("beats_per_minute")) {
-            if (parseBpm(line)) {
+            if (parseBpm(line, lineNr)) {
                 continue;
             } else {
                 return false;
@@ -42,34 +43,37 @@ bool HarmonicaParser::parse()
         }
 
         if (line.startsWith("wait")) {
-            if (parseWait(line)) {
+            if (parseWait(line, lineNr)) {
                 continue;
             } else {
                 return false;
             }
         }
 
-        if (parseNote(line)) {
+        if (parseNote(line, lineNr)) {
             continue;
         } else {
             return false;
         }
+        lineNr += 1;
     }
     return true;
 }
 
-bool HarmonicaParser::parseBpm(const QString& line)
+bool HarmonicaParser::parseBpm(const QString& line, int lineNr)
 {
     QStringList bpmLine = line.split('=');
     if (bpmLine.count() != 2) {
-        m_errorString = QObject::tr("File malformed. beats_per_minute = number");
+        m_errorString = QObject::tr("File malformed. beats_per_minute = number, line = %1")
+            .arg(lineNr);
         return false;
     }
 
     bool conversionOk = false;
     const int value = bpmLine[1].toInt(&conversionOk);
     if (!conversionOk) {
-        m_errorString = QObject::tr("File malformed. beats_per_minute = number");
+        m_errorString = QObject::tr("File malformed. beats_per_minute = number, line = %1")
+            .arg(lineNr);
         return false;
     }
 
@@ -77,18 +81,23 @@ bool HarmonicaParser::parseBpm(const QString& line)
     return true;
 }
 
-bool HarmonicaParser::parseWait(const QString& line)
+bool HarmonicaParser::parseWait(const QString& line, int lineNr)
 {
     QStringList waitLine = line.split(' ');
 
     if (waitLine.count() != 2) {
-        m_errorString = QObject::tr("File malformed. wait [number of beats]");
+        m_errorString = QObject::tr("File malformed. wait [number of beats], line = %1")
+            .arg(lineNr);
+
         return false;
     }
 
     std::optional<HarmonicaSoundData::Duration> duration = HarmonicaSoundData::durationFromString(waitLine[1]);
     if (!duration.has_value()) {
-        m_errorString = QObject::tr("Note duration can only accept 1, 1/2, 1/4 or 1/8 beats. \n for everything else, use ligatures");
+        m_errorString = QObject::tr("Note duration can only accept 1, 1/2, 1/4 or 1/8 beats."
+        " \n for everything else, use ligatures, line = %1")
+            .arg(lineNr);
+
         return false;
     }
 
@@ -99,11 +108,12 @@ bool HarmonicaParser::parseWait(const QString& line)
     return true;
 }
 
-bool HarmonicaParser::parseNote(const QString& line)
+bool HarmonicaParser::parseNote(const QString& line, int lineNr)
 {
     QStringList lineSplit = line.split(' ', Qt::SkipEmptyParts);
     if (lineSplit.count() < 2 || lineSplit.count() > 5) {
-        m_errorString = QObject::tr("Number of elements on the note is incorrect");
+        m_errorString = QObject::tr("Number of elements on the note is incorrect, line = %1")
+            .arg(lineNr);
         return false;
     }
 
@@ -114,11 +124,13 @@ bool HarmonicaParser::parseNote(const QString& line)
         bool conversionOk = false;
         const int value = stringHole.toInt(&conversionOk);
         if (!conversionOk) {
-            m_errorString = QObject::tr("File malformed. hole is not numeric.");
+            m_errorString = QObject::tr("File malformed. hole is not numeric. line = %1")
+                .arg(lineNr);
             return false;
         }
         if (value < 1 || value > 10) {
-            m_errorString = QObject::tr("File malformed. hole is out of range.");
+            m_errorString = QObject::tr("File malformed. hole is out of range. line = %1")
+                .arg(lineNr);
             return false;
         }
 
@@ -127,7 +139,8 @@ bool HarmonicaParser::parseNote(const QString& line)
 
     std::optional<HarmonicaSoundData::Duration> duration = HarmonicaSoundData::durationFromString(lineSplit.last());
     if (!duration.has_value()) {
-        m_errorString = QObject::tr("Note duration can only accept 1, 1/2, 1/4 or 1/8 beats. \n for everything else, use ligatures");
+        m_errorString = QObject::tr("Note duration can only accept 1, 1/2, 1/4 or 1/8 beats. \n for everything else, use ligatures, line = %1")
+            .arg(lineNr);
         return false;
     }
 
@@ -136,7 +149,8 @@ bool HarmonicaParser::parseNote(const QString& line)
     const bool isDraw = lineSplit.contains("draw");
 
     if (isBlow && isDraw) {
-        m_errorString = QObject::tr("A line can't be both blow and draw");
+        m_errorString = QObject::tr("A line can't be both blow and draw, line = %1")
+            .arg(lineNr);
         return false;
     }
 
@@ -163,110 +177,115 @@ std::vector<HarmonicaSoundData> HarmonicaParser::data() const
     return m_data;
 }
 
+QString HarmonicaParser::errorString() const
+{
+    return m_errorString;
+}
+
 #ifdef TEST_BUILD
 #include <iostream>
 int HarmonicaParser::testParsing() {
     HarmonicaParser parser;
     // Expected pass.
-    if (!parser.parseBpm("beats_per_minute = 60")) {
+    if (!parser.parseBpm("beats_per_minute = 60", 0)) {
         std::cerr << "Bpm 60 not parsing";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-     if (!parser.parseBpm("beats_per_minute = 85")) {
+     if (!parser.parseBpm("beats_per_minute = 85", 0)) {
         std::cerr << "Bpm 85 not parsing";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-     if (!parser.parseBpm("beats_per_minute = 120")) {
+     if (!parser.parseBpm("beats_per_minute = 120", 0)) {
         std::cerr << "Bpm 120 not parsing";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
 
     // Expect failures.
-    if (parser.parseBpm("beats_per_minute = 1/16")) {
+    if (parser.parseBpm("beats_per_minute = 1/16", 0)) {
         std::cerr << "Bpm 1/16 parsing";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (parser.parseBpm("beats_per_minute = ABC")) {
+    if (parser.parseBpm("beats_per_minute = ABC", 0)) {
         std::cerr << "Bpm ABC parsing";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
 
     // Expect pass
-    if (!parser.parseWait("wait 1")) {
+    if (!parser.parseWait("wait 1", 0)) {
         std::cerr << "Wait 1 not parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseWait("wait 1/2")) {
+    if (!parser.parseWait("wait 1/2", 0)) {
         std::cerr << "Wait 1/2 not parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseWait("wait 1/4")) {
+    if (!parser.parseWait("wait 1/4", 0)) {
         std::cerr << "Wait 1/4 not parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseWait("wait 1/8")) {
+    if (!parser.parseWait("wait 1/8", 0)) {
         std::cerr << "Wait 1/8 not parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
 
     // expected failures
-    if (parser.parseWait("1 wait")) {
+    if (parser.parseWait("1 wait", 0)) {
         std::cerr << "1 wait parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (parser.parseWait("wait 1/18")) {
+    if (parser.parseWait("wait 1/18", 0)) {
         std::cerr << "Wait 1/18 parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (parser.parseWait("wait 1/3")) {
+    if (parser.parseWait("wait 1/3", 0)) {
         std::cerr << "Wait 1/3 parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (parser.parseWait("wait")) {
+    if (parser.parseWait("wait", 0)) {
         std::cerr << "Wait parsed";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
 
     // expected pass
-    if (!parser.parseNote("1 blow 1/2")) {
+    if (!parser.parseNote("1 blow 1/2", 0)) {
         std::cerr << "Parse note failed 1";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseNote("1 draw 1/2")) {
+    if (!parser.parseNote("1 draw 1/2", 0)) {
         std::cerr << "Parse note failed 2";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseNote("1 ligature blow 1/2")) {
+    if (!parser.parseNote("1 ligature blow 1/2", 0)) {
         std::cerr << "Parse note failed 3";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseNote("1 ligature draw 1/2")) {
+    if (!parser.parseNote("1 ligature draw 1/2", 0)) {
         std::cerr << "Parse note failed 4";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseNote("1;2;3 draw 1/2")) {
+    if (!parser.parseNote("1;2;3 draw 1/2", 0)) {
         std::cerr << "Parse note failed 5";
         std::cerr << parser.m_errorString.toStdString();
         return 1;
     }
-    if (!parser.parseNote("4;5;6 ligature draw 1/2")) {
+    if (!parser.parseNote("4;5;6 ligature draw 1/2", 0)) {
         std::cerr << "Parse note failed 6";
         std::cerr << parser.m_errorString.toStdString();
         return 1;

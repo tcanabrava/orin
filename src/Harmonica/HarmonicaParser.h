@@ -13,15 +13,16 @@ private:
     int m_bpm;
     std::vector<HarmonicaSoundData> m_data;
 
-    bool parseBpm(const QString& line);
-    bool parseWait(const QString& line);
-    bool parseNote(const QString& line);
+    bool parseBpm(const QString& line, int lineNr);
+    bool parseWait(const QString& line, int lineNr);
+    bool parseNote(const QString& line, int lineNr);
 
 
 public:
     void setFile(const QString& file);
     bool parse();
     int bpm() const;
+    QString errorString() const;
     std::vector<HarmonicaSoundData> data() const;
 
 #ifdef TEST_BUILD
