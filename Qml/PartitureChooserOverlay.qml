@@ -22,7 +22,7 @@ Kirigami.OverlaySheet {
     ColumnLayout {
         Dialogs.FileDialog {
             id: folderDialog
-            folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+            folder: preferences.harmonica.partiture_folder
             selectFolder: true
             onAccepted: folderField.text = folderDialog.fileUrl
         }
@@ -34,6 +34,8 @@ Kirigami.OverlaySheet {
             }
             QQC2.TextField {
                 id: folderField
+                text: preferences.harmonica.partiture_folder
+                onTextChanged: preferences.harmonica.partiture_folder = text
             }
             QQC2.Button {
                 text: qsTr("Find")
@@ -51,7 +53,7 @@ Kirigami.OverlaySheet {
                 id: fileModel
                 nameFilters: ["*.tcg"]
                 showDirs: false
-                folder: "file://" + folderField.text
+                folder: folderField.text
             }
             delegate:  Kirigami.AbstractCard {
                 contentItem: Kirigami.BasicListItem {
