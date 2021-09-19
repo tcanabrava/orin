@@ -10,6 +10,9 @@ Kirigami.Page {
 
     PartitureChooserOverlay {
         id: partitureOverlay
+        onPartitureChoosed: {
+            console.log("Choosed on", folder, fileName)
+        }
     }
 
     RowLayout {

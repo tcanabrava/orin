@@ -12,6 +12,9 @@ import QtQuick.Dialogs 1.3 as Dialogs
 
 Kirigami.OverlaySheet {
     id: addSheet
+
+    signal partitureChoosed(string folder, string fileName)
+
     header: Kirigami.Heading {
         text: qsTr("Partiture List")
     }
@@ -52,6 +55,7 @@ Kirigami.OverlaySheet {
             delegate:  Kirigami.AbstractCard {
                 contentItem: Kirigami.BasicListItem {
                     label: fileName
+                    onClicked: partitureChoosed(folderField.text, fileName)
                 }
             }
         }
