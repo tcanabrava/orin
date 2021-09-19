@@ -28,8 +28,8 @@ enable_testing()
 #    endif()
 #endif()
 
-find_package(QT NAMES Qt5 COMPONENTS Core Quick REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick REQUIRED)
+find_package(QT NAMES Qt5 COMPONENTS Core Quick Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets REQUIRED)
 find_package(KF5Kirigami2)
 
 add_subdirectory(src)

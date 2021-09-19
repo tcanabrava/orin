@@ -1,4 +1,4 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
@@ -10,7 +10,9 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
+    app.setOrganizationName("Tomaz");
+    app.setOrganizationDomain("Canabrava");
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("preferences", Preferences::self());

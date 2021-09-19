@@ -29,6 +29,8 @@ target_compile_definitions(Orin
 target_link_libraries(Orin
   PRIVATE OrinHarmonica
   PRIVATE Qt${QT_VERSION_MAJOR}::Core
+  PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+
   Qt${QT_VERSION_MAJOR}::Quick
   KF5::Kirigami2
  )
