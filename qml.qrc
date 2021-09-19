@@ -8,6 +8,7 @@
         <file>Qml/TwelveBarProgressionRect.qml</file>
         <file>Qml/ControlBar.qml</file>
         <file>Qml/BluesHarmonicaChordProgression.qml</file>
+        <file>Qml/PartitureChooserOverlay.qml</file>
         <file>Images/flute.png</file>
         <file>Images/harmonica.png</file>
         <file>Images/harmonica_bg.svg</file>
