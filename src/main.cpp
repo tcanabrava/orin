@@ -2,6 +2,8 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
+#include "Harmonica/HarmonicaSheet.h"
+
 #include "preferences.h"
 
 int main(int argc, char *argv[])
@@ -14,7 +16,10 @@ int main(int argc, char *argv[])
     app.setOrganizationName("Tomaz");
     app.setOrganizationDomain("Canabrava");
 
+    qmlRegisterType<HarmonicaSheet>("orin.music.harmonica", 1,0, "HarmonicaSheet");
+
     QQmlApplicationEngine engine;
+
     engine.rootContext()->setContextProperty("preferences", Preferences::self());
 
     const QUrl url(QStringLiteral("qrc:/Qml/main.qml"));

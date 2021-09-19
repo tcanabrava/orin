@@ -8,7 +8,7 @@ QString HarmonicaSheet::file() const
 void HarmonicaSheet::setFile(const QString& file)
 {
     m_file = file;
-
+    Q_EMIT fileChanged(m_file);
 }
 
 int HarmonicaSheet::bpm() const

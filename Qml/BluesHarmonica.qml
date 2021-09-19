@@ -4,6 +4,8 @@ import QtQuick.Controls 2.15 as QQC2
 import org.kde.kirigami 2.18 as Kirigami
 import QtQuick.Layouts 1.12
 
+import orin.music.harmonica 1.0 as Orin
+
 Kirigami.Page {
     // TODO: Harmonica Visualizer
     property int beatsPerMinute: 6000 / preferences.general.beats_per_minute
@@ -11,8 +13,13 @@ Kirigami.Page {
     PartitureChooserOverlay {
         id: partitureOverlay
         onPartitureChoosed: {
-            console.log("Choosed on", folder, fileName)
+            harmonicasheet.file = folder + "/" + fileName
+            close();
         }
+    }
+
+    Orin.HarmonicaSheet {
+        id: harmonicasheet
     }
 
     RowLayout {
