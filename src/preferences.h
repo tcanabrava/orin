@@ -8,6 +8,10 @@
 #include <functional>
 #include <QObject>
 
+#include <QString>
+#include <QStandardPaths>
+
+
 class General : public QObject {
 	Q_OBJECT
 	Q_PROPERTY(int beats_per_minute READ beatsPerMinute WRITE setBeatsPerMinute NOTIFY beatsPerMinuteChanged)
@@ -29,9 +33,31 @@ private:
 	std::function<bool(int)> beatsPerMinuteRule;
 };
 
+class Harmonica : public QObject {
+	Q_OBJECT
+	Q_PROPERTY(QString partiture_folder READ partitureFolder WRITE setPartitureFolder NOTIFY partitureFolderChanged)
+
+public:
+	Harmonica(QObject *parent = 0);
+	 void loadDefaults();
+	QString partitureFolder() const;
+	void setPartitureFolderRule(std::function<bool(QString)> rule);
+
+public slots:
+	void setPartitureFolder(const QString& value);
+
+signals:
+	void partitureFolderChanged(const QString& value);
+
+private:
+	QString _partitureFolder;
+	std::function<bool(QString)> partitureFolderRule;
+};
+
 class Preferences : public QObject {
 	Q_OBJECT
 Q_PROPERTY(QObject* general MEMBER _general CONSTANT)
+Q_PROPERTY(QObject* harmonica MEMBER _harmonica CONSTANT)
 
 public:
 	void sync();
@@ -39,9 +65,11 @@ public:
 	static Preferences* self();
 	 void loadDefaults();
 	General *general() const;
+	Harmonica *harmonica() const;
 
 private:
 	General *_general;
+	Harmonica *_harmonica;
 	Preferences(QObject *parent = 0);
 };
 

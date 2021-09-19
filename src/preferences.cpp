@@ -37,8 +37,40 @@ void General::loadDefaults()
 {
 	setBeatsPerMinute(60);
 }
+Harmonica::Harmonica(QObject *parent) : QObject(parent),
+	_partitureFolder(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+{
+}
+
+QString Harmonica::partitureFolder() const
+{
+	return _partitureFolder;
+}
+
+void Harmonica::setPartitureFolder(const QString& value)
+{
+	if (_partitureFolder==value) {
+		return;
+	}
+	if (partitureFolderRule && !partitureFolderRule(value)) {
+		return;
+	}
+	_partitureFolder = value;
+	emit partitureFolderChanged(value);
+}
+
+void Harmonica::setPartitureFolderRule(std::function<bool(QString)> rule)
+{
+	partitureFolderRule = rule;
+}
+
+void Harmonica::loadDefaults()
+{
+	setPartitureFolder(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+}
 Preferences::Preferences(QObject *parent) : QObject(parent),
-	_general(new General(this))
+	_general(new General(this)),
+	_harmonica(new Harmonica(this))
 {
 	load();
 }
@@ -48,15 +80,24 @@ General* Preferences::general() const
 	return _general;
 }
 
+Harmonica* Preferences::harmonica() const
+{
+	return _harmonica;
+}
+
 void Preferences::loadDefaults()
 {
 	_general->loadDefaults();
+	_harmonica->loadDefaults();
 }
 void Preferences::sync()
 {
 	QSettings s;
 	s.beginGroup("General");
 		s.setValue("beats_per_minute",general()->beatsPerMinute());
+	s.endGroup();
+	s.beginGroup("Harmonica");
+		s.setValue("partiture_folder",harmonica()->partitureFolder());
 	s.endGroup();
 }
 
@@ -65,6 +106,9 @@ void Preferences::load()
 	QSettings s;
 	s.beginGroup("General");
 		general()->setBeatsPerMinute(s.value("beats_per_minute", 60).value<int>());
+	s.endGroup();
+	s.beginGroup("Harmonica");
+		harmonica()->setPartitureFolder(s.value("partiture_folder", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).value<QString>());
 	s.endGroup();
 }
 
