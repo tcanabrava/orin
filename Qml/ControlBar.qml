@@ -8,6 +8,8 @@ RowLayout {
     property bool playing: false
     property int beatsPerMinute: 1000
 
+    signal requestPartiture()
+
     Item{
         Layout.fillWidth: true
     }
@@ -15,6 +17,12 @@ RowLayout {
         text: playing ? qsTr("Stop") : qsTr("Start")
         onClicked: {
             playing = !playing
+        }
+    }
+    QQC2.Button {
+        text: qsTr("Partitures")
+        onClicked: {
+            requestPartiture()
         }
     }
 

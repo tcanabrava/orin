@@ -8,6 +8,10 @@ Kirigami.Page {
     // TODO: Harmonica Visualizer
     property int beatsPerMinute: 6000 / preferences.general.beats_per_minute
 
+    PartitureChooserOverlay {
+        id: partitureOverlay
+    }
+
     RowLayout {
         anchors.fill: parent
         id: mainLayout
@@ -31,6 +35,9 @@ Kirigami.Page {
             ControlBar {
                 id: controlBar
                 Layout.fillWidth: true
+                onRequestPartiture: {
+                    partitureOverlay.open()
+                }
             }
         }
     }
