@@ -50,6 +50,7 @@ Kirigami.OverlaySheet {
             model: FolderListModel {
                 id: fileModel
                 nameFilters: ["*.tcg"]
+                showDirs: false
                 folder: "file://" + folderField.text
             }
             delegate:  Kirigami.AbstractCard {
