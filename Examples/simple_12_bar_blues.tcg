@@ -21,81 +21,94 @@ beats_per_minute = 60
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # second quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # third quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # fourth quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
+
 
 # fifth quadrant
 4 draw 1/2
 5 blow 1/2
 5 draw 1/2
 4 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # sixth quadrant
 4 draw 1/2
 5 blow 1/2
 5 draw 1/2
 4 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # seventh quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # eighth quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # nineth quadrant
 4 draw 1/2
 6 blow 1/2
 5 draw 1/2
 4 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # tenth quadrant
 4 draw 1/2
 5 blow 1/2
 5 draw 1/2
 4 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # eleventh quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
 
 # twelvesh quadrant
 2 draw 1/2
 4 blow 1/2
 3 draw 1/2
 2 draw 1/2
-wait 2
+wait 1
+wait 1
