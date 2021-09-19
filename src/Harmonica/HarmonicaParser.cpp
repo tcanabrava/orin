@@ -26,6 +26,8 @@ bool HarmonicaParser::parse()
     int lineNr = 0;
     QTextStream streamReader(&harmonicaFile);
     while (!streamReader.atEnd()) {
+        lineNr += 1;
+
         const QString line = streamReader.readLine().trimmed().toLower();
         if (line.startsWith(QLatin1Char('#'))) {
             continue;
@@ -55,7 +57,6 @@ bool HarmonicaParser::parse()
         } else {
             return false;
         }
-        lineNr += 1;
     }
     return true;
 }
