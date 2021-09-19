@@ -40,10 +40,12 @@ Kirigami.Page {
 
                 // TODO: Load the model via plugins.
                 model: instruments
-                delegate: Kirigami.BasicListItem {
-                    label: modelData.name
-                    icon: ":/Images/" + modelData.icon
-                    onClicked: instrumentSelected(modelData.qmlPage)
+                delegate: Kirigami.AbstractCard {
+                    contentItem: Kirigami.BasicListItem {
+                        label: modelData.name
+                        icon: ":/Images/" + modelData.icon
+                        onClicked: instrumentSelected(modelData.qmlPage)
+                    }
                 }
             }
         }

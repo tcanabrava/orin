@@ -40,7 +40,7 @@ Kirigami.OverlaySheet {
             }
         }
 
-        ListView {
+        Kirigami.CardsListView {
             Layout.preferredWidth: 400
             Layout.preferredHeight: 400
 
@@ -49,7 +49,11 @@ Kirigami.OverlaySheet {
                 nameFilters: ["*.tcg"]
                 folder: "file://" + folderField.text
             }
-            delegate: Text { text: fileName }
+            delegate:  Kirigami.AbstractCard {
+                contentItem: Kirigami.BasicListItem {
+                    label: fileName
+                }
+            }
         }
     }
 }
