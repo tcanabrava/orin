@@ -43,12 +43,15 @@ public:
     Q_SIGNAL void bpmDeltaChanged();
     Q_SIGNAL void bpmTotalChanged();
 
+    Q_SIGNAL void errorMessage(const QString& message);
+
+    void setSoundData(const std::vector<HarmonicaSoundData>& soundData);
+
     // a change in bpm will trigger a recalculate.
     void precalculate();
 
     // starts emmiting soundData.
     void start();
     void stop();
-    Q_SIGNAL void soundData(const HarmonicaSoundData& soundData);
 };
 

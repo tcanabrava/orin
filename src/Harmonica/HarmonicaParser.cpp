@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QTextStream>
+#include <QDebug>
 
 void HarmonicaParser::setFile(const QString& file)
 {
@@ -24,6 +25,7 @@ bool HarmonicaParser::parse()
     }
 
     int lineNr = 0;
+
     QTextStream streamReader(&harmonicaFile);
     while (!streamReader.atEnd()) {
         lineNr += 1;
