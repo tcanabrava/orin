@@ -14,6 +14,7 @@ class HarmonicaSheet: public QObject {
     Q_PROPERTY(int bpm READ bpm WRITE setBpm NOTIFY bpmChanged)
     Q_PROPERTY(int bpmDelta READ bpmDelta WRITE setBpmDelta NOTIFY bpmDeltaChanged)
     Q_PROPERTY(int bpmTotal NOTIFY bpmTotalChanged)
+    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
 
 private:
     // the speed of the music
@@ -28,6 +29,8 @@ private:
     std::vector<HarmonicaSoundData> m_soundData;
 
     QString m_file;
+
+    bool m_ready = false;
 
 public:
     QString file() const;
@@ -44,6 +47,10 @@ public:
     Q_SIGNAL void bpmTotalChanged();
 
     Q_SIGNAL void errorMessage(const QString& message);
+
+    bool ready() const;
+    void setReady(bool ready); /* not exported to Qml */
+    Q_SIGNAL void readyChanged(bool ready);
 
     void setSoundData(const std::vector<HarmonicaSoundData>& soundData);
 

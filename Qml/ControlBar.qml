@@ -7,6 +7,7 @@ import QtQuick.Layouts 1.12
 RowLayout {
     property bool playing: false
     property int beatsPerMinute: 1000
+    property bool ready: false
 
     signal requestPartiture()
 
@@ -14,6 +15,7 @@ RowLayout {
         Layout.fillWidth: true
     }
     QQC2.Button {
+        enabled: ready
         text: playing ? qsTr("Stop") : qsTr("Start")
         onClicked: {
             playing = !playing

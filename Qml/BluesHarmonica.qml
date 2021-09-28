@@ -14,6 +14,7 @@ Kirigami.Page {
         id: partitureOverlay
         onPartitureChoosed: {
             harmonicasheet.file = folder + "/" + fileName
+            title.text = fileName
             close();
         }
     }
@@ -26,16 +27,24 @@ Kirigami.Page {
         anchors.fill: parent
         id: mainLayout
         ColumnLayout {
+            Text {
+                id: title
+                Layout.fillWidth: true
+            }
             BluesHarmonicaChordProgression {
                 Layout.fillHeight: true
                 Layout.preferredWidth: mainLayout.width * 0.5
+                enabled: harmonicasheet.ready
             }
+
             TwelveBarProgression {
                 Layout.preferredHeight: mainLayout.height * 0.33
                 Layout.preferredWidth: mainLayout.width * 0.5
                 playing: controlBar.playing
+                enabled: harmonicasheet.ready
             }
         }
+
         ColumnLayout {
             Rectangle {
                 border.color: "blue"
@@ -44,6 +53,7 @@ Kirigami.Page {
             }
             ControlBar {
                 id: controlBar
+                ready: harmonicasheet.ready
                 Layout.fillWidth: true
                 onRequestPartiture: {
                     partitureOverlay.open()
