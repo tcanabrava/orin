@@ -14,3 +14,18 @@ HarmonicaSoundData::durationFromString(const QString& str)
     }
     return {};
 }
+
+QDebug& operator<<(QDebug& dbg, const HarmonicaSoundData &data) {
+    dbg << "Holes:[";
+    bool padding = false;
+    for (int hole : data.holes) {
+        if (padding) {
+            dbg << ",";
+        }
+        dbg << hole;
+        padding = true;
+    }
+    dbg << "]";
+    dbg << " " << data.duration << data.soundType;
+    return dbg;
+}

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <optional>
 
+#include <QDebug>
 #include <QObject>
 
 /* of course it's possible to use
@@ -20,6 +21,7 @@ public:
         DRAW,
         BLOW
     };
+    Q_ENUM(SoundType);
 
     enum Duration {
         BEAT_1,     // 1   beat
@@ -27,6 +29,7 @@ public:
         BEAT_1_4,   // 1/4 beat
         BEAT_1_8,   // 1/8 beat
     };
+    Q_ENUM(Duration);
 
     static std::optional<HarmonicaSoundData::Duration> durationFromString(const QString& str);
 
@@ -46,3 +49,6 @@ public:
     // Is this a ligature?
     bool ligature = false;
 };
+
+// Operator for debugging.
+QDebug& operator<<(QDebug& dbg, const HarmonicaSoundData &data);
