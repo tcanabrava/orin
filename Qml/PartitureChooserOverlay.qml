@@ -33,6 +33,7 @@ Kirigami.OverlaySheet {
                 text: qsTr("Folder:")
             }
             QQC2.TextField {
+                Layout.fillWidth: true
                 id: folderField
                 text: preferences.harmonica.partiture_folder
                 onTextChanged: preferences.harmonica.partiture_folder = text
@@ -46,7 +47,7 @@ Kirigami.OverlaySheet {
         }
 
         Kirigami.CardsListView {
-            Layout.preferredWidth: 400
+            Layout.fillWidth: true
             Layout.preferredHeight: 400
 
             model: FolderListModel {
