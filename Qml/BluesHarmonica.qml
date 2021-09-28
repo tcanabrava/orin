@@ -21,6 +21,7 @@ Kirigami.Page {
 
     Orin.HarmonicaSheet {
         id: harmonicasheet
+        running: controlBar.playing
     }
 
     RowLayout {

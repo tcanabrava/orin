@@ -15,6 +15,7 @@ class HarmonicaSheet: public QObject {
     Q_PROPERTY(int bpmDelta READ bpmDelta WRITE setBpmDelta NOTIFY bpmDeltaChanged)
     Q_PROPERTY(int bpmTotal NOTIFY bpmTotalChanged)
     Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
+    Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
 
 private:
     // the speed of the music
@@ -31,6 +32,11 @@ private:
     QString m_file;
 
     bool m_ready = false;
+    bool m_running = false;
+
+    // starts emmiting soundData.
+    void start();
+    void stop();
 
 public:
     QString file() const;
@@ -52,13 +58,14 @@ public:
     void setReady(bool ready); /* not exported to Qml */
     Q_SIGNAL void readyChanged(bool ready);
 
+    // Starts or stops the song.
+    bool running() const;
+    void setRunning(bool running);
+    Q_SIGNAL void runningChanged(bool running);
+
     void setSoundData(const std::vector<HarmonicaSoundData>& soundData);
 
     // a change in bpm will trigger a recalculate.
     void precalculate();
-
-    // starts emmiting soundData.
-    void start();
-    void stop();
 };
 

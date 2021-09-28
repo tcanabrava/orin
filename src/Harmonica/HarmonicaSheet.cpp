@@ -78,13 +78,34 @@ void HarmonicaSheet::precalculate()
 
 }
 
+bool HarmonicaSheet::running() const
+{
+    return m_running;
+}
+
+void HarmonicaSheet::setRunning(bool r)
+{
+    if (m_running == r) {
+        return;
+    }
+
+    m_running = r;
+    Q_EMIT runningChanged(r);
+
+    if (m_running) {
+        start();
+    } else {
+        stop();
+    }
+}
+
 // starts emmiting soundData.
 void HarmonicaSheet::start()
 {
-
+    qDebug() << "Start called";
 }
 
 void HarmonicaSheet::stop()
 {
-
+    qDebug() << "Stop called";
 }
