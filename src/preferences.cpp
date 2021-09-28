@@ -25,7 +25,7 @@ void General::setBeatsPerMinute(int value)
 		return;
 	}
 	_beatsPerMinute = value;
-	emit beatsPerMinuteChanged(value);
+	Q_EMIT beatsPerMinuteChanged(value);
 }
 
 void General::setBeatsPerMinuteRule(std::function<bool(int)> rule)
@@ -33,6 +33,10 @@ void General::setBeatsPerMinuteRule(std::function<bool(int)> rule)
 	beatsPerMinuteRule = rule;
 }
 
+int General::beatsPerMinuteDefault() const
+{
+	return 60;
+}
 void General::loadDefaults()
 {
 	setBeatsPerMinute(60);
@@ -56,7 +60,7 @@ void Harmonica::setPartitureFolder(const QString& value)
 		return;
 	}
 	_partitureFolder = value;
-	emit partitureFolderChanged(value);
+	Q_EMIT partitureFolderChanged(value);
 }
 
 void Harmonica::setPartitureFolderRule(std::function<bool(QString)> rule)
@@ -64,6 +68,10 @@ void Harmonica::setPartitureFolderRule(std::function<bool(QString)> rule)
 	partitureFolderRule = rule;
 }
 
+QString Harmonica::partitureFolderDefault() const
+{
+	return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+}
 void Harmonica::loadDefaults()
 {
 	setPartitureFolder(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
@@ -94,10 +102,18 @@ void Preferences::sync()
 {
 	QSettings s;
 	s.beginGroup("General");
-		s.setValue("beats_per_minute",general()->beatsPerMinute());
+		if (general()->beatsPerMinute() == general()->beatsPerMinuteDefault()){
+			s.remove("beats_per_minute");
+		} else { 
+			s.setValue("beats_per_minute",general()->beatsPerMinute());
+		}
 	s.endGroup();
 	s.beginGroup("Harmonica");
-		s.setValue("partiture_folder",harmonica()->partitureFolder());
+		if (harmonica()->partitureFolder() == harmonica()->partitureFolderDefault()){
+			s.remove("partiture_folder");
+		} else { 
+			s.setValue("partiture_folder",harmonica()->partitureFolder());
+		}
 	s.endGroup();
 }
 

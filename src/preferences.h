@@ -21,12 +21,11 @@ public:
 	 void loadDefaults();
 	int beatsPerMinute() const;
 	void setBeatsPerMinuteRule(std::function<bool(int)> rule);
+	int beatsPerMinuteDefault() const;
 
-public slots:
-	void setBeatsPerMinute(int value);
-
-signals:
-	void beatsPerMinuteChanged(int value);
+public:
+	 Q_SLOT void setBeatsPerMinute(int value);
+	 Q_SIGNAL void beatsPerMinuteChanged(int value);
 
 private:
 	int _beatsPerMinute;
@@ -42,12 +41,11 @@ public:
 	 void loadDefaults();
 	QString partitureFolder() const;
 	void setPartitureFolderRule(std::function<bool(QString)> rule);
+	QString partitureFolderDefault() const;
 
-public slots:
-	void setPartitureFolder(const QString& value);
-
-signals:
-	void partitureFolderChanged(const QString& value);
+public:
+	 Q_SLOT void setPartitureFolder(const QString& value);
+	 Q_SIGNAL void partitureFolderChanged(const QString& value);
 
 private:
 	QString _partitureFolder;
