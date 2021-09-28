@@ -6,6 +6,11 @@
 #include <QFile>
 #include <QUrl>
 
+HarmonicaSheet::HarmonicaSheet()
+{
+    connect(&m_bpmTimer, &QTimer::timeout, this, &HarmonicaSheet::timerTick);
+}
+
 QString HarmonicaSheet::file() const
 {
     return QString();
@@ -102,10 +107,22 @@ void HarmonicaSheet::setRunning(bool r)
 // starts emmiting soundData.
 void HarmonicaSheet::start()
 {
-    qDebug() << "Start called";
+    qreal total = 60 / (qreal) m_bpm * 1000;
+    m_currIdx = 0;
+    m_bpmTimer.start(total);
 }
 
 void HarmonicaSheet::stop()
 {
-    qDebug() << "Stop called";
+    m_bpmTimer.stop();
 }
+
+void HarmonicaSheet::timerTick() {
+    if (m_currIdx < m_soundData.size()) {
+        qDebug() << "Sending " << m_currIdx << m_soundData[m_currIdx];
+        m_currIdx += 1;
+    } else {
+        stop();
+    }
+}
+

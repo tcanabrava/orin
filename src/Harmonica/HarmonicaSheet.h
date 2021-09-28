@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 
 #include <vector>
 
@@ -34,11 +35,20 @@ private:
     bool m_ready = false;
     bool m_running = false;
 
+    // each timer tick, currIdx advances, till the music finishes.
+    QTimer m_bpmTimer;
+    int m_currIdx = 0;
+
     // starts emmiting soundData.
     void start();
     void stop();
 
+    // triggered by the timer.
+    void timerTick();
+
 public:
+    HarmonicaSheet();
+
     QString file() const;
     void setFile(const QString& file);
     Q_SIGNAL void fileChanged(const QString& file);
