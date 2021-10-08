@@ -2,9 +2,12 @@ add_subdirectory(Harmonica)
 
 set(PROJECT_SOURCES
         main.cpp
-        preferences.cpp
         ../qml.qrc
 )
+
+
+compile_configuration(PROJECT_SOURCES ../preferences.conf)
+
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Orin
