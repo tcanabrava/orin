@@ -15,6 +15,8 @@ option(BUILD_TESTS "make unit tests" ON)
 
 enable_testing()
 
+include(FeatureSummary)
+
 # QtCreator supports the following variables for Android, which are identical to qmake Android variables.
 # Check https://doc.qt.io/qt/deployment-android.html for more information.
 # They need to be set before the find_package(...) calls below.
@@ -31,5 +33,8 @@ enable_testing()
 find_package(QT NAMES Qt5 COMPONENTS Core Quick Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets REQUIRED)
 find_package(KF5Kirigami2)
+
+find_package(ConfigurationParser)
+set_package_properties(ConfigurationParser PROPERTIES TYPE REQUIRED URL "https://github.com/tcanabrava/configuration-parser")
 
 add_subdirectory(src)
