@@ -12,10 +12,23 @@ Rectangle {
 
     property variant holes: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
 
-    function paintHoles(text, type) {
+    function clear() {
         for (let i = 0; i < holes.length; i++) {
             holes[i].color = silentColor;
         }
+    }
+
+    function paintHolesSoundData(soundData) {
+        clear()
+        for (let idx in soundData.holes) {
+            // holes starts with idx 1.
+            let hole_idx = soundData.holes[idx] - 1
+            holes[hole_idx].color = drawColor
+        }
+    }
+
+    function paintHoles(text, type) {
+        clear()
 
         let keys = text.split(';')
         if (keys.length === 0) {

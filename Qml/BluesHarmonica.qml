@@ -23,9 +23,7 @@ Kirigami.Page {
         id: harmonicasheet
         running: controlBar.playing
         onSendBeat: {
-            for (let i = 0; i < beat.holes.length; i++) {
-                console.log("Index ", idx, " Hole ", beat.holes[i])
-            }
+            chordProgression.paintHolesSoundData(beat);
         }
     }
 
@@ -39,6 +37,7 @@ Kirigami.Page {
         RowLayout {
             ColumnLayout {
                 BluesHarmonicaChordProgression {
+                    id: chordProgression
                     Layout.fillHeight: true
                     Layout.preferredWidth: mainLayout.width * 0.5
                     enabled: harmonicasheet.ready
