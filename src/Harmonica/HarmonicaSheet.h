@@ -40,16 +40,20 @@ private:
     // the position we are on the music right now.
     int m_currentBeat = 0;
 
-    std::vector<HarmonicaSoundData> m_soundData;
-
-    QString m_file;
+    // current index of the m_soundData vector.
+    // TODO: try to use async so we can use a for(HarmonicaSoundData &data : m_soundData) { co_yield data; }
+    // so we don't need to keep track of the currIdx.
+    int m_currIdx = 0;
 
     bool m_ready = false;
     bool m_running = false;
 
+    std::vector<HarmonicaSoundData> m_soundData;
+
+    QString m_file;
+
     // each timer tick, currIdx advances, till the music finishes.
     QTimer m_bpmTimer;
-    int m_currIdx = 0;
 
     // starts emmiting soundData.
     void start();

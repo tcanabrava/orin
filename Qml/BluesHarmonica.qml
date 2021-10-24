@@ -44,6 +44,7 @@ Kirigami.Page {
                     Layout.preferredWidth: mainLayout.width * 0.5
                     playing: controlBar.playing
                     enabled: harmonicasheet.ready
+                    bpm: harmonicasheet.bpmTotal
                 }
             }
             ColumnLayout {

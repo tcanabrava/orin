@@ -60,6 +60,10 @@ int HarmonicaSheet::bpm() const
 void HarmonicaSheet::setBpm(int beatsPerMinute)
 {
     m_bpm = beatsPerMinute;
+    m_bpmTotal = m_bpm + m_bpmDelta;
+
+    Q_EMIT bpmChanged();
+    Q_EMIT bpmTotalChanged();
 }
 
 int HarmonicaSheet::bpmDelta() const
@@ -70,6 +74,10 @@ int HarmonicaSheet::bpmDelta() const
 void HarmonicaSheet::setBpmDelta(int delta)
 {
     m_bpmDelta = delta;
+    m_bpmTotal = m_bpm + m_bpmDelta;
+
+    Q_EMIT bpmDeltaChanged();
+    Q_EMIT bpmTotalChanged();
 }
 
 void HarmonicaSheet::setSoundData(const std::vector<HarmonicaSoundData>& soundData)

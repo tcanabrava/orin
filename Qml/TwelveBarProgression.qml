@@ -15,6 +15,7 @@ Grid {
     property bool playing: false
     property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
     property int currentRectangle: 0;
+    property int bpm: 0
 
     onPlayingChanged: {
         rectangles[currentRectangle].playing = playing
@@ -22,10 +23,15 @@ Grid {
     }
 
     Timer {
+        onIntervalChanged: {
+            console.log("Interval set to", bpm)
+        }
+
         running: parent.playing
         repeat: true
-        interval: (60000 / preferences.general.beats_per_minute) * 4
+        interval: (60000 / bpm) * 4
         onTriggered: {
+            console.log("indice ", currentRectangle)
             if (currentRectangle != -1) {
                 rectangles[currentRectangle].playing = false;
             }
