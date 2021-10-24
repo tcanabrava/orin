@@ -127,7 +127,6 @@ void HarmonicaSheet::stop()
 
 void HarmonicaSheet::timerTick() {
     if (m_currIdx < m_soundData.size()) {
-        qDebug() << "Sending " << m_currIdx << m_soundData[m_currIdx];
         Q_EMIT sendBeat(m_soundData[m_currIdx], m_currIdx);
         m_currIdx += 1;
     } else {
