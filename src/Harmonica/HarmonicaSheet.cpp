@@ -118,6 +118,10 @@ void HarmonicaSheet::start()
     qreal total = 60 / (qreal) m_bpm * 1000;
     m_currIdx = 0;
     m_bpmTimer.start(total);
+    // TODO: There are three timers currently, we need to use only *one* timer
+    // to control the music. One is here. other is in TwelveBarProgression and the
+    // other one in TwelveBarProgressionRect
+    timerTick();
 }
 
 void HarmonicaSheet::stop()
