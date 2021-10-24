@@ -11,12 +11,18 @@
 /* Defines a harmonica song, completely. */
 class HarmonicaSheet: public QObject {
     Q_OBJECT
+
+    // Read write access from the interface
     Q_PROPERTY(QString file READ file WRITE setFile NOTIFY fileChanged)
     Q_PROPERTY(int bpm READ bpm WRITE setBpm NOTIFY bpmChanged)
     Q_PROPERTY(int bpmDelta READ bpmDelta WRITE setBpmDelta NOTIFY bpmDeltaChanged)
-    Q_PROPERTY(int bpmTotal NOTIFY bpmTotalChanged)
-    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
+
+    // Read only access from the interface
+    Q_PROPERTY(int bpmTotal READ bpmTotal NOTIFY bpmTotalChanged)
+    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
+    Q_PROPERTY(int totalBeats READ totalBeats NOTIFY totalBeatsChanged)
+    Q_PROPERTY(int currentBeat READ currentBeat NOTIFY currentBeatChanged)
 
 private:
     // the speed of the music
@@ -27,6 +33,12 @@ private:
 
     // the sum of m_bpm and m_bpmDelta
     int m_bpmTotal = 0;
+
+    // the total number of beats of the song.
+    int m_totalBeats = 0;
+
+    // the position we are on the music right now.
+    int m_currentBeat = 0;
 
     std::vector<HarmonicaSoundData> m_soundData;
 
@@ -57,8 +69,16 @@ public:
     void setBpm(int beatsPerMinute);
     Q_SIGNAL void bpmChanged();
 
+    int totalBeats() const;
+    Q_SIGNAL void totalBeatsChanged();
+
+    int currentBeat() const;
+    Q_SIGNAL void currentBeatChanged();
+
     int bpmDelta() const;
     void setBpmDelta(int delta);
+
+    int bpmTotal() const;
     Q_SIGNAL void bpmDeltaChanged();
     Q_SIGNAL void bpmTotalChanged();
 
@@ -67,6 +87,8 @@ public:
     bool ready() const;
     void setReady(bool ready); /* not exported to Qml */
     Q_SIGNAL void readyChanged(bool ready);
+
+    Q_SIGNAL void sendBeat(const HarmonicaSoundData& beat, int idx);
 
     // Starts or stops the song.
     bool running() const;

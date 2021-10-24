@@ -126,3 +126,14 @@ void HarmonicaSheet::timerTick() {
     }
 }
 
+int HarmonicaSheet::bpmTotal() const {
+    return m_bpmTotal;
+}
+
+int HarmonicaSheet::totalBeats() const {
+    return m_totalBeats;
+}
+
+int HarmonicaSheet::currentBeat() const {
+    return m_currentBeat;
+}
