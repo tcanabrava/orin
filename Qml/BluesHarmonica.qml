@@ -14,7 +14,7 @@ Kirigami.Page {
         id: partitureOverlay
         onPartitureChoosed: {
             harmonicasheet.file = folder + "/" + fileName
-            title.text = fileName
+            title.text = qsTr("Song: ") + fileName
             close();
         }
     }
