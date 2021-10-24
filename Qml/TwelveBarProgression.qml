@@ -48,71 +48,83 @@ Grid {
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r2
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r3
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r4
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r5
         text: "IV"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r6
         text: "IV"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r7
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r8
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r9
         text: "V"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r10
         text: "IV"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r11
         text: "I"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r12
         text: "I or IV"
         width: cellWidth
         height: cellHeight
+        bpm: parent.bpm
     }
 }

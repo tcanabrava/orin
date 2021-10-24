@@ -7,7 +7,8 @@ import QtQuick.Layouts 1.12
 Rectangle {
     id: rect
     property bool playing: false
-    property int beatsPerMinute: (60000 / preferences.general.beats_per_minute)
+    property int bpm: 0
+    property int beatsPerMinute: (60000 / bpm)
 
     property variant beats: [b1, b2, b3, b4]
     property int currentBeat: 0
