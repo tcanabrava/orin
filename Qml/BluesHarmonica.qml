@@ -22,6 +22,11 @@ Kirigami.Page {
     Orin.HarmonicaSheet {
         id: harmonicasheet
         running: controlBar.playing
+        onSendBeat: {
+            for (let i = 0; i < beat.holes.length; i++) {
+                console.log("Index ", idx, " Hole ", beat.holes[i])
+            }
+        }
     }
 
     ColumnLayout {

@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
     app.setOrganizationDomain("Canabrava");
 
     qmlRegisterType<HarmonicaSheet>("orin.music.harmonica", 1,0, "HarmonicaSheet");
+    qRegisterMetaType<HarmonicaSoundData>("HarmonicaSoundData");
 
     QQmlApplicationEngine engine;
 

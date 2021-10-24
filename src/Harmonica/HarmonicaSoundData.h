@@ -5,6 +5,7 @@
 #include <chrono>
 #include <optional>
 
+#include <QList>
 #include <QDebug>
 #include <QObject>
 
@@ -15,6 +16,8 @@
  */
 struct HarmonicaSoundData {
     Q_GADGET
+    Q_PROPERTY(QList<int> holes MEMBER holes)
+
 public:
     enum SoundType {
         NONE,
@@ -33,7 +36,7 @@ public:
 
     static std::optional<HarmonicaSoundData::Duration> durationFromString(const QString& str);
 
-    std::vector<int> holes;
+    QList<int> holes;
 
     // The duration in beats of the note.
     Duration duration = Duration::BEAT_1;

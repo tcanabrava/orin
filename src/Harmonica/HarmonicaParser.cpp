@@ -122,7 +122,7 @@ bool HarmonicaParser::parseNote(const QString& line, int lineNr)
 
     // first part
     QStringList holes = lineSplit[0].split(';', Qt::SkipEmptyParts);
-    std::vector<int> holesResult;
+    QList<int> holesResult;
     for (const QString& stringHole : holes) {
         bool conversionOk = false;
         const int value = stringHole.toInt(&conversionOk);
