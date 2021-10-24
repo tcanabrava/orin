@@ -22,6 +22,7 @@ RowLayout {
         }
     }
     QQC2.Button {
+        enabled: !playing
         text: qsTr("Partitures")
         onClicked: {
             requestPartiture()
