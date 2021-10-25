@@ -46,6 +46,22 @@ bool HarmonicaParser::parse()
             }
         }
 
+        if (line.startsWith("lyrics")) {
+            if (parseLyrics(line, lineNr)) {
+                continue;
+            } else {
+                return false;
+            }
+        }
+
+        if (line.startsWith("about")) {
+            if (parseAbout(line, lineNr)) {
+                continue;
+            } else {
+                return false;
+            }
+        }
+
         if (line.startsWith("wait")) {
             if (parseWait(line, lineNr)) {
                 continue;
@@ -60,6 +76,32 @@ bool HarmonicaParser::parse()
             return false;
         }
     }
+    return true;
+}
+
+bool HarmonicaParser::parseAbout(const QString& line, int lineNr)
+{
+    QStringList bpmLine = line.split('=');
+    if (bpmLine.count() != 2) {
+        m_errorString = QObject::tr("File malformed. lyrics = number, line = %1")
+            .arg(lineNr);
+        return false;
+    }
+
+    m_aboutUrl = bpmLine[1];
+    return true;
+}
+
+bool HarmonicaParser::parseLyrics(const QString& line, int lineNr)
+{
+    QStringList bpmLine = line.split('=');
+    if (bpmLine.count() != 2) {
+        m_errorString = QObject::tr("File malformed. lyrics = number, line = %1")
+            .arg(lineNr);
+        return false;
+    }
+
+    m_lyricsUrl = bpmLine[1];
     return true;
 }
 

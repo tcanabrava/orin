@@ -1,4 +1,6 @@
 beats_per_minute = 60
+about = https://en.wikipedia.org/wiki/Mannish_Boy
+lyrics = https://www.azlyrics.com/lyrics/muddywaters/mannishboy.html
 
 # commands:
 # wait bpm_count
