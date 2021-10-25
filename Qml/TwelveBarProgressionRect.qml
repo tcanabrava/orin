@@ -6,7 +6,6 @@ import QtQuick.Layouts 1.12
 
 Rectangle {
     id: rect
-    property variant beats: [b1, b2, b3, b4]
     property int currentBeat: -1
     property double quadWidth: width / 4
     property color innerRectInactive: "transparent"
@@ -17,17 +16,17 @@ Rectangle {
 
     function clear() {
         rect.state = "inactive";
-        beats[currentBeat].color = innerRectInactive
+        innerQuad.itemAt(currentBeat).color = innerRectInactive
         currentBeat = -1
     }
 
     function advance() {
         rect.state = "active";
         if (currentBeat !== -1) {
-            beats[currentBeat].color = innerRectInactive;
+            innerQuad.itemAt(currentBeat).color = innerRectInactive;
         }
         currentBeat = (currentBeat + 1) % 4
-        beats[currentBeat].color = innerRectActive
+        innerQuad.itemAt(currentBeat).color = innerRectActive
     }
 
     Text {
@@ -39,32 +38,17 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         spacing: 0
-        Rectangle {
-            id: b1
-            color: innerRectInactive
-            Layout.preferredWidth: quadWidth
-            Layout.fillHeight: true
-        }
-        Rectangle {
-            id: b2
-            color: innerRectInactive
-            Layout.preferredWidth: quadWidth
-            Layout.fillHeight: true
-        }
-        Rectangle {
-            id: b3
-            color: innerRectInactive
-            Layout.preferredWidth: quadWidth
-            Layout.fillHeight: true
-        }
-        Rectangle {
-            id: b4
-            color: innerRectInactive
-            Layout.preferredWidth: quadWidth
-            Layout.fillHeight: true
+        Repeater {
+            id: innerQuad
+            model: 4
+            Rectangle {
+                id: b1
+                color: innerRectInactive
+                Layout.preferredWidth: quadWidth
+                Layout.fillHeight: true
+            }
         }
     }
-
 
     states: [
         State {
