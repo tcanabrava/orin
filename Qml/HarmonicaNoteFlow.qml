@@ -34,7 +34,9 @@ Rectangle {
     }
 
     function clearSpriteObjects() {
-        // todo.
+        for (let idx in children) {
+            children[idx].destroy()
+        }
     }
 
     Connections {
