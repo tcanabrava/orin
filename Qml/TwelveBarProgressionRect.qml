@@ -42,7 +42,6 @@ Rectangle {
             id: innerQuad
             model: 4
             Rectangle {
-                id: b1
                 color: innerRectInactive
                 Layout.preferredWidth: quadWidth
                 Layout.fillHeight: true
