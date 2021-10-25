@@ -21,7 +21,7 @@ Grid {
         "V", "IV", "I", "I or IV"
     ]
 
-    function reset() {
+    function clear() {
         if (currentRectangle !== -1) {
             repeater.itemAt(currentRectangle).clear()
         }

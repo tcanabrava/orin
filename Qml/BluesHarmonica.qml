@@ -64,7 +64,8 @@ Kirigami.Page {
                     onRequestPause: harmonicasheet.pause()
                     onRequestStop: {
                         harmonicasheet.stop()
-                        twelveBarProgression.reset()
+                        chordProgression.clear()
+                        twelveBarProgression.clear()
                     }
                 }
             }
