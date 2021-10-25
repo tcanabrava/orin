@@ -16,7 +16,6 @@ class HarmonicaSheet: public QObject {
     Q_PROPERTY(QString file READ file WRITE setFile NOTIFY fileChanged)
     Q_PROPERTY(int bpm READ bpm WRITE setBpm NOTIFY bpmChanged)
     Q_PROPERTY(int bpmDelta READ bpmDelta WRITE setBpmDelta NOTIFY bpmDeltaChanged)
-    Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
 
     // Read only access from the interface
     Q_PROPERTY(int bpmTotal READ bpmTotal NOTIFY bpmTotalChanged)
@@ -55,10 +54,6 @@ private:
     // each timer tick, currIdx advances, till the music finishes.
     QTimer m_bpmTimer;
 
-    // starts emmiting soundData.
-    void start();
-    void stop();
-
     // triggered by the timer.
     void timerTick();
 
@@ -94,12 +89,12 @@ public:
 
     Q_SIGNAL void sendBeat(const HarmonicaSoundData& beat, int idx);
 
-    // Starts or stops the song.
-    bool running() const;
-    void setRunning(bool running);
-    Q_SIGNAL void runningChanged(bool running);
-
     void setSoundData(const std::vector<HarmonicaSoundData>& soundData);
+
+    // starts emmiting soundData.
+    Q_INVOKABLE void start();
+    Q_INVOKABLE void stop();
+    Q_INVOKABLE void pause();
 
     // a change in bpm will trigger a recalculate.
     void precalculate();

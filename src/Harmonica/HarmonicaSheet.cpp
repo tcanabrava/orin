@@ -39,6 +39,7 @@ void HarmonicaSheet::setFile(const QString& file)
     setSoundData(parser.data());
     setBpm(parser.bpm());
     setReady(true);
+    m_currIdx = 0;
 }
 
 void HarmonicaSheet::setReady(bool r)
@@ -91,33 +92,12 @@ void HarmonicaSheet::precalculate()
 
 }
 
-bool HarmonicaSheet::running() const
-{
-    return m_running;
-}
-
-void HarmonicaSheet::setRunning(bool r)
-{
-    if (m_running == r) {
-        return;
-    }
-
-    m_running = r;
-    Q_EMIT runningChanged(r);
-
-    if (m_running) {
-        start();
-    } else {
-        stop();
-    }
-}
-
 // starts emmiting soundData.
 void HarmonicaSheet::start()
 {
-    qreal total = 60 / (qreal) m_bpm * 1000;
-    m_currIdx = 0;
+    qreal total = 60 / (qreal) m_bpmTotal * 1000;
     m_bpmTimer.start(total);
+
     // TODO: There are three timers currently, we need to use only *one* timer
     // to control the music. One is here. other is in TwelveBarProgression and the
     // other one in TwelveBarProgressionRect
@@ -125,6 +105,12 @@ void HarmonicaSheet::start()
 }
 
 void HarmonicaSheet::stop()
+{
+    m_currIdx = 0;
+    m_bpmTimer.stop();
+}
+
+void HarmonicaSheet::pause()
 {
     m_bpmTimer.stop();
 }

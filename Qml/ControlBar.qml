@@ -5,28 +5,53 @@ import org.kde.kirigami 2.18 as Kirigami
 import QtQuick.Layouts 1.12
 
 RowLayout {
-    property bool playing: false
-    property int beatsPerMinute: 1000
+    readonly property int playing: 2
+    readonly property int pause: 1
+    readonly property int stop: 0
+
     property bool ready: false
+    property int currentState: stop
 
     signal requestPartiture()
+    signal requestPlay()
+    signal requestPause()
+    signal requestStop()
 
     Item{
         Layout.fillWidth: true
     }
+
     QQC2.Button {
-        enabled: ready
-        text: playing ? qsTr("Stop") : qsTr("Start")
+        visible: ready && currentState !== playing
+        text: qsTr("Start")
         onClicked: {
-            playing = !playing
+            currentState = playing
+            requestPlay()
         }
     }
+
     QQC2.Button {
-        enabled: !playing
-        text: qsTr("Partitures")
+        visible: currentState === playing
+        text: qsTr("Stop")
         onClicked: {
-            requestPartiture()
+            currentState = stop
+            requestStop()
         }
+    }
+
+    QQC2.Button {
+        visible: currentState === playing
+        text: qsTr("Pause")
+        onClicked: {
+            currentState = pause
+            requestPause()
+        }
+    }
+
+    QQC2.Button {
+        enabled: currentState !== playing
+        text: qsTr("Partitures")
+        onClicked: requestPartiture()
     }
 
     Item{

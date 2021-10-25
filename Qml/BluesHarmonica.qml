@@ -21,7 +21,6 @@ Kirigami.Page {
 
     Orin.HarmonicaSheet {
         id: harmonicasheet
-        running: controlBar.playing
         onSendBeat: {
             chordProgression.paintHolesSoundData(beat)
             twelveBarProgression.advance()
@@ -41,14 +40,12 @@ Kirigami.Page {
                     id: chordProgression
                     Layout.fillHeight: true
                     Layout.preferredWidth: mainLayout.width * 0.5
-                    enabled: harmonicasheet.ready
                 }
 
                 TwelveBarProgression {
                     id: twelveBarProgression
                     Layout.preferredHeight: mainLayout.height * 0.33
                     Layout.preferredWidth: mainLayout.width * 0.5
-                    playing: controlBar.playing
                     enabled: harmonicasheet.ready
                 }
             }
@@ -62,11 +59,16 @@ Kirigami.Page {
                     id: controlBar
                     ready: harmonicasheet.ready
                     Layout.fillWidth: true
-                    onRequestPartiture: {
-                        partitureOverlay.open()
+                    onRequestPartiture: partitureOverlay.open()
+                    onRequestPlay: harmonicasheet.start()
+                    onRequestPause: harmonicasheet.pause()
+                    onRequestStop: {
+                        harmonicasheet.stop()
+                        twelveBarProgression.reset()
                     }
                 }
             }
         }
     }
 }
+

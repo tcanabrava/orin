@@ -12,7 +12,6 @@ Grid {
 
     property int cellWidth: twelveBarBluesGrid.width / 4
     property int cellHeight: twelveBarBluesGrid.height / 3
-    property bool playing: false
     property int currentRectangle: -1
     property int beatCount: -1
 
@@ -22,7 +21,10 @@ Grid {
         "V", "IV", "I", "I or IV"
     ]
 
-    onPlayingChanged: {
+    function reset() {
+        if (currentRectangle !== -1) {
+            repeater.itemAt(currentRectangle).clear()
+        }
         currentRectangle = -1
         beatCount = -1
     }
