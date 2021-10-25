@@ -33,6 +33,7 @@ target_link_libraries(Orin
   PRIVATE OrinHarmonica
   PRIVATE Qt${QT_VERSION_MAJOR}::Core
   PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+  PRIVATE Qt${QT_VERSION_MAJOR}::WebEngine
 
   Qt${QT_VERSION_MAJOR}::Quick
   KF5::Kirigami2

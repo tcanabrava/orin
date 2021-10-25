@@ -3,6 +3,7 @@ import QtQuick.Window 2.15
 import QtQuick.Controls 2.15 as QQC2
 import org.kde.kirigami 2.18 as Kirigami
 import QtQuick.Layouts 1.12
+import QtWebView 1.15
 
 import orin.music.harmonica 1.0 as Orin
 
@@ -58,23 +59,22 @@ Kirigami.Page {
                     enabled: harmonicasheet.ready
                 }
             }
-            ColumnLayout {
-                Rectangle {
-
-                }
-                ControlBar {
-                    id: controlBar
-                    ready: harmonicasheet.ready
-                    Layout.fillWidth: true
-                    onRequestPartiture: partitureOverlay.open()
-                    onRequestPlay: harmonicasheet.start()
-                    onRequestPause: harmonicasheet.pause()
-                    onRequestStop: {
-                        harmonicasheet.stop()
-                        chordProgression.clear()
-                        twelveBarProgression.clear()
-                    }
-                }
+            WebView  {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
+        }
+        ControlBar {
+            id: controlBar
+            ready: harmonicasheet.ready
+            Layout.fillWidth: true
+            onRequestPartiture: partitureOverlay.open()
+            onRequestPlay: harmonicasheet.start()
+            onRequestPause: harmonicasheet.pause()
+            onRequestStop: {
+                harmonicasheet.stop()
+                chordProgression.clear()
+                twelveBarProgression.clear()
             }
         }
     }
