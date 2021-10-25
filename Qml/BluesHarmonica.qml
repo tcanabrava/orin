@@ -50,10 +50,11 @@ Kirigami.Page {
                 }
             }
             ColumnLayout {
-                Rectangle {
+                HarmonicaNoteFlow {
                     border.color: "blue"
                     Layout.preferredWidth: mainLayout.width * 0.5
                     Layout.fillHeight: true
+                    sheet: harmonicasheet
                 }
                 ControlBar {
                     id: controlBar

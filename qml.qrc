@@ -9,6 +9,8 @@
         <file>Qml/ControlBar.qml</file>
         <file>Qml/BluesHarmonicaChordProgression.qml</file>
         <file>Qml/PartitureChooserOverlay.qml</file>
+        <file>Qml/HarmonicaNoteFlow.qml</file>
+        <file>Qml/BluesHarmonicaNoteBlow.qml</file>
         <file>Images/flute.png</file>
         <file>Images/harmonica.png</file>
         <file>Images/harmonica_bg.svg</file>
