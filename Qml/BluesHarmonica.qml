@@ -10,7 +10,15 @@ import orin.music.harmonica 1.0 as Orin
 Kirigami.Page {
     // TODO: Harmonica Visualizer
     property int beatsPerMinute: 6000 / preferences.general.beats_per_minute
-
+    function loadUrl() {
+        if (harmonicasheet.ready) {
+            if (btnAbout.checked) {
+                webview.url = harmonicasheet.aboutUrl
+            } else {
+                webview.url = harmonicasheet.lyricsUrl
+            }
+        }
+    }
     PartitureChooserOverlay {
         id: partitureOverlay
         onPartitureChoosed: {
@@ -59,9 +67,40 @@ Kirigami.Page {
                     enabled: harmonicasheet.ready
                 }
             }
-            WebView  {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            ColumnLayout {
+                WebView  {
+                    id: webview
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                }
+                RowLayout {
+                    QQC2.Button {
+                        id: btnAbout
+                        checkable: true
+                        autoExclusive: true
+                        text: "About"
+                        onClicked: {
+                            loadUrl()
+                        }
+                    }
+                    QQC2.Button {
+                        id: btnLyrics
+                        checkable: true
+                        autoExclusive: true
+                        checked: true
+                        text: "Lyrics"
+                        onClicked: {
+                            loadUrl()
+                        }
+                    }
+
+                    Connections {
+                        target: harmonicasheet
+                        function onReadyChanged() {
+                            loadUrl()
+                        }
+                    }
+                }
             }
         }
         ControlBar {

@@ -23,6 +23,9 @@ class HarmonicaSheet: public QObject {
     Q_PROPERTY(int totalBeats READ totalBeats NOTIFY totalBeatsChanged)
     Q_PROPERTY(int currentBeat READ currentBeat NOTIFY currentBeatChanged)
 
+    Q_PROPERTY(QString aboutUrl READ aboutUrl NOTIFY aboutUrlChanged)
+    Q_PROPERTY(QString lyricsUrl READ lyricsUrl NOTIFY lyricsUrlChanged)
+
 private:
     // the speed of the music
     int m_bpm = 0;
@@ -50,6 +53,9 @@ private:
     std::vector<HarmonicaSoundData> m_soundData;
 
     QString m_file;
+
+    QString m_aboutUrl;
+    QString m_lyricsUrl;
 
     // each timer tick, currIdx advances, till the music finishes.
     QTimer m_bpmTimer;
@@ -83,6 +89,12 @@ public:
     Q_SIGNAL void bpmTotalChanged();
 
     Q_SIGNAL void errorMessage(const QString& message);
+
+    Q_SIGNAL QString aboutUrlChanged();
+    Q_SIGNAL QString lyricsUrlChanged();
+
+    QString aboutUrl() const;
+    QString lyricsUrl() const;
 
     bool ready() const;
     void setReady(bool ready); /* not exported to Qml */

@@ -26,6 +26,10 @@ public:
     void setFile(const QString& file);
     bool parse();
     int bpm() const;
+
+    QString lyricsUrl() const;
+    QString aboutUrl() const;
+
     QString errorString() const;
     std::vector<HarmonicaSoundData> data() const;
 

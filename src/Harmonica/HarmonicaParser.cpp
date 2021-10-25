@@ -30,13 +30,14 @@ bool HarmonicaParser::parse()
     while (!streamReader.atEnd()) {
         lineNr += 1;
 
-        const QString line = streamReader.readLine().trimmed().toLower();
+        const QString line = streamReader.readLine().trimmed();
         if (line.startsWith(QLatin1Char('#'))) {
             continue;
         }
         if (line.isEmpty()) {
             continue;
         }
+
         auto methodPtr = line.startsWith("beats_per_minute") ? &HarmonicaParser::parseBpm
                     : line.startsWith("lyrics") ? &HarmonicaParser::parseLyrics
                     : line.startsWith("about") ? &HarmonicaParser::parseAbout
@@ -55,12 +56,12 @@ bool HarmonicaParser::parseAbout(const QString& line, int lineNr)
 {
     QStringList bpmLine = line.split('=');
     if (bpmLine.count() != 2) {
-        m_errorString = QObject::tr("File malformed. lyrics = number, line = %1")
+        m_errorString = QObject::tr("File malformed. about = number, line = %1")
             .arg(lineNr);
         return false;
     }
 
-    m_aboutUrl = bpmLine[1];
+    m_aboutUrl = bpmLine[1].trimmed();
     return true;
 }
 
@@ -73,7 +74,7 @@ bool HarmonicaParser::parseLyrics(const QString& line, int lineNr)
         return false;
     }
 
-    m_lyricsUrl = bpmLine[1];
+    m_lyricsUrl = bpmLine[1].trimmed();
     return true;
 }
 
@@ -197,6 +198,16 @@ std::vector<HarmonicaSoundData> HarmonicaParser::data() const
 QString HarmonicaParser::errorString() const
 {
     return m_errorString;
+}
+
+QString HarmonicaParser::lyricsUrl() const
+{
+    return m_lyricsUrl;
+}
+
+QString HarmonicaParser::aboutUrl() const
+{
+    return m_aboutUrl;
 }
 
 #ifdef TEST_BUILD

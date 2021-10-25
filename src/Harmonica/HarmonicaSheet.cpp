@@ -38,8 +38,22 @@ void HarmonicaSheet::setFile(const QString& file)
 
     setSoundData(parser.data());
     setBpm(parser.bpm());
-    setReady(true);
+    m_lyricsUrl = parser.lyricsUrl();
+    m_aboutUrl = parser.aboutUrl();
+
     m_currIdx = 0;
+
+    setReady(true);
+}
+
+QString HarmonicaSheet::lyricsUrl() const
+{
+    return m_lyricsUrl;
+}
+
+QString HarmonicaSheet::aboutUrl() const
+{
+    return m_aboutUrl;
 }
 
 void HarmonicaSheet::setReady(bool r)
