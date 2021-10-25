@@ -40,6 +40,15 @@ Kirigami.Page {
                     id: chordProgression
                     Layout.fillHeight: true
                     Layout.preferredWidth: mainLayout.width * 0.5
+
+                    HarmonicaNoteFlow {
+                        width: 264
+                        height: parent.height
+
+                        sheet: harmonicasheet
+                        y: 29
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
                 }
 
                 TwelveBarProgression {
@@ -50,11 +59,8 @@ Kirigami.Page {
                 }
             }
             ColumnLayout {
-                HarmonicaNoteFlow {
-                    border.color: "blue"
-                    Layout.preferredWidth: mainLayout.width * 0.5
-                    Layout.fillHeight: true
-                    sheet: harmonicasheet
+                Rectangle {
+
                 }
                 ControlBar {
                     id: controlBar
