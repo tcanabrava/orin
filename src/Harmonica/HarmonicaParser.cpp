@@ -37,42 +37,14 @@ bool HarmonicaParser::parse()
         if (line.isEmpty()) {
             continue;
         }
+        auto methodPtr = line.startsWith("beats_per_minute") ? &HarmonicaParser::parseBpm
+                    : line.startsWith("lyrics") ? &HarmonicaParser::parseLyrics
+                    : line.startsWith("about") ? &HarmonicaParser::parseAbout
+                    : line.startsWith("wait") ? &HarmonicaParser::parseWait
+                    : &HarmonicaParser::parseNote;
 
-        if (line.startsWith("beats_per_minute")) {
-            if (parseBpm(line, lineNr)) {
-                continue;
-            } else {
-                return false;
-            }
-        }
-
-        if (line.startsWith("lyrics")) {
-            if (parseLyrics(line, lineNr)) {
-                continue;
-            } else {
-                return false;
-            }
-        }
-
-        if (line.startsWith("about")) {
-            if (parseAbout(line, lineNr)) {
-                continue;
-            } else {
-                return false;
-            }
-        }
-
-        if (line.startsWith("wait")) {
-            if (parseWait(line, lineNr)) {
-                continue;
-            } else {
-                return false;
-            }
-        }
-
-        if (parseNote(line, lineNr)) {
-            continue;
-        } else {
+        const bool result = (this->*methodPtr)(line, lineNr);
+        if (!result) {
             return false;
         }
     }
