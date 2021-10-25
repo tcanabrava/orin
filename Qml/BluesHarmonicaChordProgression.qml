@@ -10,11 +10,9 @@ Rectangle {
     property color blowColor: "red"
     property color drawColor: "green"
 
-    property variant holes: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
-
     function clear() {
-        for (let i = 0; i < holes.length; i++) {
-            holes[i].color = silentColor;
+        for (let i = 0; i < holes.count; i++) {
+            holes.itemAt(i).color = silentColor;
         }
     }
 
@@ -23,7 +21,7 @@ Rectangle {
         for (let idx in soundData.holes) {
             // holes starts with idx 1.
             let hole_idx = soundData.holes[idx] - 1
-            holes[hole_idx].color = drawColor
+            holes.itemAt(hole_idx).color = drawColor
         }
     }
 
@@ -40,7 +38,7 @@ Rectangle {
             if (Number.isNaN(index)) {
                 return
             }
-            holes[index].color = type === "draw" ? drawColor : blowColor
+            holes.itemAt(index).color = type === "draw" ? drawColor : blowColor
         }
     }
 
@@ -61,15 +59,10 @@ Rectangle {
         y: 29
 
         spacing: 13
-        Rectangle { id: r1;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r2;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r3;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r4;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r5;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r6;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r7;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r8;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r9;  color: silentColor; width: 10; height: 18}
-        Rectangle { id: r10; color: silentColor; width: 10; height: 18}
+        Repeater {
+            id: holes
+            model: 10
+            Rectangle { color: silentColor; width: 10; height: 18}
+        }
     }
 }
