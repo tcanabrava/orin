@@ -84,6 +84,12 @@ void HarmonicaSheet::setBpmDelta(int delta)
 void HarmonicaSheet::setSoundData(const std::vector<HarmonicaSoundData>& soundData)
 {
     m_soundData = soundData;
+    m_totalBeats = (int) soundData.size();
+    Q_EMIT totalBeatsChanged(m_totalBeats);
+}
+
+HarmonicaSoundData HarmonicaSheet::beatAt(int idx) {
+    return m_soundData[idx];
 }
 
 // a change in bpm will trigger a recalculate.

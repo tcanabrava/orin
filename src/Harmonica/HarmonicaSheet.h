@@ -69,7 +69,8 @@ public:
     Q_SIGNAL void bpmChanged();
 
     int totalBeats() const;
-    Q_SIGNAL void totalBeatsChanged();
+    Q_SIGNAL void totalBeatsChanged(int totalBeats);
+    Q_INVOKABLE HarmonicaSoundData beatAt(int idx);
 
     int currentBeat() const;
     Q_SIGNAL void currentBeatChanged();
