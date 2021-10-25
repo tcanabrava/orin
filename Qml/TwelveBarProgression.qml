@@ -13,9 +13,14 @@ Grid {
     property int cellWidth: twelveBarBluesGrid.width / 4
     property int cellHeight: twelveBarBluesGrid.height / 3
     property bool playing: false
-    property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
     property int currentRectangle: -1
     property int beatCount: -1
+
+    property variant texts: [
+        "I", "I", "I", "I",
+        "IV", "IV", "I", "I",
+        "V", "IV", "I", "I or IV"
+    ]
 
     onPlayingChanged: {
         currentRectangle = -1
@@ -27,84 +32,21 @@ Grid {
         beatCount = (beatCount + 1) % 4;
         if (beatCount === 0) {
             if (currentRectangle !== -1) {
-                rectangles[currentRectangle].clear()
+                repeater.itemAt(currentRectangle).clear()
             }
             currentRectangle = (currentRectangle + 1) % 12
         }
-        rectangles[currentRectangle].advance()
+        repeater.itemAt(currentRectangle).advance()
         console.log("Beat Count", beatCount, "Current Rect", currentRectangle)
     }
 
-    TwelveBarProgressionRect {
-        id: r1
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r2
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r3
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r4
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r5
-        text: "IV"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r6
-        text: "IV"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r7
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r8
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r9
-        text: "V"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r10
-        text: "IV"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r11
-        text: "I"
-        width: cellWidth
-        height: cellHeight
-    }
-    TwelveBarProgressionRect {
-        id: r12
-        text: "I or IV"
-        width: cellWidth
-        height: cellHeight
+    Repeater {
+        id: repeater
+        model: 12
+        TwelveBarProgressionRect {
+            text: twelveBarBluesGrid.texts[index]
+            width: cellWidth
+            height: cellHeight
+        }
     }
 }
