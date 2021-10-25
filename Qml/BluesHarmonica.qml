@@ -23,7 +23,8 @@ Kirigami.Page {
         id: harmonicasheet
         running: controlBar.playing
         onSendBeat: {
-            chordProgression.paintHolesSoundData(beat);
+            chordProgression.paintHolesSoundData(beat)
+            twelveBarProgression.advance()
         }
     }
 
@@ -44,11 +45,11 @@ Kirigami.Page {
                 }
 
                 TwelveBarProgression {
+                    id: twelveBarProgression
                     Layout.preferredHeight: mainLayout.height * 0.33
                     Layout.preferredWidth: mainLayout.width * 0.5
                     playing: controlBar.playing
                     enabled: harmonicasheet.ready
-                    bpm: harmonicasheet.bpmTotal
                 }
             }
             ColumnLayout {

@@ -6,10 +6,6 @@ import QtQuick.Layouts 1.12
 
 Rectangle {
     id: rect
-    property bool playing: false
-    property int bpm: 0
-    property int beatsPerMinute: (60000 / bpm)
-
     property variant beats: [b1, b2, b3, b4]
     property int currentBeat: 0
     property double quadWidth: width / 4
@@ -19,31 +15,20 @@ Rectangle {
 
     state: "inactive"
 
-    onPlayingChanged: {
-        rect.state = rect.state == "inactive" ? "active" : "inactive";
+    function clear() {
+        rect.state = rect.state == "inactive";
+    }
+
+    function advance() {
+        beats[currentBeat].color = innerRectInactive;
+        currentBeat = (currentBeat + 1) % 4
+        beats[currentBeat].color = innerRectActive
     }
 
     Text {
         id: internalText
         anchors.centerIn: parent
         text: parent.text
-    }
-
-    Timer {
-        id: internalTimer
-        running: parent.playing
-        repeat: true
-        interval: beatsPerMinute
-        onRunningChanged: {
-            beats[currentBeat].color = running ? innerRectActive : innerRectInactive
-            currentBeat = 0
-        }
-
-        onTriggered: {
-            beats[currentBeat].color = innerRectInactive;
-            currentBeat = (currentBeat + 1) % 4
-            beats[currentBeat].color = innerRectActive
-        }
     }
 
     RowLayout {

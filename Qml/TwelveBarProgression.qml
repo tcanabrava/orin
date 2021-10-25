@@ -14,117 +14,95 @@ Grid {
     property int cellHeight: twelveBarBluesGrid.height / 3
     property bool playing: false
     property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
-    property int currentRectangle: 0;
-    property int bpm: 0
+    property int currentRectangle: 0
+    property int beatCount: -1
 
     onPlayingChanged: {
-        rectangles[currentRectangle].playing = playing
         currentRectangle = 0
+        beatCount = -1;
     }
 
-    Timer {
-        onIntervalChanged: {
-            console.log("Interval set to", bpm)
-        }
-
-        running: parent.playing
-        repeat: true
-        interval: (60000 / bpm) * 4
-        onTriggered: {
-            console.log("indice ", currentRectangle)
-            if (currentRectangle != -1) {
-                rectangles[currentRectangle].playing = false;
-            }
+    // Try to come up a way to make this more `QML` in the future.
+    function advance() {
+        beatCount = (beatCount + 1) % 4;
+        if (beatCount === 0) {
+            rectangles[currentRectangle].clear()
             currentRectangle = (currentRectangle + 1) % 12
-            if (currentRectangle != -1) {
-                rectangles[currentRectangle].playing = true
-            }
         }
+        rectangles[currentRectangle].advance()
+        console.log("Beat Count", beatCount, "Current Rect", currentRectangle)
     }
 
-    // TODO: Allow to change text.
     TwelveBarProgressionRect {
         id: r1
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r2
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r3
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r4
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r5
         text: "IV"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r6
         text: "IV"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r7
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r8
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r9
         text: "V"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r10
         text: "IV"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r11
         text: "I"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
     TwelveBarProgressionRect {
         id: r12
         text: "I or IV"
         width: cellWidth
         height: cellHeight
-        bpm: parent.bpm
     }
 }
