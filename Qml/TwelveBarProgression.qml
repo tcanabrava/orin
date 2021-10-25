@@ -14,19 +14,21 @@ Grid {
     property int cellHeight: twelveBarBluesGrid.height / 3
     property bool playing: false
     property variant rectangles: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12]
-    property int currentRectangle: 0
+    property int currentRectangle: -1
     property int beatCount: -1
 
     onPlayingChanged: {
-        currentRectangle = 0
-        beatCount = -1;
+        currentRectangle = -1
+        beatCount = -1
     }
 
     // Try to come up a way to make this more `QML` in the future.
     function advance() {
         beatCount = (beatCount + 1) % 4;
         if (beatCount === 0) {
-            rectangles[currentRectangle].clear()
+            if (currentRectangle !== -1) {
+                rectangles[currentRectangle].clear()
+            }
             currentRectangle = (currentRectangle + 1) % 12
         }
         rectangles[currentRectangle].advance()

@@ -7,7 +7,7 @@ import QtQuick.Layouts 1.12
 Rectangle {
     id: rect
     property variant beats: [b1, b2, b3, b4]
-    property int currentBeat: 0
+    property int currentBeat: -1
     property double quadWidth: width / 4
     property color innerRectInactive: "transparent"
     property color innerRectActive: "#880088FF"
@@ -16,11 +16,16 @@ Rectangle {
     state: "inactive"
 
     function clear() {
-        rect.state = rect.state == "inactive";
+        rect.state = "inactive";
+        beats[currentBeat].color = innerRectInactive
+        currentBeat = -1
     }
 
     function advance() {
-        beats[currentBeat].color = innerRectInactive;
+        rect.state = "active";
+        if (currentBeat !== -1) {
+            beats[currentBeat].color = innerRectInactive;
+        }
         currentBeat = (currentBeat + 1) % 4
         beats[currentBeat].color = innerRectActive
     }
