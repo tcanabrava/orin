@@ -8,9 +8,6 @@ import QtWebView 1.15
 import orin.music.harmonica 1.0 as Orin
 
 Kirigami.Page {
-    // TODO: Harmonica Visualizer
-    property int beatsPerMinute: 6000 / preferences.general.beats_per_minute
-
     PartitureChooserOverlay {
         id: partitureOverlay
         onPartitureChoosed: {
