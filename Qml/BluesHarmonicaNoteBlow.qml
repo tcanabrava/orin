@@ -3,13 +3,15 @@ import QtQuick.Shapes 1.15
 import orin.music.harmonica 1.0 as Orin
 
 Item {
+    id: root
     property bool tremmolo: false
     property bool bend: false
     property bool wawah: false
     property int direction: Orin.HarmonicaSoundData.NONE
+    property int beatCount: 1
 
     width: 10
-    height: 17
+    height: 18 * beatCount
     layer.enabled: true
     layer.samples: 4
 
@@ -22,8 +24,8 @@ Item {
             strokeWidth: 0
             strokeColor: "blue"
             startX: 0; startY: 0
-            PathLine { x: 5; y: 18 }
-            PathLine { x: 10; y: 0 }
+            PathLine { x: root.width/2; y: root.height }
+            PathLine { x: root.width; y: 0 }
             PathLine { x: 0; y: 0 }
         }
     }
@@ -36,10 +38,10 @@ Item {
             fillColor: "red"
             strokeWidth: 0
             strokeColor: "red"
-            startX: 0; startY: 18
-            PathLine { x: 5; y: 0 }
-            PathLine { x: 10; y: 18 }
-            PathLine { x: 0; y: 18 }
+            startX: 0; startY: root.height
+            PathLine { x: root.width/2; y: 0 }
+            PathLine { x: root.width; y: root.height }
+            PathLine { x: 0; y: root.height }
         }
     }
 }
