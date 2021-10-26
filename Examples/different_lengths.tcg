@@ -1,0 +1,48 @@
+beats_per_minute = 60
+about = https://en.wikipedia.org/wiki/Mannish_Boy
+lyrics = https://www.azlyrics.com/lyrics/muddywaters/mannishboy.html
+
+# commands:
+# wait bpm_count
+# list_of_holes [ligature] blow|draw bpm_count
+#
+# notes:
+# whole            (4    beats)
+# half             (2    beats)
+# quarter          (1    beat)
+# eighth           (1/2  beat)
+# sixteenth        (1/4  beat)
+# thirty-second     (1/8  beat)
+# sixtyfourth      (1/16 beat)
+#
+#
+# Use the numeric representation.
+
+# First quadrant
+1 blow 1
+1 ligature blow 1
+1 ligature blow 1
+1 ligature blow 1
+
+# Second quadrant
+2 draw 1
+2 ligature draw 1
+
+3 draw 1
+3 ligature draw 1
+
+#third quadrant
+1 draw 1
+2 draw 1
+3 draw 1
+4 draw 1
+
+#fourt quadrant
+5 draw 1/2
+5 draw 1/2
+5 draw 1/2
+5 draw 1/2
+5 draw 1/2
+5 draw 1/2
+5 draw 1/2
+5 draw 1/2
