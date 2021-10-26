@@ -14,11 +14,14 @@ Rectangle {
     property QtObject sheet
     property int spacing: 13
 
+    property variant notes : []
     function createSpriteObject(row, column, soundType) {
         let component = Qt.createComponent("BluesHarmonicaNoteBlow.qml");
         let sprite = component.createObject(root, {direction: soundType});
         let verticalSpacing = row * spacing + row * sprite.height;
         let horizontalSpacing = column * spacing + column * sprite.width;
+
+        notes.push(sprite)
         sprite.x = horizontalSpacing
         sprite.y = verticalSpacing
     }
@@ -33,9 +36,11 @@ Rectangle {
     }
 
     function clearSpriteObjects() {
-        for (let idx in children) {
-            children[idx].destroy()
+        for (let idx in notes) {
+            let child = notes[idx]
+            child.destroy()
         }
+        notes = []
     }
 
     Connections {
