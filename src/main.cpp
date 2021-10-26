@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QtWebEngine>
+#include <QSurfaceFormat>
 
 #include "Harmonica/HarmonicaSheet.h"
 
@@ -14,12 +15,14 @@ int main(int argc, char *argv[])
 #endif
     QtWebEngine::initialize();
 
+
     QApplication app(argc, argv);
     app.setOrganizationName("Tomaz");
     app.setOrganizationDomain("Canabrava");
 
-
     qmlRegisterType<HarmonicaSheet>("orin.music.harmonica", 1,0, "HarmonicaSheet");
+    qmlRegisterUncreatableType<HarmonicaSoundData>("orin.music.harmonica", 1,0, "HarmonicaSoundData", "Can use, not create");
+
     qRegisterMetaType<HarmonicaSoundData>("HarmonicaSoundData");
 
     QQmlApplicationEngine engine;

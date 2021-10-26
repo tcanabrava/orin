@@ -1,14 +1,12 @@
 import QtQuick 2.15
 import QtQuick.Shapes 1.15
+import orin.music.harmonica 1.0 as Orin
 
 Item {
-    readonly property int blow: 0
-    readonly property int draw: 1
-
     property bool tremmolo: false
     property bool bend: false
     property bool wawah: false
-    property int direction: blow
+    property int direction: Orin.HarmonicaSoundData.NONE
 
     width: 10
     height: 17
@@ -17,7 +15,7 @@ Item {
 
     Shape {
         id: drawShape
-        visible: direction === draw
+        visible: direction === Orin.HarmonicaSoundData.DRAW
         anchors.fill: parent
         ShapePath {
             fillColor: "blue"
@@ -32,7 +30,7 @@ Item {
 
     Shape {
         id: blowShape
-        visible: direction === blow
+        visible: direction === Orin.HarmonicaSoundData.BLOW
         anchors.fill: parent
         ShapePath {
             fillColor: "red"

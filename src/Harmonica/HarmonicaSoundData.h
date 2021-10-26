@@ -17,6 +17,7 @@
 struct HarmonicaSoundData {
     Q_GADGET
     Q_PROPERTY(QList<int> holes MEMBER holes)
+    Q_PROPERTY(SoundType soundType MEMBER soundType)
 
 public:
     enum SoundType {

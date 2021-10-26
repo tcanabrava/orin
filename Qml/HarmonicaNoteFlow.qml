@@ -14,12 +14,11 @@ Rectangle {
     property QtObject sheet
     property int spacing: 13
 
-    function createSpriteObject(row, column) {
+    function createSpriteObject(row, column, soundType) {
         let component = Qt.createComponent("BluesHarmonicaNoteBlow.qml");
-        let sprite = component.createObject(root);
+        let sprite = component.createObject(root, {direction: soundType});
         let verticalSpacing = row * spacing + row * sprite.height;
-        let horizontalSpacing = column * spacing + column * sprite.width ;
-
+        let horizontalSpacing = column * spacing + column * sprite.width;
         sprite.x = horizontalSpacing
         sprite.y = verticalSpacing
     }
@@ -28,7 +27,7 @@ Rectangle {
         for (let row = 0; row < sheet.totalBeats; row += 1) {
             let soundData = sheet.beatAt(row);
             for (let hole = 0; hole < soundData.holes.length; hole += 1) {
-                createSpriteObject(row, soundData.holes[hole])
+                createSpriteObject(row, soundData.holes[hole], soundData.soundType)
             }
         }
     }
