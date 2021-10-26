@@ -22,31 +22,20 @@ Kirigami.Page {
 
     signal instrumentSelected(string instrumentPage)
 
-    ColumnLayout {
-        anchors.centerIn: parent
+
+    Kirigami.CardsListView {
+        id: instrumentView
         width: 300
         height: 200
+        anchors.centerIn: parent
 
-        Rectangle {
-            border.color: "black"
-            border.width: 1
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-
-            Kirigami.CardsListView {
-                id: instrumentView
-                anchors.fill: parent
-                anchors.margins: 1
-
-                // TODO: Load the model via plugins.
-                model: instruments
-                delegate: Kirigami.AbstractCard {
-                    contentItem: Kirigami.BasicListItem {
-                        label: modelData.name
-                        icon: ":/Images/" + modelData.icon
-                        onClicked: instrumentSelected(modelData.qmlPage)
-                    }
-                }
+        // TODO: Load the model via plugins.
+        model: instruments
+        delegate: Kirigami.AbstractCard {
+            contentItem: Kirigami.BasicListItem {
+                label: modelData.name
+                icon: ":/Images/" + modelData.icon
+                onClicked: instrumentSelected(modelData.qmlPage)
             }
         }
     }
