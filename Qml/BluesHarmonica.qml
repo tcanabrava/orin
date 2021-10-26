@@ -23,6 +23,9 @@ Kirigami.Page {
             chordProgression.paintHolesSoundData(beat)
             twelveBarProgression.advance()
         }
+        onErrorMessage: {
+            errorText.text = message
+        }
     }
 
     ColumnLayout {
@@ -30,6 +33,9 @@ Kirigami.Page {
         Text {
             id: title
             Layout.alignment: Qt.AlignHCenter
+        }
+        Text {
+            id: errorText
         }
         QQC2.SplitView {
             orientation: Qt.Horizontal

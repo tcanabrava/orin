@@ -31,7 +31,7 @@ void HarmonicaSheet::setFile(const QString& file)
     if (!parsed) {
         setSoundData({});
         setBpm(0);
-        Q_EMIT errorMessage(tr("Error parsing file"));
+        Q_EMIT errorMessage(tr("Error parsing file: %1").arg(parser.errorString()));
         setReady(false);
         return;
     }
