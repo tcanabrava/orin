@@ -27,18 +27,22 @@ Kirigami.Page {
 
     ColumnLayout {
         anchors.fill: parent
-        id: mainLayout
         Text {
             id: title
             Layout.alignment: Qt.AlignHCenter
         }
-        RowLayout {
+        QQC2.SplitView {
+            orientation: Qt.Horizontal
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             ColumnLayout {
+                id: mainLayout
+                QQC2.SplitView.minimumWidth: 400
+
                 BluesHarmonicaChordProgression {
                     id: chordProgression
                     Layout.fillHeight: true
-                    Layout.preferredWidth: mainLayout.width * 0.5
-
+                    Layout.fillWidth: true
                     HarmonicaNoteFlow {
                         width: 264
                         height: parent.height
@@ -52,13 +56,11 @@ Kirigami.Page {
                 TwelveBarProgression {
                     id: twelveBarProgression
                     Layout.preferredHeight: mainLayout.height * 0.33
-                    Layout.preferredWidth: mainLayout.width * 0.5
+                    Layout.preferredWidth: mainLayout.width
                     enabled: harmonicasheet.ready
                 }
             }
             SheetInformation {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
                 sheet: harmonicasheet
             }
         }
