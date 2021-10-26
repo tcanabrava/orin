@@ -9,15 +9,19 @@ import orin.music.harmonica 1.0 as Orin
 Rectangle {
     id: root
 
+    readonly property int spacing: 13
+
+    // Todo: duplicated with BluesHarmonicaNoteBlow - deduplicate
+    readonly property int baseHeight: 18
+
+    property QtObject sheet
+    property variant notes : []
+
     border.color: "blue"
     color: "transparent"
     width: parent.width
     height: childrenRect.height
 
-    property QtObject sheet
-    property int spacing: 13
-
-    property variant notes : []
     function createSpriteObject(row, column, soundType) {
         let component = Qt.createComponent("BluesHarmonicaNoteBlow.qml");
         let sprite = component.createObject(root, {direction: soundType});
