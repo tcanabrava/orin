@@ -8,9 +8,12 @@ import orin.music.harmonica 1.0 as Orin
 
 Rectangle {
     id: root
-    clip: true
 
+    border.color: "blue"
     color: "transparent"
+    width: parent.width
+    height: childrenRect.height
+
     property QtObject sheet
     property int spacing: 13
 

@@ -49,13 +49,20 @@ Kirigami.Page {
                     id: chordProgression
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    HarmonicaNoteFlow {
-                        width: 264
-                        height: parent.height
-
-                        sheet: harmonicasheet
-                        y: 29
+                    Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
+                        border.color: "red"
+                        color: "transparent"
+                        width: 264
+                        y: 29
+                        height: parent.height - 100
+                        clip: true
+
+                        HarmonicaNoteFlow {
+                            x: 0
+                            sheet: harmonicasheet
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
                     }
                 }
 
