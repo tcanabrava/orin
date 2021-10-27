@@ -2,7 +2,7 @@ import QtQuick 2.15
 import QtQuick.Shapes 1.15
 import orin.music.harmonica 1.0 as Orin
 
-Rectangle {
+Item {
     id: root
     readonly property int baseHeight: 18
 
@@ -12,11 +12,10 @@ Rectangle {
     property int direction: Orin.HarmonicaSoundData.NONE
     property int beatCount: 1
 
-    border.color: "black"
-    color: "transparent"
-
     width: 10
     height: baseHeight * beatCount
+
+    // This allows the shapes to be anti-aliased.
     layer.enabled: true
     layer.samples: 4
 

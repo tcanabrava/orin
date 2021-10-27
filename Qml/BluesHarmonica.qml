@@ -55,13 +55,11 @@ Kirigami.Page {
                     id: chordProgression
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    Rectangle {
+                    Item {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        border.color: "red"
-                        color: "transparent"
                         width: 264
                         y: 29
-                        height: parent.height - 100
+                        height: parent.height - 10
                         clip: true
                         Timer {
                             id: updateTimer

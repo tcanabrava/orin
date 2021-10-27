@@ -6,7 +6,7 @@ import QtQuick.Layouts 1.12
 
 import orin.music.harmonica 1.0 as Orin
 
-Rectangle {
+Item {
     id: root
 
     readonly property int spacing: 13
@@ -17,8 +17,6 @@ Rectangle {
     property QtObject sheet
     property variant notes : []
 
-    border.color: "blue"
-    color: "transparent"
     width: parent.width
     height: childrenRect.height
 
