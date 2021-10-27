@@ -14,6 +14,8 @@ Kirigami.Page {
     property double delta_increment: ((noteFlow.spacing + noteFlow.baseHeight) * updateTimer.interval) / beatTime
     property int timeCounter: 0
 
+    title: qsTr("Blues Harmonica")
+
     PartitureChooserOverlay {
         id: partitureOverlay
         onPartitureChoosed: {
