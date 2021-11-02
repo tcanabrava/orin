@@ -128,7 +128,12 @@ bool HarmonicaParser::parseWait(const QString& line, int lineNr)
 
 bool HarmonicaParser::parseNote(const QString& line, int lineNr)
 {
-    QStringList lineSplit = line.split(' ', Qt::SkipEmptyParts);
+    #if (QT_VERSION <= QT_VERSION_CHECK(5, 14, 0))
+        QStringList lineSplit = line.split(' ', QString::SkipEmptyParts);
+    #else
+        QStringList lineSplit = line.split(' ', Qt::SkipEmptyParts);
+    #endif
+
     if (lineSplit.count() < 2 || lineSplit.count() > 5) {
         m_errorString = QObject::tr("Number of elements on the note is incorrect, line = %1")
             .arg(lineNr);
@@ -136,7 +141,12 @@ bool HarmonicaParser::parseNote(const QString& line, int lineNr)
     }
 
     // first part
-    QStringList holes = lineSplit[0].split(';', Qt::SkipEmptyParts);
+    #if (QT_VERSION <= QT_VERSION_CHECK(5, 14, 0)) 
+        QStringList holes = lineSplit[0].split(';', QString::SkipEmptyParts);
+    #else
+        QStringList holes = lineSplit[0].split(';', Qt::SkipEmptyParts);
+    #endif
+    
     QList<int> holesResult;
     for (const QString& stringHole : holes) {
         bool conversionOk = false;
