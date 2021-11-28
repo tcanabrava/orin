@@ -1,0 +1,116 @@
+beats_per_minute = 180
+about = https://en.wikipedia.org/wiki/Mannish_Boy
+lyrics = https://www.azlyrics.com/lyrics/muddywaters/mannishboy.html
+
+# commands:
+# wait bpm_count
+# list_of_holes [ligature] blow|draw bpm_count
+#
+# notes:
+# whole            (4    beats)
+# half             (2    beats)
+# quarter          (1    beat)
+# eighth           (1/2  beat)
+# sixteenth        (1/4  beat)
+# thirty-second     (1/8  beat)
+# sixtyfourth      (1/16 beat)
+#
+#
+# Use the numeric representation.
+
+# First quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+# second quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+# third quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+# fourth quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+
+# fifth quadrant
+4 draw 1/2
+5 blow 1/2
+5 draw 1/2
+4 draw 1/2
+wait 1
+wait 1
+
+# sixth quadrant
+4 draw 1/2
+5 blow 1/2
+5 draw 1/2
+4 draw 1/2
+wait 1
+wait 1
+
+# seventh quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+# eighth quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+# nineth quadrant
+4 draw 1/2
+6 blow 1/2
+5 draw 1/2
+4 draw 1/2
+wait 1
+wait 1
+
+# tenth quadrant
+4 draw 1/2
+5 blow 1/2
+5 draw 1/2
+4 draw 1/2
+wait 1
+wait 1
+
+# eleventh quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
+
+# twelvesh quadrant
+2 draw 1/2
+4 blow 1/2
+3 draw 1/2
+2 draw 1/2
+wait 1
+wait 1
