@@ -136,6 +136,16 @@ pub(super) enum ModeButton {
 #[derive(Component, Clone, Copy, PartialEq, Debug)]
 pub(super) struct TimelineToolButton(pub(super) TimelineTool);
 
+/// The Undo/Redo transport buttons — plain click actions (not a mode
+/// toggle, hence not `ModeButton`), dimmed by `panel::
+/// update_undo_redo_buttons` when `undo::UndoHistory::can_undo`/`can_redo`
+/// is false rather than left clickable-but-inert.
+#[derive(Component, Clone, Copy, PartialEq, Debug)]
+pub(super) enum UndoRedoButton {
+    Undo,
+    Redo,
+}
+
 /// Wraps the note-editing button cluster (Blow, Draw, Bend, ...), shown only
 /// in [`Mode::Edit`]. See `update_mode_visibility`.
 #[derive(Component)]
@@ -203,6 +213,9 @@ pub(super) fn init_state(mut commands: Commands, existing: Option<Res<EditorStat
     }
     commands.insert_resource(Playhead::default());
     commands.insert_resource(Scroll::default());
+    // Always fresh, even if `EditorState` itself persisted from a previous
+    // visit — see `undo::UndoHistory`'s own doc comment for why.
+    commands.insert_resource(super::undo::UndoHistory::default());
 }
 
 pub(super) fn force_grid_rebuild(mut state: ResMut<EditorState>) {

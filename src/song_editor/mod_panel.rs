@@ -165,6 +165,40 @@ pub(super) fn spawn_mod_panel(
                     },
                 );
 
+                panel_separator(transport);
+
+                // Undo/redo are plain click actions (not a mode toggle),
+                // so `transport_button` rather than `mode_button` — and a
+                // no-op rather than visually disabled when the relevant
+                // stack is empty, the same "clicking does nothing" shape
+                // `UndoHistory::undo`/`redo` already have. See
+                // `undo::UndoHistory`'s doc comment for exactly what
+                // counts as an undoable edit.
+                transport_button(
+                    transport,
+                    loc.msg("editor-undo"),
+                    loc.msg("editor-undo-tooltip"),
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>,
+                     mut state: ResMut<EditorState>,
+                     mut history: ResMut<super::undo::UndoHistory>| {
+                        history.undo(&mut state);
+                    },
+                )
+                .insert(super::ui::UndoRedoButton::Undo);
+                transport_button(
+                    transport,
+                    loc.msg("editor-redo"),
+                    loc.msg("editor-redo-tooltip"),
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>,
+                     mut state: ResMut<EditorState>,
+                     mut history: ResMut<super::undo::UndoHistory>| {
+                        history.redo(&mut state);
+                    },
+                )
+                .insert(super::ui::UndoRedoButton::Redo);
+
                 // Dev-only ("--features dev") benchmark ground-truth mode —
                 // see `expected_notes`'s own module docs.
                 #[cfg(feature = "dev")]

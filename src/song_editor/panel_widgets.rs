@@ -208,12 +208,17 @@ pub(super) fn panel_separator(panel: &mut ChildSpawnerCommands) {
     ));
 }
 
-pub(super) fn transport_button<M: 'static>(
-    panel: &mut ChildSpawnerCommands,
+/// Returns the spawned button's `EntityCommands` (unlike `mode_button`,
+/// which always inserts its own `kind` marker) so the rare caller that
+/// needs to attach something extra — e.g. `mod_panel`'s Undo/Redo buttons,
+/// dimmed by `panel::update_undo_redo_buttons` — can `.insert(...)` onto
+/// it; every other caller just ignores the return value, as before.
+pub(super) fn transport_button<'a, M: 'static>(
+    panel: &'a mut ChildSpawnerCommands,
     label: LocalizedStr,
     tooltip: LocalizedStr,
     bg: Color,
     on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
-) {
-    spawn_button_shell(panel, bg, label, tooltip, on_click);
+) -> EntityCommands<'a> {
+    spawn_button_shell(panel, bg, label, tooltip, on_click)
 }

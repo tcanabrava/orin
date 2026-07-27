@@ -423,6 +423,28 @@ pub(super) fn handle_copy_paste(
     }
 }
 
+/// `Ctrl+Z` undoes the last content edit (note placement/move/resize/
+/// delete, paste, Erase/Remove, a whole recording take, ...); `Ctrl+Y`
+/// redoes it — see `undo::UndoHistory` for exactly what counts as an edit
+/// and why. Same `state.focus`/`ctrl_held` gating as
+/// [`handle_copy_paste`], so typing into a meta-form text field never
+/// steals these from whatever text editing a browser/OS-level Ctrl+Z might
+/// otherwise mean there.
+pub(super) fn handle_undo_redo(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut state: ResMut<EditorState>,
+    mut history: ResMut<super::undo::UndoHistory>,
+) {
+    if state.focus.is_some() || !ctrl_held(&keyboard) {
+        return;
+    }
+    if keyboard.just_pressed(KeyCode::KeyZ) {
+        history.undo(&mut state);
+    } else if keyboard.just_pressed(KeyCode::KeyY) {
+        history.redo(&mut state);
+    }
+}
+
 pub(super) fn type_into_field(
     mut keys: MessageReader<KeyboardInput>,
     mut state: ResMut<EditorState>,

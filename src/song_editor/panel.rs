@@ -8,8 +8,9 @@ use super::state::{ContentKind, Dir, EditorState, Expr, Field, HarmonicaKind, Mo
 use super::ui::{
     BendDot, ContentKindText, EditModeGroup, ExpectedNotesGroup, HarmonicaKindText, MetaFieldBox,
     MetaFieldText, ModButton, ModButtonLabel, ModeButton, PlayModeGroup, RecordModeGroup,
-    StatusMsg, TimelineToolButton,
+    StatusMsg, TimelineToolButton, UndoRedoButton,
 };
+use super::undo::UndoHistory;
 use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 use bevy_fluent::prelude::Localization;
@@ -146,6 +147,29 @@ pub(super) fn update_timeline_tool_buttons(
             colors.btn_active
         } else {
             colors.btn_bg
+        };
+    }
+}
+
+/// Dims the Undo/Redo buttons when their respective stack is empty —
+/// clicking still no-ops either way (see `undo::UndoHistory::undo`/`redo`'s
+/// own doc comments), but a visibly inert button is a clearer signal than
+/// a fully-lit one that silently does nothing.
+pub(super) fn update_undo_redo_buttons(
+    history: Res<UndoHistory>,
+    theme: Res<LoadedTheme>,
+    mut buttons: Query<(&UndoRedoButton, &mut BackgroundColor)>,
+) {
+    let colors = theme.song_editor_colors();
+    for (kind, mut bg) in &mut buttons {
+        let available = match kind {
+            UndoRedoButton::Undo => history.can_undo(),
+            UndoRedoButton::Redo => history.can_redo(),
+        };
+        bg.0 = if available {
+            colors.btn_bg
+        } else {
+            colors.btn_bg.with_alpha(0.35)
         };
     }
 }

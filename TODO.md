@@ -10,17 +10,6 @@ Found on a harmonica-player/audio/UX pass over the editor (2026-07-27);
 see `CLAUDE.md`'s "Song editor: known gaps" bullet for the full detail
 behind each. Roughly in priority order:
 
-- [ ] **No undo/redo.** `Ctrl+Z`/`Ctrl+Y` bind to nothing today — only
-  `Ctrl+C`/`Ctrl+V` exist. This is the single biggest missing safety net
-  for a note editor; it's also *why* Erase/Remove need a confirm dialog
-  today (`dialogs::confirm_dialog`) — a real undo stack would cover
-  ordinary placement/move/delete mistakes too, not just range operations,
-  and would let the confirm dialog go away if that's ever judged more
-  friction than it's worth. `EditorState`'s note list is a plain `Vec`, so
-  a snapshot-based history (push a clone before each mutation) should be
-  cheap; the harder part is deciding which state belongs in the
-  snapshot (notes + tempo map, not transient things like `Scroll` or
-  `TimelineSelection`).
 - [ ] **No metronome or count-in in Record/Play/Practice.**
   `gameplay::metronome_overlay` (with shuffle-feel support) is fully built
   and used everywhere else in the game — Jam Session, scored gameplay, the

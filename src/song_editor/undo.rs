@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: MIT
+
+//! Undo/redo for the note grid — `Ctrl+Z`/`Ctrl+Y` (see
+//! `interaction::handle_undo_redo`) step back/forward through a history of
+//! the editor's *content*: [`EditorState::notes`]/[`EditorState::
+//! tempo_changes`], the two places a mistake is destructive and not
+//! trivially undone by clicking again, unlike a click-to-cycle meta field
+//! (Key, Position, Scale, ...) or a plain toggle. Every other
+//! `EditorState` field (`selected`, `scroll_beat`, `dragging`,
+//! `timeline_tool`, meta text fields, ...) is deliberately excluded from
+//! the snapshot — undoing a note edit shouldn't also rewind an unrelated
+//! scroll position or half-typed field.
+//!
+//! Snapshot-based, not command-based: [`track_changes`] runs every frame
+//! `EditorState` changes and compares the current content against the
+//! last-seen snapshot, pushing the *previous* one onto the undo stack only
+//! when they actually differ. This needs no instrumentation at every
+//! note-mutating call site (a grid click, a drag release, Delete, paste,
+//! Erase/Remove, MIDI import, ...) — whichever of them just ran, the diff
+//! catches it on the very next check. The one deliberate exception is live
+//! recording (`record::RecordState::active`): notes grow every single
+//! frame while a take is running, so diffing continuously would flood the
+//! history with one entry per frame — [`track_changes`] simply skips while
+//! a take is active, so the *entire* take (onset through Stop/Finish)
+//! becomes one undo step instead of hundreds.
+
+use bevy::prelude::*;
+
+use super::record::RecordState;
+use super::state::{EditorState, GridNote};
+
+/// How many edits back the history remembers. `GridNote` is `Copy` and
+/// `tempo_changes` entries are `(usize, f32)` pairs, so even a generous
+/// cap costs a trivial amount of memory — chosen to be deep enough that
+/// running out during ordinary editing would be surprising, not to bound
+/// anything performance-sensitive.
+pub(super) const HISTORY_LIMIT: usize = 100;
+
+/// The editable content one undo/redo step restores — deliberately
+/// narrower than `EditorState` itself, see the module doc comment.
+#[derive(Clone, PartialEq)]
+struct Snapshot {
+    notes: Vec<GridNote>,
+    tempo_changes: Vec<(usize, f32)>,
+}
+
+impl Snapshot {
+    fn capture(state: &EditorState) -> Self {
+        Self {
+            notes: state.notes.clone(),
+            tempo_changes: state.tempo_changes.clone(),
+        }
+    }
+
+    fn restore(self, state: &mut EditorState) {
+        state.notes = self.notes;
+        state.tempo_changes = self.tempo_changes;
+    }
+}
+
+/// Undo/redo history for the current editing session — reset every time
+/// the Song Editor is (re)entered (`ui::init_state`), even though
+/// `EditorState` itself can persist across a leave-and-return within one
+/// app session: a history that quietly outlives the notes it describes is
+/// more likely to confuse than help.
+#[derive(Resource, Default)]
+pub(super) struct UndoHistory {
+    past: Vec<Snapshot>,
+    future: Vec<Snapshot>,
+    /// The content as of the last [`Self::record_if_changed`] call —
+    /// `None` only before the very first one, which seeds it without
+    /// pushing anything (there's nothing to undo *to* yet).
+    last: Option<Snapshot>,
+}
+
+impl UndoHistory {
+    pub(super) fn can_undo(&self) -> bool {
+        !self.past.is_empty()
+    }
+
+    pub(super) fn can_redo(&self) -> bool {
+        !self.future.is_empty()
+    }
+
+    /// Steps `state` back to the previous snapshot, if any, pushing the
+    /// current one onto the redo stack. A no-op if there's nothing to
+    /// undo.
+    pub(super) fn undo(&mut self, state: &mut EditorState) {
+        let Some(prev) = self.past.pop() else {
+            return;
+        };
+        if let Some(current) = self.last.replace(prev.clone()) {
+            self.future.push(current);
+        }
+        prev.restore(state);
+    }
+
+    /// Steps `state` forward to the next snapshot, if any, pushing the
+    /// current one back onto the undo stack. A no-op if there's nothing to
+    /// redo, and always a no-op after any fresh edit — [`Self::
+    /// record_if_changed`] clears `future` the moment content actually
+    /// changes, the same "a new edit invalidates redo" rule every editor
+    /// with undo follows.
+    pub(super) fn redo(&mut self, state: &mut EditorState) {
+        let Some(next) = self.future.pop() else {
+            return;
+        };
+        if let Some(current) = self.last.replace(next.clone()) {
+            self.past.push(current);
+        }
+        next.restore(state);
+    }
+
+    /// Compares `state`'s current content against the last-seen snapshot;
+    /// if it changed, pushes the *previous* content onto the undo stack
+    /// (so undoing returns to it) and clears the redo stack. A no-op if
+    /// nothing content-shaped actually changed (e.g. `EditorState` changed
+    /// for an unrelated reason — selection, scroll, a meta field edit).
+    pub(super) fn record_if_changed(&mut self, state: &EditorState) {
+        let current = Snapshot::capture(state);
+        let Some(prev) = self.last.replace(current.clone()) else {
+            return;
+        };
+        if prev == current {
+            return;
+        }
+        self.past.push(prev);
+        if self.past.len() > HISTORY_LIMIT {
+            self.past.remove(0);
+        }
+        self.future.clear();
+    }
+}
+
+/// Drives [`UndoHistory::record_if_changed`] every frame `EditorState`
+/// changes — except while a recording take is actively running
+/// (`RecordState::active`), when notes grow every frame and diffing
+/// continuously would flood the history with one entry per frame instead
+/// of one entry for the whole take (see the module doc comment).
+pub(super) fn track_changes(
+    state: Res<EditorState>,
+    record: Res<RecordState>,
+    mut history: ResMut<UndoHistory>,
+) {
+    if !state.is_changed() || record.active {
+        return;
+    }
+    history.record_if_changed(&state);
+}

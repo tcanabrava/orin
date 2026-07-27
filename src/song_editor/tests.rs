@@ -17,6 +17,7 @@ use super::state::{
 };
 use super::timeline::{TimelineSurfaceGeometry, drag_end_tick};
 use super::ui::ModButton;
+use super::undo::{HISTORY_LIMIT, UndoHistory};
 use super::{BEAT_W, HEADER_H, HOLE_COL_W, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
 use crate::audio_system::synth::{PhraseNote, SAMPLE_RATE, envelope, render_pcm};
 use crate::audio_system::wav::encode_wav;
@@ -2033,4 +2034,161 @@ fn scrollbar_marker_never_pokes_past_the_track_end() {
     // A floored marker on the song's very last tick must stay inside 100%.
     let (left, width) = super::interaction::scrollbar_marker(9_999, 1, 10_000);
     assert!(left + width <= 100.0);
+}
+
+// ── UndoHistory ───────────────────────────────────────────────────────────
+
+fn state_with_notes(notes: Vec<GridNote>) -> EditorState {
+    EditorState {
+        notes,
+        ..EditorState::default()
+    }
+}
+
+#[test]
+fn the_first_record_seeds_history_without_anything_to_undo() {
+    let mut history = UndoHistory::default();
+    let state = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&state);
+    assert!(!history.can_undo());
+    assert!(!history.can_redo());
+}
+
+#[test]
+fn a_genuine_content_change_becomes_one_undo_step() {
+    let mut history = UndoHistory::default();
+    let before = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&before);
+
+    let after = state_with_notes(vec![
+        note(1, Dir::Blow, Pitch::Normal),
+        note(2, Dir::Draw, Pitch::Normal),
+    ]);
+    history.record_if_changed(&after);
+    assert!(history.can_undo());
+    assert!(!history.can_redo());
+}
+
+#[test]
+fn recording_the_same_content_twice_is_a_no_op() {
+    let mut history = UndoHistory::default();
+    let mut state = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&state);
+    // Only `selected` changes — not part of the undo snapshot at all, see
+    // `undo`'s module doc comment.
+    state.selected = vec![1];
+    history.record_if_changed(&state);
+    assert!(!history.can_undo());
+}
+
+#[test]
+fn undo_restores_the_previous_content_and_enables_redo() {
+    let mut history = UndoHistory::default();
+    let before = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&before);
+
+    let mut state = state_with_notes(vec![
+        note(1, Dir::Blow, Pitch::Normal),
+        note(2, Dir::Draw, Pitch::Normal),
+    ]);
+    history.record_if_changed(&state);
+
+    history.undo(&mut state);
+    assert_eq!(state.notes, before.notes);
+    assert!(!history.can_undo());
+    assert!(history.can_redo());
+}
+
+#[test]
+fn redo_reapplies_the_undone_content() {
+    let mut history = UndoHistory::default();
+    let before = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&before);
+
+    let after_notes = vec![
+        note(1, Dir::Blow, Pitch::Normal),
+        note(2, Dir::Draw, Pitch::Normal),
+    ];
+    let mut state = state_with_notes(after_notes.clone());
+    history.record_if_changed(&state);
+
+    history.undo(&mut state);
+    history.redo(&mut state);
+    assert_eq!(state.notes, after_notes);
+    assert!(history.can_undo());
+    assert!(!history.can_redo());
+}
+
+#[test]
+fn a_fresh_edit_after_undo_clears_the_redo_stack() {
+    let mut history = UndoHistory::default();
+    let before = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&before);
+
+    let mut state = state_with_notes(vec![
+        note(1, Dir::Blow, Pitch::Normal),
+        note(2, Dir::Draw, Pitch::Normal),
+    ]);
+    history.record_if_changed(&state);
+    history.undo(&mut state);
+    assert!(history.can_redo());
+
+    // A genuinely new edit, not another undo/redo.
+    state.notes.push(note(3, Dir::Blow, Pitch::Normal));
+    history.record_if_changed(&state);
+    assert!(!history.can_redo());
+}
+
+#[test]
+fn undo_and_redo_are_no_ops_with_nothing_on_their_stack() {
+    let mut history = UndoHistory::default();
+    let mut state = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    let original = state.notes.clone();
+    history.undo(&mut state);
+    history.redo(&mut state);
+    assert_eq!(state.notes, original);
+}
+
+#[test]
+fn history_evicts_the_oldest_entry_past_the_limit() {
+    let mut history = UndoHistory::default();
+    let mut state = state_with_notes(vec![]);
+    history.record_if_changed(&state);
+    // One content-changing edit per iteration, well past the cap.
+    for i in 0..(HISTORY_LIMIT + 10) {
+        state.notes = vec![note(1, Dir::Blow, Pitch::Bend(0.0))];
+        state.notes[0].tick = i;
+        history.record_if_changed(&state);
+    }
+    // Undoing HISTORY_LIMIT times must exhaust the stack even though more
+    // edits than that were made — the earliest ones fell off the front.
+    for _ in 0..HISTORY_LIMIT {
+        history.undo(&mut state);
+    }
+    assert!(!history.can_undo());
+}
+
+#[test]
+fn undo_skips_recording_while_a_take_is_active() {
+    // Mirrors `track_changes`'s own gating, without spinning up a
+    // `Schedule`: a recording take grows a note's length every frame, and
+    // none of that should land in the undo history until the take stops —
+    // otherwise undo would only ever step back one frame of growth.
+    let mut history = UndoHistory::default();
+    let mut state = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&state);
+
+    // Simulate several frames of a take growing a note, none recorded —
+    // `track_changes` itself is what skips these in the real system; here
+    // we just don't call `record_if_changed` for them, the same effect.
+    for len in 4..20 {
+        state.notes[0].len = len;
+    }
+    // Take stops: exactly one record_if_changed call, one undo step for
+    // the whole take.
+    history.record_if_changed(&state);
+    assert!(history.can_undo());
+    history.undo(&mut state);
+    assert_eq!(state.notes[0].len, 4);
+    assert!(!history.can_undo());
 }

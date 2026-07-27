@@ -53,6 +53,7 @@ mod timeline;
 mod timeline_overlay;
 mod transport;
 mod ui;
+mod undo;
 mod waveform;
 
 // ── Dialog purposes ───────────────────────────────────────────────────────────
@@ -175,6 +176,8 @@ impl Plugin for SongEditor2Plugin {
                     (
                         interaction::grid_keys.run_if(not(tour_active)),
                         interaction::handle_copy_paste.run_if(not(tour_active)),
+                        interaction::handle_undo_redo.run_if(not(tour_active)),
+                        undo::track_changes,
                     ),
                     interaction::type_into_field,
                     (
@@ -186,9 +189,15 @@ impl Plugin for SongEditor2Plugin {
                         resource_exists_and_changed::<state::EditorState>
                             .or_else(resource_changed::<LoadedTheme>),
                     ),
-                    panel::update_mode_buttons.run_if(
-                        resource_exists_and_changed::<state::EditorState>
-                            .or_else(resource_changed::<LoadedTheme>),
+                    (
+                        panel::update_mode_buttons.run_if(
+                            resource_exists_and_changed::<state::EditorState>
+                                .or_else(resource_changed::<LoadedTheme>),
+                        ),
+                        panel::update_undo_redo_buttons.run_if(
+                            resource_exists_and_changed::<undo::UndoHistory>
+                                .or_else(resource_changed::<LoadedTheme>),
+                        ),
                     ),
                     panel::update_mode_visibility
                         .run_if(resource_exists_and_changed::<state::EditorState>),

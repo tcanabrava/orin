@@ -49,12 +49,20 @@ this file — prune it back to a one-line summary under "Shipped" below.
   per-mode button groups, a status bar). A dedicated pass since then
   (2026-07-27, playing the role of a harmonica player + audio/UX
   developer) found the remaining gaps in this workflow — see `TODO.md`'s
-  Song Editor section (no undo/redo, no metronome/count-in, no note
-  audition, save feedback that's invisible outside a terminal, no
-  swing-aware grid snap) and `CLAUDE.md`'s "Song editor: known gaps"
-  bullet for the detail behind each. (Multi-selection drag-to-transpose —
-  moving a lick to a different hole/chord — was double-checked and
-  already works; an initial pass wrongly flagged it as missing.)
+  Song Editor section (no metronome/count-in, no note audition, save
+  feedback that's invisible outside a terminal, no swing-aware grid snap)
+  and `CLAUDE.md`'s "Song editor: known gaps" bullet for the detail behind
+  each. (Multi-selection drag-to-transpose — moving a lick to a different
+  hole/chord — was double-checked and already works; an initial pass
+  wrongly flagged it as missing.)
+- **Song editor: Ctrl+Z/Ctrl+Y undo/redo** — `song_editor::undo`,
+  snapshot-based (diffs `notes`/`tempo_changes` each frame `EditorState`
+  changes against the last-seen snapshot, rather than instrumenting every
+  mutation call site), capped at 100 entries, skipped entirely while a
+  recording take is active so the whole take undoes as one step instead of
+  one entry per frame of note growth. Dimmed (not disabled) Undo/Redo
+  buttons alongside the keyboard shortcut. See `CLAUDE.md`'s "Ctrl+Z/
+  Ctrl+Y undo and redo" bullet.
 - **Code-duplication cleanup** (whole-tree duplicate-block scan,
   2026-07-19) — all 6 phases done, no behavior changes, `cargo test`/
   `cargo clippy`/`tests/physical_design.rs` clean throughout:
@@ -181,9 +189,10 @@ Finishing 0.4:
 2. **Lessons Unit 4 "jazz"** engine prerequisites are done; what's left is
    content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
 
-Not yet started, candidate next work: the Song Editor UX/workflow gaps in
-`TODO.md`'s Song Editor section (undo/redo, metronome/count-in, note
-audition, save-time feedback, swing-aware grid snap).
+Not yet started, candidate next work: the remaining Song Editor UX/workflow
+gaps in `TODO.md`'s Song Editor section (metronome/count-in, note audition,
+save-time feedback, swing-aware grid snap) — undo/redo, the first of that
+list, is now done (see Shipped above).
 
 ## Working practices
 
