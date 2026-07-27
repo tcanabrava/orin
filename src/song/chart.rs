@@ -31,7 +31,7 @@ pub struct Metadata {
 /// spec than this build supports up front, with a clear error, instead of
 /// failing on some confusing downstream `additionalProperties` schema
 /// rejection or (worse) silently misreading a field whose meaning changed.
-pub const CURRENT_FORMAT_VERSION: &str = "1.2.0";
+pub const CURRENT_FORMAT_VERSION: &str = "1.3.0";
 
 /// Parses a `"MAJOR.MINOR.PATCH"` version string into a comparable tuple.
 /// `None` for anything that isn't exactly three dot-separated integers.
@@ -153,6 +153,12 @@ pub struct TimeSigPoint {
 pub enum BendingProfile {
     RichterStandard,
     CountryTuned,
+    /// Standard Richter with hole 3's blow note raised a whole step — see
+    /// `song::harmonica::paddy_richter_harp`.
+    PaddyRichter,
+    /// Tonic minor triad on blow, natural-minor scale degrees on draw — see
+    /// `song::harmonica::natural_minor_harp`.
+    NaturalMinor,
 }
 
 /// Which scale the Song Editor colors notes against (`song_editor::grid::

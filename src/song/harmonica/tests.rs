@@ -516,6 +516,83 @@ fn chromatic_harp_transposes_every_table() {
     assert_eq!(l.draw.unwrap()[0], "E4");
 }
 
+// ── paddy_richter_harp / natural_minor_harp ─────────────────────────────
+
+#[test]
+fn paddy_richter_only_changes_hole_three_blow() {
+    let Harmonica::Diatonic {
+        layout: Some(l),
+        bending_profile,
+        ..
+    } = paddy_richter_harp("C")
+    else {
+        panic!("expected diatonic");
+    };
+    let blow = l.blow.unwrap();
+    let draw = l.draw.unwrap();
+    // Hole 3 blow is raised a whole step from standard Richter's G4 to A4...
+    assert_eq!(blow[2], "A4");
+    // ...every other hole and every draw note matches standard Richter.
+    let standard = richter_harp("C");
+    let Harmonica::Diatonic {
+        layout: Some(sl), ..
+    } = standard
+    else {
+        panic!("expected diatonic");
+    };
+    let standard_blow = sl.blow.unwrap();
+    for (i, note) in blow.iter().enumerate() {
+        if i != 2 {
+            assert_eq!(*note, standard_blow[i], "hole {}", i + 1);
+        }
+    }
+    assert_eq!(draw, sl.draw.unwrap());
+    assert!(matches!(bending_profile, BendingProfile::PaddyRichter));
+}
+
+#[test]
+fn paddy_richter_transposes_by_key() {
+    let Harmonica::Diatonic {
+        layout: Some(l), ..
+    } = paddy_richter_harp("D")
+    else {
+        panic!("expected diatonic");
+    };
+    assert_eq!(l.blow.unwrap()[0], "D4");
+}
+
+#[test]
+fn natural_minor_blow_is_a_tonic_minor_triad() {
+    let Harmonica::Diatonic {
+        layout: Some(l),
+        bending_profile,
+        ..
+    } = natural_minor_harp("C")
+    else {
+        panic!("expected diatonic");
+    };
+    assert_eq!(
+        l.blow.unwrap(),
+        vec!["C4", "D#4", "G4", "C5", "D#5", "G5", "C6", "D#6", "G6", "C7"]
+    );
+    assert_eq!(
+        l.draw.unwrap(),
+        vec!["D4", "G4", "A#4", "D5", "F5", "G#5", "A#5", "D6", "F6", "G#6"]
+    );
+    assert!(matches!(bending_profile, BendingProfile::NaturalMinor));
+}
+
+#[test]
+fn natural_minor_transposes_by_key() {
+    let Harmonica::Diatonic {
+        layout: Some(l), ..
+    } = natural_minor_harp("D")
+    else {
+        panic!("expected diatonic");
+    };
+    assert_eq!(l.blow.unwrap()[0], "D4");
+}
+
 // ── hole_notes ────────────────────────────────────────────────────────────
 
 #[test]

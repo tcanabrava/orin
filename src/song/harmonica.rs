@@ -33,6 +33,28 @@ pub const C_BLOW_CHROMATIC: [&str; 12] = [
 pub const C_DRAW_CHROMATIC: [&str; 12] = [
     "D4", "E4", "F#4", "G4", "A4", "B4", "C#5", "D5", "E5", "F#5", "G5", "A5",
 ];
+/// Paddy Richter-tuned C-harp blow notes: identical to [`C_BLOW`] except
+/// hole 3, raised a whole step (G4 → A4) — the tuning's one deliberate
+/// change, popularized for Irish/Celtic tunes that need 1st position's
+/// major 6th without bending for it. Draw notes are unchanged from
+/// standard Richter ([`C_DRAW`]); see [`paddy_richter_harp`].
+pub const C_BLOW_PADDY_RICHTER: [&str; 10] =
+    ["C4", "E4", "A4", "C5", "E5", "G5", "C6", "E6", "G6", "C7"];
+
+/// Natural-minor-tuned C-harp blow notes: a tonic minor triad (root, ♭3rd,
+/// 5th) repeating across octaves, the minor-tuning counterpart of
+/// [`C_BLOW`]'s major triad — see [`natural_minor_harp`].
+pub const C_BLOW_NATURAL_MINOR: [&str; 10] =
+    ["C4", "D#4", "G4", "C5", "D#5", "G5", "C6", "D#6", "G6", "C7"];
+/// Natural-minor-tuned C-harp draw notes: the same Richter draw scale-degree
+/// slot per hole as [`C_DRAW`] (2nd/5th/7th on the low holes, 2nd/4th/6th/7th
+/// above), reinterpreted with the natural minor scale's flatted degrees —
+/// see [`natural_minor_harp`]. Sharp-spelled (D#/G#, not Eb/Ab) to match
+/// this crate's one note-spelling convention (`audio_system::midi::
+/// NOTE_NAMES`).
+pub const C_DRAW_NATURAL_MINOR: [&str; 10] =
+    ["D4", "G4", "A#4", "D5", "F5", "G#5", "A#5", "D6", "F6", "G#6"];
+
 /// Blow notes with the slide button pressed: each a half-step above the
 /// unslid blow note.
 pub const C_BLOW_SLIDE_CHROMATIC: [&str; 12] = [
@@ -73,6 +95,41 @@ pub fn richter_harp(key: &str) -> Harmonica {
         layout: Some(DiatonicLayout {
             blow: Some(transpose_table(&C_BLOW, off)),
             draw: Some(transpose_table(&C_DRAW, off)),
+        }),
+    }
+}
+
+/// A Paddy Richter-tuned diatonic harp for `key`, transposed from the
+/// [`C_BLOW_PADDY_RICHTER`]/[`C_DRAW`] reference layout — standard Richter
+/// with hole 3's blow note raised a whole step for direct 1st-position
+/// access to the major 6th.
+pub fn paddy_richter_harp(key: &str) -> Harmonica {
+    let off = key_offset(key);
+    Harmonica::Diatonic {
+        holes: 10,
+        bending_profile: BendingProfile::PaddyRichter,
+        position: None,
+        scale: None,
+        layout: Some(DiatonicLayout {
+            blow: Some(transpose_table(&C_BLOW_PADDY_RICHTER, off)),
+            draw: Some(transpose_table(&C_DRAW, off)),
+        }),
+    }
+}
+
+/// A natural-minor-tuned diatonic harp for `key`, transposed from the
+/// [`C_BLOW_NATURAL_MINOR`]/[`C_DRAW_NATURAL_MINOR`] reference layout —
+/// gives a full natural minor scale in 1st position instead of major.
+pub fn natural_minor_harp(key: &str) -> Harmonica {
+    let off = key_offset(key);
+    Harmonica::Diatonic {
+        holes: 10,
+        bending_profile: BendingProfile::NaturalMinor,
+        position: None,
+        scale: None,
+        layout: Some(DiatonicLayout {
+            blow: Some(transpose_table(&C_BLOW_NATURAL_MINOR, off)),
+            draw: Some(transpose_table(&C_DRAW_NATURAL_MINOR, off)),
         }),
     }
 }
@@ -710,6 +767,8 @@ impl Harmonica {
                 let profile = match bending_profile {
                     BendingProfile::RichterStandard => "Richter",
                     BendingProfile::CountryTuned => "Country",
+                    BendingProfile::PaddyRichter => "Paddy Richter",
+                    BendingProfile::NaturalMinor => "Natural Minor",
                 };
                 format!(
                     "Diatonic \u{00B7} {} holes \u{00B7} {} position \u{00B7} {}",

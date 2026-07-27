@@ -193,7 +193,9 @@
             "type": "string",
             "enum": [
               "richter_standard",
-              "country_tuned"
+              "country_tuned",
+              "paddy_richter",
+              "natural_minor"
             ]
           },
 

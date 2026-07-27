@@ -123,7 +123,6 @@ remains:
 - A 3D harmonica prop model for chromatic charts — `Play3D` lane geometry
   already adapts to a chromatic chart's hole count, but no matching mesh
   exists yet, so the bundled diatonic model still renders.
-- Alternate tunings beyond Richter/Country (Paddy, natural minor).
 - Packaged releases as first-class CI artifacts: Flathub submission, Windows
   installer (workflow exists), macOS bundle (workflow exists — `release.
   yaml` builds/DMGs both architectures at tag time, `macos.yaml` checks the
