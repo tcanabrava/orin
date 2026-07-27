@@ -15,7 +15,7 @@ use figment::{
     Figment,
     providers::{Format, Json, Serialized},
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -34,14 +34,19 @@ pub struct SongRecord {
     /// sessions, not a full log of every play.
     pub technique_best_accuracy: HashMap<String, f32>,
     /// Adaptive difficulty's "learned" fraction (0.0..=1.0) per musical
-    /// phrase section, indexed by the section's ordinal position in the
-    /// chart track — see `gameplay::adaptive_difficulty`. Empty until the
-    /// song's first play or manual adjustment; a missing/short index reads
-    /// as unlearned (0.0). Whether adaptive difficulty is on at all is a
-    /// single global setting (`settings::AdaptiveDifficultyEnabled`, an
-    /// Options-menu toggle), not per-song — only the learned progress
-    /// itself lives here.
-    pub phrase_learned: Vec<f32>,
+    /// phrase section, keyed by the section's own stable key — its phrase
+    /// name, disambiguated for repeats — rather than its ordinal position
+    /// in the track (see `gameplay::adaptive_difficulty::section_keys`).
+    /// Keying by position let a chart re-edit that reorders/inserts/removes
+    /// a phrase tag silently apply old progress to the wrong section;
+    /// keying by name survives that, at the cost of resetting progress if a
+    /// section is later *renamed*. Empty until the song's first play or
+    /// manual adjustment; a missing key reads as unlearned (0.0). Whether
+    /// adaptive difficulty is on at all is a single global setting
+    /// (`settings::AdaptiveDifficultyEnabled`, an Options-menu toggle), not
+    /// per-song — only the learned progress itself lives here.
+    #[serde(deserialize_with = "deserialize_phrase_learned")]
+    pub phrase_learned: HashMap<String, f32>,
 }
 
 impl Default for SongRecord {
@@ -51,9 +56,33 @@ impl Default for SongRecord {
             best_accuracy: 0.0,
             plays: 0,
             technique_best_accuracy: HashMap::new(),
-            phrase_learned: Vec::new(),
+            phrase_learned: HashMap::new(),
         }
     }
+}
+
+/// Reads `phrase_learned` as the current name-keyed map, or — from a
+/// `profile.json` written before this scheme existed — as the old
+/// ordinal-indexed `Vec<f32>`, which is discarded rather than guessed at
+/// (there's no way to recover section names from bare array positions).
+/// Falling back to `HashMap`'s own `Deserialize` on a type mismatch (instead
+/// of erroring) is what keeps loading an old profile from wiping out the
+/// rest of it (every other song's best score, lesson progress, ...) just
+/// because of this one field.
+fn deserialize_phrase_learned<'de, D>(deserializer: D) -> Result<HashMap<String, f32>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Repr {
+        Current(HashMap<String, f32>),
+        Legacy(#[allow(dead_code)] Vec<f32>),
+    }
+    Ok(match Repr::deserialize(deserializer)? {
+        Repr::Current(map) => map,
+        Repr::Legacy(_) => HashMap::new(),
+    })
 }
 
 /// Per-(hole, technique) drill hit-rate from the Bending Trainer's adaptive
@@ -229,6 +258,26 @@ mod tests {
     #[test]
     fn missing_phrase_learned_defaults_from_json_via_serde_default() {
         let r: SongRecord = serde_json::from_str("{}").unwrap();
+        assert!(r.phrase_learned.is_empty());
+    }
+
+    #[test]
+    fn name_keyed_phrase_learned_round_trips() {
+        let r: SongRecord =
+            serde_json::from_str(r#"{"phrase_learned":{"intro":0.5,"turnaround":1.0}}"#).unwrap();
+        assert_eq!(r.phrase_learned.get("intro"), Some(&0.5));
+        assert_eq!(r.phrase_learned.get("turnaround"), Some(&1.0));
+    }
+
+    #[test]
+    fn legacy_ordinal_phrase_learned_is_discarded_not_fatal() {
+        // A profile.json written before name-keying existed stored
+        // phrase_learned as a plain array; there's no way to recover
+        // section names from bare positions, so it resets rather than
+        // taking down the rest of the record.
+        let r: SongRecord =
+            serde_json::from_str(r#"{"best_score":42,"phrase_learned":[0.25,0.5]}"#).unwrap();
+        assert_eq!(r.best_score, 42);
         assert!(r.phrase_learned.is_empty());
     }
 

@@ -16,6 +16,7 @@
 //! rebuilt around it.
 
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 use crate::app::SelectedSong;
 use crate::profile::PlayerProfile;
@@ -62,6 +63,62 @@ pub fn group_phrase_sections(
         }
     }
     sections
+}
+
+/// Stable per-section keys for persisting `learned` progress across a chart
+/// re-edit, one per `sections` entry, in order: a section's own phrase name,
+/// unless an earlier section already used that same name (a chart with a
+/// repeated tag, e.g. two "chorus" sections), in which case later
+/// occurrences are disambiguated with a `" #2"`, `" #3"`, ... suffix. This is
+/// the read/write boundary [`learned_vec_from_map`]/[`write_learned_into_map`]
+/// use to translate between the session's ordinal `Vec<f32>` (indexed by
+/// section position — what `unlocked_flags`/`bump_learned_sections` expect)
+/// and `profile::SongRecord::phrase_learned`'s persisted, name-keyed map:
+/// keying by name means a phrase tag being reordered, inserted, or removed
+/// elsewhere in the chart doesn't silently misapply an unrelated section's
+/// progress the way keying by ordinal position used to.
+pub fn section_keys(sections: &[PhraseSection]) -> Vec<String> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    sections
+        .iter()
+        .map(|s| {
+            let n = counts.entry(s.name.as_str()).or_insert(0);
+            *n += 1;
+            if *n == 1 {
+                s.name.clone()
+            } else {
+                format!("{} #{}", s.name, n)
+            }
+        })
+        .collect()
+}
+
+/// Builds the session's ordinal `learned` vector (indexed by section
+/// position, as [`unlocked_flags`]/[`bump_learned_sections`] expect) from the
+/// persisted, name-keyed map — the read side of the scheme [`section_keys`]
+/// documents. A section with no entry in `map` (never played, or renamed
+/// since it was) reads as unlearned (0.0).
+pub fn learned_vec_from_map(sections: &[PhraseSection], map: &HashMap<String, f32>) -> Vec<f32> {
+    section_keys(sections)
+        .iter()
+        .map(|key| map.get(key).copied().unwrap_or(0.0))
+        .collect()
+}
+
+/// Writes the session's ordinal `learned` vector back into the persisted,
+/// name-keyed map — the write side of the scheme [`section_keys`]
+/// documents. Extra entries in `map` for keys no longer present among
+/// `sections` (e.g. a renamed/removed phrase) are left alone rather than
+/// pruned — harmless stale data, not worth the risk of deleting a section
+/// that's only temporarily absent from a partial rebuild.
+pub fn write_learned_into_map(
+    sections: &[PhraseSection],
+    learned: &[f32],
+    map: &mut HashMap<String, f32>,
+) {
+    for (key, &value) in section_keys(sections).iter().zip(learned) {
+        map.insert(key.clone(), value);
+    }
 }
 
 /// Fraction of a phrase's notes unlocked at a given `learned` level (clamped
@@ -311,9 +368,12 @@ pub(super) fn setup_adaptive_difficulty(
 
     let key = manifest.path.display().to_string();
     let record = profile.songs.get(&key);
+    let learned = record
+        .map(|r| learned_vec_from_map(&sections, &r.phrase_learned))
+        .unwrap_or_default();
     *adaptive = AdaptiveDifficulty {
         enabled: enabled_for_lesson && setting.0,
-        learned: record.map(|r| r.phrase_learned.clone()).unwrap_or_default(),
+        learned,
         sections,
     };
 }
@@ -504,6 +564,63 @@ mod tests {
         bump_learned_sections(&notes, 3, &mut learned);
         assert_eq!(learned.len(), 3);
         assert!((learned[2] - PHRASE_LEARN_STEP).abs() < 1e-6);
+    }
+
+    // ── section_keys / learned_vec_from_map / write_learned_into_map ────────
+
+    fn section(name: &str) -> PhraseSection {
+        PhraseSection {
+            name: name.to_string(),
+            start_time: 0.0,
+            end_time: 1.0,
+            note_count: 1,
+        }
+    }
+
+    #[test]
+    fn section_keys_uses_the_phrase_name_when_unique() {
+        let sections = [section("intro"), section("turnaround")];
+        assert_eq!(section_keys(&sections), vec!["intro", "turnaround"]);
+    }
+
+    #[test]
+    fn section_keys_disambiguates_repeated_names() {
+        let sections = [section("chorus"), section("verse"), section("chorus")];
+        assert_eq!(
+            section_keys(&sections),
+            vec!["chorus", "verse", "chorus #2"]
+        );
+    }
+
+    #[test]
+    fn learned_vec_from_map_reads_by_name_not_position() {
+        let sections = [section("intro"), section("turnaround")];
+        let mut map = HashMap::new();
+        map.insert("turnaround".to_string(), 0.75);
+        assert_eq!(learned_vec_from_map(&sections, &map), vec![0.0, 0.75]);
+    }
+
+    #[test]
+    fn reordering_sections_keeps_progress_with_the_right_name() {
+        // The bug this whole scheme fixes: re-editing a chart can reorder
+        // phrase tags. Progress recorded against "turnaround" must stay
+        // with "turnaround" even though its ordinal position changed.
+        let old_sections = [section("intro"), section("turnaround")];
+        let mut map = HashMap::new();
+        map.insert("turnaround".to_string(), 0.75);
+        let reordered = [section("turnaround"), section("intro")];
+        assert_eq!(learned_vec_from_map(&old_sections, &map), vec![0.0, 0.75]);
+        assert_eq!(learned_vec_from_map(&reordered, &map), vec![0.75, 0.0]);
+    }
+
+    #[test]
+    fn write_learned_into_map_round_trips_through_learned_vec_from_map() {
+        let sections = [section("intro"), section("turnaround")];
+        let mut map = HashMap::new();
+        write_learned_into_map(&sections, &[0.25, 1.0], &mut map);
+        assert_eq!(map.get("intro"), Some(&0.25));
+        assert_eq!(map.get("turnaround"), Some(&1.0));
+        assert_eq!(learned_vec_from_map(&sections, &map), vec![0.25, 1.0]);
     }
 
     // ── carry_over_note_state / first_unresolved_index ──────────────────────

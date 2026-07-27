@@ -385,10 +385,11 @@ fn set_selected_phrase_learned(
         return;
     };
     let record = profile.songs.entry(key).or_default();
-    if record.phrase_learned.len() <= selected.0 {
-        record.phrase_learned.resize(selected.0 + 1, 0.0);
+    if let Some(section_key) = super::adaptive_difficulty::section_keys(&adaptive.sections)
+        .get(selected.0)
+    {
+        record.phrase_learned.insert(section_key.clone(), value);
     }
-    record.phrase_learned[selected.0] = value;
     crate::profile::save_profile(profile);
 }
 

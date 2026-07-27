@@ -14,7 +14,9 @@ use crate::profile::{PlayerProfile, record_lesson, record_play, save_profile};
 use crate::settings::AudioSettings;
 use crate::song::SongManifest;
 
-use super::adaptive_difficulty::{AdaptiveDifficulty, bump_learned_sections};
+use super::adaptive_difficulty::{
+    AdaptiveDifficulty, bump_learned_sections, learned_vec_from_map, write_learned_into_map,
+};
 use super::{Score, SongNotes, SongStats, TechniqueStats};
 
 /// Technique name paired with its `SongStats` field, in display order — the
@@ -131,11 +133,9 @@ pub(super) fn setup(
             let key = manifest.path.display().to_string();
             let record = profile.songs.entry(key).or_default();
             let improved = record_play(record, score.points, acc, &technique_accuracy);
-            bump_learned_sections(
-                &song_notes.notes,
-                adaptive.sections.len(),
-                &mut record.phrase_learned,
-            );
+            let mut learned = learned_vec_from_map(&adaptive.sections, &record.phrase_learned);
+            bump_learned_sections(&song_notes.notes, adaptive.sections.len(), &mut learned);
+            write_learned_into_map(&adaptive.sections, &learned, &mut record.phrase_learned);
             let best_score = record.best_score;
             save_profile(&profile);
             (improved, best_score)
