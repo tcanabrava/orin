@@ -14,12 +14,12 @@ this file — prune it back to a one-line summary under "Shipped" below.
 - **0.4, most of it** — adaptive difficulty, jam position/scale overlays,
   the full lessons engine plus a first content pass (Units 1–2),
   generated 12-bar backing ("Generate Jam"), selectable jam progressions
-  (standard / quick-change / minor) and playing positions (1st/2nd/3rd —
-  `song::harmonica::Position::harp_key` picks the matching cross-harp key),
-  and freeform (unscored) call-and-response practice in Jam Session
-  (`jam::call_response` — an opt-in toggle plays a generated chord-tone
-  lick, then a turn-taking banner + hole-map ghost highlight cue the
-  player's echo; no scoring, distinct from the chart-scripted
+  (standard / quick-change / minor / jazz-blues) and playing positions
+  (1st/2nd/3rd — `song::harmonica::Position::harp_key` picks the matching
+  cross-harp key), and freeform (unscored) call-and-response practice in
+  Jam Session (`jam::call_response` — an opt-in toggle plays a generated
+  chord-tone lick, then a turn-taking banner + hole-map ghost highlight
+  cue the player's echo; no scoring, distinct from the chart-scripted
   call-and-response *lesson* primitive in `gameplay::call_response`).
   Architectural invariants live in `CLAUDE.md`; the curriculum design
   lives in `docs/lessons_plan.md`.
@@ -38,122 +38,21 @@ this file — prune it back to a one-line summary under "Shipped" below.
   the jam feature gathered into `src/jam/`, `src/lessons.rs` split into
   `lessons/{manifest,catalog,progress}.rs`, and `tests/physical_design.rs`
   now enforces the file-size budget going forward.
-- **Song editor UI responsiveness pass** — tooltip clamped to the window
-  (`dialogs::tooltip`), the editor's content wrapped in a scrollable
-  column (`song_editor::ui::setup`), the mod panel split into a fixed
-  transport strip + `flex_wrap: Wrap` tool strip, and `transport_button`'s
-  colors routed through `SongEditorColors` — plus the accompanying
-  `song_editor/ui.rs` split into `panel_widgets.rs`/`mod_panel.rs`/
-  `meta_form.rs`/`ui.rs`. The meta form was later reworked again into two
-  side-by-side columns (`meta_form::spawn_form_column`, split at
-  `FIELDS.len() / 2`) after the first (flex-wrap) pass didn't read well;
-  the note grid also gained its own horizontal scrollbar
-  (`song_editor::interaction::update_grid_scrollbar`/`drag_grid_scrollbar`),
-  hidden unless the song's notes actually run wider than the visible area.
-- **0.5 (early): MIDI import key suggestion** — `song_editor::midi_import`
-  now auto-picks the `HARP_KEYS` entry needing the fewest bend/slide/
-  nearest-note fallbacks for the track being imported
-  (`suggest_key`/`key_fit_score`), instead of importing onto whatever key
-  the editor happened to already be set to. `bin/midi_to_chart` (the
-  separate, simpler, C-diatonic-only CLI converter this used to leave
-  untouched) has since been removed entirely — see the code-duplication
-  cleanup entry below for where its shared parsing logic ended up.
-- **0.5: song editor variable tempo maps** — the grid header shows the
-  chart's referenced music file as a peak-amplitude waveform
-  (`song_editor::waveform`, reusing `audio_system::waveform`'s existing
-  decoders), windowed to whatever's currently scrolled into view like the
-  note grid itself, and now aligned against a real multi-point tempo map
-  rather than one constant BPM. A new Tempo timeline tool
-  (`TimelineTool::Tempo`, `state::toggle_tempo_point`) lets the editor
-  add/step/remove tempo-change points directly on the timeline, rendered
-  as markers on the grid header; `EditorState::tempo_changes` +
-  `state::build_tempo_map`/`bpm_at` back it, `song::chart::seconds_to_tick`
-  (new — inverse of the existing `tick_to_seconds`) is the shared tick↔time
-  conversion, and `harpchart.rs` save/load round-trips the full tempo map
-  (including rescaling a foreign `timing.resolution`, e.g. a MIDI-derived
-  chart, into the editor's own tick units instead of silently
-  mis-scaling it — a pre-existing load bug this fixed as a side effect).
-  MIDI import now carries a track's real tempo changes into
-  `tempo_changes` instead of collapsing to one average BPM
-  (`midi_import::editor_tempo_map`). Scope is deliberately limited to the
-  editor's grid/waveform display and the chart's on-disk tempo map — Play/
-  Practice/Record audio synthesis (`song_editor::playback`'s `render_pcm`)
-  still renders against one flat nominal BPM, matching `gameplay::
-  call_response`'s already-documented simplification; see `ROADMAP.md`'s
-  0.5 section. Per-technique playback effects (a 0.5 candidate raised
-  earlier) was explicitly declined — real product-feel decision (a new
-  sound on every scored note), not something to guess at unprompted.
-- **0.5: live auto-refresh of the external song/theme/lesson folders** —
-  `assets_management::watch` starts one recursive `notify-debouncer-full`
-  watcher (same crate Bevy's own `file_watcher` feature uses internally,
-  added as our own direct, always-on dependency rather than flipping that
-  Bevy feature — see `CLAUDE.md`'s Asset sources bullet for why) on
-  `~/Harmonicon` at Startup, if it exists, and fires one generic
-  `ExternalFolderChanged{top_level_dirs}` message per debounced batch
-  (`watch::changed_top_level_dirs`, pure/unit-tested) — deliberately
-  agnostic of what `songs`/`themes`/`lessons` mean, since this module is
-  low-level shared vocabulary and those are feature concerns above it.
-  `assets_management::mod.rs` consumes it for `songs`/`themes`
-  (`rescan_on_external_change`); `lessons::catalog` consumes the same
-  message for `lessons` from the other side
-  (`rescan_lessons_on_external_change`) — a `lessons`-depends-on-
-  `assets_management` edge, not the reverse. Every scan function fully
-  replaces its resource's contents rather than appending (`scan_all_songs`
-  didn't always — fixed; `scan_ui_themes`/`scan_lessons` already did), so
-  each is safe to call again at runtime. A successful live rescan fires
-  its own specific `SongsRescanned`/`ThemesRescanned`/`LessonsRescanned`
-  message (not a bare resource-change poll: the consuming page's own
-  change-detection tick goes stale while the page is closed and would
-  misfire as "changed" on every re-entry); the Artist List, Theme picker,
-  and Lessons list pages each consume theirs to force a same-page rebuild
-  (`NextState::set` re-fires `OnExit`/`OnEnter`, same pattern the pause
-  menu's Restart already relies on) if that page happens to be open when a
-  drop-in happens. No manual refresh button, no restart. Lessons also
-  gained bundled-plus-external scanning itself (`lessons::catalog::
-  scan_all_lessons`, mirroring `scan_all_songs`'s pattern — bundled first,
-  external tagged `external://lessons`), which didn't exist before this.
-  The rest of that roadmap item — actual downloadable/community song packs
-  — is still open; see `ROADMAP.md`'s 0.5 section.
-- **Options: fullscreen toggle** — `settings::FullscreenEnabled`
-  (persisted, off by default) plus `settings::apply_fullscreen` mirroring
-  it onto the primary window's `WindowMode` (borderless, not exclusive
-  fullscreen); a pill-button toggle on the Options page, same shape as the
-  adaptive-difficulty toggle.
-- **0.5: Song editor can author lessons** — `EditorState::content_kind`
-  (`ContentKind::Song`/`Lesson`, `song_editor::state`) is a "Record Song"/
-  "Record Lesson" toggle button (`meta_form::spawn_content_kind_row`,
-  same click-to-cycle shape as the harmonica-kind toggle). While Lesson is
-  active, `song_editor::lesson_form::spawn_lesson_form` shows a second
-  panel (`LessonFormGroup`, shown/hidden via `Node::display` like
-  `EditModeGroup`/`PerformModeGroup` already are) with one row per
-  `state::LESSON_FIELDS` — lesson id, unit, explanation, prerequisites
-  (comma-separated), pass-criteria kind/threshold/technique, and
-  progression — reusing `meta_form::spawn_field_row` (made `pub(super)`)
-  for every row, including three new click-to-cycle fields alongside
-  Key/Position (extracted their shared advance-through-a-const-array logic
-  into `state::cycle_next`, used by all five now). Save/Load dispatch on
-  `content_kind`: `harpchart::handle_save_chosen`/`handle_load_chosen`
-  (Song) and `lesson_form::handle_save_lesson_chosen`/
-  `handle_load_lesson_chosen` (Lesson) each skip the other's `ContentKind`,
-  so exactly one acts per `FileChosen` message; the Lesson path builds a
-  schema-shaped `lesson.json` (`lesson_form::serialize_lesson`, validated
-  against `lesson_schema.dtd.json` via `lessons::parse_lesson` before
-  writing — a warning if it doesn't pass, not a silent invalid write) and,
-  if the editor has any notes, also writes `song/chart.harpchart` next to
-  it via the ordinary `harpchart::serialize_harpchart` — the same
-  `"chart": "song/chart.harpchart"` convention every shipped lesson uses.
-  Loading a `lesson.json` round-trips the fields back
-  (`lesson_form::populate_from_lesson_manifest`) and loads its chart too,
-  if it has one. **Scope boundaries, deliberate**: `title_key`/`body_key`
-  are derived from the lesson id, never round-tripped as raw text (they're
-  keys, not values — this codebase's localization convention); the
-  Explanation/title text an author types has nowhere to be written as a
-  real translation, so `serialize_lesson` prints the key/text pairs to
-  add to the locale files by hand instead. A lesson save also doesn't run
-  `harpchart::save_midi_backing` (the MIDI-import backing-track
-  convenience) — author the chart as a plain song first if it needs MIDI
-  backing, then switch to Lesson mode to add the curriculum fields.
-
+- **Song editor: from bare note-grid to full authoring tool** — Record/
+  Edit/Play modes with live-mic recording (onset/release debounced,
+  latency-compensated, punch-in over overlapping notes), MIDI import with
+  auto key-suggestion, multi-note selection, Ctrl+C/V copy-paste,
+  Select/Erase/Remove/Tempo timeline tools, a real multi-point tempo map
+  with an aligned waveform header, selectable out-of-scale coloring
+  (`song::chart::Scale`), lesson authoring (`ContentKind::Song`/`Lesson`)
+  alongside plain songs, and a UI pass (scrollable form, fixed chrome,
+  per-mode button groups, a status bar). A dedicated pass since then
+  (2026-07-27, playing the role of a harmonica player + audio/UX
+  developer) found the remaining gaps in this workflow — see `TODO.md`'s
+  Song Editor section (no undo/redo, no metronome/count-in, no note
+  audition, save feedback that's invisible outside a terminal, no
+  selection-transpose, no swing-aware grid snap) and `CLAUDE.md`'s "Song
+  editor: known gaps" bullet for the detail behind each.
 - **Code-duplication cleanup** (whole-tree duplicate-block scan,
   2026-07-19) — all 6 phases done, no behavior changes, `cargo test`/
   `cargo clippy`/`tests/physical_design.rs` clean throughout:
@@ -176,20 +75,13 @@ this file — prune it back to a one-line summary under "Shipped" below.
   unified the click-to-cycle and plain-button scaffolds respectively; MIDI
   parsing (`tick_to_seconds`/`collect_tempo_map`/`track_name_of`/
   `note_on_count`/`extract_notes`) is now `song::midi`, a new public
-  module `song_editor::midi_import` builds on (this used to also be shared
-  with `bin/midi_to_chart`, since removed entirely — the Song Editor's own
-  MIDI import covers the same ground in-game; the editor's own
-  MIDI-tempo-map conversion, formerly the standalone `midi_parse.rs`, has
-  since been folded directly into `midi_import.rs`, its only caller); small
-  menu/UI fry (`results::spawn_stat_row`, `options`'s slider-row scaffold,
+  module `song_editor::midi_import` builds on; small menu/UI fry
+  (`results::spawn_stat_row`, `options`'s slider-row scaffold,
   `jam_generate`'s stepper rows, `menu::pages::lessons`'s reader-line
   spawn) each collapsed to one shared local helper; and the literal
   duplicate `richter_harp` reference-layout tests in
   `bending_trainer/tests.rs` were deleted in favor of `song::harmonica::
-  tests`'s copies (the trivial `World::new()`/`Schedule::default()`
-  scaffolding repeated across test files was deliberately left alone —
-  already the established idiom everywhere, not worth an abstraction for
-  two lines).
+  tests`'s copies.
 - **Build-time message-registration check** — `build.rs` now statically
   scans for every `#[derive(Message)]` type and fails the build if it's
   never registered with `.add_message::<T>()` anywhere, the same class of
@@ -198,27 +90,6 @@ this file — prune it back to a one-line summary under "Shipped" below.
   first time its `MessageReader`/`MessageWriter` system actually ran. Same
   static/textual approach as the existing localization-literal scan; see
   `CLAUDE.md`'s "Message registration is enforced" bullet.
-- **Song editor: lesson-details panel UX pass** — `Record Lesson`'s 8
-  extra fields didn't fit an ordinary window and gave no hint anything ran
-  below it. Fixed three ways: `LessonThreshold`/`LessonTechnique` rows now
-  hide unless `lesson_pass_criteria` actually needs them
-  (`LessonConditionalRow`, `update_lesson_conditional_rows`); the fields
-  split into the same two-column layout `meta_form::spawn_form_column`
-  already gives the song fields (curriculum-identity fields vs. the
-  pass-criteria cluster, `LESSON_FIELDS.len() / 2`); and the whole body
-  now sits behind a "▸ Lesson Details" header, collapsed by default
-  (`LessonDetailsBody`/`LessonDetailsToggleLabel`,
-  `EditorState::lesson_details_expanded`). Separately, the editor's form
-  area (meta form + lesson form + status bar) gained a real, visible
-  vertical scrollbar (new `song_editor::scroll` module — `bevy_ui_widgets`'
-  `Scrollbar`/`ScrollbarThumb`, hidden whenever everything already fits) —
-  a first pass wrapped the grid in the same `ScrollArea`, which let
-  scrolling the grid's own horizontal scrollbar also drag the vertical one
-  (and vice versa) on a small window; the grid row and mod panel were
-  pulled back out into fixed chrome above it (`ui::spawn_fixed_chrome`),
-  and `GridArea`'s new `Hovered` component gates
-  `interaction::pan_wheel` so the grid only pans horizontally while the
-  pointer is actually over it.
 - **Packaging CI fixes** — `flatpak.yaml`'s build was failing on a fresh
   runner (but not locally) because `flatpak-builder` shells out to the
   host's `eu-strip` (from `elfutils`) after the build to split/strip
@@ -233,126 +104,70 @@ this file — prune it back to a one-line summary under "Shipped" below.
   and `hdiutil`-packages it into a `.dmg` (native-arch only — Apple
   Silicon, since this is a packaging-regression check, not a release
   artifact), uploading the result as a short-retention build artifact.
-- **Record-mode detection robustness + latency** — live recording
-  (`song_editor::record`) no longer trusts the raw detector: `start_record`
-  narrows `PitchRange` to the selected harp (as gameplay already did from a
-  chart) and precomputes a 128-entry MIDI→(hole, dir, pitch) table from
-  `pitch_map::map_pitch_playable` (new no-fallback sibling of `map_pitch` —
-  both now in `song_editor::pitch_map`, split out of `midi_import`), so
-  detections the harp can't produce are discarded instead of snapped onto
-  the grid; onsets/releases are debounced (a one-chunk blip is deleted
-  again, a one-chunk dropout doesn't split a held note); and onset
-  timestamps subtract the detection delay (half analysis window + the
-  calibrated `input_latency_ms`) so takes land where they were played.
-  `mpm_pitch` also gained an absolute clarity floor (`MPM_MIN_CLARITY`) —
-  it previously reported a "pitch" for any breath noise loud enough to pass
-  the RMS silence gate, since its 0.9 clarity threshold was only relative
-  to the frame's own strongest lag. See `CLAUDE.md`'s recording bullet and
-  `record.rs`'s module docs.
-- **Song editor: scroll-while-selecting on the timeline** — the Select
-  tool's span now lives in its own `TimelineSelection` resource (same
-  separation/reason as `Scroll`), the ruler's drag catcher
-  (`TimelineSurface`) is a persistent entity synced to the viewport
-  instead of respawned by every grid rebuild, and `rebuild_grid`'s
-  early-return guard shrank to note drags only — so wheel-panning the grid
-  mid-selection rebuilds/spawns the notes it scrolls into view, and the
-  span end tracks pointer motion *plus* scroll delta
-  (`timeline::drag_end_tick`, `sync_selection_with_scroll` for
-  scroll-only frames). The two-click split flow now produces a selection
-  too (it previously placed a marker that nothing consumed), and
-  `timeline.rs` split its overlay/rendering half into
-  `timeline_overlay.rs` to stay under the file-size budget. See
-  `CLAUDE.md`'s timeline-tools bullet.
-- **Song editor: Record as a first-class mode** — the editor's modes are
-  now Edit / Record / Play (`state::Mode`; Perform renamed to Play, the
-  record button moved out of it), each with its own button group. Record
-  mode has a Play/Pause/Stop/Finish transport
-  (`transport::spawn_record_buttons` — `mod_panel`'s transport clusters
-  split into `song_editor/transport.rs` for the file-size budget): pause
-  resumes in place as the same take, Stop keeps the playhead position for
-  the next take, Finish rewinds to zero; a take starts from the playhead
-  position (a Record-mode click on the beat ruler parks it —
-  `timeline::on_timeline_click_seek` — and the background music is sought
-  to match via `playback::PendingMusicSeek`). Recording now *punches in*
-  (`record::punch_out_overlaps`/`RecordState::take_ids`): a recorded note
-  replaces overlapping notes from outside the current take instead of
-  layering impossible simultaneous blow/draw combos on top of them.
-- **Song editor: selectable scale** — a new `harmonica.scale` chart field
-  (`song::chart::Scale`, schema-`enum`-validated, format_version bumped to
-  1.2.0) replaces the grid's out-of-scale coloring's old hardcoded
-  "always blues, rooted at the harp key" assumption with six
-  player-selectable options (1st/2nd/3rd position — the blues hexatonic,
-  rooted at the harp key/a 5th up/a whole step up; Major/Minor
-  Pentatonic/Country — alternative shapes rooted at the harp key), picked
-  via a real combobox (`meta_form::spawn_scale_combobox`) rather than a
-  click-to-cycle button, since six named options is a lot to cycle through
-  blindly. The default (1st position) reproduces the pre-feature coloring
-  exactly, so no existing bundled chart's appearance changes. Its slot
-  lives in the fixed chrome above the mod panel, not the scrollable meta
-  form alongside the other fields — `bevy_ui_widgets::Popover`'s dropdown
-  needs to be a literal child of its toggle, and Bevy's UI clipping follows
-  that same ancestry, so a combobox nested in the form's `ScrollArea` gets
-  its open dropdown clipped to that viewport regardless of `GlobalZIndex`,
-  rendering behind (and eating clicks meant for) the fixed mod panel. That
-  fix then exposed a second, unrelated bug affecting every combobox in the
-  app (not just Scale's): `Pointer<Click>` auto-propagates up the entity
-  hierarchy, so picking a dropdown item also fired the toggle button's own
-  click handler on the same event, which saw the just-closed popup and
-  reopened it — picking an item never visually closed the dropdown. Fixed
-  in the shared widget (`dialogs::combobox`'s `toggle_click`/
-  `backdrop_click`/`item_click` all now call `ev.propagate(false)`). See
-  `CLAUDE.md`'s song-editor-scale bullet.
+- **0.5: live auto-refresh of the external song/theme/lesson folders** —
+  `assets_management::watch` starts one recursive `notify-debouncer-full`
+  watcher (same crate Bevy's own `file_watcher` feature uses internally,
+  added as our own direct, always-on dependency rather than flipping that
+  Bevy feature — see `CLAUDE.md`'s Asset sources bullet for why) on
+  `~/Harmonicon` at Startup, if it exists, and fires one generic
+  `ExternalFolderChanged{top_level_dirs}` message per debounced batch
+  (`watch::changed_top_level_dirs`, pure/unit-tested) — deliberately
+  agnostic of what `songs`/`themes`/`lessons` mean, since this module is
+  low-level shared vocabulary and those are feature concerns above it.
+  `assets_management::mod.rs` consumes it for `songs`/`themes`
+  (`rescan_on_external_change`); `lessons::catalog` consumes the same
+  message for `lessons` from the other side
+  (`rescan_lessons_on_external_change`) — a `lessons`-depends-on-
+  `assets_management` edge, not the reverse. A successful live rescan
+  fires its own specific `SongsRescanned`/`ThemesRescanned`/
+  `LessonsRescanned` message; the Artist List, Theme picker, and Lessons
+  list pages each consume theirs to force a same-page rebuild if that page
+  happens to be open when a drop-in happens. No manual refresh button, no
+  restart. The rest of that roadmap item — actual downloadable/community
+  song packs — is still open; see `ROADMAP.md`'s 0.5 section.
+- **Options: fullscreen toggle** — `settings::FullscreenEnabled`
+  (persisted, off by default) plus `settings::apply_fullscreen` mirroring
+  it onto the primary window's `WindowMode` (borderless, not exclusive
+  fullscreen); a pill-button toggle on the Options page, same shape as the
+  adaptive-difficulty toggle.
 - **Song-progress bar: per-hole note lanes, phrase overlay, survives no
-  background music** — the note strip below the waveform now spans the
+  background music** — the note strip below the waveform spans the
   harmonica's full hole range as equal lanes, highest hole at the top,
-  lowest at the bottom (`note_lane_geometry`), with each note a rectangle
-  in its own hole's lane, sized to its own duration and tinted blue
-  (blow)/orange (draw) (`note_marker_geometry`/`NoteMarker{time, duration,
-  hole, is_blow}`) — the same "note as a colored proportional rect"
-  language the Song Editor's scrollbar minimap already used, replacing a
-  fixed-width white sliver with no duration, hole, or direction
-  information. The per-phrase adaptive-difficulty rectangles are now a
-  translucent overlay painted over that same strip (spawned before the
-  note markers, so they stay legible on top) rather than their own row
-  below it — so a loop-range drag can now only start in the waveform band.
-  2D/3D build markers straight from `ScheduledNote`; Jam Session (no
-  `SongNotes`, nothing scored) flattens the chart's own track events
-  instead, one marker per event so a chord/split item's notes each get
-  their own marker in their own lane. Separately, `spawn_song_progress`
-  falls back to the furthest extent of its notes/phrase sections as the
-  bar's timescale (`effective_duration`) when a chart has no backing
-  track (`music_duration_secs` reads `0.0` with nothing to measure), so
-  the playhead/phrase overlay/note lanes still populate instead of the
-  whole bar reading as empty — only the waveform row stays blank, since
-  there's genuinely no waveform without decoded audio. See `CLAUDE.md`'s
+  lowest at the bottom, with each note a rectangle in its own hole's
+  lane, sized to its own duration and tinted blue (blow)/orange (draw) —
+  the same "note as a colored proportional rect" language the Song
+  Editor's scrollbar minimap already used. See `CLAUDE.md`'s
   song-progress-bar bullet.
 - **Menu pages auto-scroll instead of silently overflowing** — the Artist
   List (and any other page whose content can outgrow the screen) used to
   just grow past the top/bottom edges with no way to reach the rest.
-  `menu::scene::spawn_menu_root` now spawns a new, generic
-  `dialogs::scroll_area::spawn_scroll_area` widget (a `ScrollArea` paired
-  with a real `Scrollbar`/`ScrollbarThumb`, generalized out of the Song
-  Editor's own `song_editor::scroll`) and returns its entity instead of the
-  outer root's, so all 22 existing call sites gained scrolling with zero
-  changes. The scrollbar collapses via both `Visibility` and `Node::display`
-  when content already fits, so short menus stay exactly as centered as
-  before. See `CLAUDE.md`'s menu-scrolling bullet.
-- **Song editor: multi-note selection** — Ctrl+click toggles notes into and
-  out of a multi-selection (`EditorState::selected` is now a `Vec<u32>`;
-  `interaction::select_or_add_ctrl`); Delete and dragging a note both act
-  on the whole selection instead of just one note, moving/deleting the
-  group together (`grid::group_move_targets`/`group_move_valid`,
-  `DragState::group`). Mod-panel technique edits still target one note
-  (the "primary"/most-recently-selected). New `song_editor::ranges` module
-  (`song_end_tick`/`normalize_range`/`silence_gaps`/`split_side_range`/
-  `erase_range`/`remove_range`) split out of `state.rs` to stay under the
-  file-size budget. See `CLAUDE.md`'s multi-note-selection bullet.
-- **Song editor: Ctrl+C/Ctrl+V copy-paste** — new `song_editor::clipboard`
-  module (`NoteClipboard`, `copy_selected`, `paste_targets`); Ctrl+V pastes
-  at the tick under the mouse (`GridArea` gained its own
-  `RelativeCursorPosition` so this works from a hover, no click needed),
-  preserving the copied notes' relative shape and holes, silently skipping
-  any that don't fit. See `CLAUDE.md`'s copy-paste bullet.
+  `menu::scene::spawn_menu_root` now spawns a generic
+  `dialogs::scroll_area::spawn_scroll_area` widget and returns its entity
+  instead of the outer root's, so all 22 existing call sites gained
+  scrolling with zero changes. See `CLAUDE.md`'s menu-scrolling bullet.
+- **0.6: jazz engine prerequisites** — `song::harmonica::ii_v_i_chords`
+  (a standalone ii–V–I chord-tone builder), three new `ChordQuality`
+  variants (`Major7`/`HalfDiminished7`/`Dominant7Alt`), and
+  `Progression::JazzBlues` (a VI7–ii7–V7 turnaround inside the 12-bar
+  form) — both plug into existing generic machinery (`jam::session`'s
+  chord-tone classification, `jam::backing`'s bass generation, the
+  Progression-generic twelve-bar overlay) with no further changes needed.
+  What's left for Lessons Unit 4 is content only — see `TODO.md`.
+- **Alternate harmonica tunings** — `song::harmonica::
+  paddy_richter_harp`/`natural_minor_harp`, matching the existing
+  Richter/Country shape (`BendingProfile` variant + reference-layout
+  builder); bend availability falls out of the existing blow/draw-gap math
+  for free, no per-tuning bend logic needed.
+- **Accessibility: colorblind-safe note palette** — an Options-page toggle
+  (`settings::ColorblindPalette`) swaps the Play2D/Play3D note highway's
+  blow/draw colors for a fixed blue/yellow pair; themes can also set their
+  own `colors.notes` block. Scope: only the scored note highway honors the
+  toggle today — see `ROADMAP.md`'s 0.7+ section for what's still using
+  hardcoded colors.
+- **`phrase_learned` stable keying** — adaptive-difficulty progress is now
+  keyed by a phrase section's own name (disambiguated for repeats) instead
+  of its ordinal position in the track, so re-editing a chart's phrase
+  tags no longer silently misapplies old progress to the wrong section.
 
 ## Current work
 
@@ -361,8 +176,12 @@ Finishing 0.4:
 1. **Backing track variety, remainder** (0.4): recorded loops per style
    (shuffle, slow blues, swing) as a richer alternative to the generated
    bass — real audio content, not a code task.
-2. **Lessons Unit 4 "jazz"** is explicitly gated on the 0.6 milestone
-   (`ROADMAP.md`), not part of finishing 0.4.
+2. **Lessons Unit 4 "jazz"** engine prerequisites are done; what's left is
+   content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
+
+Not yet started, candidate next work: the Song Editor UX/workflow gaps in
+`TODO.md`'s Song Editor section (undo/redo, metronome/count-in, note
+audition, save-time feedback, selection-transpose, swing-aware grid snap).
 
 ## Working practices
 

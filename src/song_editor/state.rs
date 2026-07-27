@@ -373,7 +373,8 @@ pub(super) const TECHNIQUE_NAMES: [&str; 8] = [
 /// `Field::LessonProgression`'s cycle — `"none"` omits the manifest field
 /// entirely (defaults to Standard in-game); the rest are
 /// `lesson_schema.dtd.json`'s own enum.
-pub(super) const PROGRESSIONS: [&str; 4] = ["none", "standard", "quick-change", "minor"];
+pub(super) const PROGRESSIONS: [&str; 5] =
+    ["none", "standard", "quick-change", "minor", "jazz-blues"];
 
 /// Advances `current` to the next entry in `options`, wrapping — every
 /// click-to-cycle metadata field (`Key`, `Position`, and the lesson-only

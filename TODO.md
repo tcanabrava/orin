@@ -4,15 +4,67 @@ Open, actionable items only — once something lands, delete it from here
 rather than annotating it done (git log and commit messages are the
 historical record; see `CLAUDE.md`).
 
-## Correctness / consistency
+## Song editor
 
-- [ ] **`profile.json`'s `phrase_learned: Vec<f32>` is indexed by a
-  section's ordinal position in the track** (`gameplay/adaptive_difficulty.
-  rs`). If a chart's phrase tags are ever reordered/added/removed by a
-  re-edit, old progress silently applies to the wrong section instead of
-  resetting. Low urgency (no in-place chart edits happen today outside the
-  song editor, and the editor doesn't touch shipped charts), but worth a
-  content-versioned key (e.g. phrase name, or a stable id) if that changes.
+Found on a harmonica-player/audio/UX pass over the editor (2026-07-27);
+see `CLAUDE.md`'s "Song editor: known gaps" bullet for the full detail
+behind each. Roughly in priority order:
+
+- [ ] **No undo/redo.** `Ctrl+Z`/`Ctrl+Y` bind to nothing today — only
+  `Ctrl+C`/`Ctrl+V` exist. This is the single biggest missing safety net
+  for a note editor; it's also *why* Erase/Remove need a confirm dialog
+  today (`dialogs::confirm_dialog`) — a real undo stack would cover
+  ordinary placement/move/delete mistakes too, not just range operations,
+  and would let the confirm dialog go away if that's ever judged more
+  friction than it's worth. `EditorState`'s note list is a plain `Vec`, so
+  a snapshot-based history (push a clone before each mutation) should be
+  cheap; the harder part is deciding which state belongs in the
+  snapshot (notes + tempo map, not transient things like `Scroll` or
+  `TimelineSelection`).
+- [ ] **No metronome or count-in in Record/Play/Practice.**
+  `gameplay::metronome_overlay` (with shuffle-feel support) is fully built
+  and used everywhere else in the game — Jam Session, scored gameplay, the
+  Bending Trainer — but never wired into the Song Editor. Recording a
+  rhythmically accurate take against nothing but a moving playhead is
+  exactly the failure mode a click track exists to prevent; a count-in
+  (a bar or two of clicks before a take actually starts) would help even
+  more, since `record::start_record` currently begins capturing the
+  instant Play is pressed.
+- [ ] **No way to audition a note's pitch.** Clicking or selecting a note
+  doesn't play its sound — you only hear it in context during Play/
+  Practice, or by reaching for your own harp. `song_editor::playback`'s
+  synth already exists and is reused by `playback.rs`/`practice.rs`/
+  `record.rs`; a short blip on selection (or a dedicated key) would be a
+  small, low-risk addition, and especially valuable for confirming a
+  bend/overblow/overdraw actually sounds like what was intended before
+  committing to it.
+- [ ] **Save/validation feedback is `println!`-only.** `harpchart.rs`'s
+  schema-validation warning, the lesson form's empty-required-field check,
+  and its locale-key-pairs-to-add reminder (`lesson_form::
+  serialize_lesson`) all print to stdout — invisible in a normal,
+  non-terminal launch of a packaged build. `panel::update_status_bar`
+  already exists with a drag/record/practice message-priority scheme;
+  routing a "Saved" / "Save failed — see below" message through it (same
+  pattern, one more priority tier) would make failures visible to anyone,
+  not just whoever happens to have a terminal attached.
+- [ ] **No selection-transpose.** Moving a selected phrase to a different
+  chord (e.g. an I-position lick reused over the IV, extremely common
+  blues vocabulary) means manually re-placing every note on a new hole
+  today. Copy/paste deliberately keeps holes fixed ("holes never change,
+  since paste is keyed on when, not which hole") — a transpose operation
+  (shift the selection's pitches by N semitones/diatonic steps, remapping
+  each to the nearest playable hole via the existing `pitch_compatible`
+  check, skipping any that don't fit) is a natural complement, not a
+  change to paste's own contract.
+- [ ] **Manual note placement can't represent swing/triplet timing.** The
+  grid snaps to straight 16ths only (`TICKS_PER_BEAT = 4`); there's no
+  triplet or shuffle-aware subdivision to click onto, even though shuffle
+  is this game's core blues feel elsewhere (`MetronomeFeel::Shuffle`).
+  Only Record mode's live-mic capture (unquantized onsets) can currently
+  land a note off the straight grid — hand-charting an authentic shuffle
+  groove by clicking isn't possible. Lower priority than the items above;
+  worth doing once there's an appetite for a genuine grid-resolution
+  rework (`TICKS_PER_BEAT` is baked into a lot of tick-math elsewhere).
 
 ## Content
 
@@ -24,9 +76,10 @@ historical record; see `CLAUDE.md`).
 - [ ] **Lessons content, Unit 4 "jazz" (0.6).** Wave 2 (harmonica-basics
   extensions, bar-counting drills, the train trio, and the new Unit 3
   blues-vocabulary unit — licks via call-and-response, chord-tone/
-  minor-blues/phrase-discipline improvisation) is fully shipped; see
-  `docs/lessons_plan.md`. What's left is the jazz unit, gated on 0.6's
-  jazz chord-tone tables and a ii–V–I/jazz-blues `Progression` variant.
-  Original arpeggio/vocabulary drills are the safe-to-author subset;
-  actual jazz-standard repertoire needs the same rights judgment as the
-  item above.
+  minor-blues/phrase-discipline improvisation) is fully shipped, and Unit
+  4's own engine prerequisites (jazz chord-tone tables, the jazz-blues
+  `Progression` variant) are now done too — see `docs/lessons_plan.md`.
+  What's left is authoring the actual jazz unit content. Original
+  arpeggio/vocabulary drills are the safe-to-author subset; actual
+  jazz-standard repertoire needs the same rights judgment as the item
+  above.

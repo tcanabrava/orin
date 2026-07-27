@@ -30,69 +30,25 @@ minor-blues/phrase-discipline improvisation) are all done — see
 
 ## 0.5 — "Content" (authoring & ecosystem)
 
-- Song editor maturity: full authoring round-trip (record → edit → validate →
-  play) without touching JSON. The editor already has a Practice mode
-  scoring live mic input against the chart being edited (`src/scoring.rs` +
-  `song_editor/practice.rs`). Its own MIDI import already auto-suggests the
-  best-fitting harp key and infers bends/slides for notes the chosen layout
-  can't play directly (`song_editor::midi_import::suggest_key`/`map_pitch`).
-  The standalone `bin/midi_to_chart` CLI tool (a separate, simpler
-  C-diatonic-only converter) has been removed now that the editor's own
-  MIDI import covers the same ground in-game; the pure MIDI-parsing helpers
-  it used to duplicate (`song::midi`) are shared library code the editor's
-  import still builds on.
-  - **Variable tempo maps are done**: a chart's `Timing.tempo_map` (multiple
-    tempo-change points, not just one flat BPM) is now fully editable —
-    `EditorState::tempo_changes` + `state::build_tempo_map`/`bpm_at`, a
-    Tempo timeline tool (`TimelineTool::Tempo`, click to add/step a point's
-    BPM, click near an existing one to remove it —
-    `state::toggle_tempo_point`) rendered as markers on the grid header,
-    correct save/load round-tripping through `harpchart.rs` (including
-    rescaling a foreign `timing.resolution` — e.g. a MIDI-derived chart —
-    into the editor's own tick units), and MIDI import carrying a track's
-    real tempo changes into `tempo_changes` instead of collapsing to one
-    average BPM. The header waveform (`song_editor::waveform`) aligns
-    against this same tempo map, so it stays in sync with the grid as
-    tempo points are added. `song::chart::seconds_to_tick` (new, the
-    inverse of the existing `tick_to_seconds`) is the shared conversion
-    both the editor and MIDI import build on.
-    **Deliberate scope boundary**: this covers the editor's grid/waveform
-    display and the chart's on-disk tempo map only. Audio *synthesis* for
-    Play/Practice/Record preview (`song_editor::playback`'s `render_pcm`,
-    shared with `gameplay::call_response`) still renders against one flat
-    nominal BPM — the same already-accepted simplification
-    `gameplay::call_response` documents for mid-phrase tempo automation.
-    Rewriting the synth to follow a variable tempo map is future work if
-    it's ever needed; nothing today depends on it.
-  - **The editor can also author lessons, not just plain songs**: a
-    "Record Song"/"Record Lesson" toggle (`EditorState::content_kind`,
-    `song_editor::lesson_form`) switches the meta form to show curriculum
-    fields (id, unit, explanation, prerequisites, pass criteria, technique,
-    progression) alongside the existing song fields, and Save/Load write or
-    read a `lesson.json` instead of a `.harpchart` — with the exact same
-    grid/mod-panel/playback underneath, since a chart-backed lesson's chart
-    *is* an ordinary chart (written to `song/chart.harpchart` next to the
-    manifest, same as every shipped lesson). **Scope boundary**: a
-    `lesson.json` only stores Fluent keys, never display text, so the
-    editor can't write real pt-BR/es-ES translations for whatever an
-    author types — it derives `title_key`/`body_key` from the lesson id
-    and prints the key/text pairs to add to the locale files by hand, the
-    same manual step authoring any bundled lesson already requires.
+- **Song editor maturity.** The happy-path authoring round-trip (record →
+  edit → validate → play, without touching JSON) is functionally
+  complete — see `PLAN.md`'s Shipped section for what's there (Record/
+  Edit/Play modes, MIDI import with key suggestion, a real multi-point
+  tempo map, lesson authoring alongside plain songs). What's left is
+  workflow/UX maturity, found on a harmonica-player/audio/UX-focused pass
+  (2026-07-27): no undo/redo, no metronome or count-in while recording, no
+  way to audition a note's pitch on click, no selection-transpose (moving
+  a lick to a different chord), a manual-placement grid that can't
+  represent swing/triplet timing, and save/validation feedback that's
+  `println!`-only (invisible outside a terminal). See `TODO.md`'s Song
+  Editor section for the full list and `CLAUDE.md` for the detail behind
+  each.
 - Downloadable song packs / community sharing for the `~/Harmonicon`
-  external-source folder. **Live auto-refresh of that folder is done**, for
-  songs, themes, *and* lessons: `assets_management::watch` watches
-  `~/Harmonicon` recursively (a `notify-debouncer-full` debounced watcher,
-  the same crate Bevy's own `file_watcher` feature uses internally) and
-  re-scans `songs/`, `themes/`, or `lessons/` the moment any of them
-  changes — no manual refresh button, no restart, drop content in and it's
-  registered live. Lessons also gained bundled-plus-external scanning
-  itself (they were bundled-only before): `~/Harmonicon/lessons` works the
-  same way `~/Harmonicon/songs` already did. If the Artist List, Theme
-  picker, or Lessons list page happens to be open when a live rescan
-  happens, it rebuilds itself immediately too. See `PLAN.md` for the
-  implementation shape. The actual packaging/download/hosting mechanism for
-  community song packs is still open — a product decision (where packs are
-  hosted, how they're verified) rather than a small code task.
+  external-source folder. Live auto-refresh of that folder (songs, themes,
+  and lessons) is done — see `PLAN.md`. The actual packaging/download/
+  hosting mechanism for community song packs is still open — a product
+  decision (where packs are hosted, how they're verified) rather than a
+  small code task.
 - More bundled public-domain songs across all four difficulties (see
   `TODO.md`'s content-gap item).
 - Per-technique playback effects (pitch-bend/vibrato/wah DSP driven by chart
