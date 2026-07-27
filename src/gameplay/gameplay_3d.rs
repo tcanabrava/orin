@@ -16,7 +16,7 @@ use crate::{
     song::SongManifest,
     song::chart::{Action, HarpChart},
     song::harmonica::twelve_bar,
-    theme::{LoadedTheme, TwelveBarColors},
+    theme::{LoadedTheme, NoteColors, TwelveBarColors, effective_note_colors},
 };
 
 use super::adaptive_difficulty::AdaptiveDifficulty;
@@ -355,10 +355,13 @@ pub fn spawn_visible_notes_3d(
     mut tail_materials: ResMut<Assets<NoteTail3dMaterial>>,
     existing: Query<&NoteVisual3D>,
     show_numbers: Res<ShowNoteNumbers>,
+    theme: Res<LoadedTheme>,
+    colorblind: Res<crate::settings::ColorblindPalette>,
 ) {
     if render_assets.head_mesh.is_none() {
         return;
     }
+    let colors = effective_note_colors(theme.note_colors(), colorblind.0);
     let elapsed = clock.get();
     let already_spawned: HashSet<usize> = existing.iter().map(|v| v.note_id).collect();
     for i in super::notes_needing_spawn(&song_notes.notes, &already_spawned, elapsed) {
@@ -371,19 +374,27 @@ pub fn spawn_visible_notes_3d(
             i,
             &song_notes.notes[i],
             show_numbers.0,
+            colors,
         );
     }
 }
 
 /// A note's base (un-hit, un-missed) blow/draw appearance: `(r, g, b,
-/// emissive_r, emissive_g, emissive_b)`. Shared by `spawn_note_visual_3d` and
-/// `update_note_visuals_3d` so the two can't drift out of sync.
-fn note_base_appearance(is_blow: bool) -> (f32, f32, f32, f32, f32, f32) {
-    if is_blow {
-        (0.25, 0.55, 0.95, 0.1, 0.3, 1.2)
+/// emissive_r, emissive_g, emissive_b)`, `r`/`g`/`b` from `colors` (the
+/// active theme's note colors, or the fixed colorblind-safe pair — see
+/// `theme::effective_note_colors`); the emissive glow stays a fixed
+/// per-direction accent regardless of palette, a secondary bloom effect
+/// layered on top of the (now palette-driven) base color. Shared by
+/// `spawn_note_visual_3d` and `update_note_visuals_3d` so the two can't
+/// drift out of sync.
+fn note_base_appearance(colors: NoteColors, is_blow: bool) -> (f32, f32, f32, f32, f32, f32) {
+    let c = if is_blow { colors.blow } else { colors.draw }.to_srgba();
+    let (emit_r, emit_g, emit_b) = if is_blow {
+        (0.1, 0.3, 1.2)
     } else {
-        (0.95, 0.38, 0.15, 1.2, 0.2, 0.05)
-    }
+        (1.2, 0.2, 0.05)
+    };
+    (c.red, c.green, c.blue, emit_r, emit_g, emit_b)
 }
 
 /// Spawns one note as a 3D comet: an elongated cube head (from the theme's
@@ -400,10 +411,11 @@ fn spawn_note_visual_3d(
     note_id: usize,
     note: &ScheduledNote,
     show_numbers: bool,
+    colors: NoteColors,
 ) {
     let head_mesh = assets.head_mesh.as_ref().expect("checked by caller");
     let cfg = assets.cfg.as_ref().expect("checked by caller");
-    let (r, g, b, emit_r, emit_g, emit_b) = note_base_appearance(note.is_blow);
+    let (r, g, b, emit_r, emit_g, emit_b) = note_base_appearance(colors, note.is_blow);
 
     let hole_cfg = assets.holes.get(note.hole.saturating_sub(1) as usize);
     let note_x = hole_cfg
@@ -1086,7 +1098,12 @@ pub fn update_notes_3d(
 /// ([`note_base_appearance`]). Pulled out of `update_note_visuals_3d` so the
 /// tint decision is unit-testable without spinning up rendering — mirrors
 /// [`gameplay_2d::note_tint`].
-fn note_tint_3d(hit: bool, missed: bool, is_blow: bool) -> (Color, LinearRgba, LinearRgba) {
+fn note_tint_3d(
+    hit: bool,
+    missed: bool,
+    is_blow: bool,
+    colors: NoteColors,
+) -> (Color, LinearRgba, LinearRgba) {
     if hit {
         (
             Color::srgb(1.0, 0.9, 0.3),
@@ -1100,7 +1117,7 @@ fn note_tint_3d(hit: bool, missed: bool, is_blow: bool) -> (Color, LinearRgba, L
             Color::srgba(0.5, 0.13, 0.13, 0.6).to_linear(),
         )
     } else {
-        let (r, g, b, emit_r, emit_g, emit_b) = note_base_appearance(is_blow);
+        let (r, g, b, emit_r, emit_g, emit_b) = note_base_appearance(colors, is_blow);
         (
             Color::srgb(r, g, b),
             LinearRgba::new(emit_r, emit_g, emit_b, 1.0),
@@ -1123,12 +1140,16 @@ pub fn update_note_visuals_3d(
     tails: Query<&MeshMaterial3d<NoteTail3dMaterial>, With<NoteTail3d>>,
     mut std_materials: ResMut<Assets<StandardMaterial>>,
     mut tail_materials: ResMut<Assets<NoteTail3dMaterial>>,
+    theme: Res<LoadedTheme>,
+    colorblind: Res<crate::settings::ColorblindPalette>,
 ) {
+    let colors = effective_note_colors(theme.note_colors(), colorblind.0);
     for (visual, children) in &notes {
         let Some(note) = song_notes.notes.get(visual.note_id) else {
             continue;
         };
-        let (base, emissive, tail_color) = note_tint_3d(note.hit, note.missed, note.is_blow);
+        let (base, emissive, tail_color) =
+            note_tint_3d(note.hit, note.missed, note.is_blow, colors);
         for child in children {
             if let Ok(h) = heads.get(*child)
                 && let Some(mut m) = std_materials.get_mut(&h.0)

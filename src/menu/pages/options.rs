@@ -62,6 +62,7 @@ impl Plugin for OptionsPlugin {
                     update_note_numbers_label,
                     update_adaptive_difficulty_label,
                     update_fullscreen_label,
+                    update_colorblind_palette_label,
                 )
                     .run_if(in_state(MenuPage::Options)),
             );
@@ -129,6 +130,10 @@ struct AdaptiveDifficultyLabel;
 #[derive(Component)]
 struct FullscreenLabel;
 
+/// The "Colorblind Palette: on/off" readout beside its toggle.
+#[derive(Component)]
+struct ColorblindPaletteLabel;
+
 /// Current level for a given slider kind.
 fn audio_level(settings: &AudioSettings, kind: VolumeSlider) -> f32 {
     match kind {
@@ -153,6 +158,7 @@ fn setup_options_menu(
     show_numbers: Res<ShowNoteNumbers>,
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
+    colorblind_palette: Res<crate::settings::ColorblindPalette>,
 ) {
     let root = spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
 
@@ -211,6 +217,7 @@ fn setup_options_menu(
         show_numbers,
         adaptive_difficulty,
         fullscreen,
+        colorblind_palette,
     );
     spawn_right_column(&mut commands, right_layout, theme, btn_mats, &loc);
 }
@@ -228,6 +235,7 @@ fn spawn_left_column(
     show_numbers: Res<ShowNoteNumbers>,
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
+    colorblind_palette: Res<crate::settings::ColorblindPalette>,
 ) {
     spawn_mic_banner(commands, parent, &mic_status);
     spawn_volume_slider(
@@ -291,6 +299,7 @@ fn spawn_left_column(
     spawn_note_numbers_toggle(commands, parent, loc, show_numbers.0);
     spawn_adaptive_difficulty_toggle(commands, parent, adaptive_difficulty.0, loc);
     spawn_fullscreen_toggle(commands, parent, fullscreen.0, loc);
+    spawn_colorblind_palette_toggle(commands, parent, colorblind_palette.0, loc);
 }
 
 fn spawn_right_column(
@@ -523,6 +532,72 @@ fn update_fullscreen_label(
     }
     for mut text in &mut labels {
         *text = Text::new(fullscreen_label_text(&loc, enabled.0));
+    }
+}
+
+/// Flips whether scored notes use the fixed colorblind-safe blow/draw pair
+/// instead of the active theme's own note colors — see
+/// `settings::ColorblindPalette`'s doc comment.
+fn toggle_colorblind_palette(
+    _: On<Pointer<Click>>,
+    mut enabled: ResMut<crate::settings::ColorblindPalette>,
+) {
+    enabled.0 = !enabled.0;
+}
+
+fn colorblind_palette_label_text(loc: &Localization, enabled: bool) -> String {
+    if enabled {
+        loc.msg("options-colorblind-palette-on").into()
+    } else {
+        loc.msg("options-colorblind-palette-off").into()
+    }
+}
+
+/// A row with a pill button that flips the colorblind-palette setting plus a
+/// label reflecting the current choice — same shape as
+/// [`spawn_fullscreen_toggle`].
+fn spawn_colorblind_palette_toggle(
+    commands: &mut Commands,
+    parent: Entity,
+    enabled: bool,
+    loc: &Localization,
+) {
+    let row = commands
+        .spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(8.0),
+            ..default()
+        })
+        .id();
+    commands.entity(row).with_children(|r| {
+        r.spawn_empty().apply_scene(button::small(
+            &loc.msg("options-colorblind-palette"),
+            toggle_colorblind_palette,
+        ));
+        r.spawn((
+            Text::new(colorblind_palette_label_text(loc, enabled)),
+            TextFont {
+                font_size: FontSize::Px(16.0),
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            ColorblindPaletteLabel,
+        ));
+    });
+    commands.entity(parent).add_child(row);
+}
+
+fn update_colorblind_palette_label(
+    enabled: Res<crate::settings::ColorblindPalette>,
+    loc: Res<Localization>,
+    mut labels: Query<&mut Text, With<ColorblindPaletteLabel>>,
+) {
+    if !enabled.is_changed() {
+        return;
+    }
+    for mut text in &mut labels {
+        *text = Text::new(colorblind_palette_label_text(&loc, enabled.0));
     }
 }
 
@@ -1167,5 +1242,18 @@ mod tests {
         let loc = Localization::default();
         assert_eq!(fullscreen_label_text(&loc, true), "options-fullscreen-on");
         assert_eq!(fullscreen_label_text(&loc, false), "options-fullscreen-off");
+    }
+
+    #[test]
+    fn colorblind_palette_label_picks_the_on_or_off_key() {
+        let loc = Localization::default();
+        assert_eq!(
+            colorblind_palette_label_text(&loc, true),
+            "options-colorblind-palette-on"
+        );
+        assert_eq!(
+            colorblind_palette_label_text(&loc, false),
+            "options-colorblind-palette-off"
+        );
     }
 }

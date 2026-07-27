@@ -128,8 +128,14 @@ remains:
   yaml` builds/DMGs both architectures at tag time, `macos.yaml` checks the
   same bundling on every push/PR so a regression doesn't wait for a tag).
 - Explore web build (Bevy → wasm; mic via Web Audio) for zero-install trial.
-- Accessibility: colorblind-safe note palettes, mirrored layout for
-  left-handed players, fully keyboard-navigable menus.
+- Accessibility: mirrored layout for left-handed players, fully
+  keyboard-navigable menus. (Colorblind-safe note palettes are done — an
+  Options-page toggle swaps the Play2D/Play3D note highway's blow/draw
+  colors for a fixed blue/yellow pair; themes can also set their own
+  `colors.notes` block. The Song Editor, harmonica overlay legend, and
+  song-progress/scrollbar minimaps still use their own hardcoded blue/
+  orange, which already reads reasonably under red-green colorblindness —
+  extend them to the same toggle if that turns out not to be enough.)
 - Localization beyond en-US/pt-BR/es-ES (infrastructure is already enforced).
 
 ## Non-goals (for now)

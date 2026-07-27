@@ -208,6 +208,21 @@
               "type": "string"
             }
           }
+        },
+        "notes": {
+          "description": "Blow/draw colors for scored note visuals (the falling-note highway in Play2D/Play3D). Overridden by the colorblind-palette setting when the player has it on.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "blow": {
+              "description": "",
+              "type": "string"
+            },
+            "draw": {
+              "description": "",
+              "type": "string"
+            }
+          }
         }
       }
     }

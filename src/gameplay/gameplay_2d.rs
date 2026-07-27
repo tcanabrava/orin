@@ -29,6 +29,7 @@ use super::{
     HoleState, LOOKAHEAD, MusicStarted, NoteVisual, ScheduledNote, ScoreText, SongNotes,
     ValidHarpNotes,
 };
+use crate::theme::{LoadedTheme, NoteColors, effective_note_colors};
 
 /// Height of the hit line, as a percentage of the play area — the region a
 /// note's leading edge must reach to be judged. Only ever used by the 2D
@@ -554,6 +555,8 @@ pub fn spawn_visible_notes(
     existing: Query<&NoteVisual>,
     mut shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
     show_numbers: Res<crate::assets_management::ShowNoteNumbers>,
+    theme: Res<LoadedTheme>,
+    colorblind: Res<crate::settings::ColorblindPalette>,
 ) {
     let (Some(manifest), Ok(highway_entity), Some(head_image), Some(tail_cfg)) = (
         manifests.get(&selected.0),
@@ -563,6 +566,7 @@ pub fn spawn_visible_notes(
     ) else {
         return;
     };
+    let colors = effective_note_colors(theme.note_colors(), colorblind.0);
 
     let hole_count = manifest.chart.harmonica.hole_count() as usize;
     let lane_pct = 100.0 / hole_count as f32;
@@ -586,6 +590,7 @@ pub fn spawn_visible_notes(
                 render_assets.play_mode_tags.get(i).copied().flatten(),
                 &mut shape_materials,
                 show_numbers.0,
+                colors,
             );
         }
     });
@@ -606,10 +611,11 @@ fn spawn_note_visual(
     play_mode_tag: Option<&'static str>,
     shape_materials: &mut Assets<NoteTail2dMaterial>,
     show_numbers: bool,
+    colors: NoteColors,
 ) {
     let is_blow = note.is_blow;
     let hole = note.hole;
-    let (r, g, b) = note_rgb(is_blow);
+    let (r, g, b) = note_rgb(colors, is_blow);
     let note_color = Color::srgba(r, g, b, 1.0);
     let left_pct = (note.hole as f32 - 1.0) * lane_pct;
     let duration_frac = (note.duration / LOOKAHEAD) as f32;
@@ -729,13 +735,12 @@ pub(super) fn note_techniques(
     (vib, shift, wah)
 }
 
-/// Blow/draw fill colour for a note tile (blue for blow, orange for draw).
-fn note_rgb(is_blow: bool) -> (f32, f32, f32) {
-    if is_blow {
-        (0.25, 0.55, 0.95)
-    } else {
-        (0.95, 0.38, 0.15)
-    }
+/// Blow/draw fill colour for a note tile, from `colors` (the active theme's
+/// note colors, or the fixed colorblind-safe pair — see
+/// `theme::effective_note_colors`).
+fn note_rgb(colors: NoteColors, is_blow: bool) -> (f32, f32, f32) {
+    let c = if is_blow { colors.blow } else { colors.draw }.to_srgba();
+    (c.red, c.green, c.blue)
 }
 
 fn spawn_harmonica_strip(
@@ -899,7 +904,7 @@ pub fn size_note_tails(
 /// under, matching the alphas `spawn_note_visual` gives a freshly-spawned
 /// note). Pulled out of `update_note_visuals` so the tint decision is
 /// unit-testable without spinning up rendering.
-fn note_tint(hit: bool, missed: bool, is_blow: bool) -> (Color, Color) {
+fn note_tint(hit: bool, missed: bool, is_blow: bool, colors: NoteColors) -> (Color, Color) {
     if hit {
         let tint = Color::srgba(1.0, 0.85, 0.25, 1.0);
         (tint, tint)
@@ -907,7 +912,7 @@ fn note_tint(hit: bool, missed: bool, is_blow: bool) -> (Color, Color) {
         let tint = Color::srgba(0.5, 0.13, 0.13, 1.0);
         (tint, tint)
     } else {
-        let (r, g, b) = note_rgb(is_blow);
+        let (r, g, b) = note_rgb(colors, is_blow);
         (Color::srgba(r, g, b, 1.0), Color::srgba(r, g, b, 0.95))
     }
 }
@@ -924,12 +929,15 @@ pub fn update_note_visuals(
     mut heads: Query<&mut ImageNode, With<NoteHead>>,
     tails: Query<&MaterialNode<NoteTail2dMaterial>, With<NoteTail>>,
     mut shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
+    theme: Res<LoadedTheme>,
+    colorblind: Res<crate::settings::ColorblindPalette>,
 ) {
+    let colors = effective_note_colors(theme.note_colors(), colorblind.0);
     for (visual, children) in &notes {
         let Some(note) = song_notes.notes.get(visual.note_id) else {
             continue;
         };
-        let (head_tint, tail_tint) = note_tint(note.hit, note.missed, note.is_blow);
+        let (head_tint, tail_tint) = note_tint(note.hit, note.missed, note.is_blow, colors);
         for child in children {
             if let Ok(mut head) = heads.get_mut(*child) {
                 head.color = head_tint;
@@ -1096,14 +1104,14 @@ mod tests {
 
     #[test]
     fn note_tint_is_gold_when_hit() {
-        let (head, tail) = note_tint(true, false, true);
+        let (head, tail) = note_tint(true, false, true, NoteColors::default());
         assert_eq!(head, Color::srgba(1.0, 0.85, 0.25, 1.0));
         assert_eq!(tail, head);
     }
 
     #[test]
     fn note_tint_is_dark_red_when_missed() {
-        let (head, tail) = note_tint(false, true, true);
+        let (head, tail) = note_tint(false, true, true, NoteColors::default());
         assert_eq!(head, Color::srgba(0.5, 0.13, 0.13, 1.0));
         assert_eq!(tail, head);
     }
@@ -1112,21 +1120,31 @@ mod tests {
     fn note_tint_hit_wins_over_missed() {
         // Shouldn't happen in practice (score_notes never sets both), but
         // the tint decision itself should still be unambiguous.
-        let (head, _) = note_tint(true, true, true);
+        let (head, _) = note_tint(true, true, true, NoteColors::default());
         assert_eq!(head, Color::srgba(1.0, 0.85, 0.25, 1.0));
     }
 
     #[test]
     fn note_tint_restores_the_base_blow_draw_colour_once_neither() {
-        let (blow_head, blow_tail) = note_tint(false, false, true);
-        let (r, g, b) = note_rgb(true);
+        let colors = NoteColors::default();
+        let (blow_head, blow_tail) = note_tint(false, false, true, colors);
+        let (r, g, b) = note_rgb(colors, true);
         assert_eq!(blow_head, Color::srgba(r, g, b, 1.0));
         assert_eq!(blow_tail, Color::srgba(r, g, b, 0.95));
 
-        let (draw_head, draw_tail) = note_tint(false, false, false);
-        let (r, g, b) = note_rgb(false);
+        let (draw_head, draw_tail) = note_tint(false, false, false, colors);
+        let (r, g, b) = note_rgb(colors, false);
         assert_eq!(draw_head, Color::srgba(r, g, b, 1.0));
         assert_eq!(draw_tail, Color::srgba(r, g, b, 0.95));
+    }
+
+    #[test]
+    fn note_tint_uses_the_colorblind_palette_when_given_it() {
+        let colors = crate::theme::COLORBLIND_NOTE_COLORS;
+        let (blow_head, _) = note_tint(false, false, true, colors);
+        let (r, g, b) = note_rgb(colors, true);
+        assert_eq!(blow_head, Color::srgba(r, g, b, 1.0));
+        assert_ne!(colors.blow, NoteColors::default().blow);
     }
 
     // ── note_techniques ───────────────────────────────────────────────────────
@@ -1223,7 +1241,8 @@ mod tests {
 
     #[test]
     fn blow_and_draw_have_distinct_colors() {
-        assert_ne!(note_rgb(true), note_rgb(false));
+        let colors = NoteColors::default();
+        assert_ne!(note_rgb(colors, true), note_rgb(colors, false));
     }
 
     // ── harp_pitches / step_hole_glow ─────────────────────────────────────────

@@ -79,6 +79,8 @@ pub struct ThemeColorsJson {
     pub song_editor: SongEditorColors,
     #[serde(default)]
     pub twelve_bar: TwelveBarColors,
+    #[serde(default)]
+    pub notes: NoteColors,
 }
 
 /// Chord-function colors for a 12-bar blues progression (I / IV / V), read
@@ -122,6 +124,59 @@ where
     bevy::color::Srgba::hex(&s)
         .map(Color::from)
         .map_err(serde::de::Error::custom)
+}
+
+/// Blow/draw colors for scored note visuals (the falling-note highway in
+/// Play2D/Play3D), read from a theme's `theme.json` under `"colors": {
+/// "notes": { ... } }`. Distinct from [`SongEditorColors`]'s own blow/draw
+/// fields (`lane_a`/`lane_b`) — the Song Editor is an authoring tool, not
+/// the thing a colorblind player stares at while trying to hit notes in
+/// real time, so it's untouched by [`crate::settings::ColorblindPalette`]
+/// (see [`effective_note_colors`]).
+#[derive(Deserialize, Clone, Copy, Debug, PartialEq)]
+#[serde(default)]
+pub struct NoteColors {
+    #[serde(deserialize_with = "hex_color")]
+    pub blow: Color,
+    #[serde(deserialize_with = "hex_color")]
+    pub draw: Color,
+}
+
+impl Default for NoteColors {
+    fn default() -> Self {
+        Self {
+            blow: Color::srgb(0.25, 0.55, 0.95),
+            draw: Color::srgb(0.95, 0.38, 0.15),
+        }
+    }
+}
+
+/// A fixed, theme-independent blow/draw pair for
+/// [`crate::settings::ColorblindPalette`]: blue paired with a bright,
+/// high-luminance yellow rather than orange. Blue-vs-orange (any theme's
+/// default [`NoteColors`]) already reads fine under red-green colorblindness
+/// — that pairing is why it was picked in the first place — but orange and
+/// blue sit at similar perceived brightness, so telling them apart still
+/// leans on hue discrimination a colorblind player may have little of.
+/// Blue-vs-yellow adds a large luminance gap on top of the hue difference,
+/// which keeps working even under full monochromacy.
+pub const COLORBLIND_NOTE_COLORS: NoteColors = NoteColors {
+    blow: Color::srgb(0.0, 0.45, 0.75),
+    draw: Color::srgb(0.95, 0.75, 0.0),
+};
+
+/// Which blow/draw [`NoteColors`] a note visual should actually use: the
+/// fixed [`COLORBLIND_NOTE_COLORS`] pair when the player has the
+/// colorblind-palette setting on, otherwise whatever the active theme
+/// provides (`theme_colors`, from [`LoadedTheme::note_colors`]). Pure so
+/// `gameplay_2d`/`gameplay_3d`'s note spawners/tinters can resolve it once
+/// per frame instead of re-deriving the same branch in each of them.
+pub fn effective_note_colors(theme_colors: NoteColors, colorblind: bool) -> NoteColors {
+    if colorblind {
+        COLORBLIND_NOTE_COLORS
+    } else {
+        theme_colors
+    }
 }
 
 /// Colors for the song editor grid/panel, read from a theme's `theme.json`
@@ -267,6 +322,16 @@ impl LoadedTheme {
             .as_ref()
             .map_or_else(TwelveBarColors::default, |c| c.twelve_bar)
     }
+
+    /// Blow/draw note colors for the active theme, or [`NoteColors::default`]
+    /// if the theme's `theme.json` has no `"colors"` block at all. Callers
+    /// wanting the colorblind-aware choice should pass this through
+    /// [`effective_note_colors`] rather than using it directly.
+    pub fn note_colors(&self) -> NoteColors {
+        self.colors
+            .as_ref()
+            .map_or_else(NoteColors::default, |c| c.notes)
+    }
 }
 
 /// Resolves the `AssetSource` prefix for `theme_name`: empty when it exists
@@ -402,6 +467,35 @@ mod tests {
         assert_eq!(colors.accent, Color::srgb_u8(0xF2, 0xCC, 0x59));
         // Fields not present in the JSON fall back to the hardcoded defaults.
         assert_eq!(colors.hole_box, SongEditorColors::default().hole_box);
+    }
+
+    // ── Note colors ───────────────────────────────────────────────────────
+
+    #[test]
+    fn note_colors_parse_from_hex_strings() {
+        let json = r##"{ "blow": "#123456", "draw": "#ABCDEF" }"##;
+        let colors: NoteColors = serde_json::from_str(json).unwrap();
+        assert_eq!(colors.blow, Color::srgb_u8(0x12, 0x34, 0x56));
+        assert_eq!(colors.draw, Color::srgb_u8(0xAB, 0xCD, 0xEF));
+    }
+
+    #[test]
+    fn loaded_theme_falls_back_to_default_note_colors_without_a_colors_block() {
+        let theme = LoadedTheme::default();
+        assert_eq!(theme.note_colors(), NoteColors::default());
+    }
+
+    #[test]
+    fn effective_note_colors_uses_the_theme_when_not_colorblind() {
+        let theme = NoteColors::default();
+        assert_eq!(effective_note_colors(theme, false), theme);
+    }
+
+    #[test]
+    fn effective_note_colors_overrides_the_theme_when_colorblind() {
+        let theme = NoteColors::default();
+        assert_eq!(effective_note_colors(theme, true), COLORBLIND_NOTE_COLORS);
+        assert_ne!(COLORBLIND_NOTE_COLORS, theme);
     }
 
     #[test]

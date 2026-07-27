@@ -63,20 +63,21 @@ fn note_depth_is_clamped() {
 
 #[test]
 fn note_tint_3d_is_gold_when_hit() {
-    let (base, _, _) = note_tint_3d(true, false, true);
+    let (base, _, _) = note_tint_3d(true, false, true, NoteColors::default());
     assert_eq!(base, Color::srgb(1.0, 0.9, 0.3));
 }
 
 #[test]
 fn note_tint_3d_is_dark_red_when_missed() {
-    let (base, _, _) = note_tint_3d(false, true, true);
+    let (base, _, _) = note_tint_3d(false, true, true, NoteColors::default());
     assert_eq!(base, Color::srgb(0.4, 0.12, 0.12));
 }
 
 #[test]
 fn note_tint_3d_restores_the_base_blow_draw_appearance_once_neither() {
-    let (base, emissive, tail_color) = note_tint_3d(false, false, true);
-    let (r, g, b, emit_r, emit_g, emit_b) = note_base_appearance(true);
+    let colors = NoteColors::default();
+    let (base, emissive, tail_color) = note_tint_3d(false, false, true, colors);
+    let (r, g, b, emit_r, emit_g, emit_b) = note_base_appearance(colors, true);
     assert_eq!(base, Color::srgb(r, g, b));
     assert_eq!(emissive, LinearRgba::new(emit_r, emit_g, emit_b, 1.0));
     assert_eq!(tail_color, Color::srgba(r, g, b, 0.9).to_linear());

@@ -74,6 +74,17 @@ pub struct AdaptiveDifficultyEnabled(pub bool);
 #[derive(Resource, Default)]
 pub struct FullscreenEnabled(pub bool);
 
+/// Whether scored note visuals (the falling-note highway in Play2D/Play3D)
+/// use the fixed colorblind-safe blow/draw pair
+/// (`theme::COLORBLIND_NOTE_COLORS`) instead of the active theme's own note
+/// colors. Off by default, same "opt-in, not sprung on a new player"
+/// reasoning as [`AdaptiveDifficultyEnabled`]. Edited on the Options page;
+/// `gameplay_2d`/`gameplay_3d`'s note spawners/tinters read it (via
+/// `theme::effective_note_colors`) alongside `theme::LoadedTheme::
+/// note_colors` every time they resolve a note's blow/draw color.
+#[derive(Resource, Default)]
+pub struct ColorblindPalette(pub bool);
+
 /// The on-disk shape of the settings. `#[serde(default)]` lets an older or
 /// hand-edited file omit fields and still load.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -91,6 +102,7 @@ struct Settings {
     show_note_numbers: bool,
     adaptive_difficulty_enabled: bool,
     fullscreen: bool,
+    colorblind_palette: bool,
 }
 
 impl Default for Settings {
@@ -108,6 +120,7 @@ impl Default for Settings {
             show_note_numbers: false,
             adaptive_difficulty_enabled: false,
             fullscreen: false,
+            colorblind_palette: false,
         }
     }
 }
@@ -167,6 +180,7 @@ impl Plugin for SettingsPlugin {
         app.init_resource::<AudioSettings>()
             .init_resource::<AdaptiveDifficultyEnabled>()
             .init_resource::<FullscreenEnabled>()
+            .init_resource::<ColorblindPalette>()
             .init_resource::<PendingSave>()
             .add_systems(Startup, apply_loaded_settings)
             // Save whenever either settings resource changes. The Startup load
@@ -183,7 +197,8 @@ impl Plugin for SettingsPlugin {
                          ui_theme: Res<SelectedTheme>,
                          note_numbers: Res<ShowNoteNumbers>,
                          adaptive_difficulty: Res<AdaptiveDifficultyEnabled>,
-                         fullscreen: Res<FullscreenEnabled>| {
+                         fullscreen: Res<FullscreenEnabled>,
+                         colorblind_palette: Res<ColorblindPalette>| {
                             audio.is_changed()
                                 || theme_2d.is_changed()
                                 || theme_3d.is_changed()
@@ -192,6 +207,7 @@ impl Plugin for SettingsPlugin {
                                 || note_numbers.is_changed()
                                 || adaptive_difficulty.is_changed()
                                 || fullscreen.is_changed()
+                                || colorblind_palette.is_changed()
                         },
                     ),
                     tick_pending_save,
@@ -217,6 +233,7 @@ pub fn apply_loaded_settings(
     mut note_numbers: ResMut<ShowNoteNumbers>,
     mut adaptive_difficulty: ResMut<AdaptiveDifficultyEnabled>,
     mut fullscreen: ResMut<FullscreenEnabled>,
+    mut colorblind_palette: ResMut<ColorblindPalette>,
 ) {
     let settings = load_settings();
     audio.music_volume = settings.music_volume;
@@ -231,8 +248,9 @@ pub fn apply_loaded_settings(
     note_numbers.0 = settings.show_note_numbers;
     adaptive_difficulty.0 = settings.adaptive_difficulty_enabled;
     fullscreen.0 = settings.fullscreen;
+    colorblind_palette.0 = settings.colorblind_palette;
     info!(
-        "Loaded settings: music={:.2} metronome={:.2} latency={}ms themes(2d={}, 3d={}) harmonica={} ui_theme={} note_numbers={} adaptive_difficulty={} fullscreen={}",
+        "Loaded settings: music={:.2} metronome={:.2} latency={}ms themes(2d={}, 3d={}) harmonica={} ui_theme={} note_numbers={} adaptive_difficulty={} fullscreen={} colorblind_palette={}",
         audio.music_volume,
         audio.metronome_volume,
         audio.input_latency_ms,
@@ -243,6 +261,7 @@ pub fn apply_loaded_settings(
         note_numbers.0,
         adaptive_difficulty.0,
         fullscreen.0,
+        colorblind_palette.0,
     );
 }
 
@@ -256,6 +275,7 @@ fn save_current(
     note_numbers: &ShowNoteNumbers,
     adaptive_difficulty: &AdaptiveDifficultyEnabled,
     fullscreen: &FullscreenEnabled,
+    colorblind_palette: &ColorblindPalette,
 ) {
     save_settings(&Settings {
         music_volume: audio.music_volume,
@@ -270,6 +290,7 @@ fn save_current(
         show_note_numbers: note_numbers.0,
         adaptive_difficulty_enabled: adaptive_difficulty.0,
         fullscreen: fullscreen.0,
+        colorblind_palette: colorblind_palette.0,
     });
 }
 
@@ -307,6 +328,7 @@ fn tick_pending_save(
     note_numbers: Res<ShowNoteNumbers>,
     adaptive_difficulty: Res<AdaptiveDifficultyEnabled>,
     fullscreen: Res<FullscreenEnabled>,
+    colorblind_palette: Res<ColorblindPalette>,
 ) {
     let (should_save, remaining) = tick_debounce(pending.0, time.delta_secs());
     pending.0 = remaining;
@@ -320,6 +342,7 @@ fn tick_pending_save(
             &note_numbers,
             &adaptive_difficulty,
             &fullscreen,
+            &colorblind_palette,
         );
     }
 }
@@ -337,6 +360,7 @@ fn flush_pending_save_on_exit(
     note_numbers: Res<ShowNoteNumbers>,
     adaptive_difficulty: Res<AdaptiveDifficultyEnabled>,
     fullscreen: Res<FullscreenEnabled>,
+    colorblind_palette: Res<ColorblindPalette>,
 ) {
     if exit.read().next().is_none() || pending.0.is_none() {
         return;
@@ -351,6 +375,7 @@ fn flush_pending_save_on_exit(
         &note_numbers,
         &adaptive_difficulty,
         &fullscreen,
+        &colorblind_palette,
     );
 }
 
@@ -406,6 +431,20 @@ mod tests {
     fn missing_fullscreen_field_defaults_off_via_serde_default() {
         let s: Settings = serde_json::from_str("{}").unwrap();
         assert!(!s.fullscreen);
+    }
+
+    // ── ColorblindPalette ────────────────────────────────────────────────────
+
+    #[test]
+    fn colorblind_palette_is_off_by_default() {
+        assert!(!ColorblindPalette::default().0);
+        assert!(!Settings::default().colorblind_palette);
+    }
+
+    #[test]
+    fn missing_colorblind_palette_field_defaults_off_via_serde_default() {
+        let s: Settings = serde_json::from_str("{}").unwrap();
+        assert!(!s.colorblind_palette);
     }
 
     // ── tick_debounce ────────────────────────────────────────────────────────
