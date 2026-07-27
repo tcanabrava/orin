@@ -183,14 +183,34 @@ fn minor_blues_keeps_the_standard_roots_but_i_and_iv_go_minor() {
 fn progression_cycles_forward_and_wraps() {
     assert_eq!(Progression::Standard.next(), Progression::QuickChange);
     assert_eq!(Progression::QuickChange.next(), Progression::Minor);
-    assert_eq!(Progression::Minor.next(), Progression::Standard);
+    assert_eq!(Progression::Minor.next(), Progression::JazzBlues);
+    assert_eq!(Progression::JazzBlues.next(), Progression::Standard);
 }
 
 #[test]
 fn progression_cycles_backward_and_wraps() {
-    assert_eq!(Progression::Standard.prev(), Progression::Minor);
+    assert_eq!(Progression::Standard.prev(), Progression::JazzBlues);
+    assert_eq!(Progression::JazzBlues.prev(), Progression::Minor);
     assert_eq!(Progression::Minor.prev(), Progression::QuickChange);
     assert_eq!(Progression::QuickChange.prev(), Progression::Standard);
+}
+
+#[test]
+fn jazz_blues_ends_in_a_ii_v_i_cadence() {
+    let bars = progression_bars("C", Progression::JazzBlues);
+    // Bars 1-7 (0-indexed 0-6) are the ordinary blues form.
+    assert_eq!(
+        roots(&bars)[..7],
+        ["C", "F", "C", "C", "F", "F", "C"]
+    );
+    // Bar 8 is a VI7 secondary dominant (A7 in C) setting up ii-V.
+    assert_eq!(bars[7], ("A".to_string(), ChordQuality::Dominant7));
+    // Bars 9-10 (0-indexed 8-9) are a genuine ii7-V7.
+    assert_eq!(bars[8], ("D".to_string(), ChordQuality::Minor7));
+    assert_eq!(bars[9], ("G".to_string(), ChordQuality::Dominant7));
+    // Bar 11 resolves to I7, bar 12 is the V7 turnaround.
+    assert_eq!(bars[10], ("C".to_string(), ChordQuality::Dominant7));
+    assert_eq!(bars[11], ("G".to_string(), ChordQuality::Dominant7));
 }
 
 #[test]
@@ -228,6 +248,30 @@ fn third_position_harp_is_a_whole_step_below_the_jam_key() {
 fn chord_intervals_are_dominant_or_minor_seventh() {
     assert_eq!(chord_intervals(ChordQuality::Dominant7), [0, 4, 7, 10]);
     assert_eq!(chord_intervals(ChordQuality::Minor7), [0, 3, 7, 10]);
+}
+
+#[test]
+fn chord_intervals_cover_the_jazz_qualities() {
+    assert_eq!(chord_intervals(ChordQuality::Major7), [0, 4, 7, 11]);
+    assert_eq!(chord_intervals(ChordQuality::HalfDiminished7), [0, 3, 6, 10]);
+    assert_eq!(
+        chord_intervals(ChordQuality::Dominant7Alt),
+        [0, 4, 10, 1, 3, 8]
+    );
+}
+
+#[test]
+fn ii_v_i_chords_builds_the_diatonic_cadence_in_c() {
+    let chords = ii_v_i_chords("C", false);
+    assert_eq!(chords[0], ("D".to_string(), ChordQuality::Minor7));
+    assert_eq!(chords[1], ("G".to_string(), ChordQuality::Dominant7));
+    assert_eq!(chords[2], ("C".to_string(), ChordQuality::Major7));
+}
+
+#[test]
+fn ii_v_i_chords_can_use_the_altered_dominant() {
+    let chords = ii_v_i_chords("C", true);
+    assert_eq!(chords[1], ("G".to_string(), ChordQuality::Dominant7Alt));
 }
 
 #[test]

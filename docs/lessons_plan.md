@@ -137,16 +137,18 @@ What's left of wave 2 is only the Unit 4 jazz milestone, below.
 
 ### Unit 4 — jazz (`04_jazz/`, the 0.6 milestone)
 
-Deliberately after everything above ships — it needs its own engine work
-(jazz chord-tone tables) and its content sourcing is harder (jazz standards
-are more often still in copyright than blues heads; lean on original
-drills and public-domain jazz-blues heads). Planned shape:
+Deliberately after everything above ships — its content sourcing is harder
+(jazz standards are more often still in copyright than blues heads; lean on
+original drills and public-domain jazz-blues heads). Its own engine work
+(jazz chord-tone tables, a jazz-blues `Progression` variant) is done — see
+"Engine work (done)" below; what's left for Unit 4 is content only. Planned
+shape:
 
 | Lesson | Scoreable? | Mechanism | Notes |
 |---|---|---|---|
 | **Swing eighths** — swung-eighth drills at tightening windows | **Scored** | `feel: shuffle` + per-chart windows, zero engine work | Could ship early, but pedagogically belongs here |
-| **ii–V–I chord tones** — arpeggio drills over a ii–V–I backing | **Scored** | Needs jazz chord-tone tables in `classify_note_fit`'s vocabulary and a ii–V–I / jazz-blues `Progression` variant (0.6 engine work, see `ROADMAP.md`) | Original arpeggio content, rights-safe |
-| **Jazz-blues form** — the 12-bar with the ii–V turnaround, taught like `bar-counting` | **Scored** | Same progression variant + `TwelveBarBluesOverlay` labels | |
+| **ii–V–I chord tones** — arpeggio drills over a ii–V–I backing | **Scored** | `song::harmonica::ii_v_i_chords` (chord-tone table) + `classify_note_fit`, which already takes any chord-tone set | Original arpeggio content, rights-safe |
+| **Jazz-blues form** — the 12-bar with the ii–V turnaround, taught like `bar-counting` | **Scored** | `Progression::JazzBlues` + `TwelveBarBluesOverlay` labels | |
 | **Chromatic slide basics** — half-steps with the slide button, on a chromatic chart | **Scored** | `Modifier::Slide` onset scoring already exists; chromatic charts fully supported | First bundled chromatic lesson content |
 | **Jazz heads** — actual repertoire | **Scored** | Ordinary charts | Rights-sensitive: public-domain only, human judgment required (`TODO.md`) |
 

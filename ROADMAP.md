@@ -105,12 +105,11 @@ A distinct milestone from 0.4's blues curriculum — bigger scope, split out
 because it needs its own content and, likely, chromatic-harmonica-specific
 teaching. The lesson-level breakdown (swing-feel drills, ii–V–I arpeggio
 lessons, chromatic slide curriculum, jazz-blues form) is in
-`docs/lessons_plan.md`'s "Wave 2" section, Unit 4:
+`docs/lessons_plan.md`'s "Wave 2" section, Unit 4. Its engine prerequisites
+(jazz chord-tone tables — `ii_v_i_chords`, `ChordQuality::{Major7,
+HalfDiminished7,Dominant7Alt}` — and `Progression::JazzBlues`) are done; what
+remains:
 
-- Jazz chord-tone tables (ii–V–I, dominant/altered extensions) alongside
-  the existing blues-scale/dominant-7th classification `JamHoleGuide` uses.
-- A jazz-blues `Progression` variant (with the ii–V turnaround) for the
-  generated jam and the twelve-bar overlay.
 - Position work beyond blues 2nd position; chromatic slide technique as a
   first-class taught skill (the `Modifier::Slide` scoring already exists —
   see `CLAUDE.md`).

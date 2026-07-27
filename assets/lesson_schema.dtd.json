@@ -117,7 +117,7 @@
     },
     "progression": {
       "type": "string",
-      "enum": ["standard", "quick-change", "minor"],
+      "enum": ["standard", "quick-change", "minor", "jazz-blues"],
       "description": "A jam-based lesson's backing progression, seeded into the jam when Start routes into it. Absent = Standard. See menu::lessons::parse_progression."
     }
   }

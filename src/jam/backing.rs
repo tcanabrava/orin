@@ -333,8 +333,10 @@ mod tests {
         let standard = generate_bass_pcm("C", 90.0, Progression::Standard);
         let quick = generate_bass_pcm("C", 90.0, Progression::QuickChange);
         let minor = generate_bass_pcm("C", 90.0, Progression::Minor);
+        let jazz = generate_bass_pcm("C", 90.0, Progression::JazzBlues);
         assert_eq!(standard.len(), quick.len());
         assert_eq!(standard.len(), minor.len());
+        assert_eq!(standard.len(), jazz.len());
     }
 
     // ── generated_chart ──────────────────────────────────────────────────────

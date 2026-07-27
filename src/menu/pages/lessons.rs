@@ -121,14 +121,15 @@ fn is_jam_criteria(criteria: Option<&PassCriteria>) -> bool {
 }
 
 /// Parses a lesson manifest's `progression` field (schema-enforced to
-/// `"standard"`/`"quick-change"`/`"minor"` when present) into the
-/// `Progression` it names. Absent or unrecognized both fall back to
+/// `"standard"`/`"quick-change"`/`"minor"`/`"jazz-blues"` when present) into
+/// the `Progression` it names. Absent or unrecognized both fall back to
 /// `Standard` — the same "don't let a stale pick linger" default the
 /// real-song Jam Session button applies.
 pub(crate) fn parse_progression(s: Option<&str>) -> Progression {
     match s {
         Some("quick-change") => Progression::QuickChange,
         Some("minor") => Progression::Minor,
+        Some("jazz-blues") => Progression::JazzBlues,
         _ => Progression::Standard,
     }
 }
@@ -584,6 +585,10 @@ mod tests {
             Progression::QuickChange
         );
         assert_eq!(parse_progression(Some("minor")), Progression::Minor);
+        assert_eq!(
+            parse_progression(Some("jazz-blues")),
+            Progression::JazzBlues
+        );
     }
 
     #[test]

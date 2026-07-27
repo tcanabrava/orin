@@ -191,9 +191,12 @@ pub fn twelve_bar(key: &str) -> [String; 12] {
 /// Jam Session (`jam::session`, `jam::backing`) via the "Generate
 /// Jam" config page; every other 12-bar display (`twelve_bar`, the song
 /// editor's grid, scored gameplay's grid overlay) always uses `Standard`.
-/// `QuickChange` and `Minor` are ordinary blues-theory forms; a "jazz blues"
-/// variant is deliberately not included here — that belongs to the 0.6 Jazz
-/// milestone's chord-tone work (`ROADMAP.md`), not this one.
+/// `QuickChange` and `Minor` are ordinary blues-theory forms;
+/// [`JazzBlues`](Progression::JazzBlues) is the 0.6 Jazz milestone's own
+/// form (`ROADMAP.md`) — the only variant whose bars aren't all
+/// tonic/subdominant/dominant of one key, ending in a real ii–V–I cadence
+/// ([`ii_v_i_chords`] is the same cadence's standalone, chart-independent
+/// form for arpeggio/vocabulary drills).
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Progression {
     #[default]
@@ -205,6 +208,14 @@ pub enum Progression {
     /// for the pull back to i, the standard minor-blues convention (e.g.
     /// "Mr. P.C.", "The Thrill Is Gone").
     Minor,
+    /// The standard "jazz blues" changes: bar 8 substitutes a VI7 secondary
+    /// dominant for the plain I7, resolving through a genuine ii7–V7 (bars
+    /// 9–10) back to I — the same ii–V–I cadence `ii_v_i_chords` builds
+    /// standalone, here landing inside the 12-bar form itself. Still every
+    /// bar dominant 7th/minor 7th (no major 7th/altered tensions), so the
+    /// existing quality-agnostic bass generation (`jam::backing`) needs no
+    /// changes to play it.
+    JazzBlues,
 }
 
 impl Progression {
@@ -214,26 +225,29 @@ impl Progression {
             Progression::Standard => "Standard",
             Progression::QuickChange => "Quick Change",
             Progression::Minor => "Minor Blues",
+            Progression::JazzBlues => "Jazz Blues",
         }
     }
 
     /// Cycles to the next variant, wrapping — same "◂ ▸ over a small enum"
-    /// pattern as `audio_system::midi::next_key`, just with 3 states instead
+    /// pattern as `audio_system::midi::next_key`, just with 4 states instead
     /// of 12.
     pub fn next(self) -> Self {
         match self {
             Progression::Standard => Progression::QuickChange,
             Progression::QuickChange => Progression::Minor,
-            Progression::Minor => Progression::Standard,
+            Progression::Minor => Progression::JazzBlues,
+            Progression::JazzBlues => Progression::Standard,
         }
     }
 
     /// Cycles to the previous variant, wrapping.
     pub fn prev(self) -> Self {
         match self {
-            Progression::Standard => Progression::Minor,
+            Progression::Standard => Progression::JazzBlues,
             Progression::QuickChange => Progression::Standard,
             Progression::Minor => Progression::QuickChange,
+            Progression::JazzBlues => Progression::Minor,
         }
     }
 }
@@ -305,11 +319,28 @@ impl Position {
 /// A chord's quality — which intervals above the root are its chord tones
 /// (see [`chord_intervals`]). Every chord in a standard/quick-change 12-bar
 /// blues is dominant 7th; a minor blues' i/iv chords are minor 7th instead
-/// (see [`Progression::Minor`]).
+/// (see [`Progression::Minor`]). [`Major7`](ChordQuality::Major7)/
+/// [`HalfDiminished7`](ChordQuality::HalfDiminished7)/
+/// [`Dominant7Alt`](ChordQuality::Dominant7Alt) round out the vocabulary a
+/// jazz ii–V–I needs ([`ii_v_i_chords`]) — the 0.6 Jazz milestone's chord-tone
+/// prerequisite (`ROADMAP.md`); [`Progression::JazzBlues`] only needs
+/// `Dominant7`/`Minor7`, already covered by the blues qualities above.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ChordQuality {
     Dominant7,
     Minor7,
+    /// Major triad + natural 7th (root, 3rd, 5th, 7th) — a jazz ii–V–**I**'s
+    /// tonic chord; unlike blues, which keeps I dominant throughout.
+    Major7,
+    /// Diminished triad + minor 7th (root, ♭3rd, ♭5th, ♭7th) — a minor
+    /// key's **ii** in a minor ii–V–i (e.g. Dm7♭5 in C minor), commonly
+    /// called "half-diminished" or written `m7♭5`.
+    HalfDiminished7,
+    /// The altered-dominant tone palette (root, 3rd, ♭7th, plus the altered
+    /// tensions ♭9, ♯9, ♯5/♭13 — deliberately omitting the natural 5th/9th/
+    /// 13th an altered dominant avoids) — the tension-heavy **V** a jazz
+    /// ii–V–I resolves from, e.g. G7alt → Cmaj7.
+    Dominant7Alt,
 }
 
 /// Semitone intervals above the root for a dominant-7th chord (root, 3rd,
@@ -318,14 +349,51 @@ const DOMINANT7_INTERVALS: [i32; 4] = [0, 4, 7, 10];
 /// Semitone intervals above the root for a minor-7th chord (root, ♭3rd,
 /// 5th, ♭7th) — see [`chord_intervals`].
 const MINOR7_INTERVALS: [i32; 4] = [0, 3, 7, 10];
+/// Semitone intervals above the root for a major-7th chord (root, 3rd, 5th,
+/// 7th) — see [`chord_intervals`].
+const MAJOR7_INTERVALS: [i32; 4] = [0, 4, 7, 11];
+/// Semitone intervals above the root for a half-diminished (m7♭5) chord
+/// (root, ♭3rd, ♭5th, ♭7th) — see [`chord_intervals`].
+const HALF_DIMINISHED7_INTERVALS: [i32; 4] = [0, 3, 6, 10];
+/// Semitone intervals above the root for the altered-dominant tone palette
+/// (root, 3rd, ♭7th, ♭9th, ♯9th, ♯5th) — see [`chord_intervals`] and
+/// [`ChordQuality::Dominant7Alt`]'s own doc comment for why the natural
+/// 5th/9th/13th are excluded.
+const DOMINANT7_ALT_INTERVALS: [i32; 6] = [0, 4, 10, 1, 3, 8];
 
-/// Semitone intervals above the root for `quality`'s chord tones (root,
-/// 3rd, 5th, 7th).
-pub const fn chord_intervals(quality: ChordQuality) -> [i32; 4] {
+/// Semitone intervals above the root for `quality`'s chord tones.
+pub fn chord_intervals(quality: ChordQuality) -> &'static [i32] {
     match quality {
-        ChordQuality::Dominant7 => DOMINANT7_INTERVALS,
-        ChordQuality::Minor7 => MINOR7_INTERVALS,
+        ChordQuality::Dominant7 => &DOMINANT7_INTERVALS,
+        ChordQuality::Minor7 => &MINOR7_INTERVALS,
+        ChordQuality::Major7 => &MAJOR7_INTERVALS,
+        ChordQuality::HalfDiminished7 => &HALF_DIMINISHED7_INTERVALS,
+        ChordQuality::Dominant7Alt => &DOMINANT7_ALT_INTERVALS,
     }
+}
+
+/// The jazz ii–V–I turnaround rooted on `key` (major): a minor-7th **ii**
+/// (a whole step above `key`), an altered dominant **V** (a 5th above
+/// `key`), and a major-7th **I** (`key` itself) — the core cadence jazz
+/// vocabulary/improvisation drills are built from, independent of any
+/// particular song's chart or Jam Session's 12-bar structure. `alt_dominant`
+/// picks the V chord's quality: `true` for the tension-heavy
+/// [`Dominant7Alt`](ChordQuality::Dominant7Alt) (the usual choice
+/// approaching a major I), `false` for a plain [`Dominant7`](ChordQuality::Dominant7)
+/// (friendlier for an early drill before altered tensions are introduced).
+pub fn ii_v_i_chords(key: &str, alt_dominant: bool) -> [(String, ChordQuality); 3] {
+    let ii = semitone(key, 2);
+    let v = semitone(key, 7);
+    let v_quality = if alt_dominant {
+        ChordQuality::Dominant7Alt
+    } else {
+        ChordQuality::Dominant7
+    };
+    [
+        (ii, ChordQuality::Minor7),
+        (v, v_quality),
+        (key.to_string(), ChordQuality::Major7),
+    ]
 }
 
 /// The 12 bars of `progression` in `key`: each bar's chord root + quality.
@@ -370,6 +438,29 @@ pub fn progression_bars(key: &str, progression: Progression) -> [(String, ChordQ
             (i, Dominant7),
             (v, Dominant7),
         ],
+        // The standard "jazz blues" changes: bars 1–7 are the ordinary
+        // dominant-7th blues form, then bar 8's VI7 (a secondary dominant
+        // of ii) sets up a genuine ii7–V7 (bars 9–10) resolving to I7
+        // (bar 11) before the V7 turnaround (bar 12) — see
+        // `Progression::JazzBlues`'s own doc comment.
+        Progression::JazzBlues => {
+            let vi = semitone(key, 9);
+            let ii = semitone(key, 2);
+            [
+                (i.clone(), Dominant7),
+                (iv.clone(), Dominant7),
+                (i.clone(), Dominant7),
+                (i.clone(), Dominant7),
+                (iv.clone(), Dominant7),
+                (iv.clone(), Dominant7),
+                (i.clone(), Dominant7),
+                (vi, Dominant7),
+                (ii, Minor7),
+                (v.clone(), Dominant7),
+                (i, Dominant7),
+                (v, Dominant7),
+            ]
+        }
     }
 }
 
