@@ -47,15 +47,6 @@ behind each. Roughly in priority order:
   routing a "Saved" / "Save failed — see below" message through it (same
   pattern, one more priority tier) would make failures visible to anyone,
   not just whoever happens to have a terminal attached.
-- [ ] **No selection-transpose.** Moving a selected phrase to a different
-  chord (e.g. an I-position lick reused over the IV, extremely common
-  blues vocabulary) means manually re-placing every note on a new hole
-  today. Copy/paste deliberately keeps holes fixed ("holes never change,
-  since paste is keyed on when, not which hole") — a transpose operation
-  (shift the selection's pitches by N semitones/diatonic steps, remapping
-  each to the nearest playable hole via the existing `pitch_compatible`
-  check, skipping any that don't fit) is a natural complement, not a
-  change to paste's own contract.
 - [ ] **Manual note placement can't represent swing/triplet timing.** The
   grid snaps to straight 16ths only (`TICKS_PER_BEAT = 4`); there's no
   triplet or shuffle-aware subdivision to click onto, even though shuffle

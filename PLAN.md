@@ -51,8 +51,10 @@ this file — prune it back to a one-line summary under "Shipped" below.
   developer) found the remaining gaps in this workflow — see `TODO.md`'s
   Song Editor section (no undo/redo, no metronome/count-in, no note
   audition, save feedback that's invisible outside a terminal, no
-  selection-transpose, no swing-aware grid snap) and `CLAUDE.md`'s "Song
-  editor: known gaps" bullet for the detail behind each.
+  swing-aware grid snap) and `CLAUDE.md`'s "Song editor: known gaps"
+  bullet for the detail behind each. (Multi-selection drag-to-transpose —
+  moving a lick to a different hole/chord — was double-checked and
+  already works; an initial pass wrongly flagged it as missing.)
 - **Code-duplication cleanup** (whole-tree duplicate-block scan,
   2026-07-19) — all 6 phases done, no behavior changes, `cargo test`/
   `cargo clippy`/`tests/physical_design.rs` clean throughout:
@@ -181,7 +183,7 @@ Finishing 0.4:
 
 Not yet started, candidate next work: the Song Editor UX/workflow gaps in
 `TODO.md`'s Song Editor section (undo/redo, metronome/count-in, note
-audition, save-time feedback, selection-transpose, swing-aware grid snap).
+audition, save-time feedback, swing-aware grid snap).
 
 ## Working practices
 

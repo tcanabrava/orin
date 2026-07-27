@@ -37,12 +37,11 @@ minor-blues/phrase-discipline improvisation) are all done — see
   tempo map, lesson authoring alongside plain songs). What's left is
   workflow/UX maturity, found on a harmonica-player/audio/UX-focused pass
   (2026-07-27): no undo/redo, no metronome or count-in while recording, no
-  way to audition a note's pitch on click, no selection-transpose (moving
-  a lick to a different chord), a manual-placement grid that can't
-  represent swing/triplet timing, and save/validation feedback that's
-  `println!`-only (invisible outside a terminal). See `TODO.md`'s Song
-  Editor section for the full list and `CLAUDE.md` for the detail behind
-  each.
+  way to audition a note's pitch on click, a manual-placement grid that
+  can't represent swing/triplet timing, and save/validation feedback
+  that's `println!`-only (invisible outside a terminal). See `TODO.md`'s
+  Song Editor section for the full list and `CLAUDE.md` for the detail
+  behind each.
 - Downloadable song packs / community sharing for the `~/Harmonicon`
   external-source folder. Live auto-refresh of that folder (songs, themes,
   and lessons) is done — see `PLAN.md`. The actual packaging/download/
