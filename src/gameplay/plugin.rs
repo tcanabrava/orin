@@ -9,7 +9,10 @@ use bevy::prelude::*;
 
 use crate::app::{AppState, GameplayMode};
 use crate::audio_system::pitch_detect::PitchRange;
-use crate::jam::{call_response as jam_call_response, improv, session as jam_session};
+use crate::jam::{
+    call_response as jam_call_response, improv, midi_tracks as jam_midi_tracks,
+    session as jam_session,
+};
 use crate::menu::tutorial::tour_active;
 use crate::settings::AudioSettings;
 
@@ -82,6 +85,7 @@ impl Plugin for GameplayPlugin {
         .init_resource::<bending_trainer::TrainerTarget>()
         .init_resource::<bending_trainer::DrillState>()
         .init_resource::<jam_session::JamLoop>()
+        .init_resource::<jam_midi_tracks::JamMidiMute>()
         .init_resource::<improv::ImprovGate>()
         .init_resource::<improv::ImprovStats>()
         .init_resource::<jam_call_response::CallResponseEnabled>()
@@ -253,11 +257,25 @@ impl Plugin for GameplayPlugin {
                 jam_call_response::drive_call_response,
                 jam_call_response::update_call_response_banner,
                 jam_call_response::update_call_response_label,
+                jam_midi_tracks::update_track_mute_buttons,
             )
                 .after(GameplayLogic)
                 .run_if(
                     in_state(AppState::Playing)
                         .and_then(|p: Res<Paused>| !p.0)
+                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
+                ),
+        )
+        // Muted-track sink volume — after `apply_music_volume` (a mid-song
+        // global-volume change touches every `MusicPlayer` sink, per-track
+        // ones included) so a muted track always ends up silent regardless
+        // of which order the two would otherwise run in.
+        .add_systems(
+            Update,
+            jam_midi_tracks::apply_midi_track_mute
+                .after(lifecycle::apply_music_volume)
+                .run_if(
+                    in_state(AppState::Playing)
                         .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
                 ),
         )

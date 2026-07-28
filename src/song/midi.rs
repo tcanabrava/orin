@@ -12,6 +12,9 @@
 use midly::{MetaMessage, MidiMessage, Smf, Timing, TrackEventKind};
 use std::collections::HashMap;
 
+use crate::audio_system::midi::midi_to_freq_hz;
+use crate::audio_system::synth::{Expr, PhraseNote, TICKS_PER_BEAT, render_pcm};
+
 pub const DEFAULT_TEMPO_US: u32 = 500_000; // 120 BPM if the file specifies none
 
 pub fn ticks_per_quarter(smf: &Smf) -> Result<u32, String> {
@@ -116,6 +119,57 @@ pub fn extract_notes(track: &[midly::TrackEvent]) -> Vec<RawNote> {
     }
     notes.sort_by_key(|n| (n.start_tick, n.key));
     notes
+}
+
+/// Converts extracted MIDI notes onto a synth-renderable tick grid
+/// (`secs_per_tick` seconds per tick) — shared by [`render_track_pcm`]
+/// below and `song_editor::midi_import::render_backing_pcm`, so both
+/// convert raw MIDI timing into synth phrase notes exactly the same way.
+pub(crate) fn notes_to_phrase(
+    notes: &[RawNote],
+    tpq: u32,
+    tempo: &[(u64, u32)],
+    secs_per_tick: f64,
+) -> Vec<PhraseNote> {
+    notes
+        .iter()
+        .map(|n| {
+            let start_secs = tick_to_seconds(n.start_tick, tpq, tempo);
+            let end_secs = tick_to_seconds(n.start_tick + n.dur_ticks, tpq, tempo);
+            let tick = (start_secs / secs_per_tick).round() as usize;
+            let len = (((end_secs - start_secs) / secs_per_tick).round() as usize).max(1);
+            PhraseNote {
+                tick,
+                len,
+                freq: Some(midi_to_freq_hz(n.key as f32)),
+                expr: Expr::None,
+            }
+        })
+        .collect()
+}
+
+/// Renders one track's own notes (only, not the other tracks) to a PCM
+/// buffer via the shared additive harmonica-voice synth
+/// (`audio_system::synth::render_pcm`) — used when a song ships each MIDI
+/// track as its own separately-playable backing stem (`song::loader`'s
+/// multi-track loading) rather than one pre-mixed file. `tpq`/`tempo` are
+/// the file's own (`ticks_per_quarter`/`collect_tempo_map`), computed once
+/// by the caller and shared across every track's render rather than
+/// re-derived per call. `None` for a track with no notes — nothing to
+/// render, and an all-silent stem would be pointless to play/mute.
+pub(crate) fn render_track_pcm(
+    track: &[midly::TrackEvent],
+    tpq: u32,
+    tempo: &[(u64, u32)],
+) -> Option<Vec<f32>> {
+    let notes = extract_notes(track);
+    if notes.is_empty() {
+        return None;
+    }
+    let initial_bpm = (60_000_000.0 / tempo[0].1 as f64).clamp(20.0, 300.0) as f32;
+    let secs_per_tick = 60.0 / initial_bpm.max(1.0) as f64 / TICKS_PER_BEAT as f64;
+    let phrase = notes_to_phrase(&notes, tpq, tempo, secs_per_tick);
+    Some(render_pcm(&phrase, secs_per_tick as f32))
 }
 
 // ── Shared test fixtures ─────────────────────────────────────────────────────
@@ -288,5 +342,43 @@ mod tests {
     fn extract_notes_ignores_an_unmatched_note_off() {
         let track = vec![note_off(0, 60)];
         assert!(extract_notes(&track).is_empty());
+    }
+
+    // ── render_track_pcm ─────────────────────────────────────────────────────
+
+    #[test]
+    fn render_track_pcm_is_none_for_a_track_with_no_notes() {
+        let track = [meta(0, MetaMessage::TrackName(b"Empty"))];
+        assert!(render_track_pcm(&track, 480, &[(0, DEFAULT_TEMPO_US)]).is_none());
+    }
+
+    #[test]
+    fn render_track_pcm_renders_nonempty_audio_for_a_track_with_notes() {
+        let track = [note_on(0, 60, 100), note_off(480, 60)];
+        let pcm = render_track_pcm(&track, 480, &[(0, DEFAULT_TEMPO_US)])
+            .expect("a track with notes should render something");
+        assert!(!pcm.is_empty());
+        // 120 BPM (the default), one beat (480 ticks at tpq 480) long, plus
+        // the synth's fixed tail — comfortably longer than a zero-length hum.
+        assert!(pcm.len() > 44_100 / 4);
+    }
+
+    #[test]
+    fn notes_to_phrase_converts_tick_timing_into_the_synth_grid() {
+        let notes = vec![RawNote {
+            start_tick: 0,
+            dur_ticks: 240,
+            key: 60,
+        }];
+        // tpq 480, 120 BPM (500_000 us/quarter, so one quarter = 0.5s) ->
+        // 240 ticks (a quarter of that quarter) is 0.25s; at
+        // secs_per_tick = 1.0 / TICKS_PER_BEAT (one beat per second), that's
+        // exactly a quarter of TICKS_PER_BEAT synth ticks.
+        let secs_per_tick = 1.0 / TICKS_PER_BEAT as f64;
+        let phrase = notes_to_phrase(&notes, 480, &[(0, DEFAULT_TEMPO_US)], secs_per_tick);
+        assert_eq!(phrase.len(), 1);
+        assert_eq!(phrase[0].tick, 0);
+        assert_eq!(phrase[0].len, TICKS_PER_BEAT / 4);
+        assert_eq!(phrase[0].freq, Some(midi_to_freq_hz(60.0)));
     }
 }

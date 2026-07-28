@@ -27,15 +27,14 @@ use super::pitch_map::{map_pitch, suggest_key};
 use super::playback::build_harp;
 use super::state::{EditorState, Expr, GridNote, HarmonicaKind};
 use super::{MIDI_PURPOSE, TICKS_PER_BEAT};
-use crate::audio_system::midi::midi_to_freq_hz;
-use crate::audio_system::synth::{PhraseNote, render_pcm};
+use crate::audio_system::synth::render_pcm;
 use crate::dialogs::combobox::{ComboboxSelect, spawn_combobox};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::localization::LocalizationExt;
 use crate::song::chart::{TempoPoint, seconds_to_tick};
 use crate::song::midi::{
-    collect_tempo_map, extract_notes, note_on_count, tick_to_seconds, ticks_per_quarter,
-    track_name_of,
+    collect_tempo_map, extract_notes, note_on_count, notes_to_phrase, tick_to_seconds,
+    ticks_per_quarter, track_name_of,
 };
 use bevy_fluent::prelude::Localization;
 
@@ -225,27 +224,17 @@ pub(super) fn render_backing_pcm(
     let initial_bpm = (60_000_000.0 / tempo[0].1 as f64).clamp(20.0, 300.0) as f32;
     let secs_per_tick = 60.0 / initial_bpm.max(1.0) as f64 / TICKS_PER_BEAT as f64;
 
-    let mut phrase = Vec::new();
+    let mut notes = Vec::new();
     for (i, track) in smf.tracks.iter().enumerate() {
         if i == skip_track {
             continue;
         }
-        for n in extract_notes(track) {
-            let start_secs = tick_to_seconds(n.start_tick, tpq, &tempo);
-            let end_secs = tick_to_seconds(n.start_tick + n.dur_ticks, tpq, &tempo);
-            let tick = (start_secs / secs_per_tick).round() as usize;
-            let len = (((end_secs - start_secs) / secs_per_tick).round() as usize).max(1);
-            phrase.push(PhraseNote {
-                tick,
-                len,
-                freq: Some(midi_to_freq_hz(n.key as f32)),
-                expr: Expr::None,
-            });
-        }
+        notes.extend(extract_notes(track));
     }
-    if phrase.is_empty() {
+    if notes.is_empty() {
         return Err("no notes left outside the selected track".to_string());
     }
+    let phrase = notes_to_phrase(&notes, tpq, &tempo, secs_per_tick);
     Ok((initial_bpm, render_pcm(&phrase, secs_per_tick as f32)))
 }
 

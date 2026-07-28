@@ -250,6 +250,7 @@ pub fn build_generated_manifest(
         chart: generated_chart(key, bpm, progression, position, music_duration_secs),
         background,
         music: Some(music),
+        midi_tracks: None,
         waveform,
         music_duration_secs,
         elements,

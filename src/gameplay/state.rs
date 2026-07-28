@@ -215,6 +215,18 @@ pub struct Paused(pub bool);
 #[derive(Component)]
 pub struct MusicPlayer;
 
+/// Tags a MIDI-backed Jam Session's per-track `AudioPlayer`/`AudioSink`
+/// with which of `SongManifest::midi_tracks` it is — lives here rather
+/// than in `jam::midi_tracks` (which reads it) because `countdown_overlay`
+/// (which spawns it) already can't depend on `jam` without a layering
+/// inversion, the same reasoning `MusicPlayer` above already follows.
+/// Always spawned alongside `MusicPlayer`, so pause and the global
+/// music-volume slider apply to every track's sink for free; `jam::
+/// midi_tracks::apply_midi_track_mute` only ever narrows a track's volume
+/// further, on top of that.
+#[derive(Component)]
+pub struct MidiTrackPlayer(pub usize);
+
 /// Scoring parameters resolved from the song's chart at game start.
 /// Falls back to sensible defaults if the chart doesn't specify them.
 #[derive(Resource)]

@@ -13,7 +13,7 @@ use crate::{
     song::SongManifest,
 };
 
-use super::{GameplayClock, GameplayRoot, MusicPlayer, MusicStarted, Paused};
+use super::{GameplayClock, GameplayRoot, MidiTrackPlayer, MusicPlayer, MusicStarted, Paused};
 
 #[derive(Component, Default, Clone)]
 pub struct CountdownOverlay;
@@ -91,29 +91,44 @@ pub fn update_countdown(
         }
         if !music_started.0 {
             music_started.0 = true;
-            // `manifest.music` is `None` for a song with no `song/*.ogg` —
-            // play the chart silently rather than not starting at all (the
-            // clock free-runs on frame delta instead of anchoring to a sink;
-            // see `gameplay::should_anchor_to_sink`).
-            if let Some(manifest) = manifests.get(&selected.0)
-                && let Some(music) = manifest.music.clone()
-            {
+            // `manifest.music` is `None` for a song with no `song/*.ogg`/
+            // `*.wav` — play the chart silently rather than not starting at
+            // all (the clock free-runs on frame delta instead of anchoring
+            // to a sink; see `gameplay::should_anchor_to_sink`), *unless*
+            // the song ships `midi_tracks` instead (see `song::
+            // MidiTrackAudio`), in which case every track gets its own
+            // sink, all spawned together this same frame so they start in
+            // sync — muting one later is just zeroing that sink's volume
+            // (`jam::midi_tracks::apply_midi_track_mute`), no re-mixing.
+            if let Some(manifest) = manifests.get(&selected.0) {
                 // Jam Session's own `restart_finished_jam_music` re-spawns
-                // this entity once it despawns itself, if Loop is on at that
-                // moment — so it always starts as a plain one-shot that
-                // self-cleans; scored modes need the same self-cleaning
+                // these entities once they despawn themselves, if Loop is on
+                // at that moment — so they always start as plain one-shots
+                // that self-clean; scored modes need the same self-cleaning
                 // one-shot to move on to the results screen.
                 let settings = if *mode == GameplayMode::JamSession {
                     PlaybackSettings::DESPAWN
                 } else {
                     PlaybackSettings::ONCE
                 };
-                commands.spawn((
-                    AudioPlayer::<AudioSource>(music),
-                    settings.with_volume(Volume::Linear(audio.music_volume)),
-                    MusicPlayer,
-                    GameplayRoot,
-                ));
+                if let Some(music) = manifest.music.clone() {
+                    commands.spawn((
+                        AudioPlayer::<AudioSource>(music),
+                        settings.with_volume(Volume::Linear(audio.music_volume)),
+                        MusicPlayer,
+                        GameplayRoot,
+                    ));
+                } else if let Some(tracks) = &manifest.midi_tracks {
+                    for (index, track) in tracks.iter().enumerate() {
+                        commands.spawn((
+                            AudioPlayer::<AudioSource>(track.source.clone()),
+                            settings.with_volume(Volume::Linear(audio.music_volume)),
+                            MusicPlayer,
+                            MidiTrackPlayer(index),
+                            GameplayRoot,
+                        ));
+                    }
+                }
             }
         }
         return;

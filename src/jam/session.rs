@@ -15,8 +15,8 @@ use crate::{
     app::{JamProgression, SelectedSong},
     dialogs::button,
     gameplay::{
-        ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MusicPlayer,
-        MusicStarted, resolve_item_time,
+        ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
+        MusicPlayer, MusicStarted, resolve_item_time,
     },
     localization::LocalizationExt,
     settings::AudioSettings,
@@ -37,6 +37,7 @@ use crate::gameplay::twelve_bar_blues_overlay::{GridConfig, spawn_12_bar_grid};
 use crate::spectrogram::{OscMaterial, SpectrogramStyle, spawn_spectrogram};
 
 use super::improv::classify_note_fit;
+use super::midi_tracks::{JamMidiMute, spawn_midi_track_row};
 
 /// Free-play screen, two columns: left has everything but the harmonica
 /// itself (title, loop toggle, 12-bar chart, metronome, spectrogram); right
@@ -50,6 +51,7 @@ pub fn setup(
     manifests: Res<Assets<SongManifest>>,
     mut clock: ResMut<GameplayClock>,
     mut music_started: ResMut<MusicStarted>,
+    mut midi_mute: ResMut<JamMidiMute>,
     spectrogram_style: Res<SpectrogramStyle>,
     osc_material: Res<OscMaterial>,
     theme: Res<LoadedTheme>,
@@ -62,6 +64,11 @@ pub fn setup(
     };
     clock.set_free(-COUNTDOWN);
     music_started.0 = false;
+    // Fresh, all-unmuted for this jam — sized to the song's own track
+    // count (empty for an ordinary, non-MIDI-backed song, so the mute row
+    // below simply doesn't spawn and the apply/UI systems have nothing to
+    // iterate).
+    midi_mute.0 = vec![false; manifest.midi_tracks.as_ref().map_or(0, Vec::len)];
 
     let chart = &manifest.chart;
     let key = chart.song.key.as_str();
@@ -94,7 +101,12 @@ pub fn setup(
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Row,
+                // Column, not Row: the 12-bar/harmonica columns below sit in
+                // their own Row-direction wrapper (so they still sit side by
+                // side), leaving room for the MIDI-track mute row — present
+                // only for a MIDI-backed song — as a full-width sibling
+                // underneath both of them.
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
             ImageNode::new(manifest.background.clone()),
@@ -118,8 +130,19 @@ pub fn setup(
                 BackgroundColor(Color::srgba(0.04, 0.04, 0.06, 0.70)),
             ));
 
-            // ── Left half: 12-bar chart + metronome, vertical ────────────────
+            // The two side-by-side columns below, wrapped in their own
+            // Row-direction, flex-growing container so the MIDI-track mute
+            // row (added after this closes) can sit below both of them as a
+            // full-width sibling instead of a third column.
             root.spawn(Node {
+                width: Val::Percent(100.0),
+                flex_direction: FlexDirection::Row,
+                flex_grow: 1.0,
+                ..default()
+            })
+            .with_children(|columns| {
+            // ── Left half: 12-bar chart + metronome, vertical ────────────────
+            columns.spawn(Node {
                 width: Val::Percent(50.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
@@ -233,7 +256,7 @@ pub fn setup(
             // live-tinted hole map both name/track holes on the same
             // instrument, so they share this column rather than splitting
             // across both halves.
-            root.spawn(Node {
+            columns.spawn(Node {
                 width: Val::Percent(50.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
@@ -245,6 +268,13 @@ pub fn setup(
                 spawn_harmonica_overlay(right, &chart.harmonica, &loc);
                 spawn_hole_map(right, &holes_info, &loc);
             });
+            });
+
+            // MIDI-backed song only — an ordinary music/silent song has
+            // nothing to mute, so nothing spawns here for it.
+            if let Some(tracks) = &manifest.midi_tracks {
+                spawn_midi_track_row(root, tracks, &loc);
+            }
         });
 
     commands.insert_resource(guide);
@@ -359,18 +389,34 @@ pub fn restart_finished_jam_music(
     let Some(manifest) = manifests.get(&selected.0) else {
         return;
     };
-    // A song with no `song/*.ogg` never had a `MusicPlayer` to begin with
-    // (see `countdown_overlay::update_countdown`) — nothing to loop.
-    let Some(music) = manifest.music.clone() else {
+    // A song with neither `song/*.ogg`/`*.wav` nor `midi_tracks` never had
+    // a `MusicPlayer` to begin with (see `countdown_overlay::
+    // update_countdown`) — nothing to loop.
+    if manifest.music.is_none() && manifest.midi_tracks.is_none() {
         return;
-    };
+    }
     clock.set_free(0.0);
-    commands.spawn((
-        AudioPlayer::<AudioSource>(music),
-        PlaybackSettings::DESPAWN.with_volume(Volume::Linear(audio.music_volume)),
-        MusicPlayer,
-        GameplayRoot,
-    ));
+    if let Some(music) = manifest.music.clone() {
+        commands.spawn((
+            AudioPlayer::<AudioSource>(music),
+            PlaybackSettings::DESPAWN.with_volume(Volume::Linear(audio.music_volume)),
+            MusicPlayer,
+            GameplayRoot,
+        ));
+    } else if let Some(tracks) = &manifest.midi_tracks {
+        // Mute state (`JamMidiMute`) isn't touched here — it's a resource
+        // independent of any particular sink, so a track muted before the
+        // loop stays muted after it without needing to be re-applied.
+        for (index, track) in tracks.iter().enumerate() {
+            commands.spawn((
+                AudioPlayer::<AudioSource>(track.source.clone()),
+                PlaybackSettings::DESPAWN.with_volume(Volume::Linear(audio.music_volume)),
+                MusicPlayer,
+                MidiTrackPlayer(index),
+                GameplayRoot,
+            ));
+        }
+    }
 }
 
 // ── Live harmonica hole map ─────────────────────────────────────────────────────

@@ -9,4 +9,5 @@
 pub mod backing;
 pub mod call_response;
 pub mod improv;
+pub mod midi_tracks;
 pub mod session;

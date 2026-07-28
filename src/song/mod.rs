@@ -23,22 +23,44 @@ pub struct SongManifest {
     /// doesn't ship its own `background.png` (see `song::loader`), so this
     /// never needs to be optional.
     pub background: Handle<Image>,
-    /// `None` when the song doesn't ship a `song/*.ogg` — a scored/jam
-    /// session then simply plays no backing track (the chart-timed clock
-    /// free-runs instead of anchoring to a sink; see `gameplay::
-    /// should_anchor_to_sink`), rather than failing to load.
+    /// `None` when the song doesn't ship a `song/*.ogg`/`*.wav` — a
+    /// scored/jam session then simply plays no backing track (the
+    /// chart-timed clock free-runs instead of anchoring to a sink; see
+    /// `gameplay::should_anchor_to_sink`), rather than failing to load.
+    /// Also `None` (not the single mixed-down file) when the song ships a
+    /// `song/music.mid` instead — see [`midi_tracks`](Self::midi_tracks),
+    /// which is what carries that song's backing audio in that case. The
+    /// two are mutually exclusive: a chart with an ordinary `music.ogg`/
+    /// `.wav` never populates `midi_tracks`, and vice versa.
     pub music: Option<Handle<AudioSource>>,
-    /// Peak-amplitude waveform of `music`, pre-analyzed at load time (see
-    /// `audio_system::waveform`) so the gameplay progress bar can draw it
-    /// immediately instead of decoding audio on the main thread mid-setup.
+    /// Present when the song ships `song/music.mid` instead of a single
+    /// pre-mixed `music.ogg`/`.wav` — one already-rendered `AudioSource`
+    /// per non-empty MIDI track (via the same additive harmonica-voice
+    /// synth `song_editor::playback`/`gameplay::call_response` share,
+    /// `song::midi::render_track_pcm`), so a Jam Session can play every
+    /// track as its own simultaneous, synchronized sink and mute
+    /// individual tracks by muting their sink — no live re-mixing needed,
+    /// since each stem is already a complete, independent render. Only
+    /// Jam Session's own UI (`jam::session`) shows a mute row for these;
+    /// scored Play2D/3D would have nothing meaningful to do with a chart's
+    /// *backing* track regardless of how many stems it has.
+    pub midi_tracks: Option<Vec<MidiTrackAudio>>,
+    /// Peak-amplitude waveform of `music` (or, when [`midi_tracks`]
+    /// (Self::midi_tracks) is populated instead, every track's stems
+    /// summed together — a display-only reference mix; actual playback
+    /// sums them for real, as separate simultaneous sinks), pre-analyzed
+    /// at load time (see `audio_system::waveform`) so the gameplay
+    /// progress bar can draw it immediately instead of decoding audio on
+    /// the main thread mid-setup.
     pub waveform: Vec<f32>,
-    /// `music`'s real decoded duration in seconds — the timescale `waveform`
-    /// is laid out on. Deliberately *not* the same thing as the gameplay
-    /// `SongEnd` (last chart note + a fixed tail): a tightly-trimmed track
-    /// ends before that tail elapses, a padded one keeps going after it.
-    /// Anything positioned over the waveform (the playhead, the loop-range
-    /// marker) must use this, or it drifts out of sync with the waveform
-    /// it's drawn on top of.
+    /// `music`'s (or the combined MIDI-track mix's) real decoded duration
+    /// in seconds — the timescale `waveform` is laid out on. Deliberately
+    /// *not* the same thing as the gameplay `SongEnd` (last chart note +
+    /// a fixed tail): a tightly-trimmed track ends before that tail
+    /// elapses, a padded one keeps going after it. Anything positioned
+    /// over the waveform (the playhead, the loop-range marker) must use
+    /// this, or it drifts out of sync with the waveform it's drawn on top
+    /// of.
     pub music_duration_secs: f64,
     /// Unused by gameplay today (`jam::backing`'s `build_generated_manifest`
     /// notes this explicitly) — `Handle::default()` when the song doesn't
@@ -57,6 +79,17 @@ pub struct SongManifest {
     /// by `gameplay_3d::setup` (with the `#Mesh0/Primitive0` label) the same way.
     pub assets_3d: Option<AssetPath<'static>>,
     pub assets_3d_config: NoteCube3dConfig,
+}
+
+/// One MIDI track's own, independently-playable audio stem — see
+/// [`SongManifest::midi_tracks`].
+#[derive(Debug, Clone)]
+pub struct MidiTrackAudio {
+    /// The track's own name (`song::midi::track_name_of`), or `"Track
+    /// <index>"` when the MIDI file doesn't name it — shown as the mute
+    /// row's label in `jam::session`.
+    pub name: String,
+    pub source: Handle<AudioSource>,
 }
 
 /// Head image destination rect within the note's lane square, in percentages
