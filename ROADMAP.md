@@ -81,7 +81,16 @@ remains:
   installer (workflow exists), macOS bundle (workflow exists — `release.
   yaml` builds/DMGs both architectures at tag time, `macos.yaml` checks the
   same bundling on every push/PR so a regression doesn't wait for a tag).
-- Explore web build (Bevy → wasm; mic via Web Audio) for zero-install trial.
+- Explore web build (Bevy → wasm; mic via Web Audio) for zero-install
+  trial. The crate itself already compiles clean for `wasm32-unknown-
+  unknown` (lib and the main binary — see `Cargo.toml`'s wasm32 target
+  section for the two dependency-level fixes this needed); what's still
+  entirely unstarted is everything to actually run in a browser: a real
+  build pipeline (`wasm-bindgen`/`trunk`, an `index.html`), a Web Audio
+  bridge for mic capture in place of `cpal`, and a replacement for the
+  `dirs`/`std::fs`-based settings/profile persistence and the
+  `~/Harmonicon` external-folder watcher (`notify-debouncer-full`), none
+  of which have browser equivalents.
 - Accessibility: mirrored layout for left-handed players, fully
   keyboard-navigable menus. (Colorblind-safe note palettes are done — an
   Options-page toggle swaps the Play2D/Play3D note highway's blow/draw

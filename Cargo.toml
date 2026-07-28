@@ -16,7 +16,7 @@ crossbeam-channel = "0.5"
 rodio = { version = "0.22", default-features = false, features = ["vorbis"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-jsonschema = "0.28"
+jsonschema = { version = "0.28", default-features = false }
 thiserror = "2"
 midly = "0.5"
 figment = { version = "0.10", features = ["json"] }
@@ -70,3 +70,17 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+# Two incompatible `getrandom` majors sit in the dependency tree at once —
+# 0.4.x via `rand`/Bevy, 0.3.x via `ahash` — and each refuses to target
+# wasm32 without an explicit opt-in, so both need enabling here even though
+# neither is a direct dependency otherwise. The 0.3.x line additionally
+# needs a compile-time cfg the Cargo feature alone doesn't cover — build
+# (or `cargo check`) for wasm32 with:
+#   RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo build --target wasm32-unknown-unknown
+# (not set globally here since RUSTFLAGS isn't expressible from Cargo.toml
+# itself, and `.cargo/config.toml` is this repo's per-machine, gitignored
+# local build config, not something to ship a project-wide setting through).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
