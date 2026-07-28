@@ -71,6 +71,11 @@ pub(super) struct HarmonicaKindText;
 #[derive(Component)]
 pub(super) struct ContentKindText;
 
+/// The label showing the current [`super::state::SnapMode`] next to its
+/// cycle button.
+#[derive(Component)]
+pub(super) struct SnapModeText;
+
 // `LessonFormGroup`/`LessonDetailsBody`/`LessonDetailsToggleLabel`/
 // `LessonConditionalRow` — the lesson-fields panel's own components — live
 // in `lesson_form.rs` itself, not here, since nothing outside that module

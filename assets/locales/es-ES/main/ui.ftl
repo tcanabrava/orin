@@ -122,6 +122,10 @@ editor-harmonica-chromatic = ‹ Cromática (12 orificios) ›
 editor-field-content-kind = Grabación
 editor-content-kind-song = ‹ Grabar Canción ›
 editor-content-kind-lesson = ‹ Grabar Lección ›
+editor-field-snap-mode = Ajuste de Cuadrícula
+editor-snap-mode-sixteenth = ‹ Semicorcheas rectas ›
+editor-snap-mode-shuffle = ‹ Shuffle (corcheas con swing) ›
+editor-snap-mode-triplet = ‹ Tresillos de corchea ›
 
 # Song Editor 2 — leyenda de colores (tercera columna del formulario)
 editor-legend-notes = Colores de las notas (cuadrícula)
@@ -139,6 +143,7 @@ editor-legend-drag-ok = Posición de destino válida
 editor-legend-drag-bad = Inválida (superposición o técnica incompatible)
 editor-legend-elsewhere = En otras partes de la pantalla
 editor-legend-tempo-marker = Marcador de cambio de tempo (encabezado de la cuadrícula)
+editor-legend-triplet-line = Línea de subdivisión de tresillo (pulsos 4/8 del tiempo)
 editor-legend-split-point = Herramienta Seleccionar: punto de división
 editor-legend-range-preview = Herramienta Seleccionar: vista previa del rango
 editor-legend-active-button = Botón de modo/herramienta actualmente activo
@@ -236,6 +241,7 @@ editor-tool-remove-tooltip = Haz clic en un punto de la línea de tiempo y luego
 editor-tool-tempo-tooltip = Haz clic en la regla para añadir un cambio de tempo ahí, o haz clic en uno existente para quitarlo
 editor-harmonica-toggle-tooltip = Haz clic para alternar entre armónica Diatónica y Cromática
 editor-content-kind-toggle-tooltip = Haz clic para alternar entre grabar una canción normal y una lección del currículo
+editor-snap-mode-toggle-tooltip = Haz clic para alternar la subdivisión del pulso a la que se ajusta un clic en la cuadrícula — semicorcheas rectas, corcheas shuffle (con swing) o tresillos de corchea rectos
 editor-lesson-form-tooltip = Campos del currículo para lesson.json — solo se usan mientras "Grabar Lección" está activo
 editor-lesson-details-toggle-tooltip = Haz clic para mostrar u ocultar los campos del currículo de la lección
 editor-field-lesson-pass-criteria-tooltip = Haz clic para alternar cómo se evalúa esta lección — Ninguno, Precisión, Técnica, Adherencia a la Escala, Adherencia a Notas del Acorde, Disciplina de Frase

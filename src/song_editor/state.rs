@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+use super::snap::SnapMode;
 use super::{HEADER_H, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
 use crate::song::chart::Scale;
 
@@ -463,6 +464,9 @@ pub(super) struct EditorState {
     /// User's own Lock toggle, independent of `mode`. See [`EditorState::locked`].
     pub(super) user_locked: bool,
     pub(super) harmonica_kind: HarmonicaKind,
+    /// Which within-beat tick positions a click places a new note at — see
+    /// [`SnapMode`]. A UI preference, not chart content or undo-tracked.
+    pub(super) snap_mode: SnapMode,
     pub(super) timeline_tool: TimelineTool,
     /// A split point placed by a plain click-and-release on the timeline
     /// ruler (no meaningful drag) — persists across frames (unlike
@@ -529,6 +533,7 @@ impl Default for EditorState {
             lesson_details_expanded: false,
             user_locked: false,
             harmonica_kind: HarmonicaKind::default(),
+            snap_mode: SnapMode::default(),
             timeline_tool: TimelineTool::default(),
             timeline_split: None,
             pending_timeline_op: None,

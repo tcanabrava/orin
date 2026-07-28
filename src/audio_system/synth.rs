@@ -18,7 +18,19 @@ pub(crate) const SAMPLE_RATE: u32 = 44_100;
 /// `timing.resolution`) and `gameplay::call_response`'s phrase-to-tick
 /// conversion; both need to agree on the same resolution to build a
 /// [`PhraseNote`] list this module's [`render_pcm`] can render correctly.
-pub(crate) const TICKS_PER_BEAT: usize = 4;
+///
+/// 12, not 4: the lowest number divisible by both 4 (straight 16ths — the
+/// old resolution) and 3 (triplets) — see `song_editor::state::SnapMode`,
+/// which needs actual triplet-position ticks to exist on the grid to snap
+/// onto (a genuine blues/shuffle feel is a triplet subdivision, not the
+/// straight-16th grid this used to be limited to). This only changes what
+/// resolution the editor writes into *new* saves; a chart's own
+/// `timing.resolution` field is self-describing and every tick/time
+/// conversion (`song::chart::tick_to_seconds`/`seconds_to_tick`) already
+/// takes a chart's resolution as an explicit parameter rather than
+/// hardcoding this constant, so existing bundled charts (still at
+/// `resolution: 4`) are completely unaffected and need no migration.
+pub(crate) const TICKS_PER_BEAT: usize = 12;
 
 // ── Synthesis parameters ─────────────────────────────────────────────────────
 

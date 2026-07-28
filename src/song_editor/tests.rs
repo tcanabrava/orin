@@ -320,8 +320,9 @@ fn group_move_valid_rejects_a_target_overlapping_a_note_outside_the_group() {
     select_or_add(&mut s, 3, 0); // an unrelated, unselected note
     let targets = vec![(99u32, 3, 0, 4, Pitch::Normal)];
     assert!(!group_move_valid(&s.notes, &[99], &targets));
-    // Moving out of the blocker's way is fine again.
-    let clear = vec![(99u32, 3, 8, 4, Pitch::Normal)];
+    // Moving out of the blocker's way is fine again — the blocker's default
+    // length is one full beat (`TICKS_PER_BEAT`), so its span ends there.
+    let clear = vec![(99u32, 3, TICKS_PER_BEAT, 4, Pitch::Normal)];
     assert!(group_move_valid(&s.notes, &[99], &clear));
 }
 
@@ -954,19 +955,22 @@ fn enforce_expr_unifies_overlap_chain_but_not_independent_notes() {
 #[test]
 fn clicking_wah_propagates_to_overlapping_notes_via_apply_modifier() {
     let mut s = EditorState::default();
+    let half_beat = TICKS_PER_BEAT / 2;
     select_or_add(&mut s, 2, 0);
-    select_or_add(&mut s, 5, 2); // overlaps the first note (tick 0..4 vs 2..6)
-    select_or_add(&mut s, 7, 10); // independent
+    // Overlaps the first note: its default length is one full beat
+    // (`TICKS_PER_BEAT`), so a note starting mid-beat still falls inside it.
+    select_or_add(&mut s, 5, half_beat);
+    select_or_add(&mut s, 7, TICKS_PER_BEAT * 3); // well past it: independent
     s.selected = vec![s.note_at(2, 0).unwrap().id];
     apply_modifier(&mut s, ModButton::Wah);
     assert_eq!(s.note_at(2, 0).unwrap().expr, Expr::Wah(2.0));
     assert_eq!(
-        s.note_at(5, 2).unwrap().expr,
+        s.note_at(5, half_beat).unwrap().expr,
         Expr::Wah(2.0),
         "overlapping note picks up the wah too"
     );
     assert_eq!(
-        s.note_at(7, 10).unwrap().expr,
+        s.note_at(7, TICKS_PER_BEAT * 3).unwrap().expr,
         Expr::None,
         "independent note keeps its own expression"
     );
@@ -976,11 +980,13 @@ fn clicking_wah_propagates_to_overlapping_notes_via_apply_modifier() {
 fn separate_times_keep_independent_directions() {
     let mut s = EditorState::default();
     select_or_add(&mut s, 2, 0);
-    select_or_add(&mut s, 2, 4);
-    s.selected = vec![s.note_at(2, 4).unwrap().id];
+    // Starts exactly where the first note's default one-beat length ends,
+    // so the two don't overlap.
+    select_or_add(&mut s, 2, TICKS_PER_BEAT);
+    s.selected = vec![s.note_at(2, TICKS_PER_BEAT).unwrap().id];
     apply_modifier(&mut s, ModButton::Draw);
     assert_eq!(s.note_at(2, 0).unwrap().dir, Dir::Blow);
-    assert_eq!(s.note_at(2, 4).unwrap().dir, Dir::Draw);
+    assert_eq!(s.note_at(2, TICKS_PER_BEAT).unwrap().dir, Dir::Draw);
 }
 
 #[test]
@@ -1076,7 +1082,14 @@ fn note_freq_reads_the_chromatic_layout_and_slide_table() {
 
 #[test]
 fn render_and_wav_have_expected_size() {
-    let notes = [note(4, Dir::Draw, Pitch::Normal)];
+    // One full beat long (`note()`'s own default `len: 4` predates
+    // `TICKS_PER_BEAT` becoming 12 and is no longer one beat) — the
+    // `expected` computation below assumes exactly one beat's worth of
+    // note (0.5s at 120bpm) plus the synth's fixed tail.
+    let notes = [GridNote {
+        len: TICKS_PER_BEAT,
+        ..note(4, Dir::Draw, Pitch::Normal)
+    }];
     let harp = build_harp("C", HarmonicaKind::Diatonic);
     let phrase: Vec<PhraseNote> = notes
         .iter()

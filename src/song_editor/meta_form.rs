@@ -19,7 +19,7 @@ use super::state::{
 use super::timeline_overlay::{RANGE_HIGHLIGHT_COLOR, SPLIT_LINE_COLOR};
 use super::ui::{
     ContentKindText, EditorRoot, HarmonicaKindText, HoleColumnContent, MetaFieldBox, MetaFieldText,
-    MidiTrackComboboxSlot, ScaleComboboxSlot,
+    MidiTrackComboboxSlot, ScaleComboboxSlot, SnapModeText,
 };
 use super::{HEADER_H, MIDI_PURPOSE, MUSIC_PURPOSE, ROW_H, SILENCE_ROW_H, grid_height};
 use crate::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
@@ -251,6 +251,22 @@ fn spawn_harmonica_kind_row(
                 HarmonicaKind::Chromatic => HarmonicaKind::Diatonic,
             };
             state.set_harmonica_kind(next);
+        },
+    );
+}
+
+/// The Straight/Shuffle/Triplet grid-snap toggle — see [`SnapMode`]. Only
+/// changes where the *next* click lands; existing notes are untouched.
+fn spawn_snap_mode_row(col: &mut ChildSpawnerCommands, loc: &Localization, colors: SongEditorColors) {
+    spawn_cycle_row(
+        col,
+        loc,
+        colors,
+        "editor-field-snap-mode",
+        "editor-snap-mode-toggle-tooltip",
+        SnapModeText,
+        |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            state.snap_mode = state.snap_mode.next();
         },
     );
 }
@@ -577,6 +593,7 @@ pub(super) fn spawn_meta_form(
         spawn_form_column(form, |col| {
             spawn_content_kind_row(col, loc, colors);
             spawn_harmonica_kind_row(col, loc, colors);
+            spawn_snap_mode_row(col, loc, colors);
             for &(field, label) in &FIELDS[..MID] {
                 spawn_field_row(col, loc, colors, field, label);
             }
@@ -768,6 +785,13 @@ fn spawn_color_legend(
         TEMPO_MARKER_COLOR,
         false,
         loc.msg("editor-legend-tempo-marker").to_string(),
+    );
+    spawn_legend_row(
+        col,
+        colors,
+        colors.triplet_line,
+        false,
+        loc.msg("editor-legend-triplet-line").to_string(),
     );
     spawn_legend_row(
         col,

@@ -303,15 +303,15 @@ mod tests {
     #[test]
     fn phrase_notes_offset_by_their_time_since_the_group_start() {
         let chart = c_diatonic();
-        // 120 bpm, 4 ticks/beat -> 0.125s/tick. A note 0.5s after the group
-        // start is 4 ticks in.
+        // 120 bpm -> one beat (TICKS_PER_BEAT ticks) per second. A note 0.5s
+        // after the group start is one beat in.
         let group = [
             item(10.0, 0.5, true, &[(1, Action::Blow)]),
             item(10.5, 0.5, true, &[(2, Action::Blow)]),
         ];
         let notes = build_phrase_notes(&chart, &group, 10.0, 120.0);
         assert_eq!(notes[0].tick, 0);
-        assert_eq!(notes[1].tick, 4);
+        assert_eq!(notes[1].tick, TICKS_PER_BEAT);
     }
 
     #[test]

@@ -10,6 +10,7 @@ use super::interaction::{ctrl_held, select_or_add, select_or_add_ctrl};
 use super::material::EditorNoteMaterial;
 use super::playback::{build_harp, note_freq};
 use super::ranges::silence_gaps;
+use super::snap::snap_tick_in_beat;
 use super::state::{
     DragKind, DragState, Edge, EditorState, Expr, GridNote, Mode, Pitch, enforce_direction,
     enforce_expr, move_target, note_rect, pitch_color, pitch_compatible, pitch_deny_key,
@@ -219,7 +220,7 @@ pub(super) fn rebuild_grid(
                         .and_then(|r| r.normalized)
                         .map_or(0.0, |n| n.x)
                         .clamp(0.0, 0.999);
-                    let sub = (frac * TICKS_PER_BEAT as f32).floor() as usize;
+                    let sub = snap_tick_in_beat(frac, state.snap_mode);
                     let tick = beat * TICKS_PER_BEAT + sub;
                     // Dev-only ("--features dev") benchmark-authoring mode —
                     // see `expected_notes`'s module docs. `cell_locked`
@@ -290,8 +291,20 @@ pub(super) fn rebuild_grid(
                 .id(),
         );
 
+        // Only draw a line at the tick positions a `SnapMode` can actually
+        // land on — straight 16ths (every `TICKS_PER_BEAT / 4` ticks) and
+        // triplet 8ths (every `TICKS_PER_BEAT / 3` ticks) — not one line per
+        // raw tick: at `TICKS_PER_BEAT = 12` that'd be 11 lines per beat,
+        // cluttered well past the point of being readable as a grid.
+        let sixteenth_step = TICKS_PER_BEAT / 4;
+        let triplet_step = TICKS_PER_BEAT / 3;
         for s in 1..TICKS_PER_BEAT {
             let is_half = s * 2 == TICKS_PER_BEAT;
+            let is_sixteenth = s % sixteenth_step == 0;
+            let is_triplet = s % triplet_step == 0;
+            if !is_sixteenth && !is_triplet {
+                continue;
+            }
             items.push(
                 commands
                     .spawn((
@@ -306,6 +319,8 @@ pub(super) fn rebuild_grid(
                         },
                         BackgroundColor(if is_half {
                             colors.half_line
+                        } else if is_triplet {
+                            colors.triplet_line
                         } else {
                             colors.quarter_line
                         }),

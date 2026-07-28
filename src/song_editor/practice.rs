@@ -480,9 +480,15 @@ mod tests {
         let schedule = build_schedule(&state);
         let secs_per_tick = 60.0 / 120.0 / TICKS_PER_BEAT as f64;
         assert_eq!(schedule[0].start_secs, 0.0);
-        assert_eq!(
-            schedule[0].end_secs,
-            state.notes[0].len as f64 * secs_per_tick
+        // `build_schedule` computes `secs_per_tick` in `f32` (production
+        // code shares it with real-time playback, where `f32` is the
+        // established precision throughout); at `TICKS_PER_BEAT` values
+        // that aren't an exact power-of-two fraction of a beat (12 isn't,
+        // unlike the old 4), that `f32` rounding no longer cancels out
+        // exactly against this test's own `f64` computation — hence the
+        // epsilon rather than `assert_eq!`.
+        assert!(
+            (schedule[0].end_secs - state.notes[0].len as f64 * secs_per_tick).abs() < 1e-6
         );
     }
 

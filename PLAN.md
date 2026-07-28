@@ -214,6 +214,22 @@ this file — prune it back to a one-line summary under "Shipped" below.
   keyed by a phrase section's own name (disambiguated for repeats) instead
   of its ordinal position in the track, so re-editing a chart's phrase
   tags no longer silently misapplies old progress to the wrong section.
+- **Song editor: swing/triplet-aware grid snap** — `TICKS_PER_BEAT` went
+  4 → 12 (the lowest resolution divisible by both 4, for straight 16ths,
+  and 3, for triplets), so a genuine triplet tick position exists on the
+  grid at all — the old 4-tick grid had no integer position for one. A
+  chart's own `timing.resolution` is self-describing and every tick/time
+  conversion already takes it as an explicit parameter rather than
+  hardcoding the constant, so existing bundled charts (still at
+  `resolution: 4`) needed no migration. A new Straight/Shuffle/Triplet
+  toggle (`song_editor::state::SnapMode`, next to the harmonica-kind
+  toggle in the meta form) constrains where a click on the grid lands: 16
+  straight ticks (0,3,6,9 — reproducing the old any-of-4-ticks grid at the
+  new resolution), a 2:1 long-short swing pair (0,8), or three equal
+  triplet subdivisions (0,4,8). The grid's sub-beat lines are now tiered
+  by color (`theme::SongEditorColors::triplet_line`, new) rather than one
+  line per raw tick, which at resolution 12 would be 11 lines per
+  beat — cluttered well past readable.
 
 ## Current work
 
@@ -225,10 +241,9 @@ Finishing 0.4:
 2. **Lessons Unit 4 "jazz"** engine prerequisites are done; what's left is
    content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
 
-Not yet started, candidate next work: `TODO.md`'s one remaining Song
-Editor item, a swing-aware grid snap — undo/redo, the metronome/count-in,
-note audition, and save/validation feedback are all done (see Shipped
-above).
+No open Song Editor items remain in `TODO.md` — undo/redo, the
+metronome/count-in, note audition, save/validation feedback, and the
+swing/triplet grid snap are all done (see Shipped above).
 
 ## Working practices
 

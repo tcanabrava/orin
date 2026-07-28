@@ -569,7 +569,7 @@ mod tests {
         let secs_per_tick = 60.0 / 120.0 / TICKS_PER_BEAT as f32;
         let n = spawn_open_note(7, (1, Dir::Blow, Pitch::Normal), 0.25, secs_per_tick);
         assert_eq!(n.id, 7);
-        assert_eq!(n.tick, 2); // 0.25 / 0.125
+        assert_eq!(n.tick, 6); // 0.25 / (0.5 / TICKS_PER_BEAT)
         assert_eq!(n.len, 1);
     }
 

@@ -45,6 +45,7 @@ mod pitch_map;
 mod ranges;
 mod save_feedback;
 mod scroll;
+mod snap;
 // `pub(crate)`, not private like its neighbours: `gameplay::call_response`
 // shares this module's synth (`PhraseNote`/`render_pcm`/`encode_wav`) for
 // the call-and-response lesson feature's audio cue.
@@ -229,9 +230,11 @@ impl Plugin for SongEditor2Plugin {
                         resource_exists_and_changed::<state::EditorState>
                             .or_else(resource_changed::<LoadedTheme>),
                     ),
-                    panel::update_harmonica_kind_text
-                        .run_if(resource_exists_and_changed::<state::EditorState>),
-                    panel::update_content_kind_text
+                    (
+                        panel::update_harmonica_kind_text,
+                        panel::update_content_kind_text,
+                        panel::update_snap_mode_text,
+                    )
                         .run_if(resource_exists_and_changed::<state::EditorState>),
                     (
                         lesson_form::update_lesson_form_visibility,

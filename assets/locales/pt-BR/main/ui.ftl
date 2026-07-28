@@ -122,6 +122,10 @@ editor-harmonica-chromatic = ‹ Cromática (12 buracos) ›
 editor-field-content-kind = Gravação
 editor-content-kind-song = ‹ Gravar Música ›
 editor-content-kind-lesson = ‹ Gravar Lição ›
+editor-field-snap-mode = Encaixe da Grade
+editor-snap-mode-sixteenth = ‹ Semicolcheias retas ›
+editor-snap-mode-shuffle = ‹ Shuffle (colcheias swingadas) ›
+editor-snap-mode-triplet = ‹ Tercinas de colcheia ›
 
 # Song Editor 2 — legenda de cores (terceira coluna do formulário)
 editor-legend-notes = Cores das notas (grade)
@@ -139,6 +143,7 @@ editor-legend-drag-ok = Posição de destino válida
 editor-legend-drag-bad = Inválida (sobreposição ou técnica incompatível)
 editor-legend-elsewhere = Em outras partes da tela
 editor-legend-tempo-marker = Marcador de mudança de andamento (cabeçalho da grade)
+editor-legend-triplet-line = Linha de subdivisão de tercina (tiques 4/8 do tempo)
 editor-legend-split-point = Ferramenta Selecionar: ponto de divisão
 editor-legend-range-preview = Ferramenta Selecionar: prévia do intervalo
 editor-legend-active-button = Botão de modo/ferramenta atualmente ativo
@@ -236,6 +241,7 @@ editor-tool-remove-tooltip = Clique num ponto da linha do tempo e depois num dos
 editor-tool-tempo-tooltip = Clique na régua para adicionar uma mudança de andamento ali, ou clique numa já existente para removê-la
 editor-harmonica-toggle-tooltip = Clique para alternar entre gaita Diatônica e Cromática
 editor-content-kind-toggle-tooltip = Clique para alternar entre gravar uma música comum e uma lição do currículo
+editor-snap-mode-toggle-tooltip = Clique para alternar a subdivisão de tempo em que um clique na grade se encaixa — semicolcheias retas, colcheias shuffle (swingadas) ou tercinas de colcheia retas
 editor-lesson-form-tooltip = Campos do currículo para lesson.json — usados apenas enquanto "Gravar Lição" está ativo
 editor-lesson-details-toggle-tooltip = Clique para mostrar ou ocultar os campos do currículo da lição
 editor-field-lesson-pass-criteria-tooltip = Clique para alternar como esta lição é avaliada — Nenhum, Precisão, Técnica, Aderência à Escala, Aderência a Notas do Acorde, Disciplina de Frase

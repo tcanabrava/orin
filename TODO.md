@@ -4,22 +4,6 @@ Open, actionable items only — once something lands, delete it from here
 rather than annotating it done (git log and commit messages are the
 historical record; see `CLAUDE.md`).
 
-## Song editor
-
-Found on a harmonica-player/audio/UX pass over the editor (2026-07-27);
-see `CLAUDE.md`'s "Song editor: known gaps" bullet for the full detail
-behind each. Roughly in priority order:
-
-- [ ] **Manual note placement can't represent swing/triplet timing.** The
-  grid snaps to straight 16ths only (`TICKS_PER_BEAT = 4`); there's no
-  triplet or shuffle-aware subdivision to click onto, even though shuffle
-  is this game's core blues feel elsewhere (`MetronomeFeel::Shuffle`).
-  Only Record mode's live-mic capture (unquantized onsets) can currently
-  land a note off the straight grid — hand-charting an authentic shuffle
-  groove by clicking isn't possible. Lower priority than the items above;
-  worth doing once there's an appetite for a genuine grid-resolution
-  rework (`TICKS_PER_BEAT` is baked into a lot of tick-math elsewhere).
-
 ## Content
 
 - [ ] **Only one bundled example artist** (`assets/songs/Example Artist`,

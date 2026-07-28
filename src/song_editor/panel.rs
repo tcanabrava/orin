@@ -8,7 +8,7 @@ use super::state::{ContentKind, Dir, EditorState, Expr, Field, HarmonicaKind, Mo
 use super::ui::{
     BendDot, ContentKindText, EditModeGroup, ExpectedNotesGroup, HarmonicaKindText, MetaFieldBox,
     MetaFieldText, ModButton, ModButtonLabel, ModeButton, PlayModeGroup, RecordModeGroup,
-    StatusMsg, TimelineToolButton, UndoRedoButton,
+    SnapModeText, StatusMsg, TimelineToolButton, UndoRedoButton,
 };
 use super::undo::UndoHistory;
 use crate::localization::LocalizationExt;
@@ -304,6 +304,18 @@ pub(super) fn update_content_kind_text(
         ContentKind::Lesson => "editor-content-kind-lesson",
     };
     let label = String::from(loc.msg(key));
+    for mut text in &mut texts {
+        **text = label.clone();
+    }
+}
+
+/// Keeps the grid-snap toggle's label in sync with `state.snap_mode`.
+pub(super) fn update_snap_mode_text(
+    state: Res<EditorState>,
+    loc: Res<Localization>,
+    mut texts: Query<&mut Text, With<SnapModeText>>,
+) {
+    let label = String::from(loc.msg(state.snap_mode.label_key()));
     for mut text in &mut texts {
         **text = label.clone();
     }

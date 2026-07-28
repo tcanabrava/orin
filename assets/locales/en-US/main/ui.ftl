@@ -124,6 +124,10 @@ editor-harmonica-chromatic = ‹ Chromatic (12 holes) ›
 editor-field-content-kind = Recording
 editor-content-kind-song = ‹ Record Song ›
 editor-content-kind-lesson = ‹ Record Lesson ›
+editor-field-snap-mode = Grid Snap
+editor-snap-mode-sixteenth = ‹ Straight 16ths ›
+editor-snap-mode-shuffle = ‹ Shuffle (swing 8ths) ›
+editor-snap-mode-triplet = ‹ Triplet 8ths ›
 
 # Song Editor 2 — color legend (third meta-form column)
 editor-legend-notes = Note colors (grid)
@@ -141,6 +145,7 @@ editor-legend-drag-ok = Valid drop position
 editor-legend-drag-bad = Invalid (overlap or wrong technique)
 editor-legend-elsewhere = Elsewhere on screen
 editor-legend-tempo-marker = Tempo-change marker (grid header)
+editor-legend-triplet-line = Triplet-subdivision gridline (ticks 4/8 of a beat)
 editor-legend-split-point = Select tool: placed split point
 editor-legend-range-preview = Select tool: range preview
 editor-legend-active-button = Currently active mode/tool button
@@ -238,6 +243,7 @@ editor-tool-remove-tooltip = Erase the selection, and shift everything after it 
 editor-tool-tempo-tooltip = Click the ruler to add a tempo change there, or click an existing one to remove it
 editor-harmonica-toggle-tooltip = Click to switch between Diatonic and Chromatic harmonica layouts
 editor-content-kind-toggle-tooltip = Click to switch between authoring a plain song and a curriculum lesson
+editor-snap-mode-toggle-tooltip = Click to cycle which beat subdivisions a click on the grid snaps to — straight 16ths, shuffle (swung) 8ths, or straight triplet 8ths
 editor-field-key-tooltip = Click to cycle through harp keys
 editor-field-position-tooltip = Click to cycle through playing positions
 editor-lesson-form-tooltip = Curriculum fields for lesson.json — only used while "Record Lesson" is active
