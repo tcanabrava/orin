@@ -85,6 +85,7 @@ editor-mode-expected = ✓ Draw correct notes
 editor-lock = 🔒 Lock
 editor-undo = ↶ Undo
 editor-redo = ↷ Redo
+editor-metronome = 🔔 Metronome
 editor-play = ▶ Play
 editor-pause = ⏸ Pause
 editor-stop = ■ Stop
@@ -188,6 +189,8 @@ practice-hit-good = ✓ GOOD  %note%  +%pts% pts
 practice-missed = ✗ Missed %note%
 practice-done = Done — %hits%/%total% notes  ·  %score% pts
 editor-record-status = ⏺ Recording — %count% notes captured
+editor-count-in-status = ⏳ Get ready — recording in %seconds%s
+editor-metronome-tooltip = Toggle the metronome click during Record/Play/Practice
 
 # Song Editor 2 — button tooltips
 editor-back-tooltip = Leave the editor and return to the main menu

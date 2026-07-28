@@ -146,6 +146,14 @@ pub(super) enum UndoRedoButton {
     Redo,
 }
 
+/// The metronome mute toggle — dimmed by `panel::
+/// update_metronome_toggle_button` while muted, same "dim rather than
+/// leave clickable-but-inert-looking" shape as [`UndoRedoButton`], since
+/// clicking it is never actually a no-op (it always flips the shared
+/// `MetronomeMuted` global).
+#[derive(Component, Clone, Copy, PartialEq, Debug)]
+pub(super) struct MetronomeToggleButton;
+
 /// Wraps the note-editing button cluster (Blow, Draw, Bend, ...), shown only
 /// in [`Mode::Edit`]. See `update_mode_visibility`.
 #[derive(Component)]

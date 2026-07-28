@@ -10,15 +10,6 @@ Found on a harmonica-player/audio/UX pass over the editor (2026-07-27);
 see `CLAUDE.md`'s "Song editor: known gaps" bullet for the full detail
 behind each. Roughly in priority order:
 
-- [ ] **No metronome or count-in in Record/Play/Practice.**
-  `gameplay::metronome_overlay` (with shuffle-feel support) is fully built
-  and used everywhere else in the game — Jam Session, scored gameplay, the
-  Bending Trainer — but never wired into the Song Editor. Recording a
-  rhythmically accurate take against nothing but a moving playhead is
-  exactly the failure mode a click track exists to prevent; a count-in
-  (a bar or two of clicks before a take actually starts) would help even
-  more, since `record::start_record` currently begins capturing the
-  instant Play is pressed.
 - [ ] **No way to audition a note's pitch.** Clicking or selecting a note
   doesn't play its sound — you only hear it in context during Play/
   Practice, or by reaching for your own harp. `song_editor::playback`'s

@@ -12,9 +12,9 @@ use bevy::prelude::*;
 
 use super::harpchart::safe_path_segment;
 use super::panel_widgets::transport_button;
-use super::playback::{EditorAudio, PendingMusicSeek, Playhead, start_playback, toggle_pause};
+use super::playback::{EditorAudio, Playhead, start_playback, toggle_pause};
 use super::practice::{PracticeState, start_practice, stop_practice};
-use super::record::{RecordState, pause_record, start_record, stop_record};
+use super::record::{RecordState, pause_record, stop_record};
 use super::state::{ContentKind, EditorState};
 use super::{LOAD_PURPOSE, SAVE_PURPOSE};
 use crate::audio_system::pitch_detect::PitchRange;
@@ -126,6 +126,7 @@ pub(super) fn spawn_playback_buttons(
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
          mut pitch_range: ResMut<PitchRange>,
+         mut count_in: ResMut<super::metronome::CountIn>,
          mut commands: Commands| {
             // Paused, not stopped: resume in place rather than restarting.
             if playhead.playing && playhead.paused {
@@ -143,6 +144,7 @@ pub(super) fn spawn_playback_buttons(
                 &mut record,
                 &mut playhead,
                 &mut pitch_range,
+                &mut count_in,
                 &mut commands,
             );
             start_playback(
@@ -178,6 +180,7 @@ pub(super) fn spawn_playback_buttons(
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
          mut pitch_range: ResMut<PitchRange>,
+         mut count_in: ResMut<super::metronome::CountIn>,
          mut commands: Commands| {
             stop_practice(&playing, &mut practice, &mut playhead, &mut commands);
             stop_record(
@@ -186,6 +189,7 @@ pub(super) fn spawn_playback_buttons(
                 &mut record,
                 &mut playhead,
                 &mut pitch_range,
+                &mut count_in,
                 &mut commands,
             );
         },
@@ -204,6 +208,7 @@ pub(super) fn spawn_playback_buttons(
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
          mut pitch_range: ResMut<PitchRange>,
+         mut count_in: ResMut<super::metronome::CountIn>,
          mut commands: Commands,
          loc: Res<Localization>,
          sinks: Query<&AudioSink, With<EditorAudio>>| {
@@ -223,6 +228,7 @@ pub(super) fn spawn_playback_buttons(
                     &mut record,
                     &mut playhead,
                     &mut pitch_range,
+                    &mut count_in,
                     &mut commands,
                 );
                 start_practice(
@@ -257,36 +263,26 @@ pub(super) fn spawn_record_buttons(
         colors.transport_record,
         |_: On<Pointer<Click>>,
          state: Res<EditorState>,
-         mut sources: ResMut<Assets<AudioSource>>,
-         settings: Res<AudioSettings>,
-         playing: Query<Entity, With<EditorAudio>>,
-         sinks: Query<&AudioSink, With<EditorAudio>>,
          mut practice: ResMut<PracticeState>,
-         mut record: ResMut<RecordState>,
+         record: Res<RecordState>,
          mut playhead: ResMut<Playhead>,
-         mut pitch_range: ResMut<PitchRange>,
-         mut music_seek: ResMut<PendingMusicSeek>,
-         mut commands: Commands| {
+         sinks: Query<&AudioSink, With<EditorAudio>>,
+         mut count_in: ResMut<super::metronome::CountIn>| {
+            if count_in.active() {
+                // Already counting in — a second click shouldn't restart it.
+                return;
+            }
             if record.active {
                 // Paused, not stopped: resume in place rather than
-                // restarting the take.
+                // restarting the take (no count-in — the player is picking
+                // straight back up, not starting fresh).
                 if playhead.paused {
                     toggle_pause(&mut playhead, &sinks);
                 }
                 return;
             }
             practice.reset();
-            start_record(
-                &state,
-                &mut sources,
-                &settings,
-                &playing,
-                &mut record,
-                &mut playhead,
-                &mut pitch_range,
-                &mut music_seek,
-                &mut commands,
-            );
+            super::metronome::begin_count_in(&state, &mut count_in);
         },
     );
     transport_button(
@@ -298,7 +294,14 @@ pub(super) fn spawn_record_buttons(
          mut state: ResMut<EditorState>,
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
+         mut count_in: ResMut<super::metronome::CountIn>,
          sinks: Query<&AudioSink, With<EditorAudio>>| {
+            if count_in.active() {
+                // Nothing has actually started yet — cancel outright rather
+                // than "pausing" a take that was never recording anything.
+                count_in.stop();
+                return;
+            }
             if !record.active {
                 return;
             }
@@ -321,6 +324,7 @@ pub(super) fn spawn_record_buttons(
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
          mut pitch_range: ResMut<PitchRange>,
+         mut count_in: ResMut<super::metronome::CountIn>,
          mut commands: Commands| {
             stop_record(
                 &mut state,
@@ -328,6 +332,7 @@ pub(super) fn spawn_record_buttons(
                 &mut record,
                 &mut playhead,
                 &mut pitch_range,
+                &mut count_in,
                 &mut commands,
             );
         },
@@ -343,6 +348,7 @@ pub(super) fn spawn_record_buttons(
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
          mut pitch_range: ResMut<PitchRange>,
+         mut count_in: ResMut<super::metronome::CountIn>,
          mut commands: Commands| {
             stop_record(
                 &mut state,
@@ -350,6 +356,7 @@ pub(super) fn spawn_record_buttons(
                 &mut record,
                 &mut playhead,
                 &mut pitch_range,
+                &mut count_in,
                 &mut commands,
             );
             playhead.elapsed = 0.0;

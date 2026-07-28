@@ -211,17 +211,23 @@ pub(super) fn pause_record(
 /// note shouldn't freeze one frame short of wherever the player actually
 /// released it) and deleting unconfirmed blips, same as a mid-take release
 /// would — then halts the shared clock and restores the default
-/// [`PitchRange`]. A no-op (beyond the harmless despawn/halt) when nothing
-/// was actually recording, so callers (the Stop button, switching out of
-/// Perform mode) can call it unconditionally alongside `stop_practice`.
+/// [`PitchRange`]. Also cancels a pending count-in (see `metronome::
+/// CountIn`'s doc comment) — nothing has actually started recording yet at
+/// that point, but leaving it ticking would silently start a take moments
+/// after the player asked to stop. A no-op (beyond the harmless despawn/
+/// halt/cancel) when nothing was actually recording or counting in, so
+/// callers (the Stop button, switching out of Perform mode) can call it
+/// unconditionally alongside `stop_practice`.
 pub(super) fn stop_record(
     state: &mut EditorState,
     playing: &Query<Entity, With<EditorAudio>>,
     record: &mut RecordState,
     playhead: &mut Playhead,
     pitch_range: &mut PitchRange,
+    count_in: &mut super::metronome::CountIn,
     commands: &mut Commands,
 ) {
+    count_in.stop();
     if record.active {
         let t = (playhead.elapsed - record.detect_delay).max(0.0);
         finish_open_notes(record, &mut state.notes, t, playhead.secs_per_tick);

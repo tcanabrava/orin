@@ -83,6 +83,7 @@ editor-mode-expected = ✓ Marcar notas correctas
 editor-lock = 🔒 Bloquear
 editor-undo = ↶ Deshacer
 editor-redo = ↷ Rehacer
+editor-metronome = 🔔 Metrónomo
 editor-play = ▶ Reproducir
 editor-pause = ⏸ Pausar
 editor-stop = ■ Detener
@@ -186,6 +187,8 @@ practice-hit-good = ✓ BIEN  %note%  +%pts% pts
 practice-missed = ✗ Fallaste %note%
 practice-done = Hecho — %hits%/%total% notas  ·  %score% pts
 editor-record-status = ⏺ Grabando — %count% notas capturadas
+editor-count-in-status = ⏳ Prepárate — grabación en %seconds%s
+editor-metronome-tooltip = Alterna el clic del metrónomo durante Grabar/Reproducir/Practicar
 
 # Song Editor 2 — descripciones de los botones
 editor-back-tooltip = Salir del editor y volver al menú principal

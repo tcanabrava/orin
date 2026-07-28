@@ -296,33 +296,38 @@ fn reset_click_tracking(mut last: ResMut<LastClickedTick>) {
     last.0 = None;
 }
 
-/// Plays the metronome clicks: plain quarters in straight feel, or the swung
-/// long-short pattern in shuffle feel (beat + the "and", accent on the
-/// downbeat). Follows the gameplay clock, so it stays in sync through
-/// pause/resume and loop-region jumps.
-fn click_metronome(
-    clock: Res<GameplayClock>,
-    tempo: Res<MetronomeTempo>,
-    muted: Res<MetronomeMuted>,
-    feel: Res<MetronomeFeel>,
-    sounds: Res<MetronomeSounds>,
-    audio: Res<AudioSettings>,
-    mut last: ResMut<LastClickedTick>,
-    mut commands: Commands,
+/// Plays whichever click `clock` maps to, if any — the shared core behind
+/// [`click_metronome`] (this module's own `GameplayClock`-driven system)
+/// and `song_editor::metronome`'s `Playhead`-driven equivalent, so the
+/// actual click-selection/gain/audio-spawn logic (plain quarters in
+/// straight feel, or the swung long-short shuffle pattern, accent on the
+/// downbeat) exists in exactly one place regardless of which clock is
+/// counting. `last` ensures each tick only plays once; callers own their
+/// own `last` so two independent clocks (gameplay's vs. the editor's)
+/// can't suppress or double-fire each other's first click.
+pub fn play_click_if_due(
+    clock: f64,
+    tempo: &MetronomeTempo,
+    feel: MetronomeFeel,
+    muted: bool,
+    sounds: &MetronomeSounds,
+    audio: &AudioSettings,
+    last: &mut Option<i64>,
+    commands: &mut Commands,
 ) {
-    let Some(current) = tick_index(clock.get(), tempo.bpm as f64, *feel) else {
+    let Some(current) = tick_index(clock, tempo.bpm as f64, feel) else {
         return;
     };
-    if last.0 == Some(current) {
+    if *last == Some(current) {
         return;
     }
-    last.0 = Some(current);
+    *last = Some(current);
 
-    if muted.0 {
+    if muted {
         return;
     }
     // Silent subdivisions (the skipped middle triplet of a shuffle) play nothing.
-    let Some((accent, gain)) = click_for_tick(current, tempo.beats_per_bar as f64, *feel) else {
+    let Some((accent, gain)) = click_for_tick(current, tempo.beats_per_bar as f64, feel) else {
         return;
     };
     let sample = if accent {
@@ -334,6 +339,31 @@ fn click_metronome(
         AudioPlayer::<AudioSource>(sample),
         PlaybackSettings::DESPAWN.with_volume(Volume::Linear(audio.metronome_volume * gain)),
     ));
+}
+
+/// Plays the metronome clicks for gameplay's own clock (`GameplayClock`),
+/// so they stay in sync through pause/resume and loop-region jumps. See
+/// [`play_click_if_due`] for the shared click logic itself.
+fn click_metronome(
+    clock: Res<GameplayClock>,
+    tempo: Res<MetronomeTempo>,
+    muted: Res<MetronomeMuted>,
+    feel: Res<MetronomeFeel>,
+    sounds: Res<MetronomeSounds>,
+    audio: Res<AudioSettings>,
+    mut last: ResMut<LastClickedTick>,
+    mut commands: Commands,
+) {
+    play_click_if_due(
+        clock.get(),
+        &tempo,
+        *feel,
+        muted.0,
+        &sounds,
+        &audio,
+        &mut last.0,
+        &mut commands,
+    );
 }
 
 // ── Toggles (mute + feel) ──────────────────────────────────────────────────────

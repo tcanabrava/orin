@@ -49,12 +49,12 @@ this file — prune it back to a one-line summary under "Shipped" below.
   per-mode button groups, a status bar). A dedicated pass since then
   (2026-07-27, playing the role of a harmonica player + audio/UX
   developer) found the remaining gaps in this workflow — see `TODO.md`'s
-  Song Editor section (no metronome/count-in, no note audition, save
-  feedback that's invisible outside a terminal, no swing-aware grid snap)
-  and `CLAUDE.md`'s "Song editor: known gaps" bullet for the detail behind
-  each. (Multi-selection drag-to-transpose — moving a lick to a different
-  hole/chord — was double-checked and already works; an initial pass
-  wrongly flagged it as missing.)
+  Song Editor section (no note audition, save feedback that's invisible
+  outside a terminal, no swing-aware grid snap) and `CLAUDE.md`'s "Song
+  editor: known gaps" bullet for the detail behind each. (Multi-selection
+  drag-to-transpose — moving a lick to a different hole/chord — was
+  double-checked and already works; an initial pass wrongly flagged it as
+  missing.)
 - **Song editor: Ctrl+Z/Ctrl+Y undo/redo** — `song_editor::undo`,
   snapshot-based (diffs `notes`/`tempo_changes` each frame `EditorState`
   changes against the last-seen snapshot, rather than instrumenting every
@@ -63,6 +63,18 @@ this file — prune it back to a one-line summary under "Shipped" below.
   one entry per frame of note growth. Dimmed (not disabled) Undo/Redo
   buttons alongside the keyboard shortcut. See `CLAUDE.md`'s "Ctrl+Z/
   Ctrl+Y undo and redo" bullet.
+- **Song editor: metronome click + Record count-in** —
+  `song_editor::metronome`, reusing `gameplay::metronome_overlay`'s pure
+  tick math and shared `MetronomeTempo`/`MetronomeFeel`/`MetronomeMuted`/
+  `MetronomeSounds` globals (so mute/feel preferences carry over from
+  gameplay) via a new shared `play_click_if_due` extracted from that
+  module's own click system, but driven by the editor's own `Playhead`
+  clock instead of `GameplayClock`. Clicks during Record/Play/Practice;
+  starting a fresh Record take counts in one bar first
+  (`CountIn`/`begin_count_in`/`tick_count_in`/`finish_count_in`) before
+  `record::start_record` actually runs, with a status-bar countdown and a
+  dimmable mute-toggle button next to Undo/Redo. See `CLAUDE.md`'s "The
+  Song Editor has a click track and a Record count-in" bullet.
 - **Code-duplication cleanup** (whole-tree duplicate-block scan,
   2026-07-19) — all 6 phases done, no behavior changes, `cargo test`/
   `cargo clippy`/`tests/physical_design.rs` clean throughout:
@@ -190,9 +202,9 @@ Finishing 0.4:
    content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
 
 Not yet started, candidate next work: the remaining Song Editor UX/workflow
-gaps in `TODO.md`'s Song Editor section (metronome/count-in, note audition,
-save-time feedback, swing-aware grid snap) — undo/redo, the first of that
-list, is now done (see Shipped above).
+gaps in `TODO.md`'s Song Editor section (note audition, save-time feedback,
+swing-aware grid snap) — undo/redo and the metronome/count-in, the first
+two items of that list, are now done (see Shipped above).
 
 ## Working practices
 

@@ -98,6 +98,7 @@ pub(super) fn spawn_mod_panel(
                      mut record: ResMut<RecordState>,
                      mut playhead: ResMut<Playhead>,
                      mut pitch_range: ResMut<PitchRange>,
+                     mut count_in: ResMut<super::metronome::CountIn>,
                      mut commands: Commands| {
                         state.mode = Mode::Edit;
                         stop_practice(&playing, &mut practice, &mut playhead, &mut commands);
@@ -107,6 +108,7 @@ pub(super) fn spawn_mod_panel(
                             &mut record,
                             &mut playhead,
                             &mut pitch_range,
+                            &mut count_in,
                             &mut commands,
                         );
                     },
@@ -142,6 +144,7 @@ pub(super) fn spawn_mod_panel(
                      mut record: ResMut<RecordState>,
                      mut playhead: ResMut<Playhead>,
                      mut pitch_range: ResMut<PitchRange>,
+                     mut count_in: ResMut<super::metronome::CountIn>,
                      mut commands: Commands| {
                         state.mode = Mode::Play;
                         stop_record(
@@ -150,6 +153,7 @@ pub(super) fn spawn_mod_panel(
                             &mut record,
                             &mut playhead,
                             &mut pitch_range,
+                            &mut count_in,
                             &mut commands,
                         );
                     },
@@ -198,6 +202,23 @@ pub(super) fn spawn_mod_panel(
                     },
                 )
                 .insert(super::ui::UndoRedoButton::Redo);
+
+                // The metronome click, shared with gameplay/the Bending
+                // Trainer via the same `MetronomeMuted` global (see
+                // `metronome`'s module doc) — clicks during Record/Play/
+                // Practice, dimmed here while muted rather than a
+                // live-swapped label, same visual language as Undo/Redo.
+                transport_button(
+                    transport,
+                    loc.msg("editor-metronome"),
+                    loc.msg("editor-metronome-tooltip"),
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>,
+                     mut muted: ResMut<crate::gameplay::metronome_overlay::MetronomeMuted>| {
+                        muted.0 = !muted.0;
+                    },
+                )
+                .insert(super::ui::MetronomeToggleButton);
 
                 // Dev-only ("--features dev") benchmark ground-truth mode —
                 // see `expected_notes`'s own module docs.

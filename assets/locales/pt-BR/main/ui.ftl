@@ -83,6 +83,7 @@ editor-mode-expected = ✓ Marcar notas corretas
 editor-lock = 🔒 Bloquear
 editor-undo = ↶ Desfazer
 editor-redo = ↷ Refazer
+editor-metronome = 🔔 Metrônomo
 editor-play = ▶ Tocar
 editor-pause = ⏸ Pausar
 editor-stop = ■ Parar
@@ -186,6 +187,8 @@ practice-hit-good = ✓ BOM  %note%  +%pts% pts
 practice-missed = ✗ Perdeu %note%
 practice-done = Feito — %hits%/%total% notas  ·  %score% pts
 editor-record-status = ⏺ Gravando — %count% notas capturadas
+editor-count-in-status = ⏳ Prepare-se — gravação em %seconds%s
+editor-metronome-tooltip = Ativa/desativa o clique do metrônomo durante Gravar/Tocar/Praticar
 
 # Editor de Músicas 2 — dicas dos botões
 editor-back-tooltip = Sair do editor e voltar ao menu principal

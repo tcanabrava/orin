@@ -35,6 +35,7 @@ mod interaction;
 mod lesson_form;
 mod material;
 mod meta_form;
+mod metronome;
 mod midi_import;
 mod mod_panel;
 mod panel;
@@ -135,6 +136,8 @@ impl Plugin for SongEditor2Plugin {
             .init_resource::<playback::PendingMusicSeek>()
             .init_resource::<waveform::MusicWaveform>()
             .init_resource::<clipboard::NoteClipboard>()
+            .init_resource::<metronome::CountIn>()
+            .init_resource::<metronome::EditorLastClickedTick>()
             .add_systems(
                 Update,
                 (
@@ -167,9 +170,17 @@ impl Plugin for SongEditor2Plugin {
                     playback::apply_pending_music_seek,
                     playback::update_playhead_view.after(playback::advance_playhead),
                     playback::update_progress_bar.after(playback::advance_playhead),
-                    // Practice/record ticks run after the playhead advances so `elapsed` is current.
-                    practice::practice_tick.after(playback::advance_playhead),
-                    record::record_tick.after(playback::advance_playhead),
+                    // Practice/record/metronome ticks run after the playhead
+                    // advances so `elapsed` is current.
+                    (
+                        practice::practice_tick.after(playback::advance_playhead),
+                        record::record_tick.after(playback::advance_playhead),
+                        metronome::sync_tempo
+                            .run_if(resource_exists_and_changed::<state::EditorState>),
+                        metronome::click_metronome.after(playback::advance_playhead),
+                        metronome::tick_count_in.after(playback::advance_playhead),
+                        metronome::finish_count_in.after(metronome::tick_count_in),
+                    ),
                     // Suspended while the guided tour is showing this
                     // screen — Esc/Delete/Ctrl+C/Ctrl+V shouldn't act on it
                     // out from under the tour (see `menu::tutorial`).
@@ -198,6 +209,10 @@ impl Plugin for SongEditor2Plugin {
                             resource_exists_and_changed::<undo::UndoHistory>
                                 .or_else(resource_changed::<LoadedTheme>),
                         ),
+                        panel::update_metronome_toggle_button.run_if(
+                            resource_changed::<crate::gameplay::metronome_overlay::MetronomeMuted>
+                                .or_else(resource_changed::<LoadedTheme>),
+                        ),
                     ),
                     panel::update_mode_visibility
                         .run_if(resource_exists_and_changed::<state::EditorState>),
@@ -220,7 +235,8 @@ impl Plugin for SongEditor2Plugin {
                     panel::update_status_bar.run_if(
                         resource_exists_and_changed::<state::EditorState>
                             .or_else(resource_changed::<practice::PracticeState>)
-                            .or_else(resource_changed::<record::RecordState>),
+                            .or_else(resource_changed::<record::RecordState>)
+                            .or_else(resource_changed::<metronome::CountIn>),
                     ),
                     (
                         harpchart::handle_save_chosen,

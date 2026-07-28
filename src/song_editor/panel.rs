@@ -174,6 +174,26 @@ pub(super) fn update_undo_redo_buttons(
     }
 }
 
+/// Dims the metronome toggle button while muted — same "dim rather than
+/// leave clickable-but-inert-looking" visual language as
+/// [`update_undo_redo_buttons`], though here the click is never actually a
+/// no-op (it always flips `MetronomeMuted`).
+pub(super) fn update_metronome_toggle_button(
+    muted: Res<crate::gameplay::metronome_overlay::MetronomeMuted>,
+    theme: Res<LoadedTheme>,
+    mut buttons: Query<&mut BackgroundColor, With<super::ui::MetronomeToggleButton>>,
+) {
+    let colors = theme.song_editor_colors();
+    let bg = if muted.0 {
+        colors.btn_bg.with_alpha(0.35)
+    } else {
+        colors.btn_bg
+    };
+    for mut button_bg in &mut buttons {
+        *button_bg = BackgroundColor(bg);
+    }
+}
+
 /// Shows exactly the current mode's button cluster — note editing in
 /// [`Mode::Edit`], the recording transport in [`Mode::Record`], the
 /// playback/practice transport in [`Mode::Play`] — never more than one.
@@ -293,17 +313,23 @@ pub(super) fn update_status_bar(
     state: Res<EditorState>,
     practice: Res<PracticeState>,
     record: Res<RecordState>,
+    count_in: Res<super::metronome::CountIn>,
     loc: Res<Localization>,
     mut texts: Query<&mut Text, With<StatusMsg>>,
 ) {
     let Ok(mut text) = texts.single_mut() else {
         return;
     };
-    // Drag messages take priority (they're ephemeral and action-specific);
-    // a live recording comes next (it's actively running, unlike the
-    // practice message which just sits there between hits); practice
-    // messages fill the bar otherwise.
-    **text = if !state.drag_msg.is_empty() {
+    // A count-in comes first — it's the most time-critical (a take starts
+    // the instant it hits zero) and the player needs to know recording
+    // hasn't begun yet. Drag messages come next (ephemeral and
+    // action-specific); a live recording after that (it's actively
+    // running, unlike the practice message which just sits there between
+    // hits); practice messages fill the bar otherwise.
+    **text = if let Some(secs) = count_in.remaining_secs_display() {
+        loc.msg_args("editor-count-in-status", &[("seconds", format!("{secs:.1}"))])
+            .to_string()
+    } else if !state.drag_msg.is_empty() {
         state.drag_msg.to_string()
     } else if record.active {
         loc.msg_args(
@@ -709,6 +735,7 @@ mod tests {
         };
         world.insert_resource(practice);
         world.insert_resource(RecordState::default());
+        world.insert_resource(super::super::metronome::CountIn::default());
         world.insert_resource(loc);
 
         let status = world.spawn((StatusMsg, Text::new(""))).id();
@@ -733,6 +760,7 @@ mod tests {
         };
         world.insert_resource(practice);
         world.insert_resource(RecordState::default());
+        world.insert_resource(super::super::metronome::CountIn::default());
         world.insert_resource(loc);
 
         let status = world.spawn((StatusMsg, Text::new(""))).id();
@@ -766,6 +794,7 @@ mod tests {
             r
         };
         world.insert_resource(record);
+        world.insert_resource(super::super::metronome::CountIn::default());
         world.insert_resource(loc);
 
         let status = world.spawn((StatusMsg, Text::new(""))).id();
