@@ -49,9 +49,8 @@ this file — prune it back to a one-line summary under "Shipped" below.
   per-mode button groups, a status bar). A dedicated pass since then
   (2026-07-27, playing the role of a harmonica player + audio/UX
   developer) found the remaining gaps in this workflow — see `TODO.md`'s
-  Song Editor section (save feedback that's invisible outside a terminal,
-  no swing-aware grid snap) and `CLAUDE.md`'s "Song editor: known gaps"
-  bullet for the detail behind each. (Multi-selection
+  Song Editor section (no swing-aware grid snap) and `CLAUDE.md`'s "Song
+  editor: known gaps" bullet for the detail behind it. (Multi-selection
   drag-to-transpose — moving a lick to a different hole/chord — was
   double-checked and already works; an initial pass wrongly flagged it as
   missing.)
@@ -85,6 +84,20 @@ this file — prune it back to a one-line summary under "Shipped" below.
   fresh placement, clicking an existing note, Ctrl+click, paste) already
   funnels through the same `selected_note`, so none needed touching. See
   `CLAUDE.md`'s "The Song Editor auditions a note's pitch on selection"
+  bullet.
+- **Song editor: Save/Load feedback in the status bar, not just the log**
+  — `song_editor::save_feedback`. `harpchart`'s and `lesson_form`'s
+  Save/Load systems used to report every outcome with a bare `println!`;
+  each now also sets a localized success/warning/failure `SaveFeedback`
+  message, shown by `panel::update_status_bar` as its own top-priority
+  tier for 4s before falling back to whatever it'd otherwise show, while
+  still logging via `info!`/`warn!` for a developer at a terminal.
+  `lesson_form::serialize_lesson` now returns its validation warnings
+  (empty id/unit, schema failure) instead of printing them, so a save can
+  report "saved with warnings" instead of a plain "Saved" — except the
+  locale-key-pairs-to-add reminder, deliberately left console-only (a
+  multi-line copy-paste block, not a one-line status). See `CLAUDE.md`'s
+  "Save/Load outcomes show up in the status bar, not just the log"
   bullet.
 - **Code-duplication cleanup** (whole-tree duplicate-block scan,
   2026-07-19) — all 6 phases done, no behavior changes, `cargo test`/
@@ -212,10 +225,10 @@ Finishing 0.4:
 2. **Lessons Unit 4 "jazz"** engine prerequisites are done; what's left is
    content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
 
-Not yet started, candidate next work: the remaining Song Editor UX/workflow
-gaps in `TODO.md`'s Song Editor section (save-time feedback,
-swing-aware grid snap) — undo/redo, the metronome/count-in, and note
-audition are now done (see Shipped above).
+Not yet started, candidate next work: `TODO.md`'s one remaining Song
+Editor item, a swing-aware grid snap — undo/redo, the metronome/count-in,
+note audition, and save/validation feedback are all done (see Shipped
+above).
 
 ## Working practices
 

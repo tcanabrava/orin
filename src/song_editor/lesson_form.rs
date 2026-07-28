@@ -254,20 +254,26 @@ pub(super) fn update_lesson_conditional_rows(
 // ── Serialisation ────────────────────────────────────────────────────────────
 
 /// Builds a `lesson.json` document from the lesson fields — schema-shaped
-/// per `assets/lesson_schema.dtd.json`, and validated against it (via
-/// [`parse_lesson`]) before being handed back, printing any schema error as
-/// a warning rather than silently writing an invalid manifest. Also prints
-/// the Fluent key/text pairs (`title_key`/`body_key`) the author needs to
-/// add to the locale files — see this module's doc comment for why that
-/// can't be automated.
-pub(super) fn serialize_lesson(state: &EditorState) -> String {
+/// per `assets/lesson_schema.dtd.json`, validated against it (via
+/// [`parse_lesson`]) before being handed back, and paired with any
+/// validation warnings (empty id/unit, or the manifest not actually
+/// passing its own schema) rather than writing an invalid manifest
+/// silently — the caller (`save_lesson`) folds these into the save's own
+/// status-bar/log outcome. Also prints the Fluent key/text pairs
+/// (`title_key`/`body_key`) the author needs to add to the locale files —
+/// see this module's doc comment for why that can't be automated; this one
+/// stays console-only, since it's a multi-line reference block meant to be
+/// copy-pasted into a file, not a one-line status.
+pub(super) fn serialize_lesson(state: &EditorState) -> (String, Vec<String>) {
     use serde_json::json;
 
+    let mut warnings = Vec::new();
     let id = state.lesson_id.trim();
     let unit = state.lesson_unit.trim();
     if id.is_empty() || unit.is_empty() {
-        println!(
-            "Warning: lesson id/unit is empty — this lesson.json won't load in-game until both are filled in."
+        warnings.push(
+            "lesson id/unit is empty — this lesson.json won't load in-game until both are filled in"
+                .to_string(),
         );
     }
     let title_key = format!("lesson-{id}-title");
@@ -313,7 +319,7 @@ pub(super) fn serialize_lesson(state: &EditorState) -> String {
 
     let json_text = serde_json::to_string_pretty(&manifest).unwrap_or_default();
     if let Err(err) = parse_lesson(json_text.as_bytes()) {
-        println!("Warning: this lesson.json doesn't pass its own schema yet: {err}");
+        warnings.push(format!("doesn't pass its own schema yet: {err}"));
     }
 
     let title_text = if state.name.is_empty() {
@@ -331,41 +337,60 @@ pub(super) fn serialize_lesson(state: &EditorState) -> String {
          lesson shows real text in-game:\n  {title_key} = {title_text}\n  {body_key} = {body_text}"
     );
 
-    json_text
+    (json_text, warnings)
 }
 
 /// Writes `path` as the lesson's `lesson.json`, and — if the editor
 /// currently has any notes — also writes `song/chart.harpchart` next to it
 /// (relative to `path`'s own directory) via the ordinary
 /// `harpchart::serialize_harpchart`, matching every shipped lesson's own
-/// `"chart": "song/chart.harpchart"` convention.
-pub(super) fn save_lesson(path: &std::path::Path, state: &EditorState) {
-    let json = serialize_lesson(state);
-    match std::fs::write(path, json.as_bytes()) {
-        Ok(()) => println!("Saved lesson: {}", path.display()),
-        Err(e) => {
-            println!("Save failed (write lesson.json): {e}");
-            return;
-        }
+/// `"chart": "song/chart.harpchart"` convention. `Ok` carries
+/// `serialize_lesson`'s own validation warnings (empty when there's
+/// nothing to report), so a save that "succeeded" but left the lesson
+/// unloadable still shows something more useful than plain "Saved" — the
+/// caller (`handle_save_lesson_chosen`) picks between a plain success and
+/// a "saved with warnings" status-bar message based on whether this is
+/// empty. `Err` covers only a failure writing the primary `lesson.json`
+/// (the save attempt as a whole didn't succeed); a chart-write failure is
+/// logged but doesn't turn the overall result into an error, since the
+/// manifest itself did save — the same "primary vs. secondary outcome"
+/// split `harpchart::save_midi_backing` already draws for its own bonus
+/// files.
+pub(super) fn save_lesson(path: &std::path::Path, state: &EditorState) -> Result<Vec<String>, String> {
+    let (json, warnings) = serialize_lesson(state);
+    for w in &warnings {
+        warn!("Song editor: lesson {w}");
     }
+    if let Err(e) = std::fs::write(path, json.as_bytes()) {
+        warn!("Song editor: save failed (write {}): {e}", path.display());
+        return Err(e.to_string());
+    }
+    info!("Song editor: saved lesson {}", path.display());
 
     if state.notes.is_empty() {
-        return;
+        return Ok(warnings);
     }
     let Some(parent) = path.parent() else {
-        return;
+        return Ok(warnings);
     };
     let song_dir = parent.join("song");
     if let Err(e) = std::fs::create_dir_all(&song_dir) {
-        println!("Save failed (mkdir {}): {e}", song_dir.display());
-        return;
+        warn!(
+            "Song editor: save failed (mkdir {}): {e}",
+            song_dir.display()
+        );
+        return Ok(warnings);
     }
     let chart_path = song_dir.join("chart.harpchart");
     let chart_json = super::harpchart::serialize_harpchart(state);
     match std::fs::write(&chart_path, chart_json.as_bytes()) {
-        Ok(()) => println!("Saved lesson chart: {}", chart_path.display()),
-        Err(e) => println!("Save failed (write {}): {e}", chart_path.display()),
+        Ok(()) => info!("Song editor: saved lesson chart {}", chart_path.display()),
+        Err(e) => warn!(
+            "Song editor: save failed (write {}): {e}",
+            chart_path.display()
+        ),
     }
+    Ok(warnings)
 }
 
 // ── Parsing ───────────────────────────────────────────────────────────────────
@@ -418,36 +443,27 @@ pub(super) fn populate_from_lesson_manifest(manifest: &LessonManifest, state: &m
 /// to `path`'s own directory) through the ordinary `harpchart::
 /// load_harpchart`. An instructional-only lesson (no `chart`) clears any
 /// notes already in the editor instead of leaving stale ones from whatever
-/// was open before.
-fn load_lesson(path: &std::path::Path, state: &mut EditorState, scroll: &mut Scroll) {
-    let bytes = match std::fs::read(path) {
-        Ok(b) => b,
-        Err(e) => {
-            println!("Load failed (read): {e}");
-            return;
-        }
-    };
-    let manifest = match parse_lesson(&bytes) {
-        Ok(m) => m,
-        Err(e) => {
-            println!("Load failed (invalid lesson.json): {e}");
-            return;
-        }
-    };
+/// was open before. Returns `Err` (rather than printing directly) for the
+/// caller (`handle_load_lesson_chosen`) to turn into a status-bar message.
+fn load_lesson(
+    path: &std::path::Path,
+    state: &mut EditorState,
+    scroll: &mut Scroll,
+) -> Result<(), String> {
+    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    let manifest = parse_lesson(&bytes).map_err(|e| e.to_string())?;
 
     match &manifest.chart {
         Some(chart_rel) => {
-            let Some(parent) = path.parent() else {
-                return;
-            };
+            let parent = path
+                .parent()
+                .ok_or_else(|| format!("{} has no parent directory", path.display()))?;
             let chart_path = parent.join(chart_rel);
-            match std::fs::read_to_string(&chart_path) {
-                Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
-                    Ok(v) => super::harpchart::load_harpchart(&v, state, scroll),
-                    Err(e) => println!("Load failed (parse {}): {e}", chart_path.display()),
-                },
-                Err(e) => println!("Load failed (read {}): {e}", chart_path.display()),
-            }
+            let text = std::fs::read_to_string(&chart_path)
+                .map_err(|e| format!("{}: {e}", chart_path.display()))?;
+            let v: serde_json::Value = serde_json::from_str(&text)
+                .map_err(|e| format!("{}: {e}", chart_path.display()))?;
+            super::harpchart::load_harpchart(&v, state, scroll);
         }
         None => {
             state.notes.clear();
@@ -458,7 +474,8 @@ fn load_lesson(path: &std::path::Path, state: &mut EditorState, scroll: &mut Scr
 
     populate_from_lesson_manifest(&manifest, state);
     state.content_kind = ContentKind::Lesson;
-    println!("Loaded lesson: {}", path.display());
+    info!("Song editor: loaded lesson {}", path.display());
+    Ok(())
 }
 
 // ── Systems ───────────────────────────────────────────────────────────────────
@@ -469,6 +486,8 @@ fn load_lesson(path: &std::path::Path, state: &mut EditorState, scroll: &mut Scr
 pub(super) fn handle_save_lesson_chosen(
     mut chosen: MessageReader<FileChosen>,
     state: Res<EditorState>,
+    mut feedback: ResMut<super::save_feedback::SaveFeedback>,
+    loc: Res<Localization>,
 ) {
     for ev in chosen.read() {
         if ev.purpose != SAVE_PURPOSE || state.content_kind != ContentKind::Lesson {
@@ -477,10 +496,27 @@ pub(super) fn handle_save_lesson_chosen(
         if let Some(parent) = ev.path.parent()
             && let Err(e) = std::fs::create_dir_all(parent)
         {
-            println!("Save failed (mkdir): {e}");
+            warn!("Song editor: save failed (mkdir {}): {e}", parent.display());
+            feedback.set(loc.msg_args("editor-save-failed", &[("detail", e.to_string())]));
             continue;
         }
-        save_lesson(&ev.path, &state);
+        match save_lesson(&ev.path, &state) {
+            Ok(warnings) if warnings.is_empty() => {
+                feedback.set(loc.msg_args(
+                    "editor-save-success",
+                    &[("path", ev.path.display().to_string())],
+                ));
+            }
+            Ok(warnings) => {
+                feedback.set(loc.msg_args(
+                    "editor-save-warning",
+                    &[("detail", warnings.join("; "))],
+                ));
+            }
+            Err(detail) => {
+                feedback.set(loc.msg_args("editor-save-failed", &[("detail", detail)]));
+            }
+        }
     }
 }
 
@@ -489,11 +525,27 @@ pub(super) fn handle_load_lesson_chosen(
     mut chosen: MessageReader<FileChosen>,
     mut state: ResMut<EditorState>,
     mut scroll: ResMut<Scroll>,
+    mut feedback: ResMut<super::save_feedback::SaveFeedback>,
+    loc: Res<Localization>,
 ) {
     for ev in chosen.read() {
         if ev.purpose != LOAD_PURPOSE || state.content_kind != ContentKind::Lesson {
             continue;
         }
-        load_lesson(&ev.path, &mut state, &mut scroll);
+        match load_lesson(&ev.path, &mut state, &mut scroll) {
+            Ok(()) => {
+                feedback.set(loc.msg_args(
+                    "editor-load-success",
+                    &[("path", ev.path.display().to_string())],
+                ));
+            }
+            Err(detail) => {
+                warn!(
+                    "Song editor: load failed ({}): {detail}",
+                    ev.path.display()
+                );
+                feedback.set(loc.msg_args("editor-load-failed", &[("detail", detail)]));
+            }
+        }
     }
 }

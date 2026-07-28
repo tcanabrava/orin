@@ -10,15 +10,6 @@ Found on a harmonica-player/audio/UX pass over the editor (2026-07-27);
 see `CLAUDE.md`'s "Song editor: known gaps" bullet for the full detail
 behind each. Roughly in priority order:
 
-- [ ] **Save/validation feedback is `println!`-only.** `harpchart.rs`'s
-  schema-validation warning, the lesson form's empty-required-field check,
-  and its locale-key-pairs-to-add reminder (`lesson_form::
-  serialize_lesson`) all print to stdout — invisible in a normal,
-  non-terminal launch of a packaged build. `panel::update_status_bar`
-  already exists with a drag/record/practice message-priority scheme;
-  routing a "Saved" / "Save failed — see below" message through it (same
-  pattern, one more priority tier) would make failures visible to anyone,
-  not just whoever happens to have a terminal attached.
 - [ ] **Manual note placement can't represent swing/triplet timing.** The
   grid snaps to straight 16ths only (`TICKS_PER_BEAT = 4`); there's no
   triplet or shuffle-aware subdivision to click onto, even though shuffle

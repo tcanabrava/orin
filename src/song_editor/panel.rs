@@ -314,19 +314,26 @@ pub(super) fn update_status_bar(
     practice: Res<PracticeState>,
     record: Res<RecordState>,
     count_in: Res<super::metronome::CountIn>,
+    feedback: Res<super::save_feedback::SaveFeedback>,
     loc: Res<Localization>,
     mut texts: Query<&mut Text, With<StatusMsg>>,
 ) {
     let Ok(mut text) = texts.single_mut() else {
         return;
     };
-    // A count-in comes first — it's the most time-critical (a take starts
-    // the instant it hits zero) and the player needs to know recording
-    // hasn't begun yet. Drag messages come next (ephemeral and
-    // action-specific); a live recording after that (it's actively
-    // running, unlike the practice message which just sits there between
-    // hits); practice messages fill the bar otherwise.
-    **text = if let Some(secs) = count_in.remaining_secs_display() {
+    // A just-finished Save/Load comes first — it's a direct response to
+    // something the player just clicked, and (unlike every other tier
+    // here) is the only one that can report failure, so it shouldn't get
+    // silently buried under a count-in or a drag in progress. A count-in
+    // comes next — it's the most time-critical (a take starts the instant
+    // it hits zero) and the player needs to know recording hasn't begun
+    // yet. Drag messages after that (ephemeral and action-specific); a
+    // live recording after that (it's actively running, unlike the
+    // practice message which just sits there between hits); practice
+    // messages fill the bar otherwise.
+    **text = if let Some(msg) = feedback.current() {
+        msg.to_string()
+    } else if let Some(secs) = count_in.remaining_secs_display() {
         loc.msg_args("editor-count-in-status", &[("seconds", format!("{secs:.1}"))])
             .to_string()
     } else if !state.drag_msg.is_empty() {
@@ -736,6 +743,7 @@ mod tests {
         world.insert_resource(practice);
         world.insert_resource(RecordState::default());
         world.insert_resource(super::super::metronome::CountIn::default());
+        world.insert_resource(super::super::save_feedback::SaveFeedback::default());
         world.insert_resource(loc);
 
         let status = world.spawn((StatusMsg, Text::new(""))).id();
@@ -761,6 +769,7 @@ mod tests {
         world.insert_resource(practice);
         world.insert_resource(RecordState::default());
         world.insert_resource(super::super::metronome::CountIn::default());
+        world.insert_resource(super::super::save_feedback::SaveFeedback::default());
         world.insert_resource(loc);
 
         let status = world.spawn((StatusMsg, Text::new(""))).id();
@@ -795,6 +804,7 @@ mod tests {
         };
         world.insert_resource(record);
         world.insert_resource(super::super::metronome::CountIn::default());
+        world.insert_resource(super::super::save_feedback::SaveFeedback::default());
         world.insert_resource(loc);
 
         let status = world.spawn((StatusMsg, Text::new(""))).id();

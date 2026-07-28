@@ -36,12 +36,11 @@ minor-blues/phrase-discipline improvisation) are all done — see
   Edit/Play modes, MIDI import with key suggestion, a real multi-point
   tempo map, lesson authoring alongside plain songs). What's left is
   workflow/UX maturity, found on a harmonica-player/audio/UX-focused pass
-  (2026-07-27; undo/redo, the metronome/count-in, and note audition are
-  since done — see `PLAN.md`): a manual-placement grid that can't
-  represent swing/triplet timing, and save/validation feedback that's
-  `println!`-only (invisible outside a terminal). See `TODO.md`'s
-  Song Editor section for the full list and `CLAUDE.md` for the detail
-  behind each.
+  (2026-07-27; undo/redo, the metronome/count-in, note audition, and
+  save/validation feedback are since done — see `PLAN.md`). What's left:
+  a manual-placement grid that can't represent swing/triplet timing. See
+  `TODO.md`'s Song Editor section and `CLAUDE.md` for the detail behind
+  it.
 - Downloadable song packs / community sharing for the `~/Harmonicon`
   external-source folder. Live auto-refresh of that folder (songs, themes,
   and lessons) is done — see `PLAN.md`. The actual packaging/download/

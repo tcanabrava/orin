@@ -189,6 +189,11 @@ practice-done = Feito — %hits%/%total% notas  ·  %score% pts
 editor-record-status = ⏺ Gravando — %count% notas capturadas
 editor-count-in-status = ⏳ Prepare-se — gravação em %seconds%s
 editor-metronome-tooltip = Ativa/desativa o clique do metrônomo durante Gravar/Tocar/Praticar
+editor-save-success = ✓ Salvo: %path%
+editor-save-warning = ⚠ Salvo com avisos: %detail%
+editor-save-failed = ✗ Falha ao salvar: %detail%
+editor-load-success = ✓ Carregado: %path%
+editor-load-failed = ✗ Falha ao carregar: %detail%
 
 # Editor de Músicas 2 — dicas dos botões
 editor-back-tooltip = Sair do editor e voltar ao menu principal

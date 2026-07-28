@@ -189,6 +189,11 @@ practice-done = Hecho — %hits%/%total% notas  ·  %score% pts
 editor-record-status = ⏺ Grabando — %count% notas capturadas
 editor-count-in-status = ⏳ Prepárate — grabación en %seconds%s
 editor-metronome-tooltip = Alterna el clic del metrónomo durante Grabar/Reproducir/Practicar
+editor-save-success = ✓ Guardado: %path%
+editor-save-warning = ⚠ Guardado con avisos: %detail%
+editor-save-failed = ✗ Error al guardar: %detail%
+editor-load-success = ✓ Cargado: %path%
+editor-load-failed = ✗ Error al cargar: %detail%
 
 # Song Editor 2 — descripciones de los botones
 editor-back-tooltip = Salir del editor y volver al menú principal

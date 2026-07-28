@@ -191,6 +191,11 @@ practice-done = Done — %hits%/%total% notes  ·  %score% pts
 editor-record-status = ⏺ Recording — %count% notes captured
 editor-count-in-status = ⏳ Get ready — recording in %seconds%s
 editor-metronome-tooltip = Toggle the metronome click during Record/Play/Practice
+editor-save-success = ✓ Saved: %path%
+editor-save-warning = ⚠ Saved with warnings: %detail%
+editor-save-failed = ✗ Save failed: %detail%
+editor-load-success = ✓ Loaded: %path%
+editor-load-failed = ✗ Load failed: %detail%
 
 # Song Editor 2 — button tooltips
 editor-back-tooltip = Leave the editor and return to the main menu

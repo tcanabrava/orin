@@ -3,14 +3,17 @@
 use bevy::prelude::*;
 
 use super::playback::build_harp;
+use super::save_feedback::SaveFeedback;
 use super::state::{
     Dir, EditorState, Expr, GridNote, HARP_KEYS, HarmonicaKind, POSITIONS, Pitch, Scroll,
 };
 use super::{LOAD_PURPOSE, MUSIC_PURPOSE, SAVE_PURPOSE, TICKS_PER_BEAT};
 use crate::audio_system::midi::{midi_to_note, note_to_midi};
 use crate::dialogs::file_dialog::FileChosen;
+use crate::localization::LocalizationExt;
 use crate::song::chart::{Action, Scale, TempoPoint, seconds_to_tick, tick_to_seconds};
 use crate::song::harmonica::{Harmonica, hole_notes};
+use bevy_fluent::prelude::Localization;
 
 // ── Serialisation ────────────────────────────────────────────────────────────
 
@@ -447,6 +450,8 @@ pub(super) fn handle_load_chosen(
     mut chosen: MessageReader<FileChosen>,
     mut state: ResMut<EditorState>,
     mut scroll: ResMut<Scroll>,
+    mut feedback: ResMut<SaveFeedback>,
+    loc: Res<Localization>,
 ) {
     use super::state::ContentKind;
     for ev in chosen.read() {
@@ -456,19 +461,28 @@ pub(super) fn handle_load_chosen(
         let text = match std::fs::read_to_string(&ev.path) {
             Ok(t) => t,
             Err(e) => {
-                println!("Load failed (read): {e}");
+                warn!("Song editor: load failed (read {}): {e}", ev.path.display());
+                feedback.set(loc.msg_args("editor-load-failed", &[("detail", e.to_string())]));
                 continue;
             }
         };
         let v: serde_json::Value = match serde_json::from_str(&text) {
             Ok(v) => v,
             Err(e) => {
-                println!("Load failed (parse): {e}");
+                warn!(
+                    "Song editor: load failed (parse {}): {e}",
+                    ev.path.display()
+                );
+                feedback.set(loc.msg_args("editor-load-failed", &[("detail", e.to_string())]));
                 continue;
             }
         };
         load_harpchart(&v, &mut state, &mut scroll);
-        println!("Loaded: {}", ev.path.display());
+        info!("Song editor: loaded {}", ev.path.display());
+        feedback.set(loc.msg_args(
+            "editor-load-success",
+            &[("path", ev.path.display().to_string())],
+        ));
     }
 }
 
@@ -495,6 +509,8 @@ pub(super) fn handle_save_chosen(
     mut chosen: MessageReader<FileChosen>,
     mut state: ResMut<EditorState>,
     midi: Option<Res<super::midi_import::MidiImport>>,
+    mut feedback: ResMut<SaveFeedback>,
+    loc: Res<Localization>,
 ) {
     use super::state::ContentKind;
     for ev in chosen.read() {
@@ -504,7 +520,8 @@ pub(super) fn handle_save_chosen(
         if let Some(parent) = ev.path.parent()
             && let Err(e) = std::fs::create_dir_all(parent)
         {
-            println!("Save failed (mkdir): {e}");
+            warn!("Song editor: save failed (mkdir {}): {e}", parent.display());
+            feedback.set(loc.msg_args("editor-save-failed", &[("detail", e.to_string())]));
             continue;
         }
 
@@ -521,8 +538,17 @@ pub(super) fn handle_save_chosen(
 
         let json = serialize_harpchart(&state);
         match std::fs::write(&ev.path, json.as_bytes()) {
-            Ok(()) => println!("Saved: {}", ev.path.display()),
-            Err(e) => println!("Save failed (write): {e}"),
+            Ok(()) => {
+                info!("Song editor: saved {}", ev.path.display());
+                feedback.set(loc.msg_args(
+                    "editor-save-success",
+                    &[("path", ev.path.display().to_string())],
+                ));
+            }
+            Err(e) => {
+                warn!("Song editor: save failed (write {}): {e}", ev.path.display());
+                feedback.set(loc.msg_args("editor-save-failed", &[("detail", e.to_string())]));
+            }
         }
     }
 }
@@ -552,16 +578,16 @@ fn save_midi_backing(
                 .unwrap_or("song");
             let out = dir.join(format!("{stem}_processed.mid"));
             match std::fs::write(&out, &bytes) {
-                Ok(()) => println!(
-                    "Wrote {} \u{2014} a copy of {} with the imported track removed; \
-                     the original is untouched.",
+                Ok(()) => info!(
+                    "Song editor: wrote {} \u{2014} a copy of {} with the imported track \
+                     removed; the original is untouched.",
                     out.display(),
                     midi.path.display()
                 ),
-                Err(e) => println!("Save failed (processed MIDI): {e}"),
+                Err(e) => warn!("Song editor: save failed (processed MIDI): {e}"),
             }
         }
-        Err(e) => println!("Save failed (processed MIDI): {e}"),
+        Err(e) => warn!("Song editor: save failed (processed MIDI): {e}"),
     }
 
     match super::midi_import::render_backing_pcm(&midi.bytes, track_index) {
@@ -571,17 +597,17 @@ fn save_midi_backing(
             let out = dir.join("music.wav");
             match std::fs::write(&out, &wav) {
                 Ok(()) => {
-                    println!(
-                        "Wrote {} \u{2014} a synthesized backing track from the MIDI file's \
-                         other tracks.",
+                    info!(
+                        "Song editor: wrote {} \u{2014} a synthesized backing track from the \
+                         MIDI file's other tracks.",
                         out.display()
                     );
                     state.music = out.to_string_lossy().into_owned();
                 }
-                Err(e) => println!("Save failed (backing track): {e}"),
+                Err(e) => warn!("Song editor: save failed (backing track): {e}"),
             }
         }
-        Err(e) => println!("No backing track written: {e}"),
+        Err(e) => warn!("Song editor: no backing track written: {e}"),
     }
 }
 

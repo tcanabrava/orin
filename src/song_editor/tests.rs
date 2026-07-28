@@ -85,7 +85,7 @@ fn serialize_lesson_omits_optional_fields_when_unset() {
         lesson_unit: "basics".into(),
         ..EditorState::default()
     };
-    let json = serialize_lesson(&s);
+    let (json, _warnings) = serialize_lesson(&s);
     let v: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["id"], "my-lesson");
     assert_eq!(v["unit"], "basics");
@@ -98,6 +98,34 @@ fn serialize_lesson_omits_optional_fields_when_unset() {
 }
 
 #[test]
+fn serialize_lesson_has_no_warnings_when_id_and_unit_are_set() {
+    let s = EditorState {
+        content_kind: ContentKind::Lesson,
+        lesson_id: "my-lesson".into(),
+        lesson_unit: "basics".into(),
+        ..EditorState::default()
+    };
+    let (_json, warnings) = serialize_lesson(&s);
+    assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+}
+
+#[test]
+fn serialize_lesson_warns_when_id_or_unit_is_empty() {
+    let s = EditorState {
+        content_kind: ContentKind::Lesson,
+        ..EditorState::default()
+    };
+    let (_json, warnings) = serialize_lesson(&s);
+    // An empty id/unit also fails the manifest's own schema (both are
+    // required fields), so this expects at least the id/unit warning
+    // itself, not necessarily only that one.
+    assert!(
+        warnings.iter().any(|w| w.contains("id/unit")),
+        "expected an id/unit warning, got: {warnings:?}"
+    );
+}
+
+#[test]
 fn serialize_lesson_includes_chart_only_when_notes_exist() {
     let mut s = EditorState {
         lesson_id: "with-notes".into(),
@@ -105,7 +133,7 @@ fn serialize_lesson_includes_chart_only_when_notes_exist() {
         ..EditorState::default()
     };
     select_or_add(&mut s, 4, 0);
-    let json = serialize_lesson(&s);
+    let (json, _warnings) = serialize_lesson(&s);
     let v: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["chart"], "song/chart.harpchart");
 }
@@ -120,7 +148,7 @@ fn serialize_lesson_writes_a_technique_pass_criterion() {
         lesson_threshold: "0.6".into(),
         ..EditorState::default()
     };
-    let json = serialize_lesson(&s);
+    let (json, _warnings) = serialize_lesson(&s);
     let v: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["pass_criteria"]["type"], "technique");
     assert_eq!(v["pass_criteria"]["technique"], "bend");
@@ -139,7 +167,7 @@ fn serialize_lesson_writes_prerequisites_and_progression() {
         lesson_progression: "minor".into(),
         ..EditorState::default()
     };
-    let json = serialize_lesson(&s);
+    let (json, _warnings) = serialize_lesson(&s);
     let v: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["prerequisites"], serde_json::json!(["a", "b", "c"]));
     assert_eq!(v["progression"], "minor");
