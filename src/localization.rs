@@ -4,12 +4,15 @@
 //!
 //! Translations live under `assets/locales/<lang>/` as [Fluent] files: one
 //! `main.ftl.ron` bundle per locale listing the `.ftl` resources it pulls in
-//! (see `assets/locales/en-US/`). At startup the whole `locales` folder is loaded
-//! asynchronously; once ready the [`Localization`] resource is built by
-//! negotiating the OS UI language ([`SelectedLanguage`], taken from the system
-//! locale at startup) against the available locales, falling back to
-//! [`DEFAULT_LANGUAGE`] so the UI never shows an untranslated key. The language
-//! is not persisted — to change it, change the system locale.
+//! (see `assets/locales/en-US/`). At startup each locale's bundle is loaded
+//! by an explicit path — [`LOCALES`], not a directory scan — since the wasm
+//! build's HTTP asset reader can't enumerate a directory
+//! (`bevy_asset::io::wasm::HttpWasmAssetReader` — `Reading directories is
+//! not supported`); once every bundle is ready the [`Localization`] resource
+//! is built by negotiating the OS UI language ([`SelectedLanguage`], taken
+//! from the system locale at startup) against the loaded locales, falling
+//! back to [`DEFAULT_LANGUAGE`] so the UI never shows an untranslated key.
+//! The language is not persisted — to change it, change the system locale.
 //!
 //! Call sites fetch strings through [`LocalizationExt::msg`]:
 //!
@@ -20,11 +23,17 @@
 //!
 //! [Fluent]: https://projectfluent.org/
 
-use bevy::asset::LoadedFolder;
 use bevy::prelude::*;
+use bevy_fluent::exts::fluent::BundleExt;
 use bevy_fluent::prelude::*;
 use fluent_content::Content;
 use unic_langid::LanguageIdentifier;
+
+/// Every shipped locale, matched 1:1 with a folder under `assets/locales/`
+/// — a fixed list rather than a directory scan (see the module doc
+/// comment for why); `tests::locales_const_matches_the_assets_directory`
+/// keeps it honest against what's actually on disk.
+const LOCALES: [&str; 3] = ["en-US", "pt-BR", "es-ES"];
 
 /// Fallback language, used when neither the player's choice nor the system locale
 /// has a matching bundle. Must always have a folder under `assets/locales/`, so it
@@ -63,10 +72,11 @@ impl Default for SelectedLanguage {
     }
 }
 
-/// Handle to the in-flight `locales` folder load, kept around so
-/// [`build_localization`] can (re)build [`Localization`] from it on demand.
+/// Handles to each [`LOCALES`] entry's in-flight `main.ftl.ron` bundle load,
+/// kept around so [`build_localization`] can (re)build [`Localization`]
+/// from them on demand.
 #[derive(Resource)]
-struct LocaleFolder(Handle<LoadedFolder>);
+struct LocaleBundles(Vec<Handle<BundleAsset>>);
 
 /// Set once the first [`Localization`] has been built, so later frames only
 /// rebuild when the [`Locale`] actually changes. Also drives [`localization_ready`]
@@ -114,9 +124,17 @@ fn default_locale() -> Locale {
     Locale::new(default.clone()).with_default(default)
 }
 
-/// Kick off the asynchronous load of every file under `assets/locales/`.
+/// Kick off the asynchronous load of every [`LOCALES`] entry's bundle — one
+/// explicit `load()` per locale, each of which (via `BundleAssetLoader`)
+/// transitively loads its own referenced `.ftl` resource by an equally
+/// explicit path, so nothing in this whole chain ever needs to enumerate a
+/// directory.
 fn load_locales(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.insert_resource(LocaleFolder(asset_server.load_folder("locales")));
+    let handles = LOCALES
+        .iter()
+        .map(|lang| asset_server.load(format!("locales/{lang}/main.ftl.ron")))
+        .collect();
+    commands.insert_resource(LocaleBundles(handles));
 }
 
 /// Mirror the persisted [`SelectedLanguage`] onto the `bevy_fluent` [`Locale`].
@@ -130,26 +148,60 @@ fn sync_locale(selected: Res<SelectedLanguage>, mut locale: ResMut<Locale>) {
     }
 }
 
-/// Build [`Localization`] once the folder has finished loading, and rebuild it
-/// whenever the requested [`Locale`] changes.
+/// Build [`Localization`] once every bundle has finished loading, and
+/// rebuild it whenever the requested [`Locale`] changes.
 fn build_localization(
     mut commands: Commands,
-    builder: LocalizationBuilder,
     asset_server: Res<AssetServer>,
+    bundles: Res<Assets<BundleAsset>>,
     locale: Res<Locale>,
-    folder: Option<Res<LocaleFolder>>,
+    handles: Option<Res<LocaleBundles>>,
     mut ready: ResMut<LocalizationReady>,
 ) {
-    let Some(folder) = folder else { return };
-    // Wait for the bundles *and* the `.ftl` resources they reference.
-    if !asset_server.is_loaded_with_dependencies(&folder.0) {
+    let Some(handles) = handles else { return };
+    // Wait for every bundle *and* the `.ftl` resource each references.
+    if !handles
+        .0
+        .iter()
+        .all(|handle| asset_server.is_loaded_with_dependencies(handle))
+    {
         return;
     }
     if ready.0 && !locale.is_changed() {
         return;
     }
     ready.0 = true;
-    commands.insert_resource(builder.build(&folder.0));
+    commands.insert_resource(build_from_bundles(&handles.0, &bundles, &locale));
+}
+
+/// Assembles [`Localization`] from every loaded locale bundle, inserted in
+/// the [`Locale`]'s own fallback-chain order (most-preferred first —
+/// [`Localization`]'s own `content` lookup returns the first bundle with a
+/// matching key, so insertion order is what makes the fallback actually
+/// take effect). The hand-rolled equivalent of `bevy_fluent::
+/// LocalizationBuilder::build`, which expects a `Handle<LoadedFolder>` this
+/// module deliberately doesn't have — see the module doc comment.
+fn build_from_bundles(
+    handles: &[Handle<BundleAsset>],
+    bundles: &Assets<BundleAsset>,
+    locale: &Locale,
+) -> Localization {
+    let entries: Vec<(LanguageIdentifier, &Handle<BundleAsset>, &BundleAsset)> = handles
+        .iter()
+        .filter_map(|handle| {
+            let asset = bundles.get(handle)?;
+            Some((asset.locale().clone(), handle, asset))
+        })
+        .collect();
+    let fallback = locale.fallback_chain(entries.iter().map(|(lang, _, _)| lang));
+
+    let mut localization = Localization::new();
+    for lang in fallback {
+        if let Some((_, handle, asset)) = entries.iter().find(|(l, _, _)| l == lang) {
+            localization.insert(handle, asset);
+        }
+    }
+    localization
 }
 
 // ── Localized-string newtype ──────────────────────────────────────────────────
@@ -285,5 +337,29 @@ mod tests {
                 dir.file_name().unwrap(),
             );
         }
+    }
+
+    /// [`super::LOCALES`] is a fixed list (loaded by explicit path rather
+    /// than a directory scan — see the module doc comment for why), so
+    /// nothing else catches it silently drifting from what's actually
+    /// shipped under `assets/locales/` the way a real directory scan would.
+    #[test]
+    fn locales_const_matches_the_assets_directory() {
+        let locales_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/locales");
+        let mut on_disk: Vec<String> = std::fs::read_dir(&locales_dir)
+            .expect("locales dir must exist")
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.path().is_dir())
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect();
+        on_disk.sort();
+
+        let mut expected: Vec<String> = super::LOCALES.iter().map(|s| s.to_string()).collect();
+        expected.sort();
+
+        assert_eq!(
+            on_disk, expected,
+            "localization::LOCALES is out of sync with assets/locales/"
+        );
     }
 }

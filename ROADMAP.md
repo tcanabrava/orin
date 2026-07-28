@@ -83,21 +83,22 @@ remains:
   same bundling on every push/PR so a regression doesn't wait for a tag).
 - Explore web build (Bevy → wasm; mic via Web Audio) for zero-install
   trial. The crate compiles clean for `wasm32-unknown-unknown` (see
-  `Cargo.toml`'s wasm32 target section), and `trunk build`/`serve`
-  (`index.html`, `Trunk.toml`) now produces a real, servable bundle — the
-  app genuinely boots in a browser (verified with headless Chromium):
-  WGPU initializes, asset scanning runs, mic capture fails gracefully
-  exactly like a real permission-less browser would (`MicStatus::Failed`,
-  no panic). It doesn't yet get further than that: `asset_server.
-  load_folder("locales")` (`src/localization.rs`) needs directory
-  listing, which the wasm HTTP asset reader can't do ("Reading
-  directories is not supported with the HttpWasmAssetReader") — Bevy's
-  own `bevy_fluent` panics trying to index an empty locale-entries map as
-  a result. Fixing that means loading each locale's `.ftl` files by an
-  explicit, known filename list instead of `load_folder`'s directory scan
-  — likely the same fix `assets_management`'s own directory-scanning song/
-  theme/lesson discovery will eventually need too, since none of it can
-  enumerate a wasm HTTP directory either. Beyond that: a Web Audio bridge
+  `Cargo.toml`'s wasm32 target section), `trunk build`/`serve`
+  (`index.html`, `Trunk.toml`) produces a real, servable bundle, and the
+  app now genuinely boots and keeps running in a browser (verified with
+  headless Chromium, checked for zero panics across a full run): WGPU
+  initializes, localization loads (`src/localization.rs`'s fixed
+  `LOCALES` list, loaded by explicit path instead of `AssetServer::
+  load_folder`'s directory scan — the wasm HTTP asset reader can't
+  enumerate a directory, which used to hard-panic `bevy_fluent` on
+  startup), mic capture fails gracefully exactly like a real
+  permission-less browser would (`MicStatus::Failed`, no panic), and
+  `assets_management`'s own song/theme/lesson directory-scanning
+  discovery degrades to "nothing found" warnings rather than crashing
+  (though — unlike localization — it hasn't been rewritten to avoid the
+  scan itself, so no content loads yet either). What's left: rewriting
+  that discovery the same way (an explicit manifest instead of a
+  directory scan) so bundled content actually loads, a Web Audio bridge
   for mic capture in place of `cpal`, and a replacement for the `dirs`/
   `std::fs`-based settings/profile persistence and the `~/Harmonicon`
   external-folder watcher (`notify-debouncer-full`), none of which have
