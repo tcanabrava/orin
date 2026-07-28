@@ -93,24 +93,29 @@ remains:
   enumerate a directory, which used to hard-panic `bevy_fluent` on
   startup), mic capture fails gracefully exactly like a real
   permission-less browser would (`MicStatus::Failed`, no panic), and
-  bundled songs, note themes, and harmonica models now actually load:
-  `assets_management`'s directory-scanning discovery is `#[cfg(not(
+  bundled songs, note themes, harmonica models, and UI themes now actually
+  load: `assets_management`'s directory-scanning discovery is `#[cfg(not(
   target_arch = "wasm32"))]` on native (unchanged — a player can still drop
   a new song into `assets/songs/` or `~/Harmonicon/songs/` with no rebuild)
   and reads a `build.rs`-generated manifest on wasm instead
   (`generate_wasm_asset_manifest`, `$OUT_DIR/asset_manifest.rs` — safe
   because a build script always runs on the native host regardless of
   `--target`, so it can do a real `std::fs::read_dir` walk of `assets/` even
-  when building for wasm32). Verified via headless Chromium: the old "No
-  songs directory found"/"No note themes directory"/"No harmonica models
-  directory" warnings are gone. What's left: UI *theme* content still
-  doesn't load under wasm — theme *names* now populate correctly, but
-  `theme::load_theme` reads `theme.json`'s contents via a raw
-  `std::fs::read_to_string` rather than `AssetServer`, which can't work
-  over HTTP either; a Web Audio bridge for mic capture in place of `cpal`;
-  and a replacement for the `dirs`/`std::fs`-based settings/profile
-  persistence and the `~/Harmonicon` external-folder watcher
-  (`notify-debouncer-full`), none of which have browser equivalents.
+  when building for wasm32); `theme::load_theme`'s own `theme.json` read
+  went from raw `std::fs::read_to_string` (can't work over HTTP either) to
+  a proper `AssetServer`-loaded `Asset` via a small custom loader
+  (`theme::ThemeJsonLoader`, matching `song::loader::SongChartLoader`'s
+  pattern). Verified via headless Chromium: the old "No songs directory
+  found"/"No note themes directory"/"No harmonica models directory"/
+  "Could not find theme.json" warnings are all gone. (The wasm pass also
+  surfaced a genuine WebGL2 incompatibility in the themed buttons' smoke
+  shaders — a bare `f32` uniform, which WebGL2's downlevel backend
+  requires to be 16-byte aligned — resolved by removing that shader
+  effect rather than patching it.) What's left: a Web Audio bridge for mic
+  capture in place of `cpal`, and a replacement for the `dirs`/`std::fs`-
+  based settings/profile persistence and the `~/Harmonicon` external-folder
+  watcher (`notify-debouncer-full`), none of which have browser
+  equivalents.
 - Accessibility: mirrored layout for left-handed players, fully
   keyboard-navigable menus. (Colorblind-safe note palettes are done — an
   Options-page toggle swaps the Play2D/Play3D note highway's blow/draw
