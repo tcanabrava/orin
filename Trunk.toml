@@ -1,0 +1,16 @@
+# WASM build pipeline (`ROADMAP.md`'s 0.7+ "web build" item). Invoke from
+# the repo root: `trunk build` / `trunk serve` (add `--release` for a real
+# build — debug wasm is enormous and slow). `getrandom`'s wasm32 backend
+# needs a compile-time cfg Trunk can't express itself (see the comment on
+# the `[target.'cfg(target_arch = "wasm32")']` block in `Cargo.toml`), so
+# always run with:
+#   RUSTFLAGS='--cfg getrandom_backend="wasm_js"' trunk build
+
+[build]
+target = "index.html"
+dist = "dist"
+
+[watch]
+# Don't rebuild on every asset drop-in — `assets/` is data, not source, and
+# it's a large tree `notify`-based watching would churn on for nothing.
+ignore = ["assets", "dist"]

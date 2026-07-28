@@ -20,6 +20,9 @@ scripts/.venv/
 # mdbook build output (the source lives in docs/book/src/)
 /docs/book/book/
 
+# trunk's wasm build output (the source is index.html + Trunk.toml)
+/dist/
+
 # Song Editor's dev-only "Debug Recording" checkbox (--features dev):
 # raw mic audio + chart copies dumped here for diagnosing pitch-detection
 # issues, never meant to be committed.

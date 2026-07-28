@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Harmonicon</title>
+    <!-- `data-bin` is explicit: `src/bin/*.rs` auto-registers several other
+         binaries (hole-editor, note_editor, note_bench) alongside the main
+         `harmonicon` one (src/main.rs), and Trunk needs to be told which of
+         them to build. -->
+    <link data-trunk rel="rust" data-bin="harmonicon" />
+    <!-- Bevy's AssetServer fetches from `<origin>/assets/...` under wasm,
+         the same relative path native builds read from disk — copying the
+         whole tree into the served output is what makes that resolve. -->
+    <link data-trunk rel="copy-dir" href="assets" data-target-path="assets" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      #bevy-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="bevy-canvas"></canvas>
+  </body>
+</html>

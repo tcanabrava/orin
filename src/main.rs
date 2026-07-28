@@ -49,6 +49,11 @@ fn main() {
                     title: "Harmonicon".into(),
                     // Wayland app_id / X11 WM_CLASS, so the desktop file's icon is matched.
                     name: Some(APP_ID.into()),
+                    // Web-only fields (see `index.html`); each is a no-op
+                    // on native, so no `#[cfg]` is needed to set them here.
+                    canvas: Some("#bevy-canvas".into()),
+                    fit_canvas_to_parent: true,
+                    prevent_default_event_handling: true,
                     ..default()
                 }),
                 ..default()
