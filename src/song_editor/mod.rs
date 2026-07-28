@@ -19,6 +19,7 @@ use crate::app::AppState;
 use crate::menu::tutorial::tour_active;
 use crate::theme::LoadedTheme;
 
+mod audition;
 mod clipboard;
 // Dev-only ("--features dev") debugging aid — see its own module docs.
 // Compiled only under that feature, same as `Cargo.toml`'s `dev` feature
@@ -138,6 +139,7 @@ impl Plugin for SongEditor2Plugin {
             .init_resource::<clipboard::NoteClipboard>()
             .init_resource::<metronome::CountIn>()
             .init_resource::<metronome::EditorLastClickedTick>()
+            .init_resource::<audition::LastAuditioned>()
             .add_systems(
                 Update,
                 (
@@ -180,6 +182,8 @@ impl Plugin for SongEditor2Plugin {
                         metronome::click_metronome.after(playback::advance_playhead),
                         metronome::tick_count_in.after(playback::advance_playhead),
                         metronome::finish_count_in.after(metronome::tick_count_in),
+                        audition::audition_on_select
+                            .run_if(resource_exists_and_changed::<state::EditorState>),
                     ),
                     // Suspended while the guided tour is showing this
                     // screen — Esc/Delete/Ctrl+C/Ctrl+V shouldn't act on it

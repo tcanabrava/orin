@@ -49,9 +49,9 @@ this file — prune it back to a one-line summary under "Shipped" below.
   per-mode button groups, a status bar). A dedicated pass since then
   (2026-07-27, playing the role of a harmonica player + audio/UX
   developer) found the remaining gaps in this workflow — see `TODO.md`'s
-  Song Editor section (no note audition, save feedback that's invisible
-  outside a terminal, no swing-aware grid snap) and `CLAUDE.md`'s "Song
-  editor: known gaps" bullet for the detail behind each. (Multi-selection
+  Song Editor section (save feedback that's invisible outside a terminal,
+  no swing-aware grid snap) and `CLAUDE.md`'s "Song editor: known gaps"
+  bullet for the detail behind each. (Multi-selection
   drag-to-transpose — moving a lick to a different hole/chord — was
   double-checked and already works; an initial pass wrongly flagged it as
   missing.)
@@ -75,6 +75,17 @@ this file — prune it back to a one-line summary under "Shipped" below.
   `record::start_record` actually runs, with a status-bar countdown and a
   dimmable mute-toggle button next to Undo/Redo. See `CLAUDE.md`'s "The
   Song Editor has a click track and a Record count-in" bullet.
+- **Song editor: audition a note's pitch on selection** —
+  `song_editor::audition`, a short (0.6s) blip of a note's resolved pitch
+  the instant `EditorState::selected_note` changes to a different note,
+  reusing `audio_system::synth`'s additive harmonica voice
+  (`playback::note_freq`/`render_pcm`) rather than a separate
+  reference-tone generator, so it matches what the note actually sounds
+  like in Play/Practice/Record. Every existing selection call site (a
+  fresh placement, clicking an existing note, Ctrl+click, paste) already
+  funnels through the same `selected_note`, so none needed touching. See
+  `CLAUDE.md`'s "The Song Editor auditions a note's pitch on selection"
+  bullet.
 - **Code-duplication cleanup** (whole-tree duplicate-block scan,
   2026-07-19) — all 6 phases done, no behavior changes, `cargo test`/
   `cargo clippy`/`tests/physical_design.rs` clean throughout:
@@ -202,9 +213,9 @@ Finishing 0.4:
    content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
 
 Not yet started, candidate next work: the remaining Song Editor UX/workflow
-gaps in `TODO.md`'s Song Editor section (note audition, save-time feedback,
-swing-aware grid snap) — undo/redo and the metronome/count-in, the first
-two items of that list, are now done (see Shipped above).
+gaps in `TODO.md`'s Song Editor section (save-time feedback,
+swing-aware grid snap) — undo/redo, the metronome/count-in, and note
+audition are now done (see Shipped above).
 
 ## Working practices
 

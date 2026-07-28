@@ -10,14 +10,6 @@ Found on a harmonica-player/audio/UX pass over the editor (2026-07-27);
 see `CLAUDE.md`'s "Song editor: known gaps" bullet for the full detail
 behind each. Roughly in priority order:
 
-- [ ] **No way to audition a note's pitch.** Clicking or selecting a note
-  doesn't play its sound — you only hear it in context during Play/
-  Practice, or by reaching for your own harp. `song_editor::playback`'s
-  synth already exists and is reused by `playback.rs`/`practice.rs`/
-  `record.rs`; a short blip on selection (or a dedicated key) would be a
-  small, low-risk addition, and especially valuable for confirming a
-  bend/overblow/overdraw actually sounds like what was intended before
-  committing to it.
 - [ ] **Save/validation feedback is `println!`-only.** `harpchart.rs`'s
   schema-validation warning, the lesson form's empty-required-field check,
   and its locale-key-pairs-to-add reminder (`lesson_form::
