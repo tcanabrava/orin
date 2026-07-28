@@ -2,14 +2,23 @@
 
 use std::collections::HashMap;
 
-use bevy::prelude::*;
+use bevy::{
+    asset::{AssetLoader, LoadState, io::Reader},
+    prelude::*,
+};
 use serde::Deserialize;
+use thiserror::Error;
 
 use crate::assets_management::SelectedTheme;
 
 // ── JSON data structures ──────────────────────────────────────────────────────
 
-#[derive(Deserialize, Clone, Debug)]
+/// Deliberately an [`Asset`] itself (not just a plain struct parsed with
+/// `std::fs::read_to_string`) so it loads through [`AssetServer`] like every
+/// other song/theme sub-asset — `std::fs` can't read anything under wasm
+/// (there's no local filesystem inside a browser), where `AssetServer`
+/// transparently fetches over HTTP instead. See [`ThemeJsonLoader`].
+#[derive(Asset, TypePath, Deserialize, Clone, Debug)]
 struct ThemeJson {
     name: String,
     #[serde(default)]
@@ -334,15 +343,64 @@ impl LoadedTheme {
     }
 }
 
+#[derive(Error, Debug)]
+enum ThemeLoadError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("JSON parse error: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+/// Loads a `theme.json` into a [`ThemeJson`] asset. Matched by full filename
+/// (`extensions()` returns the compound extension `"theme.json"`, not the
+/// bare `"json"`) so registering it can't collide with some other, unrelated
+/// `.json` asset gaining an `AssetLoader` of its own later.
+#[derive(Default, TypePath)]
+struct ThemeJsonLoader;
+
+impl AssetLoader for ThemeJsonLoader {
+    type Asset = ThemeJson;
+    type Settings = ();
+    type Error = ThemeLoadError;
+
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _settings: &(),
+        _load_context: &mut bevy::asset::LoadContext<'_>,
+    ) -> Result<ThemeJson, ThemeLoadError> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["theme.json"]
+    }
+}
+
 /// Resolves the `AssetSource` prefix for `theme_name`: empty when it exists
 /// under the bundled `assets/themes/`, or `"external://"` when it only
 /// exists under the `~/Harmonicon/themes/` drop folder. Bundled wins when a
 /// name exists in both places, matching `load_theme`'s resolution — so a
 /// theme's own preview image (loaded separately by the theme picker) comes
 /// from the same place as the rest of its assets.
+///
+/// Native only: `Path::is_dir()` needs a real local filesystem, which wasm
+/// doesn't have. `AvailableThemes` under wasm only ever lists bundled
+/// themes anyway (see `assets_management`'s wasm-only `scan_ui_themes` —
+/// there's no `~/Harmonicon` drop folder inside a browser), so the wasm
+/// sibling below can just always answer "bundled".
+#[cfg(not(target_arch = "wasm32"))]
 pub fn theme_source_prefix(theme_name: &str) -> &'static str {
     let bundled = std::path::Path::new("assets/themes").join(theme_name);
     if bundled.is_dir() { "" } else { "external://" }
+}
+
+/// wasm sibling of the native `theme_source_prefix` above.
+#[cfg(target_arch = "wasm32")]
+pub fn theme_source_prefix(_theme_name: &str) -> &'static str {
+    ""
 }
 
 // ── Plugin ────────────────────────────────────────────────────────────────────
@@ -352,6 +410,8 @@ pub struct ThemePlugin;
 impl Plugin for ThemePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LoadedTheme>()
+            .init_asset::<ThemeJson>()
+            .register_asset_loader(ThemeJsonLoader)
             // PreUpdate runs before StateTransition, so when the player
             // navigates back to a menu after changing themes the OnEnter
             // setup system will see the already-refreshed LoadedTheme.
@@ -360,66 +420,84 @@ impl Plugin for ThemePlugin {
             // apply_loaded_settings restores the saved theme name.
             .add_systems(
                 PreUpdate,
-                load_theme.run_if(|s: Res<SelectedTheme>| s.is_changed()),
+                (
+                    request_theme_load.run_if(|s: Res<SelectedTheme>| s.is_changed()),
+                    apply_theme_when_loaded,
+                )
+                    .chain(),
             );
     }
 }
 
-fn load_theme(
+/// The in-flight `theme.json` load kicked off by [`request_theme_load`],
+/// consumed once it resolves by [`apply_theme_when_loaded`]. Absent
+/// whenever no theme.json load is outstanding.
+#[derive(Resource)]
+struct PendingTheme {
+    handle: Handle<ThemeJson>,
+    /// Same meaning as `theme_source_prefix`'s return value — reused here so
+    /// `apply_theme_when_loaded` can build sibling image/sound asset paths
+    /// without re-resolving it (and without ever disagreeing with the
+    /// prefix the `theme.json` handle itself was loaded through).
+    prefix: &'static str,
+    name: String,
+}
+
+/// Clears the previous theme's data immediately (so nothing stale from the
+/// old theme lingers while the new one loads) and kicks off an
+/// [`AssetServer`] load of the new theme's `theme.json` — through the same
+/// `AssetSource` prefix (bundled or `external://`) its sibling images/sounds
+/// already load through, rather than reading the file directly.
+fn request_theme_load(
+    mut commands: Commands,
     mut theme: ResMut<LoadedTheme>,
     selected: Res<SelectedTheme>,
     asset_server: Res<AssetServer>,
 ) {
-    // Clear previous theme data so no stale entries from the old theme survive.
     *theme = LoadedTheme::default();
 
-    // `source_prefix` tags the asset-loading `prefix` below so images/sounds
-    // load from the same place the theme.json itself came from.
-    let source_prefix = theme_source_prefix(&selected.0);
-    let json_path: std::path::PathBuf = if source_prefix.is_empty() {
-        format!("assets/themes/{}/theme.json", selected.0).into()
-    } else {
-        match dirs::home_dir() {
-            Some(h) => h
-                .join("Harmonicon/themes")
-                .join(&selected.0)
-                .join("theme.json"),
-            None => {
-                warn!(
-                    "Could not find theme.json for '{}' in assets/themes/",
-                    selected.0
-                );
-                return;
-            }
-        }
-    };
-    if !json_path.exists() {
-        warn!(
-            "Could not find theme.json for '{}' in assets/themes/ or ~/Harmonicon/themes/",
-            selected.0
-        );
+    let prefix = theme_source_prefix(&selected.0);
+    let handle = asset_server.load(format!("{prefix}themes/{}/theme.json", selected.0));
+    commands.insert_resource(PendingTheme {
+        handle,
+        prefix,
+        name: selected.0.clone(),
+    });
+}
+
+/// Polls the load [`request_theme_load`] started, applying it to
+/// [`LoadedTheme`] the instant it resolves (a no-op most frames — `Option<Res<PendingTheme>>`
+/// is `None` whenever nothing is in flight).
+fn apply_theme_when_loaded(
+    mut commands: Commands,
+    pending: Option<Res<PendingTheme>>,
+    theme_jsons: Res<Assets<ThemeJson>>,
+    asset_server: Res<AssetServer>,
+    mut theme: ResMut<LoadedTheme>,
+) {
+    let Some(pending) = pending else {
         return;
-    }
-
-    let text = match std::fs::read_to_string(&json_path) {
-        Ok(t) => t,
-        Err(e) => {
-            warn!("Could not read {}: {e}", json_path.display());
-            return;
-        }
     };
 
-    let data: ThemeJson = match serde_json::from_str(&text) {
-        Ok(d) => d,
-        Err(e) => {
-            error!("Failed to parse {}: {e}", json_path.display());
+    match asset_server.load_state(&pending.handle) {
+        LoadState::Loaded => {}
+        LoadState::Failed(err) => {
+            warn!(
+                "Could not load theme.json for '{}' from {}themes/{}/: {err}",
+                pending.name, pending.prefix, pending.name
+            );
+            commands.remove_resource::<PendingTheme>();
             return;
         }
+        _ => return, // still loading
+    }
+    let Some(data) = theme_jsons.get(&pending.handle) else {
+        return;
     };
 
     theme.colors = Some(data.colors.clone());
 
-    let prefix = format!("{source_prefix}themes/{}/", selected.0);
+    let prefix = format!("{}themes/{}/", pending.prefix, pending.name);
 
     if !data.default_background.image.is_empty() {
         theme.default_background =
@@ -445,7 +523,8 @@ fn load_theme(
 
     theme.has_shaders = data.default_menu_button.button_shaders.is_some();
 
-    info!("Loaded theme '{}' from {}", data.name, json_path.display());
+    info!("Loaded theme '{}' from {prefix}", data.name);
+    commands.remove_resource::<PendingTheme>();
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

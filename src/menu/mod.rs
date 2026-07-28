@@ -10,7 +10,6 @@ use crate::app::{
     AppState, GameplayMode, JamProgression, ReturnToHelpAbout, ReturnToOptions, ReturnToPlay,
     ReturnToSongList, SelectedArtist,
 };
-use crate::dialogs::button_material::ButtonMaterialPlugin;
 use crate::song_editor;
 
 mod pages;
@@ -38,7 +37,6 @@ impl Plugin for MenuPlugin {
             .init_resource::<ReturnToPlay>()
             .init_resource::<ReturnToHelpAbout>()
             // The Options, Calibration, Credits, and Theme pages own their own lifecycles.
-            .add_plugins(ButtonMaterialPlugin)
             .add_plugins(pages::options::OptionsPlugin)
             .add_plugins(pages::calibration::CalibrationPlugin)
             .add_plugins(pages::credits::CreditsPlugin)

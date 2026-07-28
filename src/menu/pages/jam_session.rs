@@ -8,7 +8,6 @@ use bevy::prelude::*;
 use bevy_fluent::Localization;
 
 use crate::app::{GameplayMode, JamProgression};
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::localization::LocalizationExt;
 use crate::song::harmonica::Progression;
 use crate::theme::LoadedTheme;
@@ -20,7 +19,6 @@ pub(crate) fn setup_jam_session_menu(
     mut commands: Commands,
 
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -34,8 +32,6 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("jam-session-pick-song"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>,
          mut mode: ResMut<GameplayMode>,
          mut progression: ResMut<JamProgression>,
@@ -53,8 +49,6 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("jam-generate"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::JamGenerate)
         },
@@ -63,8 +57,6 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
 }

@@ -5,14 +5,10 @@
 //! widget, and the `MenuRoot` marker `cleanup_menu` despawns on page exit.
 
 use bevy::ecs::system::IntoObserverSystem;
-use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Out, Over, Pointer, Press};
+use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 
 use crate::dialogs::button;
-use crate::dialogs::button_material::{
-    ButtonMaterials, ButtonShaderLayer, ButtonVisual, ThemedButton, set_button_visual,
-};
 use crate::dialogs::scroll_area::spawn_scroll_area;
 use crate::theme::LoadedTheme;
 
@@ -141,8 +137,6 @@ pub(crate) fn spawn_button<M: 'static>(
     commands: &mut Commands,
     parent: Entity,
     label: &str,
-    theme: &LoadedTheme,
-    btn_mats: &ButtonMaterials,
     on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
 ) {
     let node = Node {
@@ -153,98 +147,14 @@ pub(crate) fn spawn_button<M: 'static>(
         ..default()
     };
 
-    // Children are `Pickable::IGNORE` so the pointer always hits the button
-    // itself (not the text/icon), keeping the hover/press observers below
-    // robust — otherwise picking would target a child and the button would
-    // flicker between hovered/unhovered.
-    //
-    // Themed buttons stay imperative (runtime shader-material handle, optional
-    // icon, z-ordered smoke layer); plain buttons are authored with bsn!. Either
-    // way the click rides along as the caller's dedicated `on_click`.
-    if theme.has_shaders {
-        println!("Creating a shader button with label: {label}");
-
-        let e = commands.spawn((Button, node, ThemedButton)).id();
-
-        // Smoke shader layer — absolute, behind content. Keep its entity so the
-        // pointer observers can swap its material.
-        let layer = commands
-            .spawn((
-                MaterialNode(btn_mats.idle.clone()),
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(0.0),
-                    right: Val::Px(0.0),
-                    top: Val::Px(0.0),
-                    bottom: Val::Px(0.0),
-                    ..default()
-                },
-                ButtonShaderLayer,
-                Pickable::IGNORE,
-            ))
-            .id();
-        commands.entity(e).add_child(layer);
-
-        commands.entity(e).with_children(|b| {
-            // Icon from theme (optional)
-            if let Some(ref icon) = theme.btn_icon {
-                b.spawn((
-                    Node {
-                        width: Val::Px(24.0),
-                        height: Val::Px(24.0),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    ImageNode {
-                        image: icon.clone(),
-                        ..default()
-                    },
-                    Pickable::IGNORE,
-                ));
-            }
-
-            b.spawn((
-                Text::new(label.to_string()),
-                TextFont {
-                    font_size: FontSize::Px(20.0),
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-                Pickable::IGNORE,
-            ));
-        });
-
-        // Themed hover/press visuals via observers, not a
-        // `Changed<Interaction>` system.
-        commands.entity(e).observe(
-            move |_: On<Pointer<Over>>, mats: Res<ButtonMaterials>, mut commands: Commands| {
-                set_button_visual(&mut commands, layer, ButtonVisual::Hover, &mats);
-            },
-        );
-        commands.entity(e).observe(
-            move |_: On<Pointer<Out>>, mats: Res<ButtonMaterials>, mut commands: Commands| {
-                set_button_visual(&mut commands, layer, ButtonVisual::Idle, &mats);
-            },
-        );
-        commands.entity(e).observe(
-            move |_: On<Pointer<Press>>, mats: Res<ButtonMaterials>, mut commands: Commands| {
-                set_button_visual(&mut commands, layer, ButtonVisual::Click, &mats);
-            },
-        );
-
-        // The caller's dedicated click behaviour.
-        commands.entity(e).observe(on_click);
-        commands.entity(parent).add_child(e);
-    } else {
-        println!("Creating a default button with label: {label}");
-        // Plain button: authored declaratively; click + hover ride along as
-        // inline on(...)
-        let e = commands
-            .spawn_scene(button::default(label, on_click))
-            .insert(node)
-            .id();
-        commands.entity(parent).add_child(e);
-    }
+    println!("Creating a default button with label: {label}");
+    // Plain button: authored declaratively; click + hover ride along as
+    // inline on(...)
+    let e = commands
+        .spawn_scene(button::default(label, on_click))
+        .insert(node)
+        .id();
+    commands.entity(parent).add_child(e);
 }
 
 pub(crate) fn cleanup_menu(mut commands: Commands, roots: Query<Entity, With<MenuRoot>>) {

@@ -18,30 +18,6 @@
         "shader":      { "type": "string", "description": "Path to a GLSL shader applied to this image." }
       }
     },
-
-    "state_shaders": {
-      "description": "Per-interaction-state shader paths (WGSL, relative to the theme directory).",
-      "type": "object",
-      "required": ["hover", "click", "idle"],
-      "additionalProperties": false,
-      "properties": {
-        "hover": { "type": "string" },
-        "click": { "type": "string" },
-        "idle":  { "type": "string" }
-      }
-    },
-
-    "state_sounds": {
-      "description": "Per-interaction-state audio cue paths (relative to the theme directory).",
-      "type": "object",
-      "required": ["hover", "click"],
-      "additionalProperties": false,
-      "properties": {
-        "hover": { "type": "string" },
-        "click": { "type": "string" }
-      }
-    },
-
     "button_def": {
       "description": "Appearance of the default button style. Themes control appearance only (background image, icon, shaders, sounds) — never layout/position, which is always the page's own flex flow.",
       "type": "object",
@@ -58,9 +34,7 @@
             "description": { "type": "string" },
             "shaders":     { "$ref": "#/$defs/state_shaders" }
           }
-        },
-        "button_shaders": { "$ref": "#/$defs/state_shaders" },
-        "button_sounds":  { "$ref": "#/$defs/state_sounds" }
+        }
       }
     },
 

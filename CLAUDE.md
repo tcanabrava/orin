@@ -382,6 +382,85 @@ Manual testing needs a mic, audio out, and a display.
     Practice while a recording is in progress does the same, since both
     would otherwise silently repurpose the `Playhead` clock `RecordState::
     open`'s timings are still anchored to.
+  - **The Song Editor has a click track and a Record count-in**
+    (`song_editor::metronome`). Reuses `gameplay::metronome_overlay`'s pure
+    tick math and the same global `MetronomeTempo`/`MetronomeFeel`/
+    `MetronomeMuted`/`MetronomeSounds` resources gameplay and the Bending
+    Trainer already share (so a player's mute preference carries over
+    instead of resetting) — but not that module's own click-driving
+    systems, which are tied to `GameplayClock`; the editor has its own
+    clock (`playback::Playhead`), so `metronome::click_metronome` reads
+    from that instead, sharing only the actual click-selection/audio-spawn
+    logic via a new `metronome_overlay::play_click_if_due` (extracted from
+    that module's own `click_metronome` so both clocks drive the exact
+    same click behavior). `metronome::sync_tempo` keeps `MetronomeTempo`
+    seeded from `EditorState::tempo` continuously (not just once
+    `OnEnter`, since the field is itself live-editable) — safe to write
+    unconditionally since gameplay/the Bending Trainer/the editor are
+    different `AppState`s and only one is ever active. Pressing Play on a
+    *fresh* Record take (not resuming a paused one) doesn't call
+    `record::start_record` immediately: `metronome::begin_count_in` arms a
+    `CountIn` resource for one bar's worth of clicks first (`tick_count_in`
+    counts it down and clicks against its own elapsed-since-start clock,
+    since `Playhead` isn't running yet), and `finish_count_in` hands off to
+    `start_record` for real the instant it reaches zero — split into two
+    systems purely because one system with every parameter both steps need
+    would exceed Bevy's per-system parameter limit. `record::stop_record`
+    also cancels a pending count-in unconditionally (nothing has actually
+    started recording yet at that point, but leaving it ticking would
+    silently start a take moments after the player asked to stop), so
+    every one of its existing callers (the Stop/Finish buttons, every
+    mode-switch-away-from-Record) gets that for free. The status bar shows
+    a "get ready" countdown while counting in, ahead of the drag/record/
+    practice messages `panel::update_status_bar` already prioritized.
+  - **The Song Editor auditions a note's pitch on selection**
+    (`song_editor::audition`): the instant `EditorState::selected_note`
+    (the primary selection) changes to a *different* note id,
+    `audition_on_select` renders a short (0.6 s) blip of its resolved
+    pitch and plays it — confirming a bend/overblow/overdraw actually
+    sounds like what was intended without running Play/Practice or
+    reaching for a real harp. Reuses `audio_system::synth`'s additive
+    harmonica voice via `playback::note_freq`/`render_pcm` — the same
+    synth Play/Practice/Record preview already render with — rather than
+    a separate reference-tone generator (unlike the Bending Trainer's own
+    "Listen" button, which predates this synth and still uses its own
+    simpler sine-only tone), so the audition matches what the note
+    actually sounds like in context. The `PhraseNote` it builds sets
+    `tick: 0` and hands `AUDITION_SECS` to `render_pcm` as `secs_per_tick`
+    with `len: 1` — a trick that renders exactly `AUDITION_SECS` of audio
+    regardless of the note's own on-grid duration, since audition is
+    "how long you need to hear it to judge it," not "how long it plays in
+    the song." Deliberately scoped to selection *changing* — clicking an
+    already-selected note again doesn't replay it (a plain "play this
+    note again" action this doesn't attempt to be), and every selection
+    call site (a fresh placement, clicking an existing note, Ctrl+click,
+    paste) already funnels through the same `selected_note`, so none of
+    them need touching.
+  - **Save/Load outcomes show up in the status bar, not just the log**
+    (`song_editor::save_feedback`). `harpchart::handle_save_chosen`/
+    `handle_load_chosen` and `lesson_form::handle_save_lesson_chosen`/
+    `handle_load_lesson_chosen` used to report every outcome with a bare
+    `println!` — invisible in a normal, non-terminal launch of a packaged
+    build. Each now also calls `SaveFeedback::set` with a localized
+    success/warning/failure message, displayed by `panel::
+    update_status_bar` as its own highest-priority tier (above even a
+    count-in) for `save_feedback::DISPLAY_SECS` (4 s) before falling back
+    to whatever the bar would otherwise show; every outcome is still
+    logged via `info!`/`warn!` too; for developers running from a
+    terminal, that's strictly more visible than the old `println!` (structured,
+    filterable). `lesson_form::serialize_lesson` now returns its
+    validation warnings (empty id/unit, or the manifest not passing its
+    own schema) as `Vec<String>` instead of printing them directly —
+    `save_lesson` folds them into the save's own status ("saved with
+    warnings" instead of a plain "Saved" when there's something to flag)
+    — except the locale-key-pairs-to-add reminder, deliberately left as a
+    console-only `println!`: it's a multi-line block meant to be
+    copy-pasted into a `.ftl` file, not a one-line status. A save/load's
+    *secondary* outcome (the MIDI-backing/processed-MIDI bonus files
+    `harpchart::save_midi_backing` writes; a lesson's own chart write)
+    stays log-only too, same "primary vs. secondary" split — the status
+    bar reports whether the thing the player actually clicked Save/Load
+    for worked, not every file touched along the way.
   - **The Song Editor supports multi-note selection**: `EditorState::
     selected` is a `Vec<u32>`, not a single `Option<u32>` — a plain click
     replaces it wholesale (`select_only`), Ctrl+click toggles one note in
@@ -432,6 +511,32 @@ Manual testing needs a mic, audio out, and a display.
     pasted notes become the new selection — ready to drag into place
     immediately, the same way a fresh `select_or_add` selects what it
     just placed.
+  - **Ctrl+Z/Ctrl+Y undo and redo** (`song_editor::undo`; keyboard wired in
+    `interaction::handle_undo_redo`, buttons in `mod_panel`). Snapshot-
+    based, not command-based: `UndoHistory::record_if_changed` runs every
+    frame `EditorState` changes and diffs its content (`notes` +
+    `tempo_changes` only — deliberately narrower than `EditorState` itself,
+    excluding transient fields like `selected`/`scroll_beat`/`dragging`)
+    against the last-seen snapshot, pushing the *previous* one onto the
+    undo stack only when they actually differ. This needs no
+    instrumentation at each note-mutating call site (a grid click, a drag
+    release, Delete, paste, Erase/Remove, MIDI import, ...) — whichever of
+    them just ran, the diff catches it on the next check, since `undo`/
+    `redo` themselves also keep the cached "last" snapshot in sync (so a
+    `track_changes` pass immediately after either is a correctly-detected
+    no-op, not a spurious extra step or a redo-stack-clearing "new edit").
+    The one deliberate exception is live recording
+    (`record::RecordState::active`): a note's length grows every single
+    frame while a take is running, so diffing continuously would flood the
+    history with one entry per frame — `track_changes` simply skips while
+    a take is active, so the *entire* take (onset through Stop/Finish,
+    including any pauses) becomes one undo step. Capped at 100 entries
+    (`undo::HISTORY_LIMIT`); a fresh edit after an undo clears the redo
+    stack, same rule every undo implementation follows. The Undo/Redo
+    buttons dim (not disable) when their stack is empty
+    (`panel::update_undo_redo_buttons`) — clicking still no-ops either way,
+    same as the keyboard shortcut, just with a visible signal it won't do
+    anything.
   - **The Song Editor can author lessons, not just plain songs**
     (`song_editor::lesson_form`): a "Record Song"/"Record Lesson" toggle
     (`EditorState::content_kind: ContentKind`, its own click-to-cycle
@@ -913,6 +1018,44 @@ Manual testing needs a mic, audio out, and a display.
   `loc.msg()` (Fluent); a `build.rs` scan + `LocalizedStr` newtype fail the
   build on raw literals. Locales: en-US, pt-BR, es-ES — add keys to all;
   `locales_define_the_same_keys` walks the directory and enforces parity.
+  Runtime *loading* of those locales (`localization::load_locales`) is a
+  fixed `LOCALES` list, each loaded by explicit path
+  (`locales/<lang>/main.ftl.ron`), not `AssetServer::load_folder` — the
+  wasm build's HTTP asset reader can't enumerate a directory
+  (`bevy_asset::io::wasm::HttpWasmAssetReader`), and `load_folder` needing
+  exactly that is what used to hard-panic the game on startup under wasm
+  (`bevy_fluent`'s `LocalizationBuilder::build` indexing an empty map).
+  `locales_const_matches_the_assets_directory` keeps `LOCALES` honest
+  against what's actually on disk, since nothing else does anymore now
+  that nothing scans the directory at runtime. The same directory-listing
+  constraint applies to anything else that might run under wasm.
+  `assets_management`'s song/note-theme/harmonica-model discovery
+  (`scan_all_songs`, `scan_note_themes`, `scan_harmonica_models`,
+  `scan_ui_themes`) takes the build-time-manifest approach instead: each is
+  now two `#[cfg]`-gated implementations under the same name — the original
+  `std::fs::read_dir`-based body, unchanged, behind
+  `#[cfg(not(target_arch = "wasm32"))]` (this is what keeps native dynamic:
+  a player can still drop a new song into `assets/songs/` or
+  `~/Harmonicon/songs/` with no rebuild — a fixed manifest like
+  localization's `LOCALES` isn't an option here, unlike the fixed set of
+  three shipped locales), and a `#[cfg(target_arch = "wasm32")]` sibling
+  that reads a `build.rs`-generated manifest instead
+  (`generate_wasm_asset_manifest`, `assets_management::manifest`'s
+  `include!(concat!(env!("OUT_DIR"), "/asset_manifest.rs"))`). Generating
+  that manifest at build time — rather than runtime — works specifically
+  because a build script always runs on the native host and can do a real
+  `std::fs::read_dir` walk of `assets/` regardless of the crate's own
+  `--target`; `build.rs`'s `generate_wasm_asset_manifest` mirrors each scan
+  function's discovery rule exactly (e.g. the first `*.harpchart` file
+  directly under a song's `song/` subfolder) so the two implementations
+  can't drift. The `~/Harmonicon` external-folder equivalent has no wasm
+  version at all — no home directory concept in a browser — which the
+  native functions already handle gracefully (`dirs::home_dir()` returning
+  `None`), so nothing wasm-specific was needed there. One related gap this
+  doesn't cover: UI *theme* discovery (names) now works under wasm, but
+  `theme::load_theme` still reads `theme.json`'s actual *contents* via a
+  raw `std::fs::read_to_string` rather than `AssetServer` — a different
+  mechanism (file read, not directory list) that needs its own fix.
 - **Message registration is enforced:** `build.rs` also scans for every
   `#[derive(Message)]` type and fails the build if it's never registered
   with `.add_message::<T>()` anywhere — an unregistered message otherwise
@@ -1016,7 +1159,20 @@ Manual testing needs a mic, audio out, and a display.
   it happens to be nested inside, regardless of this specific bug.
 - **Lessons**: engine, all five primitives, and the full wave 1 + wave 2
   content pass (Units 1–3, 19 lessons) are shipped — see
-  `docs/lessons_plan.md`. Left: Unit 4 "jazz", explicitly gated on the 0.6
-  milestone (needs its own chord-tone tables and a jazz-blues
-  `Progression` variant — not a blocking task for 0.4/0.5).
+  `docs/lessons_plan.md`. Unit 4 "jazz"'s engine prerequisites are also done
+  (`song::harmonica::ii_v_i_chords`, `ChordQuality::{Major7,
+  HalfDiminished7,Dominant7Alt}`, `Progression::JazzBlues`); what's left is
+  content only, the same rights/judgment-sensitive gap as blues content
+  (`TODO.md`).
 - Remaining 0.4 work (recorded backing loops) — see `ROADMAP.md`/`PLAN.md`.
+- **Song editor: known gaps**, found on a harmonica-player/audio/UX pass
+  over the editor (2026-07-27; actionable list in `TODO.md`). All genuinely
+  absent, not just hard to find: manual note placement snaps only to
+  straight 16ths (`TICKS_PER_BEAT = 4`, no triplet/shuffle-aware snap)
+  even though shuffle is this game's core blues feel elsewhere
+  (`MetronomeFeel::Shuffle`) — only Record mode's live-mic capture
+  (unquantized onsets) can land a note off that grid. (Multi-selection
+  *does* already support moving a lick to a different hole/chord —
+  dragging a selected group moves every member together,
+  `grid::group_move_targets`/`group_move_valid`, gated by `pitch_compatible`
+  — an initial pass wrongly flagged this as missing; it isn't.)

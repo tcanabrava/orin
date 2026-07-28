@@ -20,7 +20,6 @@ use crate::song::harmonica::{Position, Progression};
 use crate::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_button, spawn_menu_root};
 
@@ -102,7 +101,6 @@ pub(crate) fn setup_jam_generate_menu(
     mut commands: Commands,
     config: Res<JamGenerateConfig>,
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -176,8 +174,6 @@ pub(crate) fn setup_jam_generate_menu(
         &mut commands,
         root,
         &loc.msg("jam-generate-start"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>,
          config: Res<JamGenerateConfig>,
          theme: Res<LoadedTheme>,
@@ -217,8 +213,6 @@ pub(crate) fn setup_jam_generate_menu(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::JamSessionMenu)
         },

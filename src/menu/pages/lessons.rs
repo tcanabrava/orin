@@ -24,7 +24,6 @@ use crate::song::harmonica::Progression;
 use crate::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_button, spawn_menu_root};
 
@@ -142,7 +141,6 @@ pub(crate) fn setup_lessons_menu(
     profile: Res<PlayerProfile>,
     selected_unit: Res<SelectedUnitIx>,
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -166,7 +164,7 @@ pub(crate) fn setup_lessons_menu(
             ))
             .id();
         commands.entity(root).add_child(msg);
-        spawn_back_to_play(&mut commands, root, &theme, &btn_mats, &loc);
+        spawn_back_to_play(&mut commands, root, &loc);
         return;
     }
 
@@ -212,7 +210,7 @@ pub(crate) fn setup_lessons_menu(
     commands.entity(root).add_child(list);
     populate_lesson_rows(&mut commands, list, units[ix].1.as_slice(), &profile, &loc);
 
-    spawn_back_to_play(&mut commands, root, &theme, &btn_mats, &loc);
+    spawn_back_to_play(&mut commands, root, &loc);
 }
 
 /// Swaps the scrollbox's rows for the newly selected unit's. Runs only
@@ -379,16 +377,12 @@ fn spawn_reader_line(commands: &mut Commands, root: Entity, text: String, color:
 fn spawn_back_to_play(
     commands: &mut Commands,
     root: Entity,
-    theme: &LoadedTheme,
-    btn_mats: &ButtonMaterials,
     loc: &Localization,
 ) {
     spawn_button(
         commands,
         root,
         &loc.msg("back"),
-        theme,
-        btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
 }
@@ -401,7 +395,6 @@ pub(crate) fn setup_lesson_reader(
     lessons: Res<AvailableLessons>,
     profile: Res<PlayerProfile>,
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let entry = selected
@@ -415,7 +408,7 @@ pub(crate) fn setup_lesson_reader(
     let root = spawn_menu_root(&mut commands, &title, None, &theme, "Lessons");
 
     let Some(entry) = entry else {
-        spawn_back_to_lessons(&mut commands, root, &theme, &btn_mats, &loc);
+        spawn_back_to_lessons(&mut commands, root, &loc);
         return;
     };
 
@@ -472,8 +465,6 @@ pub(crate) fn setup_lesson_reader(
                 &mut commands,
                 root,
                 &loc.msg("lesson-start"),
-                &theme,
-                &btn_mats,
                 move |_: On<Pointer<Click>>,
                       asset_server: Res<AssetServer>,
                       mut mode: ResMut<GameplayMode>,
@@ -509,8 +500,6 @@ pub(crate) fn setup_lesson_reader(
                 &mut commands,
                 root,
                 &loc.msg("lesson-mark-done"),
-                &theme,
-                &btn_mats,
                 move |_: On<Pointer<Click>>,
                       mut profile: ResMut<PlayerProfile>,
                       mut page: ResMut<NextState<MenuPage>>| {
@@ -526,22 +515,18 @@ pub(crate) fn setup_lesson_reader(
         None => {}
     }
 
-    spawn_back_to_lessons(&mut commands, root, &theme, &btn_mats, &loc);
+    spawn_back_to_lessons(&mut commands, root, &loc);
 }
 
 fn spawn_back_to_lessons(
     commands: &mut Commands,
     root: Entity,
-    theme: &LoadedTheme,
-    btn_mats: &ButtonMaterials,
     loc: &Localization,
 ) {
     spawn_button(
         commands,
         root,
         &loc.msg("back"),
-        theme,
-        btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Lessons),
     );
 }

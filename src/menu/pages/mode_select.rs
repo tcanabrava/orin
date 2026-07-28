@@ -7,7 +7,6 @@ use bevy::prelude::*;
 use bevy_fluent::Localization;
 
 use crate::app::GameplayMode;
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
@@ -16,9 +15,7 @@ use crate::menu::scene::{spawn_button, spawn_menu_root};
 
 pub(crate) fn setup_mode_select(
     mut commands: Commands,
-
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -32,8 +29,6 @@ pub(crate) fn setup_mode_select(
         &mut commands,
         root,
         &loc.msg("play-2d"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>,
          mut mode: ResMut<GameplayMode>,
          mut page: ResMut<NextState<MenuPage>>| {
@@ -45,8 +40,6 @@ pub(crate) fn setup_mode_select(
         &mut commands,
         root,
         &loc.msg("play-3d"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>,
          mut mode: ResMut<GameplayMode>,
          mut page: ResMut<NextState<MenuPage>>| {
@@ -58,8 +51,6 @@ pub(crate) fn setup_mode_select(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
 }

@@ -10,7 +10,6 @@ use bevy_fluent::Localization;
 
 use crate::app::{AppState, SelectedArtist, SelectedSong};
 use crate::assets_management::AvailableSongs;
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
 use crate::theme::LoadedTheme;
@@ -23,7 +22,6 @@ pub(crate) fn setup_song_list(
     songs: Res<AvailableSongs>,
     selected_artist: Res<SelectedArtist>,
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let subtitle = format!("by {}", selected_artist.0);
@@ -45,8 +43,6 @@ pub(crate) fn setup_song_list(
                 &mut commands,
                 root,
                 &song.name,
-                &theme,
-                &btn_mats,
                 move |_: On<Pointer<Click>>,
                       asset_server: Res<AssetServer>,
                       mut state: ResMut<NextState<AppState>>,
@@ -63,8 +59,6 @@ pub(crate) fn setup_song_list(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::ArtistList)
         },

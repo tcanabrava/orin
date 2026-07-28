@@ -10,7 +10,6 @@ use bevy_fluent::Localization;
 
 use crate::app::{GameplayMode, SelectedArtist};
 use crate::assets_management::{AvailableSongs, SongsRescanned};
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
@@ -22,7 +21,6 @@ pub(crate) fn setup_artist_list(
 
     songs: Res<AvailableSongs>,
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -56,8 +54,6 @@ pub(crate) fn setup_artist_list(
                 &mut commands,
                 root,
                 &label,
-                &theme,
-                &btn_mats,
                 move |_: On<Pointer<Click>>,
                       mut selected: ResMut<SelectedArtist>,
                       mut page: ResMut<NextState<MenuPage>>| {
@@ -71,8 +67,6 @@ pub(crate) fn setup_artist_list(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         // ArtistList is shared by two flows — Play Song (via ModeSelect) and
         // Jam Session's "Pick a Song" — that set `GameplayMode` before
         // navigating here, so it doubles as the flag for which page Back

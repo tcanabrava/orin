@@ -20,9 +20,8 @@ use bevy_fluent::Localization;
 
 use crate::assets_management::{AvailableThemes, SelectedTheme, ThemesRescanned};
 use crate::dialogs::button;
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::localization::LocalizationExt;
-use crate::theme::{LoadedTheme, theme_source_prefix};
+use crate::theme::{theme_source_prefix};
 
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button};
@@ -67,8 +66,6 @@ fn setup(
     themes: Res<AvailableThemes>,
     selected: Res<SelectedTheme>,
     asset_server: Res<AssetServer>,
-    theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     // ── Root: full-screen column ───────────────────────────────────────────────
@@ -171,8 +168,6 @@ fn setup(
         &mut commands,
         root,
         &loc.msg("theme-back-to-options"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
     );
 }

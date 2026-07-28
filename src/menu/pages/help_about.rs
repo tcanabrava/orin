@@ -8,7 +8,6 @@ use bevy::prelude::*;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
@@ -62,9 +61,7 @@ fn open_in_default_app(path: &std::path::Path) -> std::io::Result<()> {
 
 pub(crate) fn setup_help_about_menu(
     mut commands: Commands,
-
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -78,8 +75,6 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("help-documentation"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>,
          mut status: Query<&mut Text, With<DocsStatusLabel>>,
          loc: Res<Localization>| {
@@ -98,24 +93,18 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("menu-about"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::About),
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("menu-tutorial"),
-        &theme,
-        &btn_mats,
         tutorial::start_tutorial_tour,
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("menu-credits"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut state: ResMut<NextState<AppState>>| {
             state.set(AppState::Credits)
         },
@@ -136,17 +125,13 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
 }
 
 pub(crate) fn setup_about_page(
     mut commands: Commands,
-
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: Res<Localization>,
 ) {
     let root = spawn_menu_root(
@@ -189,8 +174,6 @@ pub(crate) fn setup_about_page(
         &mut commands,
         root,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::HelpAbout)
         },

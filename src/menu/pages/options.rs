@@ -33,7 +33,6 @@ use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button, spawn_menu_root};
 
 use crate::dialogs::algo_picker::{algo_labels, on_algo_selected, spawn_algo_explanation};
 use crate::dialogs::button;
-use crate::dialogs::button_material::ButtonMaterials;
 use crate::dialogs::combobox;
 
 /// Owns the Options page: builds it on entry, tears it down on exit, and runs
@@ -154,7 +153,6 @@ fn setup_options_menu(
     asset_server: Res<AssetServer>,
     images: ResMut<Assets<Image>>,
     theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     show_numbers: Res<ShowNoteNumbers>,
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
@@ -219,7 +217,7 @@ fn setup_options_menu(
         fullscreen,
         colorblind_palette,
     );
-    spawn_right_column(&mut commands, right_layout, theme, btn_mats, &loc);
+    spawn_right_column(&mut commands, right_layout, &loc);
 }
 
 fn spawn_left_column(
@@ -305,24 +303,18 @@ fn spawn_left_column(
 fn spawn_right_column(
     commands: &mut Commands,
     parent: Entity,
-    theme: Res<LoadedTheme>,
-    btn_mats: Res<ButtonMaterials>,
     loc: &Localization,
 ) {
     spawn_button(
         commands,
         parent,
         "Theme",
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Theme),
     );
     spawn_button(
         commands,
         parent,
         &loc.msg("options-calibrate-input-lag"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut state: ResMut<NextState<AppState>>| {
             state.set(AppState::Calibration)
         },
@@ -331,8 +323,6 @@ fn spawn_right_column(
         commands,
         parent,
         &loc.msg("back"),
-        &theme,
-        &btn_mats,
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
 }
