@@ -385,8 +385,8 @@ fn set_selected_phrase_learned(
         return;
     };
     let record = profile.songs.entry(key).or_default();
-    if let Some(section_key) = super::adaptive_difficulty::section_keys(&adaptive.sections)
-        .get(selected.0)
+    if let Some(section_key) =
+        super::adaptive_difficulty::section_keys(&adaptive.sections).get(selected.0)
     {
         record.phrase_learned.insert(section_key.clone(), value);
     }

@@ -44,16 +44,18 @@ pub const C_BLOW_PADDY_RICHTER: [&str; 10] =
 /// Natural-minor-tuned C-harp blow notes: a tonic minor triad (root, ♭3rd,
 /// 5th) repeating across octaves, the minor-tuning counterpart of
 /// [`C_BLOW`]'s major triad — see [`natural_minor_harp`].
-pub const C_BLOW_NATURAL_MINOR: [&str; 10] =
-    ["C4", "D#4", "G4", "C5", "D#5", "G5", "C6", "D#6", "G6", "C7"];
+pub const C_BLOW_NATURAL_MINOR: [&str; 10] = [
+    "C4", "D#4", "G4", "C5", "D#5", "G5", "C6", "D#6", "G6", "C7",
+];
 /// Natural-minor-tuned C-harp draw notes: the same Richter draw scale-degree
 /// slot per hole as [`C_DRAW`] (2nd/5th/7th on the low holes, 2nd/4th/6th/7th
 /// above), reinterpreted with the natural minor scale's flatted degrees —
 /// see [`natural_minor_harp`]. Sharp-spelled (D#/G#, not Eb/Ab) to match
 /// this crate's one note-spelling convention (`audio_system::midi::
 /// NOTE_NAMES`).
-pub const C_DRAW_NATURAL_MINOR: [&str; 10] =
-    ["D4", "G4", "A#4", "D5", "F5", "G#5", "A#5", "D6", "F6", "G#6"];
+pub const C_DRAW_NATURAL_MINOR: [&str; 10] = [
+    "D4", "G4", "A#4", "D5", "F5", "G#5", "A#5", "D6", "F6", "G#6",
+];
 
 /// Blow notes with the slide button pressed: each a half-step above the
 /// unslid blow note.

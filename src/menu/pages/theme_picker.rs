@@ -21,7 +21,7 @@ use bevy_fluent::Localization;
 use crate::assets_management::{AvailableThemes, SelectedTheme, ThemesRescanned};
 use crate::dialogs::button;
 use crate::localization::LocalizationExt;
-use crate::theme::{theme_source_prefix};
+use crate::theme::theme_source_prefix;
 
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button};

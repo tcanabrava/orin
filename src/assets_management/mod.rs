@@ -252,8 +252,14 @@ fn scan_note_themes(
     mut available_2d: ResMut<AvailableNoteThemes2d>,
     mut available_3d: ResMut<AvailableNoteThemes3d>,
 ) {
-    available_2d.0 = manifest::NOTE_THEMES_2D.iter().map(|s| s.to_string()).collect();
-    available_3d.0 = manifest::NOTE_THEMES_3D.iter().map(|s| s.to_string()).collect();
+    available_2d.0 = manifest::NOTE_THEMES_2D
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    available_3d.0 = manifest::NOTE_THEMES_3D
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     info!(
         "Found note themes — 2D: {:?}  3D: {:?}",
         available_2d.0, available_3d.0
@@ -354,7 +360,10 @@ fn scan_harmonica_models(mut available: ResMut<AvailableHarmonicas>) {
 /// wasm sibling of the native `scan_harmonica_models` above.
 #[cfg(target_arch = "wasm32")]
 fn scan_harmonica_models(mut available: ResMut<AvailableHarmonicas>) {
-    available.0 = manifest::HARMONICA_MODELS.iter().map(|s| s.to_string()).collect();
+    available.0 = manifest::HARMONICA_MODELS
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     info!(
         "Found {} harmonica model(s): {:?}",
         available.0.len(),

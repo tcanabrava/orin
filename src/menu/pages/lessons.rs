@@ -374,11 +374,7 @@ fn spawn_reader_line(commands: &mut Commands, root: Entity, text: String, color:
     commands.entity(root).add_child(line);
 }
 
-fn spawn_back_to_play(
-    commands: &mut Commands,
-    root: Entity,
-    loc: &Localization,
-) {
+fn spawn_back_to_play(commands: &mut Commands, root: Entity, loc: &Localization) {
     spawn_button(
         commands,
         root,
@@ -518,11 +514,7 @@ pub(crate) fn setup_lesson_reader(
     spawn_back_to_lessons(&mut commands, root, &loc);
 }
 
-fn spawn_back_to_lessons(
-    commands: &mut Commands,
-    root: Entity,
-    loc: &Localization,
-) {
+fn spawn_back_to_lessons(commands: &mut Commands, root: Entity, loc: &Localization) {
     spawn_button(
         commands,
         root,

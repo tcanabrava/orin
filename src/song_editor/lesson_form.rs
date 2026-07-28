@@ -356,7 +356,10 @@ pub(super) fn serialize_lesson(state: &EditorState) -> (String, Vec<String>) {
 /// manifest itself did save — the same "primary vs. secondary outcome"
 /// split `harpchart::save_midi_backing` already draws for its own bonus
 /// files.
-pub(super) fn save_lesson(path: &std::path::Path, state: &EditorState) -> Result<Vec<String>, String> {
+pub(super) fn save_lesson(
+    path: &std::path::Path,
+    state: &EditorState,
+) -> Result<Vec<String>, String> {
     let (json, warnings) = serialize_lesson(state);
     for w in &warnings {
         warn!("Song editor: lesson {w}");
@@ -508,10 +511,8 @@ pub(super) fn handle_save_lesson_chosen(
                 ));
             }
             Ok(warnings) => {
-                feedback.set(loc.msg_args(
-                    "editor-save-warning",
-                    &[("detail", warnings.join("; "))],
-                ));
+                feedback
+                    .set(loc.msg_args("editor-save-warning", &[("detail", warnings.join("; "))]));
             }
             Err(detail) => {
                 feedback.set(loc.msg_args("editor-save-failed", &[("detail", detail)]));
@@ -540,10 +541,7 @@ pub(super) fn handle_load_lesson_chosen(
                 ));
             }
             Err(detail) => {
-                warn!(
-                    "Song editor: load failed ({}): {detail}",
-                    ev.path.display()
-                );
+                warn!("Song editor: load failed ({}): {detail}", ev.path.display());
                 feedback.set(loc.msg_args("editor-load-failed", &[("detail", detail)]));
             }
         }

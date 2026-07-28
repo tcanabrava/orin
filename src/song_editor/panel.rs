@@ -334,8 +334,11 @@ pub(super) fn update_status_bar(
     **text = if let Some(msg) = feedback.current() {
         msg.to_string()
     } else if let Some(secs) = count_in.remaining_secs_display() {
-        loc.msg_args("editor-count-in-status", &[("seconds", format!("{secs:.1}"))])
-            .to_string()
+        loc.msg_args(
+            "editor-count-in-status",
+            &[("seconds", format!("{secs:.1}"))],
+        )
+        .to_string()
     } else if !state.drag_msg.is_empty() {
         state.drag_msg.to_string()
     } else if record.active {

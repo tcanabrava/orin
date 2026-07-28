@@ -300,11 +300,7 @@ fn spawn_left_column(
     spawn_colorblind_palette_toggle(commands, parent, colorblind_palette.0, loc);
 }
 
-fn spawn_right_column(
-    commands: &mut Commands,
-    parent: Entity,
-    loc: &Localization,
-) {
+fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localization) {
     spawn_button(
         commands,
         parent,

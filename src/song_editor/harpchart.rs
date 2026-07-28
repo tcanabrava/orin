@@ -546,7 +546,10 @@ pub(super) fn handle_save_chosen(
                 ));
             }
             Err(e) => {
-                warn!("Song editor: save failed (write {}): {e}", ev.path.display());
+                warn!(
+                    "Song editor: save failed (write {}): {e}",
+                    ev.path.display()
+                );
                 feedback.set(loc.msg_args("editor-save-failed", &[("detail", e.to_string())]));
             }
         }

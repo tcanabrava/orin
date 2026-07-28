@@ -199,10 +199,7 @@ fn progression_cycles_backward_and_wraps() {
 fn jazz_blues_ends_in_a_ii_v_i_cadence() {
     let bars = progression_bars("C", Progression::JazzBlues);
     // Bars 1-7 (0-indexed 0-6) are the ordinary blues form.
-    assert_eq!(
-        roots(&bars)[..7],
-        ["C", "F", "C", "C", "F", "F", "C"]
-    );
+    assert_eq!(roots(&bars)[..7], ["C", "F", "C", "C", "F", "F", "C"]);
     // Bar 8 is a VI7 secondary dominant (A7 in C) setting up ii-V.
     assert_eq!(bars[7], ("A".to_string(), ChordQuality::Dominant7));
     // Bars 9-10 (0-indexed 8-9) are a genuine ii7-V7.
@@ -253,7 +250,10 @@ fn chord_intervals_are_dominant_or_minor_seventh() {
 #[test]
 fn chord_intervals_cover_the_jazz_qualities() {
     assert_eq!(chord_intervals(ChordQuality::Major7), [0, 4, 7, 11]);
-    assert_eq!(chord_intervals(ChordQuality::HalfDiminished7), [0, 3, 6, 10]);
+    assert_eq!(
+        chord_intervals(ChordQuality::HalfDiminished7),
+        [0, 3, 6, 10]
+    );
     assert_eq!(
         chord_intervals(ChordQuality::Dominant7Alt),
         [0, 4, 10, 1, 3, 8]
@@ -573,11 +573,15 @@ fn natural_minor_blow_is_a_tonic_minor_triad() {
     };
     assert_eq!(
         l.blow.unwrap(),
-        vec!["C4", "D#4", "G4", "C5", "D#5", "G5", "C6", "D#6", "G6", "C7"]
+        vec![
+            "C4", "D#4", "G4", "C5", "D#5", "G5", "C6", "D#6", "G6", "C7"
+        ]
     );
     assert_eq!(
         l.draw.unwrap(),
-        vec!["D4", "G4", "A#4", "D5", "F5", "G#5", "A#5", "D6", "F6", "G#6"]
+        vec![
+            "D4", "G4", "A#4", "D5", "F5", "G#5", "A#5", "D6", "F6", "G#6"
+        ]
     );
     assert!(matches!(bending_profile, BendingProfile::NaturalMinor));
 }
