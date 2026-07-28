@@ -31,8 +31,7 @@
           "additionalProperties": false,
           "properties": {
             "image_file":  { "type": "string" },
-            "description": { "type": "string" },
-            "shaders":     { "$ref": "#/$defs/state_shaders" }
+            "description": { "type": "string" }
           }
         }
       }
