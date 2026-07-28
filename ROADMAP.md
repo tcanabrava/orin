@@ -82,15 +82,26 @@ remains:
   yaml` builds/DMGs both architectures at tag time, `macos.yaml` checks the
   same bundling on every push/PR so a regression doesn't wait for a tag).
 - Explore web build (Bevy → wasm; mic via Web Audio) for zero-install
-  trial. The crate itself already compiles clean for `wasm32-unknown-
-  unknown` (lib and the main binary — see `Cargo.toml`'s wasm32 target
-  section for the two dependency-level fixes this needed); what's still
-  entirely unstarted is everything to actually run in a browser: a real
-  build pipeline (`wasm-bindgen`/`trunk`, an `index.html`), a Web Audio
-  bridge for mic capture in place of `cpal`, and a replacement for the
-  `dirs`/`std::fs`-based settings/profile persistence and the
-  `~/Harmonicon` external-folder watcher (`notify-debouncer-full`), none
-  of which have browser equivalents.
+  trial. The crate compiles clean for `wasm32-unknown-unknown` (see
+  `Cargo.toml`'s wasm32 target section), and `trunk build`/`serve`
+  (`index.html`, `Trunk.toml`) now produces a real, servable bundle — the
+  app genuinely boots in a browser (verified with headless Chromium):
+  WGPU initializes, asset scanning runs, mic capture fails gracefully
+  exactly like a real permission-less browser would (`MicStatus::Failed`,
+  no panic). It doesn't yet get further than that: `asset_server.
+  load_folder("locales")` (`src/localization.rs`) needs directory
+  listing, which the wasm HTTP asset reader can't do ("Reading
+  directories is not supported with the HttpWasmAssetReader") — Bevy's
+  own `bevy_fluent` panics trying to index an empty locale-entries map as
+  a result. Fixing that means loading each locale's `.ftl` files by an
+  explicit, known filename list instead of `load_folder`'s directory scan
+  — likely the same fix `assets_management`'s own directory-scanning song/
+  theme/lesson discovery will eventually need too, since none of it can
+  enumerate a wasm HTTP directory either. Beyond that: a Web Audio bridge
+  for mic capture in place of `cpal`, and a replacement for the `dirs`/
+  `std::fs`-based settings/profile persistence and the `~/Harmonicon`
+  external-folder watcher (`notify-debouncer-full`), none of which have
+  browser equivalents.
 - Accessibility: mirrored layout for left-handed players, fully
   keyboard-navigable menus. (Colorblind-safe note palettes are done — an
   Options-page toggle swaps the Play2D/Play3D note highway's blow/draw
