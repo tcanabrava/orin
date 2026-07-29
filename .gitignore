@@ -20,6 +20,11 @@ scripts/.venv/
 # mdbook build output (the source lives in docs/book/src/)
 /docs/book/book/
 
+# mdbook build output for the contributor architecture book (the source
+# lives in contributing/src/); also its mdbook-plantuml render cache
+/contributing/book/
+/contributing/.mdbook-plantuml-cache/
+
 # trunk's wasm build output (the source is index.html + Trunk.toml)
 /dist/
 

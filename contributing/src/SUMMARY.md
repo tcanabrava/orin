@@ -1,0 +1,20 @@
+# Summary
+
+[Introduction](introduction.md)
+
+- [System Overview](overview.md)
+- [The Plugin Architecture](plugin-architecture.md)
+- [Application States and Modes](app-states.md)
+- [The Audio Input Pipeline](audio-pipeline.md)
+- [The Gameplay Clock](gameplay-clock.md)
+- [The Scoring System](scoring-system.md)
+- [Chart Format and Asset Loading](chart-and-assets.md)
+- [The Song Editor](song-editor-architecture.md)
+- [Jam Session](jam-session-architecture.md)
+- [The Lessons Engine](lessons-engine.md)
+- [Localization and Theming](localization-and-theming.md)
+- [Persistence](persistence.md)
+- [Native vs. WebAssembly](cross-platform-wasm.md)
+- [Module Boundaries and Dependency Rules](module-dependency-rules.md)
+- [Testing Strategy](testing-strategy.md)
+- [Glossary](glossary.md)

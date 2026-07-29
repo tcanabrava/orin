@@ -1,0 +1,18 @@
+[book]
+title = "Harmonicon — System Architecture"
+description = "A contributor's guide to Harmonicon's internal architecture: how the major subsystems are put together, how they talk to each other, and why they were built the way they were."
+authors = ["Harmonicon contributors"]
+language = "en"
+src = "src"
+
+[preprocessor.plantuml]
+# Requires a `plantuml` executable on PATH (or `java -jar plantuml.jar`,
+# which mdbook-plantuml also auto-detects). See contributing/README.md for
+# install instructions per platform. If you've installed PlantUML as a jar
+# rather than a native package, uncomment and point this at it instead:
+# plantuml_cmd = "java -jar /path/to/plantuml.jar"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/tcanabrava/harmonicon"
