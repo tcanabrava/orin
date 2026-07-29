@@ -13,6 +13,12 @@ without writing JSON directly.
   its body to move it. The **mod panel** on the side sets the selected
   note's technique: Blow/Draw direction, bend depth, overblow/overdraw,
   slide (chromatic only), wah/vibrato rate, or delete it outright.
+  **Ctrl+click** adds or removes a note from the selection instead of
+  replacing it, so you can select several at once; dragging any one of
+  them moves the whole group together, keeping their relative positions
+  (mod-panel technique edits still only ever act on the last-clicked
+  note — editing several notes' technique at once has no single obvious
+  meaning).
 - **Record mode** — play your harmonica and have it write notes onto the
   grid for you, with its own Play/Pause/Stop/Finish transport (see
   [Recording notes live](#recording-notes-live) below).
@@ -29,12 +35,43 @@ under the grid — and it doubles as a **minimap**: every note shows as a
 tiny blow/draw-colored rectangle at its place in the full song, so you can
 see at a glance where the phrases are and drag straight to them.
 
+## Grid snap: Straight, Shuffle, Triplet
+
+The **Grid Snap** button (next to the harmonica-type toggle) cycles
+between three subdivisions of each beat, controlling where a note lands
+when you place, move, or resize it:
+
+- **Straight 16ths** — the default; four evenly-spaced positions per beat.
+- **Shuffle** — a 2:1 long-short swing pair, the classic blues shuffle
+  bounce (the first and third notes of an 8th-note triplet, skipping the
+  middle one).
+- **Triplet** — three equal subdivisions per beat, for licks and turns
+  that are genuinely triplet-based (slow 12/8 blues, train rhythms).
+
+Straight 16th positions and triplet positions are marked on the grid in
+two different colors (see the color legend) so you can see at a glance
+which subdivisions are which, regardless of which mode is currently
+active. Switching modes only changes where the *next* placement, move, or
+resize lands — it never moves notes that are already sitting off-grid.
+
 ## Chart metadata
 
 The meta-form covers a chart's song-level fields: music tempo, harp key,
 playing position, harmonica type (diatonic/chromatic, and hole layout),
 background music file, and song name/author — everything under `song` and
 `harmonica` in the `.harpchart` format.
+
+### Tempo changes
+
+A song doesn't have to hold one flat tempo. Selecting the **Tempo** tool
+(next to Select/Erase/Remove) and clicking the ruler above the grid drops
+a tempo-change marker at that beat, shown as a `♩=<bpm>` label on the grid
+header; clicking near an existing marker removes it instead. Each new
+marker starts at a step above whatever tempo is already in effect there,
+so building up to a faster or slower section is a few clicks. The
+waveform (if the chart has one) and the beat/bar grid both lay out
+against the real tempo map, so they stay aligned across a tempo change
+instead of drifting.
 
 ### Scale and note colors
 
@@ -56,6 +93,15 @@ The **Scale** field, just above the mod panel, picks that reference scale:
 
 It defaults to 1st Position, and only affects this warning color — it
 never changes which notes you can actually place.
+
+### Auditioning a note
+
+Clicking a note plays a short blip of exactly what it sounds like — the
+same synthesized harmonica voice used everywhere else in the editor — so
+you can confirm a bend, overblow, overdraw, or slide actually sounds
+right without reaching for Play/Practice or a real harp. It only fires
+when the selection actually changes to a *different* note; clicking the
+same note again doesn't replay it.
 
 ## Authoring a lesson
 
@@ -144,6 +190,17 @@ Harmonicon can't play a raw MIDI file directly. That backing track plays
 automatically both in the editor's own Play preview and, once the song is
 in place, during the real game.
 
+## Metronome and count-in
+
+The 🔔 **Metronome** button (next to Undo/Redo) toggles a click track that
+plays during Record, Play, and Practice — the same click, tempo, and
+shuffle/straight feel setting as gameplay's own metronome, so your mute
+preference carries over between the two. Starting a *fresh* Record take
+(not resuming a paused one) counts in one full bar first, with a
+"get ready" countdown in the status bar, before recording actually
+begins — enough time to get your harmonica up and settled into the groove
+before the take starts.
+
 ## Recording notes live
 
 **Record mode** writes a chart by ear, with a transport of its own:
@@ -200,15 +257,41 @@ incrementally. If the chart has background music set, it plays
 automatically while you record, the same as Play and Practice, so you can
 play along to it.
 
+## Undo and redo
+
+The ↶ **Undo** / ↷ **Redo** buttons (or `Ctrl+Z` / `Ctrl+Y`) step back and
+forward through your edit history — note placement, moves, resizes,
+deletes, paste, and Erase/Remove all count as one step each. A whole
+recording take (start to Stop/Finish, pauses included) undoes as a single
+step too, not one step per frame the note grew. Both buttons dim when
+there's nothing to undo/redo in that direction, though clicking them then
+is harmless either way.
+
+## Keyboard shortcuts
+
+These work whenever you're not typing into a text field:
+
+| Key | Action |
+|---|---|
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
+| `Ctrl+C` / `Ctrl+V` | Copy the current selection / paste it at the mouse position |
+| `Delete` / `Backspace` | Delete the current selection |
+| `←` / `→` (Arrow Left/Right) | Pan the grid horizontally |
+| `Esc` | Clear the current selection or a pending timeline split, then back out of the editor |
+
 ## Saving and loading
 
 **Save**/**Load** work with `.harpchart` files directly; **Browse** picks
-the background-music audio file a chart references. A saved chart is
-validated against Harmonicon's chart schema (`assets/song_schema.dtd.json`)
-and tagged with the format version it was written against, so a chart
-saved by a newer Harmonicon that added something this version's Song
-Editor doesn't understand will point that out clearly instead of silently
-mis-loading.
+the background-music audio file a chart references. Either one reports
+what happened right in the status bar — a green "Saved"/"Loaded", an
+amber "saved with warnings" (for example, a lesson chart missing its ID),
+or a red failure message — not just in the log.
+
+A saved chart is validated against Harmonicon's chart schema
+(`assets/song_schema.dtd.json`) and tagged with the format version it was
+written against, so a chart saved by a newer Harmonicon that added
+something this version's Song Editor doesn't understand will point that
+out clearly instead of silently mis-loading.
 
 For songs you want the game to discover automatically without editing the
 bundled assets, drop the finished chart folder into `~/Harmonicon/songs/`

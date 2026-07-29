@@ -8,8 +8,9 @@ timing.
 
 It ships with two render modes (a clean 2D lane view and a 3D view with an
 animated harmonica model), a free-play **Jam Session** mode over a 12-bar blues
-backing, a **Bending Trainer**, a full in-game **song editor**, a live audio
-spectrogram, and a small toolchain for turning MIDI files into playable charts.
+backing, a guided **Lessons** curriculum, a **Bending Trainer**, a full
+in-game **song editor**, a live audio spectrogram, and a small toolchain for
+turning MIDI files into playable charts.
 
 > Status: early/experimental (`0.1.0`), tracking Bevy `0.19`.
 
@@ -30,7 +31,17 @@ spectrogram, and a small toolchain for turning MIDI files into playable charts.
     to the beat, with a configurable per-model hole layout.
 - **Jam Session** — free play over a rolling 12-bar blues chart and metronome,
   with a live hole map that highlights chord tones and blues-scale notes per
-  bar of the cycle.
+  bar of the cycle. A song authored from a MIDI file with its tracks kept
+  separate (rather than pre-mixed) shows a per-track mute row, so you can
+  drop out a part and play it yourself.
+- **Lessons** — a guided curriculum grouped into units, from first breath
+  technique through bends, rhythm, and improvisation, gated by prerequisites
+  and tracked per player; some open-ended lessons run as an unscored Jam
+  Session judged on scale/chord-tone adherence or phrase discipline instead
+  of hit notes.
+- **Adaptive difficulty** — an optional per-song setting that starts a chart
+  with only the first slice of each phrase live, unlocking more of it as you
+  clear it cleanly, with a manual per-phrase override on the pause menu.
 - **Practice tools** — A–B section looping (drag a range on the song-progress
   waveform while paused), practice speed (50–100%), wait-for-note mode (the
   chart holds at each note until you play it), and a harmonica tab readout of
@@ -48,10 +59,13 @@ spectrogram, and a small toolchain for turning MIDI files into playable charts.
 - **Audio options** — microphone device picker with visible failure/retry,
   pitch-algorithm selection, latency calibration screen, and music/metronome
   volume sliders that affect playback live.
-- **Song editor** — author charts in-game (diatonic and chromatic), with
-  synthesized preview playback, a practice mode that scores your mic input
-  against the chart as you edit, and MIDI import (pick a track and drop its
-  notes straight onto the grid).
+- **Song editor** — author charts in-game (diatonic and chromatic): place,
+  drag, and resize notes on a piano-roll grid with a swing/triplet-aware
+  snap mode, multi-select and copy/paste, undo/redo, a metronome with
+  count-in, a real variable tempo map, live recording from your own
+  playing, MIDI import (pick a track and drop its notes straight onto the
+  grid), a practice mode that scores your mic input against the chart as
+  you edit, and lesson authoring alongside plain songs.
 - **Localization** — English, Portuguese (pt-BR), and Spanish (es-ES).
 - **Authoring tools** — `hole-editor` positions the clickable holes on a 3D
   harmonica model.
@@ -133,39 +147,52 @@ helper tools can share the same subsystems.
 src/
   main.rs              # Game entry point: wires up plugins, mic capture, pitch loop
   lib.rs               # Library root, re-exports the subsystems below
-  menu/                # App states, menu pages, Options, latency calibration
+  menu/                # App states, menu pages, Options, latency calibration, guided tour
   gameplay/            # Core gameplay
     gameplay_2d.rs     #   2D lane renderer
     gameplay_3d.rs     #   3D harmonica renderer
-    jam_session.rs     #   free-play 12-bar mode
     bending_trainer.rs #   bend/overblow/overdraw drills
+    adaptive_difficulty.rs #  per-phrase note unlocking
     clock.rs           #   the gameplay clock (audio-anchored time authority)
     results.rs         #   end-of-song results screen
     *_overlay.rs       #   countdown, metronome, phrase, song-progress HUDs
+  jam/                 # Jam Session: free-play mode, generated 12-bar backing,
+                       #   MIDI multi-track playback, improv/call-response practice
+  lessons/             # Guided curriculum: manifest parsing, catalog discovery,
+                       #   per-player progress
   scoring.rs           # Pure scoring math (timing windows, combo/multiplier),
                        #   shared by gameplay and the song editor's practice mode
-  song_editor/         # In-game chart editor (grid, playback synth, practice)
-  audio_system/        # Microphone capture (cpal) + pitch detection algorithms
-  song/                # Chart format, harmonica layouts, asset loader
+  song_editor/         # In-game chart editor (grid, playback synth, practice,
+                       #   MIDI import, undo/redo)
+  audio_system/        # Microphone capture (cpal), pitch detection algorithms,
+                       #   the additive harmonica-voice synth
+  song/                # Chart format, harmonica layouts, MIDI parsing, asset loader
   spectrogram/         # Audio visualizers (bars, oscilloscope)
-  dialogs/             # Shared UI widgets (buttons, tooltips, comboboxes)
-  assets_management/   # Font loading, song/harmonica discovery
+  dialogs/             # Shared UI widgets (buttons, tooltips, comboboxes, file dialogs)
+  assets_management/   # Font loading, song/theme/harmonica discovery
   profile.rs           # Persistent player progress (best scores, drills)
   settings.rs          # Persistent settings (figment-layered JSON)
   localization.rs      # Fluent localization plumbing
   theme.rs             # Visual theme config
+  note_bench.rs        # Pitch-detection algorithm comparison logic
   bin/
     hole_editor.rs     # 3D harmonica hole-layout editor
     note_editor.rs     # Visual editor for 2D note layouts
+    note_bench.rs      # Pitch-detection algorithm benchmark runner
 
 assets/
-  songs/<artist>/<song>/   # chart.harpchart + music.ogg + background/elements art
+  songs/<artist>/<song>/         # background/elements art, 2d/3d note layouts
+    song/                        #   the chart itself (*.harpchart) + either
+                                 #   music.ogg/.wav or music.mid (per-track stems)
   harmonicas/3d/<name>/     # harmonica.glb + holes.json (3D model + hole layout)
+  lessons/<unit>/<lesson>/   # lesson.json + its own chart, for the Lessons curriculum
+  themes/<name>/             # theme.json + art/sounds for the theme picker
   locales/<locale>/         # Fluent translations (en-US, es-ES, pt-BR)
-  midi/                     # source MIDI files
+  midi/                     # source MIDI files for the Song Editor's import tool
   sounds/                   # metronome clicks
   fonts/  shaders/          # UI fonts and WGSL shaders
   song_schema.dtd.json      # JSON schema charts are validated against
+  lesson_schema.dtd.json    # JSON schema lessons are validated against
 ```
 
 ---
@@ -175,10 +202,17 @@ assets/
 Each song lives under `assets/songs/<artist>/<song>/` and is loaded as a single
 `SongManifest` made of:
 
-- `chart.harpchart` — a JSON chart describing tempo, the harmonica layout, and
-  the timed track of notes (validated against `assets/song_schema.dtd.json`).
-- `music.ogg` — the backing track.
+- `song/<name>.harpchart` — a JSON chart describing tempo, the harmonica
+  layout, and the timed track of notes (validated against
+  `assets/song_schema.dtd.json`) — any filename, not a fixed name.
+- `song/music.ogg` (or `.wav`) — the backing track, or `song/music.mid` to
+  keep a MIDI file's tracks separate instead of pre-mixed, so Jam Session
+  can play and mute them individually.
 - `background.png` / `elements.png` — per-song artwork.
+
+Every one of these except the chart itself is optional — a song can ship
+with no art, no backing track, or no separate note layouts, and Harmonicon
+fills in a sensible default for whatever's missing.
 
 A chart's `track` is a list of timed items, each with a duration and one or more
 note events (hole + `blow`/`draw` + the expected pitch), optionally carrying
@@ -214,8 +248,8 @@ harmonica `.glb` models.
   the spectrogram
 - **[serde](https://serde.rs/) / serde_json / jsonschema** — chart parsing and
   validation
-- **[midly](https://crates.io/crates/midly)** — MIDI parsing for the chart
-  converter
+- **[midly](https://crates.io/crates/midly)** — MIDI parsing for the Song
+  Editor's import and per-track backing
 
 ---
 

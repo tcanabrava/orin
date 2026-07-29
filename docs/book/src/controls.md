@@ -21,6 +21,19 @@ for playing notes.
 A **⏸** button in the bottom-right corner does the same thing as `Esc` for
 pausing — no keyboard required.
 
+## Song Editor
+
+| Key | Action |
+|---|---|
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
+| `Ctrl+C` / `Ctrl+V` | Copy the selection / paste it at the mouse position |
+| `Delete` / `Backspace` | Delete the selection |
+| `←` / `→` | Pan the grid |
+| `Esc` | Clear the selection, or back out of the editor |
+
+See [Song Editor](song-editor.md) for everything else — grid snap modes,
+multi-selection, the metronome/count-in, and more.
+
 ## Menus and dialogs
 
 | Key | Action |
