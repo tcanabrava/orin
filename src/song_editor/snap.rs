@@ -71,6 +71,34 @@ pub(super) fn snap_tick_in_beat(frac: f32, mode: SnapMode) -> usize {
         .unwrap_or(0)
 }
 
+/// Snaps an *absolute* tick position (as opposed to [`snap_tick_in_beat`]'s
+/// fractional position within a single beat) to the nearest tick `mode`
+/// allows, across beat boundaries — used by drag-to-move/-resize so an
+/// existing note can be nudged onto a shuffle/triplet position the same
+/// way placing a new one already can. `grid_points()` always includes 0,
+/// so the current beat's own points plus the *next* beat's tick 0 (the
+/// only point in the beat behind that could ever be closer than one of the
+/// current beat's own — see the doc test below) are the only candidates
+/// that matter.
+pub(super) fn snap_absolute_tick(tick: usize, mode: SnapMode) -> usize {
+    let beat = tick / TICKS_PER_BEAT;
+    let mut best = beat * TICKS_PER_BEAT;
+    let mut best_dist = tick - best;
+    for &p in mode.grid_points() {
+        let candidate = beat * TICKS_PER_BEAT + p;
+        let dist = tick.abs_diff(candidate);
+        if dist < best_dist {
+            best = candidate;
+            best_dist = dist;
+        }
+    }
+    let next_beat_start = (beat + 1) * TICKS_PER_BEAT;
+    if next_beat_start - tick < best_dist {
+        best = next_beat_start;
+    }
+    best
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +129,42 @@ mod tests {
         assert_eq!(snap_tick_in_beat(0.3, SnapMode::Triplet), 4);
         assert_eq!(snap_tick_in_beat(0.5, SnapMode::Triplet), 4);
         assert_eq!(snap_tick_in_beat(0.7, SnapMode::Triplet), 8);
+    }
+
+    #[test]
+    fn snap_absolute_tick_snaps_within_the_current_beat() {
+        // Sixteenth: [0, 3, 6, 9] within beat 0 (ticks 0..12).
+        assert_eq!(snap_absolute_tick(0, SnapMode::Sixteenth), 0);
+        assert_eq!(snap_absolute_tick(4, SnapMode::Sixteenth), 3);
+        assert_eq!(snap_absolute_tick(5, SnapMode::Sixteenth), 6);
+        assert_eq!(snap_absolute_tick(10, SnapMode::Sixteenth), 9);
+    }
+
+    #[test]
+    fn snap_absolute_tick_can_wrap_forward_into_the_next_beat() {
+        // Tick 11 (beat 0) is one away from beat 1's own tick 0 (12), but
+        // two away from beat 0's own last Sixteenth point (9) -> snaps
+        // forward across the beat boundary rather than staying in beat 0.
+        assert_eq!(snap_absolute_tick(11, SnapMode::Sixteenth), 12);
+        // Sanity: one tick earlier still resolves within beat 0.
+        assert_eq!(snap_absolute_tick(10, SnapMode::Sixteenth), 9);
+    }
+
+    #[test]
+    fn snap_absolute_tick_never_snaps_backward_past_the_beat_it_started_in() {
+        // A tick just after a beat boundary is always closer to that beat's
+        // own 0 than to the previous beat's last point, for every mode —
+        // e.g. tick 13 (beat 1, one tick in) must resolve to 12, not to
+        // beat 0's own last Shuffle point (8).
+        assert_eq!(snap_absolute_tick(13, SnapMode::Shuffle), 12);
+        assert_eq!(snap_absolute_tick(13, SnapMode::Triplet), 12);
+    }
+
+    #[test]
+    fn snap_absolute_tick_works_in_a_later_beat() {
+        // Beat 2 starts at tick 24; Triplet's points there are 24, 28, 32.
+        assert_eq!(snap_absolute_tick(29, SnapMode::Triplet), 28);
+        assert_eq!(snap_absolute_tick(31, SnapMode::Triplet), 32);
     }
 
     #[test]

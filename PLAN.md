@@ -229,7 +229,12 @@ this file — prune it back to a one-line summary under "Shipped" below.
   triplet subdivisions (0,4,8). The grid's sub-beat lines are now tiered
   by color (`theme::SongEditorColors::triplet_line`, new) rather than one
   line per raw tick, which at resolution 12 would be 11 lines per
-  beat — cluttered well past readable.
+  beat — cluttered well past readable. Dragging an existing note (move or
+  resize) snaps the same way, not just placing a new one — a follow-up
+  after initial testing found no visible difference between snap modes
+  while dragging, since only new-note placement was wired up at first;
+  `song_editor::snap::snap_absolute_tick` handles the across-beat-boundary
+  case a drag needs that a fresh click's within-one-beat snap didn't.
 - **Jam Session: MIDI multi-track backing with per-track mute** — a song
   can ship `song/music.mid` instead of `music.ogg`/`.wav`; `song::loader`
   renders each non-empty track to its own `AudioSource` at load time

@@ -10,7 +10,7 @@ use super::interaction::{ctrl_held, select_or_add, select_or_add_ctrl};
 use super::material::EditorNoteMaterial;
 use super::playback::{build_harp, note_freq};
 use super::ranges::silence_gaps;
-use super::snap::snap_tick_in_beat;
+use super::snap::{snap_absolute_tick, snap_tick_in_beat};
 use super::state::{
     DragKind, DragState, Edge, EditorState, Expr, GridNote, Mode, Pitch, enforce_direction,
     enforce_expr, move_target, note_rect, pitch_color, pitch_compatible, pitch_deny_key,
@@ -668,6 +668,11 @@ pub(super) fn spawn_note(
                     ev.distance.y / ui_scale.0,
                     hole_count,
                 );
+                // Snapped the same way a fresh note's placement already is
+                // (`snap_tick_in_beat`) — group members below shift by the
+                // delta *this* snapped tick produces, so the whole group
+                // moves onto the grid together, not just the anchor.
+                let tick = snap_absolute_tick(tick, state.snap_mode);
                 let pitch = state
                     .notes
                     .iter()
@@ -827,6 +832,25 @@ fn spawn_resize_handle(parent: &mut ChildSpawnerCommands, id: u32, edge: Edge, l
             let steps = ((ev.distance.x / ui_scale.0) / TICK_W).round() as i32;
             let (tick, len) =
                 apply_resize(drag.start_tick, drag.start_len, edge, steps, left_bound, right_bound);
+            // Snap the edge that actually moved, then re-clamp to the same
+            // bounds `apply_resize` itself already enforced — snapping can
+            // push a value back out of them (e.g. snap the right edge
+            // forward past a following note it was already clamped against).
+            let mode = state.snap_mode;
+            let (tick, len) = match edge {
+                Edge::Right => {
+                    let mut end = snap_absolute_tick(tick + len, mode).max(tick + 1);
+                    if let Some(rb) = right_bound {
+                        end = end.min(rb);
+                    }
+                    (tick, end - tick)
+                }
+                Edge::Left => {
+                    let end = tick + len;
+                    let start = snap_absolute_tick(tick, mode).min(end - 1).max(left_bound);
+                    (start, end - start)
+                }
+            };
             if let Some(n) = state.notes.iter_mut().find(|n| n.id == id) {
                 n.tick = tick;
                 n.len = len;
