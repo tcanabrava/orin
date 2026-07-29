@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
+use crate::music_score::{self, BravuraFont};
 use crate::{
     app::SelectedSong,
     assets_management::{
@@ -610,6 +611,7 @@ pub fn setup(
     mut cameras: Query<(&mut Camera, &mut Transform), With<Camera2d>>,
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
+    bravura: Option<Res<BravuraFont>>,
 ) {
     let Some(manifest): Option<&SongManifest> = manifests.get(&selected.0) else {
         error!("SongManifest not ready when entering Playing (3D) state");
@@ -723,6 +725,9 @@ pub fn setup(
         &note_build.adaptive.sections,
         &note_build.adaptive.learned,
     );
+    if let Some(bravura) = &bravura {
+        super::gameplay_2d::spawn_gameplay_music_score(&mut commands, bravura);
+    }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
     let harp_hint = crate::song::harmonica::harp_banner(&chart.harmonica, key);
     spawn_countdown(&mut commands, &loc, Some(&harp_hint));
@@ -822,7 +827,7 @@ fn spawn_hud_overlay(
                 // Below the song-progress bar (`BAR_HEIGHT`, pinned at the very
                 // top across the full width and always painted above the HUD —
                 // see `BAR_Z_INDEX`) so its text is never covered by it.
-                top: Val::Px(8.0 + BAR_HEIGHT),
+                top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
                 left: Val::Px(8.0),
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(4.0),
@@ -917,7 +922,7 @@ fn spawn_hud_overlay(
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                top: Val::Px(8.0 + BAR_HEIGHT),
+                top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
                 right: Val::Px(8.0),
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::FlexStart,

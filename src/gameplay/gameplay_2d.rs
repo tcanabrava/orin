@@ -15,6 +15,8 @@ use bevy::prelude::*;
 use bevy::ui::ComputedNode;
 use bevy_fluent::Localization;
 
+use crate::music_score::{self, BravuraFont};
+
 use super::adaptive_difficulty::AdaptiveDifficulty;
 use super::countdown_overlay::spawn_countdown;
 use super::metronome_overlay::spawn_metronome;
@@ -63,6 +65,7 @@ pub fn setup(
     theme: Res<crate::theme::LoadedTheme>,
     adaptive: Res<AdaptiveDifficulty>,
     loc: Res<Localization>,
+    bravura: Option<Res<BravuraFont>>,
 ) {
     let Some(manifest) = manifests.get(&selected.0) else {
         error!("SongManifest not ready when entering Playing state");
@@ -178,7 +181,7 @@ pub fn setup(
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
                 padding: UiRect {
-                    top: Val::Px(8.0 + BAR_HEIGHT),
+                    top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
                     ..UiRect::all(Val::Px(8.0))
                 },
                 row_gap: Val::Px(4.0),
@@ -220,7 +223,7 @@ pub fn setup(
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
                 padding: UiRect {
-                    top: Val::Px(12.0 + BAR_HEIGHT),
+                    top: Val::Px(12.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
                     ..UiRect::all(Val::Px(12.0))
                 },
                 row_gap: Val::Px(12.0),
@@ -378,9 +381,35 @@ pub fn setup(
         &adaptive.sections,
         &adaptive.learned,
     );
+    if let Some(bravura) = &bravura {
+        spawn_gameplay_music_score(&mut commands, bravura);
+    }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
     let harp_hint = crate::song::harmonica::harp_banner(&chart.harmonica, key);
     spawn_countdown(&mut commands, &loc, Some(&harp_hint));
+}
+
+/// Wraps `music_score::spawn_music_score` in its own absolutely-positioned,
+/// full-width strip pinned directly below the song-progress bar (`BAR_HEIGHT`
+/// down from the top) — shared by both `gameplay_2d::setup` and
+/// `gameplay_3d::setup`, the same "helper lives in `gameplay_2d`, `gameplay_3d`
+/// reuses it" precedent as `note_anim_mode`/`note_techniques`.
+pub(super) fn spawn_gameplay_music_score(commands: &mut Commands, bravura: &BravuraFont) {
+    commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(BAR_HEIGHT),
+                left: Val::Px(0.0),
+                width: Val::Percent(100.0),
+                height: Val::Px(music_score::PANEL_HEIGHT),
+                ..default()
+            },
+            GameplayRoot,
+        ))
+        .with_children(|panel| {
+            music_score::spawn_music_score(panel, bravura);
+        });
 }
 
 /// Rebuilds `SongNotes`/`NoteRenderAssets::play_mode_tags` whenever

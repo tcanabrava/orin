@@ -28,9 +28,9 @@ use super::state::{
 };
 use super::{
     adaptive_difficulty, bending_trainer, call_response, countdown_overlay, gameplay_2d,
-    gameplay_3d, harmonica_overlay, metronome_overlay, modifier_legend, note_tail_2d, note_tail_3d,
-    pause_menu, phrase_overlay, results, song_progress_overlay, twelve_bar_blues_overlay,
-    wait_freeze_overlay,
+    gameplay_3d, harmonica_overlay, metronome_overlay, modifier_legend, music_score_bridge,
+    note_tail_2d, note_tail_3d, pause_menu, phrase_overlay, results, song_progress_overlay,
+    twelve_bar_blues_overlay, wait_freeze_overlay,
 };
 
 pub struct GameplayPlugin;
@@ -58,6 +58,7 @@ impl Plugin for GameplayPlugin {
             note_tail_3d::NoteTail3dPlugin,
             song_progress_overlay::SongProgressPlugin,
             wait_freeze_overlay::WaitFreezePlugin,
+            music_score_bridge::MusicScoreBridgePlugin,
         ))
         .init_resource::<GameplayClock>()
         .init_resource::<PitchRange>()

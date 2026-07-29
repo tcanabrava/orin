@@ -18,6 +18,7 @@ use harmonicon::gameplay::GameplayPlugin;
 use harmonicon::lessons::LessonsPlugin;
 use harmonicon::localization::LocalizationPlugin;
 use harmonicon::menu::MenuPlugin;
+use harmonicon::music_score::MusicScorePlugin;
 use harmonicon::profile::ProfilePlugin;
 use harmonicon::settings::SettingsPlugin;
 use harmonicon::song::SongPlugin;
@@ -93,6 +94,7 @@ fn main() {
         SpectrogramPlugin,
         SettingsPlugin,
         ProfilePlugin,
+        MusicScorePlugin,
     ))
     .add_plugins((
         harmonicon::dialogs::algo_picker::AlgoPickerPlugin,

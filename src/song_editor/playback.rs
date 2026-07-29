@@ -104,6 +104,30 @@ pub(super) fn note_freq(note: &GridNote, harp: &Harmonica) -> Option<f32> {
     Some(midi_to_freq_hz(note_to_midi(&label)? as f32))
 }
 
+/// `note`'s resolved MIDI pitch on `harp` — the same resolution [`note_freq`]
+/// performs, but returning the identity `u8` the shared `music_score`
+/// overlay keys notation on rather than a frequency (bends rounded to the
+/// nearest semitone, same as gameplay's own `gameplay::notes::
+/// target_pitch`). `None` for a hole/technique the harp can't produce, same
+/// as `note_freq`.
+pub(super) fn note_midi(note: &GridNote, harp: &Harmonica) -> Option<u8> {
+    let action = match note.dir {
+        Dir::Blow => crate::song::chart::Action::Blow,
+        Dir::Draw => crate::song::chart::Action::Draw,
+    };
+    let label = match note.pitch {
+        Pitch::Normal => harp.wind_direction_label(note.hole, &action),
+        Pitch::Slide => harp.slide_label(note.hole, &action),
+        Pitch::Overblow | Pitch::Overdraw => hole_notes(harp, note.hole).over?,
+        Pitch::Bend(a) => {
+            let base = harp.wind_direction_label(note.hole, &action);
+            let midi = note_to_midi(&base)?;
+            return u8::try_from(midi - a.round() as i32).ok();
+        }
+    };
+    note_to_midi(&label).and_then(|m| u8::try_from(m).ok())
+}
+
 /// Ticks-to-seconds for `state.tempo` — the flat nominal-BPM conversion
 /// every Play/Practice/Record start function needs before it can turn tick
 /// positions into real time. Deliberately not the real, possibly

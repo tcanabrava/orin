@@ -326,6 +326,7 @@ pub(super) fn setup(
     theme: Res<LoadedTheme>,
     state: Res<EditorState>,
     audio: Res<AudioSettings>,
+    bravura: Option<Res<crate::music_score::BravuraFont>>,
 ) {
     let colors = theme.song_editor_colors();
     let mode = state.mode;
@@ -380,6 +381,7 @@ pub(super) fn setup(
             hole_count,
             root_id,
             audio.pitch_algorithm,
+            bravura.as_deref(),
         );
 
         // The form fields (meta form, lesson form, status bar), in their
@@ -430,6 +432,7 @@ fn spawn_fixed_chrome(
     hole_count: u8,
     editor_root: Entity,
     algorithm: PitchAlgorithm,
+    bravura: Option<&crate::music_score::BravuraFont>,
 ) {
     root.spawn((
         GridRowContainer,
@@ -549,6 +552,24 @@ fn spawn_fixed_chrome(
                 .observe(drag_grid_scrollbar);
         });
     });
+
+    // The music-notation staff: a supplementary read of the chart's current
+    // notes, shared with both gameplay render modes — see `music_score`'s
+    // own module doc comment. Fixed chrome, not the scrollable form area
+    // below, so it stays visible while editing; driven by
+    // `sync_music_score` writing `MusicScoreNotes`/`MusicScorePlayhead` from
+    // `EditorState`/`Playhead` each time either changes.
+    if let Some(bravura) = bravura {
+        root.spawn(Node {
+            width: Val::Percent(100.0),
+            flex_shrink: 0.0,
+            margin: UiRect::top(Val::Px(6.0)),
+            ..default()
+        })
+        .with_children(|row| {
+            crate::music_score::spawn_music_score(row, bravura);
+        });
+    }
 
     // Dev-only debugging aid — see `debug_record`'s own module docs. Placed
     // right below the grid's own scrollbar.

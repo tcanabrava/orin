@@ -338,6 +338,36 @@ pub fn build_scheduled_notes(
     combined.into_iter().unzip()
 }
 
+/// Converts scored notes' real-time `time`/`duration` (seconds) into the
+/// beat-based [`crate::music_score::NotationNote`]s the shared score
+/// overlay draws — see that module's own doc comment for why it never
+/// touches a tempo map itself. `resolution`/`tempo_map` are the chart's own
+/// (`chart.timing`), so this stays correct across a tempo change mid-song,
+/// not just for a flat-tempo chart. A note with no resolvable
+/// `expected_pitch` (the harp can't produce it) has nothing to draw on a
+/// staff and is skipped, same as it already can never be hit.
+pub fn notes_to_notation(
+    notes: &[ScheduledNote],
+    resolution: u32,
+    tempo_map: &[crate::song::chart::TempoPoint],
+) -> Vec<crate::music_score::NotationNote> {
+    notes
+        .iter()
+        .filter_map(|n| {
+            let midi = n.expected_pitch?;
+            let start_tick = crate::song::chart::seconds_to_tick(n.time, resolution, tempo_map);
+            let end_tick =
+                crate::song::chart::seconds_to_tick(n.time + n.duration, resolution, tempo_map);
+            Some(crate::music_score::NotationNote {
+                start_beat: start_tick as f64 / resolution as f64,
+                duration_beats: (end_tick.saturating_sub(start_tick)).max(1) as f64
+                    / resolution as f64,
+                midi,
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

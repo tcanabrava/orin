@@ -263,8 +263,10 @@ Manual testing needs a mic, audio out, and a display.
     from the chart's own artist/title so different art-less songs still
     look distinct — `generate_background_image`), `elements.png` (unused by
     gameplay today; falls back to `Handle::default()`), `song/music.ogg`
-    — falling back to `song/music.wav` if that's absent too, before giving
-    up (`SongManifest::music: Option<Handle<AudioSource>>` — `None` plays
+    — falling back to `song/music.wav`, then `song/music.mid` (see
+    `SongManifest::midi_tracks`, further below, for what that last one
+    does instead of populating `music`), before giving up
+    (`SongManifest::music: Option<Handle<AudioSource>>` — `None` plays
     the chart with no backing track, clock free-running instead of
     anchoring to a sink, see `should_anchor_to_sink`) — and the `2d/`/`3d/`
     note asset folders (already-established fallback to the selected note
@@ -626,6 +628,54 @@ Manual testing needs a mic, audio out, and a display.
       preview (`timeline_overlay::update_timeline_overlays`) reads it
       fresh each frame as a local value rather than writing it anywhere,
       so previewing can't trigger rebuilds.
+  - **The Song Editor's grid supports a swing/triplet-aware snap mode**
+    (`song_editor::snap`, split out of `state.rs` purely for that file's
+    line budget — `EditorState::snap_mode` is still `state.rs`'s own
+    field). `TICKS_PER_BEAT` (`audio_system::synth`) is 12, not 4 — the
+    lowest resolution divisible by both 4 (straight 16ths, the old
+    resolution) and 3 (triplets): a true triplet position doesn't exist as
+    an integer tick on a 4-ticks-per-beat grid at all, which is why this
+    needed a resolution change rather than a snapping tweak. This is
+    forward-only: a chart's own `timing.resolution` is self-describing and
+    every tick/time conversion (`song::chart::tick_to_seconds`/
+    `seconds_to_tick`) already takes a chart's resolution as an explicit
+    parameter rather than hardcoding the constant, so existing bundled
+    charts (still at `resolution: 4`) load and play unchanged — only new
+    saves write the finer resolution. A Straight/Shuffle/Triplet toggle
+    (`SnapMode`, next to the harmonica-kind toggle in the meta form)
+    constrains which within-beat tick a click lands on:
+    `SnapMode::Sixteenth` (ticks 0/3/6/9 — reproduces the old
+    any-of-4-ticks grid exactly, just at the new resolution),
+    `SnapMode::Shuffle` (0/8, a 2:1 long-short swing pair — the classic
+    blues shuffle bounce), `SnapMode::Triplet` (0/4/8, three equal
+    subdivisions) — `snap_tick_in_beat` picks whichever of `SnapMode::
+    grid_points()` is nearest the raw click fraction, for a *new* note.
+    Dragging an *existing* note (move or resize) snaps too, via a second
+    pure function, `snap_absolute_tick` — unlike `snap_tick_in_beat`'s
+    fractional 0.0..1.0 input (a click's offset within one beat cell),
+    this one snaps an already-absolute tick, so it has to consider
+    crossing a beat boundary: `grid_points()` always includes 0, so the
+    current beat's own points plus the *next* beat's tick 0 are the only
+    candidates that can ever be nearest (the previous beat's last point
+    never is — it's always farther than the current beat's own 0). The
+    move-drag observer snaps the anchor's tick immediately after computing
+    it (`grid::move_target`), before deriving the multi-select group's
+    shared tick delta from it, so a dragged group moves onto the grid
+    together, not just its anchor; the resize-drag observer snaps whichever
+    edge moved after `grid::apply_resize` computes it, then re-clamps to
+    the same left/right-neighbor bounds `apply_resize` itself already
+    enforced (snapping can push a value back out of them — e.g. snap the
+    right edge forward past a following note it was already clamped
+    against). `move_target`/`apply_resize` themselves stay snap-agnostic,
+    pure pixel-to-tick conversions — snapping is a post-processing step
+    applied at the call site, not a parameter threaded through them, so
+    their own existing tests didn't need touching. `snap_mode` is a UI
+    preference, not chart content or undo-tracked. The grid's own sub-beat
+    gridlines are tiered by color rather than one line per raw tick (which
+    at resolution 12 would be 11 lines per beat, unreadably cluttered):
+    straight-16th positions keep `quarter_line`/`half_line`, triplet
+    positions get a new, hue-distinct `SongEditorColors::triplet_line` —
+    also called out in the color legend (`meta_form::spawn_color_legend`).
   - **The Song Editor's silence track** is a read-only summary strip
     (`SILENCE_ROW_H`, below the last hole lane — `grid_height` folds it into
     every height that already derives from hole count, so the row container/
@@ -958,6 +1008,59 @@ Manual testing needs a mic, audio out, and a display.
     (`jam::session::update_hole_map`, layered in only for a hole not
     already lit by a live pitch, so actually echoing a note still shows its
     normal chord-tone/in-scale tint) until the next call replaces them.
+  - **A song can ship a raw MIDI file as its backing track**
+    (`song/music.mid`, a third fallback in `song::loader` after
+    `music.ogg`/`music.wav` — mutually exclusive with those; whichever is
+    found first wins). Unlike an ordinary chart's music, this isn't loaded
+    as one `Handle<AudioSource>` — `SongManifest::music` stays `None` and
+    `SongManifest::midi_tracks: Option<Vec<MidiTrackAudio>>` is populated
+    instead, one already-rendered `AudioSource` per non-empty track
+    (`song::midi::render_track_pcm`, the same additive harmonica-voice
+    synth `song_editor::playback`/`gameplay::call_response` share; a
+    `notes_to_phrase` helper factors the MIDI-timing-to-synth-tick
+    conversion out of `song_editor::midi_import::render_backing_pcm` so
+    both share it). Each track is rendered and registered as a labeled
+    sub-asset at song-load time (`song::loader::load_midi_tracks`), off
+    the main thread like the rest of `SongChartLoader` — nothing about
+    gameplay ever touches MIDI parsing itself. `waveform`/
+    `music_duration_secs` still populate (every track's stems summed
+    together, purely for the progress bar's display — actual playback
+    sums them for real, as separate sinks) so a MIDI-backed song's
+    progress bar behaves like an ordinary one.
+    **Playback and per-track muting** (`jam::midi_tracks`, Jam Session
+    only — scored Play2D/3D have nothing meaningful to do with a chart's
+    *backing* track regardless of stem count): `gameplay::
+    countdown_overlay::update_countdown` spawns one `AudioPlayer` per
+    track, all in the same frame so they start in sync, each tagged both
+    `MusicPlayer` (the ordinary single-track tag — pause and the global
+    music-volume slider apply to every track's sink for free, no
+    duplicated plumbing) and the new `MidiTrackPlayer(index)` (defined
+    alongside `MusicPlayer` in `gameplay::state`, not in `jam`, since
+    `countdown_overlay` — which spawns it — can't depend on `jam` without
+    a layering inversion; `jam::midi_tracks` reads it the other way).
+    Muting a track is just zeroing that sink's volume — no live
+    re-mixing, since each stem is already a complete, independent render.
+    `jam::session::setup` sizes a new `JamMidiMute(Vec<bool>)` resource to
+    the song's own track count (empty, and thus a no-op everywhere, for
+    an ordinary song) and — only for a MIDI-backed song — spawns a
+    horizontal row of per-track mute-toggle buttons
+    (`midi_tracks::spawn_midi_track_row`) below the 12-bar/harmonica
+    columns: the screen's root layout changed from a single Row to a
+    Column wrapping those two columns in their own Row sub-container, so
+    this new row can sit as a full-width sibling underneath both rather
+    than a third column. Each button is tagged `TrackMuteCell(index)` and
+    shares one `.observe(toggle_track_mute)` clone per button (same "one
+    shared observer, N tagged cells, resolve identity via the clicked
+    entity" pattern as `gameplay::harmonica_overlay::DiagramCellTarget`)
+    rather than a distinct closure per track. `jam::midi_tracks::
+    apply_midi_track_mute` is ordered `.after(gameplay::lifecycle::
+    apply_music_volume)` so a mid-song global-volume change — which
+    touches every `MusicPlayer` sink, per-track ones included — can never
+    un-mute a muted track; this system always has the last word. Looping
+    (`jam::session::restart_finished_jam_music`) re-spawns every track's
+    sink together the same way, and doesn't need to touch `JamMidiMute`
+    at all — it's a resource independent of any particular sink, so a
+    track muted before the loop stays muted after it for free.
 - **Guided tutorial tour** (`src/menu/tutorial.rs`): a "Tutorial" button on
   the Help/About menu drives a fixed sequence (`TOUR_STEPS`, each a
   `TourTarget`) on a timer, with a click-blocking overlay on top naming the
@@ -1051,11 +1154,28 @@ Manual testing needs a mic, audio out, and a display.
   can't drift. The `~/Harmonicon` external-folder equivalent has no wasm
   version at all — no home directory concept in a browser — which the
   native functions already handle gracefully (`dirs::home_dir()` returning
-  `None`), so nothing wasm-specific was needed there. One related gap this
-  doesn't cover: UI *theme* discovery (names) now works under wasm, but
-  `theme::load_theme` still reads `theme.json`'s actual *contents* via a
-  raw `std::fs::read_to_string` rather than `AssetServer` — a different
-  mechanism (file read, not directory list) that needs its own fix.
+  `None`), so nothing wasm-specific was needed there. UI *theme* content
+  (not just names) also loads under wasm now: `theme::load_theme` used to
+  read `theme.json`'s contents via a raw `std::fs::read_to_string`, which
+  can't work under wasm either (a different mechanism than a directory
+  listing — an actual file read) — `ThemeJson` is now an `Asset` loaded
+  through a small custom `ThemeJsonLoader` (`AssetLoader`, matching
+  `song::loader::SongChartLoader`'s pattern; registered by full filename,
+  `extensions() -> &["theme.json"]`, so it can't collide with some other
+  `.json` asset gaining its own loader later), fetched the same way
+  `load_theme` already loaded its sibling images/sounds. Loading is now
+  two systems instead of one synchronous function: `request_theme_load`
+  (on `SelectedTheme` change) clears `LoadedTheme` and kicks off the
+  `asset_server.load::<ThemeJson>(...)` call, stashing the `Handle` in a
+  `PendingTheme` resource; `apply_theme_when_loaded` polls it every frame
+  (a no-op whenever `PendingTheme` is absent) and populates `LoadedTheme`
+  once the load resolves. `theme_source_prefix` (bundled vs.
+  `external://`) is also `#[cfg]`-split the same way as the
+  `assets_management` scan functions above — its native body does a real
+  `Path::is_dir()` check, which needs a real local filesystem wasm doesn't
+  have; the wasm sibling always answers "bundled", correct because
+  `AvailableThemes` under wasm only ever lists bundled themes to begin
+  with (same no-external-folder reasoning as everywhere else here).
 - **Message registration is enforced:** `build.rs` also scans for every
   `#[derive(Message)]` type and fails the build if it's never registered
   with `.add_message::<T>()` anywhere — an unregistered message otherwise
@@ -1165,14 +1285,3 @@ Manual testing needs a mic, audio out, and a display.
   content only, the same rights/judgment-sensitive gap as blues content
   (`TODO.md`).
 - Remaining 0.4 work (recorded backing loops) — see `ROADMAP.md`/`PLAN.md`.
-- **Song editor: known gaps**, found on a harmonica-player/audio/UX pass
-  over the editor (2026-07-27; actionable list in `TODO.md`). All genuinely
-  absent, not just hard to find: manual note placement snaps only to
-  straight 16ths (`TICKS_PER_BEAT = 4`, no triplet/shuffle-aware snap)
-  even though shuffle is this game's core blues feel elsewhere
-  (`MetronomeFeel::Shuffle`) — only Record mode's live-mic capture
-  (unquantized onsets) can land a note off that grid. (Multi-selection
-  *does* already support moving a lick to a different hole/chord —
-  dragging a selected group moves every member together,
-  `grid::group_move_targets`/`group_move_valid`, gated by `pitch_compatible`
-  — an initial pass wrongly flagged this as missing; it isn't.)

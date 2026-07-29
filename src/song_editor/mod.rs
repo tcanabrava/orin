@@ -39,6 +39,7 @@ mod meta_form;
 mod metronome;
 mod midi_import;
 mod mod_panel;
+mod music_score_bridge;
 mod panel;
 mod panel_widgets;
 mod pitch_map;
@@ -175,6 +176,10 @@ impl Plugin for SongEditor2Plugin {
                     playback::apply_pending_music_seek,
                     playback::update_playhead_view.after(playback::advance_playhead),
                     playback::update_progress_bar.after(playback::advance_playhead),
+                    music_score_bridge::sync_music_score
+                        .run_if(resource_exists_and_changed::<state::EditorState>),
+                    music_score_bridge::sync_music_score_playhead
+                        .after(playback::advance_playhead),
                     // Practice/record/metronome ticks run after the playhead
                     // advances so `elapsed` is current.
                     (
