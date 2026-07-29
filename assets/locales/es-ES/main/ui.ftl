@@ -597,6 +597,7 @@ jam-call-response-off = Pregunta y Respuesta: apagado
 jam-call-response-on = Pregunta y Respuesta: encendido
 jam-call-response-listen = Escucha…
 jam-call-response-your-turn = Tu turno
+jam-midi-track-mute-tooltip = Haz clic para silenciar/activar esta pista
 
 # Pantalla de resultados
 results-song-complete = CANCIÓN COMPLETADA

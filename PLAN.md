@@ -230,6 +230,16 @@ this file — prune it back to a one-line summary under "Shipped" below.
   by color (`theme::SongEditorColors::triplet_line`, new) rather than one
   line per raw tick, which at resolution 12 would be 11 lines per
   beat — cluttered well past readable.
+- **Jam Session: MIDI multi-track backing with per-track mute** — a song
+  can ship `song/music.mid` instead of `music.ogg`/`.wav`; `song::loader`
+  renders each non-empty track to its own `AudioSource` at load time
+  (`song::midi::render_track_pcm`, the shared additive harmonica-voice
+  synth) rather than one pre-mixed file. Jam Session plays every track as
+  its own synchronized sink (all spawned the same frame) and shows a
+  horizontal mute-toggle row below the 12-bar/harmonica columns
+  (`jam::midi_tracks`) — muting a track is just zeroing that sink's
+  volume, no live re-mixing. See `CLAUDE.md`'s "A song can ship a raw MIDI
+  file as its backing track" bullet for the full design.
 
 ## Current work
 

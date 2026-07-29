@@ -599,6 +599,7 @@ jam-call-response-off = Call & Response: off
 jam-call-response-on = Call & Response: on
 jam-call-response-listen = Listen…
 jam-call-response-your-turn = Your turn
+jam-midi-track-mute-tooltip = Click to mute/unmute this track
 
 # Results screen
 results-song-complete = SONG COMPLETE
