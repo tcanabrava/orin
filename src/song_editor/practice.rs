@@ -487,9 +487,7 @@ mod tests {
         // unlike the old 4), that `f32` rounding no longer cancels out
         // exactly against this test's own `f64` computation — hence the
         // epsilon rather than `assert_eq!`.
-        assert!(
-            (schedule[0].end_secs - state.notes[0].len as f64 * secs_per_tick).abs() < 1e-6
-        );
+        assert!((schedule[0].end_secs - state.notes[0].len as f64 * secs_per_tick).abs() < 1e-6);
     }
 
     #[test]

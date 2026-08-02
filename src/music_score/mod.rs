@@ -72,9 +72,7 @@ pub fn staff_step(midi: u8) -> i32 {
     let bytes = name.as_bytes();
     let has_sharp = bytes.get(1) == Some(&b'#');
     let letter = bytes[0] as char;
-    let octave: i32 = name[if has_sharp { 2 } else { 1 }..]
-        .parse()
-        .unwrap_or(4);
+    let octave: i32 = name[if has_sharp { 2 } else { 1 }..].parse().unwrap_or(4);
     let letter_index = match letter {
         'C' => 0,
         'D' => 1,

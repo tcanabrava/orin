@@ -178,8 +178,7 @@ impl Plugin for SongEditor2Plugin {
                     playback::update_progress_bar.after(playback::advance_playhead),
                     music_score_bridge::sync_music_score
                         .run_if(resource_exists_and_changed::<state::EditorState>),
-                    music_score_bridge::sync_music_score_playhead
-                        .after(playback::advance_playhead),
+                    music_score_bridge::sync_music_score_playhead.after(playback::advance_playhead),
                     // Practice/record/metronome ticks run after the playhead
                     // advances so `elapsed` is current.
                     (

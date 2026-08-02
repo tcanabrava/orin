@@ -257,7 +257,11 @@ fn spawn_harmonica_kind_row(
 
 /// The Straight/Shuffle/Triplet grid-snap toggle — see [`SnapMode`]. Only
 /// changes where the *next* click lands; existing notes are untouched.
-fn spawn_snap_mode_row(col: &mut ChildSpawnerCommands, loc: &Localization, colors: SongEditorColors) {
+fn spawn_snap_mode_row(
+    col: &mut ChildSpawnerCommands,
+    loc: &Localization,
+    colors: SongEditorColors,
+) {
     spawn_cycle_row(
         col,
         loc,

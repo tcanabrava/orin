@@ -141,133 +141,140 @@ pub fn setup(
                 ..default()
             })
             .with_children(|columns| {
-            // ── Left half: 12-bar chart + metronome, vertical ────────────────
-            columns.spawn(Node {
-                width: Val::Percent(50.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                row_gap: Val::Px(24.0),
-                padding: UiRect {
-                    top: Val::Px(16.0 + BAR_HEIGHT),
-                    ..UiRect::all(Val::Px(16.0))
-                },
-                ..default()
-            })
-            .with_children(|left| {
-                left.spawn((
-                    Text::new(title),
-                    TextFont {
-                        font_size: FontSize::Px(20.0),
-                        ..default()
-                    },
-                    TextColor(Color::WHITE),
-                ));
-                left.spawn((
-                    Text::new(harp_hint),
-                    TextFont {
-                        font_size: FontSize::Px(15.0),
-                        ..default()
-                    },
-                    TextColor(Color::srgb(0.95, 0.80, 0.35)),
-                ));
-                left.spawn(Node {
-                    flex_direction: FlexDirection::Row,
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(8.0),
-                    ..default()
-                })
-                .with_children(|row| {
-                    row.spawn_empty().apply_scene(button::small(
-                        &loc.msg("jam-loop-button"),
-                        |_: On<Pointer<Click>>, mut jam_loop: ResMut<JamLoop>| {
-                            jam_loop.0 = !jam_loop.0;
+                // ── Left half: 12-bar chart + metronome, vertical ────────────────
+                columns
+                    .spawn(Node {
+                        width: Val::Percent(50.0),
+                        height: Val::Percent(100.0),
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        row_gap: Val::Px(24.0),
+                        padding: UiRect {
+                            top: Val::Px(16.0 + BAR_HEIGHT),
+                            ..UiRect::all(Val::Px(16.0))
                         },
-                    ));
-                    row.spawn((
-                        Text::new(String::from(loc.msg("jam-loop-off"))),
-                        TextFont {
-                            font_size: FontSize::Px(15.0),
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.70, 0.70, 0.80)),
-                        JamLoopLabel,
-                    ));
-                });
-                left.spawn(Node {
-                    flex_direction: FlexDirection::Row,
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(8.0),
-                    ..default()
-                })
-                .with_children(|row| {
-                    row.spawn_empty().apply_scene(button::small(
-                        &loc.msg("jam-call-response-button"),
-                        |_: On<Pointer<Click>>, mut enabled: ResMut<super::call_response::CallResponseEnabled>| {
-                            enabled.0 = !enabled.0;
-                        },
-                    ));
-                    row.spawn((
-                        Text::new(String::from(loc.msg("jam-call-response-off"))),
-                        TextFont {
-                            font_size: FontSize::Px(15.0),
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.70, 0.70, 0.80)),
-                        super::call_response::CallResponseLabel,
-                    ));
-                });
-                left.spawn(Node {
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(4.0),
-                    ..default()
-                })
-                .with_children(|grid| {
-                    spawn_12_bar_grid(
-                        grid,
-                        &chords,
-                        key,
-                        progression,
-                        &GridConfig::for_2d(),
-                        theme.twelve_bar_colors(),
-                    );
-                });
-                left.spawn(Node {
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    row_gap: Val::Px(6.0),
-                    ..default()
-                })
-                .with_children(|metro| {
-                    spawn_metronome(metro, &loc, beats_per_bar, bpm);
-                });
-                left.spawn(Node {
-                        width: Val::Percent(100.0),
-                        flex_grow: 1.0,
                         ..default()
                     })
-                    .with_children(|spec| {
-                        spawn_spectrogram(spec, *spectrogram_style, &osc_material.0);
+                    .with_children(|left| {
+                        left.spawn((
+                            Text::new(title),
+                            TextFont {
+                                font_size: FontSize::Px(20.0),
+                                ..default()
+                            },
+                            TextColor(Color::WHITE),
+                        ));
+                        left.spawn((
+                            Text::new(harp_hint),
+                            TextFont {
+                                font_size: FontSize::Px(15.0),
+                                ..default()
+                            },
+                            TextColor(Color::srgb(0.95, 0.80, 0.35)),
+                        ));
+                        left.spawn(Node {
+                            flex_direction: FlexDirection::Row,
+                            align_items: AlignItems::Center,
+                            column_gap: Val::Px(8.0),
+                            ..default()
+                        })
+                        .with_children(|row| {
+                            row.spawn_empty().apply_scene(button::small(
+                                &loc.msg("jam-loop-button"),
+                                |_: On<Pointer<Click>>, mut jam_loop: ResMut<JamLoop>| {
+                                    jam_loop.0 = !jam_loop.0;
+                                },
+                            ));
+                            row.spawn((
+                                Text::new(String::from(loc.msg("jam-loop-off"))),
+                                TextFont {
+                                    font_size: FontSize::Px(15.0),
+                                    ..default()
+                                },
+                                TextColor(Color::srgb(0.70, 0.70, 0.80)),
+                                JamLoopLabel,
+                            ));
+                        });
+                        left.spawn(Node {
+                            flex_direction: FlexDirection::Row,
+                            align_items: AlignItems::Center,
+                            column_gap: Val::Px(8.0),
+                            ..default()
+                        })
+                        .with_children(|row| {
+                            row.spawn_empty().apply_scene(
+                                button::small(
+                                    &loc.msg("jam-call-response-button"),
+                                    |_: On<Pointer<Click>>,
+                                     mut enabled: ResMut<
+                                        super::call_response::CallResponseEnabled,
+                                    >| {
+                                        enabled.0 = !enabled.0;
+                                    },
+                                ),
+                            );
+                            row.spawn((
+                                Text::new(String::from(loc.msg("jam-call-response-off"))),
+                                TextFont {
+                                    font_size: FontSize::Px(15.0),
+                                    ..default()
+                                },
+                                TextColor(Color::srgb(0.70, 0.70, 0.80)),
+                                super::call_response::CallResponseLabel,
+                            ));
+                        });
+                        left.spawn(Node {
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(4.0),
+                            ..default()
+                        })
+                        .with_children(|grid| {
+                            spawn_12_bar_grid(
+                                grid,
+                                &chords,
+                                key,
+                                progression,
+                                &GridConfig::for_2d(),
+                                theme.twelve_bar_colors(),
+                            );
+                        });
+                        left.spawn(Node {
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::Center,
+                            row_gap: Val::Px(6.0),
+                            ..default()
+                        })
+                        .with_children(|metro| {
+                            spawn_metronome(metro, &loc, beats_per_bar, bpm);
+                        });
+                        left.spawn(Node {
+                            width: Val::Percent(100.0),
+                            flex_grow: 1.0,
+                            ..default()
+                        })
+                        .with_children(|spec| {
+                            spawn_spectrogram(spec, *spectrogram_style, &osc_material.0);
+                        });
                     });
-            });
 
-            // ── Right half: everything harmonica — the bend diagram and the
-            // live-tinted hole map both name/track holes on the same
-            // instrument, so they share this column rather than splitting
-            // across both halves.
-            columns.spawn(Node {
-                width: Val::Percent(50.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                padding: UiRect::top(Val::Px(BAR_HEIGHT)),
-                ..default()
-            })
-            .with_children(|right| {
-                spawn_harmonica_overlay(right, &chart.harmonica, &loc);
-                spawn_hole_map(right, &holes_info, &loc);
-            });
+                // ── Right half: everything harmonica — the bend diagram and the
+                // live-tinted hole map both name/track holes on the same
+                // instrument, so they share this column rather than splitting
+                // across both halves.
+                columns
+                    .spawn(Node {
+                        width: Val::Percent(50.0),
+                        height: Val::Percent(100.0),
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        padding: UiRect::top(Val::Px(BAR_HEIGHT)),
+                        ..default()
+                    })
+                    .with_children(|right| {
+                        spawn_harmonica_overlay(right, &chart.harmonica, &loc);
+                        spawn_hole_map(right, &holes_info, &loc);
+                    });
             });
 
             // MIDI-backed song only — an ordinary music/silent song has
