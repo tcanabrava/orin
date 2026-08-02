@@ -24,6 +24,7 @@
 //! vertically centered on their staff position.
 
 use bevy::prelude::*;
+use bevy::ui::ComputedNode;
 use bevy::ui_render::prelude::MaterialNode;
 
 use crate::audio_system::midi::midi_to_note;
@@ -314,13 +315,26 @@ const CLEF_X: f32 = 8.0;
 /// note highway and song-progress playhead already use elsewhere.
 const PLAYHEAD_X: f32 = 56.0;
 const PIXELS_PER_BEAT: f32 = 34.0;
-/// How far ahead of the playhead (in beats) a note is still spawned.
-const VISIBLE_BEATS_AHEAD: f64 = 12.0;
-/// How far *behind* the playhead a note stays spawned before being culled
-/// — a small trailing margin so a just-played long note doesn't vanish
-/// the instant its onset crosses the reference line, only once it's
-/// fully done sounding.
-const VISIBLE_BEATS_BEHIND: f64 = 1.0;
+/// Extra trailing margin (beats) behind the playhead, on top of what the
+/// panel's own on-screen space left of the reference line already fits —
+/// so a just-played note doesn't vanish the instant its onset crosses the
+/// reference line, only once it's fully done sounding.
+const VISIBLE_BEATS_GRACE: f64 = 1.0;
+
+/// How many beats of note fit within a panel that's `panel_width_px` wide
+/// on screen, on each side of the "now" reference line — `(beats_behind,
+/// beats_ahead)`. The score's visible window is sized to whatever the
+/// panel can actually show on its own, independent of any other host UI
+/// (the falling-note highway's own lookahead, the Song Editor grid's own
+/// column count, ...): [`PLAYHEAD_X`] pixels of panel sit to the left of
+/// the reference line, `panel_width_px - PLAYHEAD_X` to the right, and
+/// [`rebuild_score_notes`] re-derives this every time the panel's own
+/// rendered width changes (a resize), not just once.
+fn visible_beats(panel_width_px: f32) -> (f64, f64) {
+    let behind = (PLAYHEAD_X / PIXELS_PER_BEAT) as f64 + VISIBLE_BEATS_GRACE;
+    let ahead = ((panel_width_px - PLAYHEAD_X).max(0.0) / PIXELS_PER_BEAT) as f64;
+    (behind, ahead)
+}
 
 fn y_for_step(step: i32) -> f32 {
     STAFF_TOP_MARGIN + (8 - step) as f32 * STEP_PX
@@ -349,6 +363,12 @@ pub struct MusicScoreNotes(pub Vec<NotationNote>);
 #[derive(Resource, Default)]
 pub struct MusicScorePlayhead(pub f64);
 
+/// Tags the panel's own root node, so [`rebuild_score_notes`] can read its
+/// current rendered width (via `ComputedNode`) to size the visible window —
+/// see [`visible_beats`].
+#[derive(Component)]
+struct MusicScorePanel;
+
 /// The (persistent) child of the panel that [`rebuild_score_notes`]
 /// despawns and respawns the note glyphs under — everything *except* this
 /// layer (the staff lines, the clef, the reference line) is spawned once
@@ -375,7 +395,8 @@ impl Plugin for MusicScorePlugin {
                 Update,
                 rebuild_score_notes.run_if(
                     resource_changed::<MusicScoreNotes>
-                        .or_else(resource_changed::<MusicScorePlayhead>),
+                        .or_else(resource_changed::<MusicScorePlayhead>)
+                        .or_else(panel_width_changed),
                 ),
             );
     }
@@ -404,6 +425,7 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
             ..default()
         },
         BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85)),
+        MusicScorePanel,
     ));
     let root_id = root.id();
     root.with_children(|panel| {
@@ -473,12 +495,22 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
     root_id
 }
 
+/// `run_if` gate: whether the panel's own on-screen width just changed
+/// (first layout pass after spawn, or a window resize) — see
+/// [`visible_beats`]. `Changed<ComputedNode>` fires for both, since Bevy's
+/// UI layout system writes a fresh `ComputedNode` whenever a node's
+/// computed size changes, insertion included.
+fn panel_width_changed(panel: Query<(), (With<MusicScorePanel>, Changed<ComputedNode>)>) -> bool {
+    !panel.is_empty()
+}
+
 fn rebuild_score_notes(
     mut commands: Commands,
     bravura: Option<Res<BravuraFont>>,
     tie_material: Option<Res<TieMaterialHandle>>,
     notes: Res<MusicScoreNotes>,
     playhead: Res<MusicScorePlayhead>,
+    panels: Query<&ComputedNode, With<MusicScorePanel>>,
     layers: Query<Entity, With<MusicScoreNotesLayer>>,
     existing: Query<Entity, With<MusicScoreNoteGlyph>>,
 ) {
@@ -486,6 +518,23 @@ fn rebuild_score_notes(
     let Some(tie_material) = tie_material else {
         return;
     };
+    // No `ComputedNode` yet means the panel hasn't been through a layout
+    // pass at all (the very first frame after spawn) — nothing to size the
+    // window against yet, so skip this pass; `panel_width_changed` fires
+    // again the moment layout catches up and gives it one. `ComputedNode`
+    // sizes are physical px; every length in this module (`STAFF_LINE_
+    // SPACING`, `PIXELS_PER_BEAT`, ...) feeds `Val::Px`, which is logical
+    // px, so this needs `inverse_scale_factor()` to match — same
+    // conversion `gameplay_2d::size_note_tails` already applies for the
+    // same reason.
+    let Some(panel_width) = panels
+        .iter()
+        .next()
+        .map(|n| n.size().x * n.inverse_scale_factor())
+    else {
+        return;
+    };
+    let (beats_behind, beats_ahead) = visible_beats(panel_width);
     for glyph in &existing {
         commands.entity(glyph).despawn();
     }
@@ -501,8 +550,8 @@ fn rebuild_score_notes(
             // scrolled out of the visible window and wasn't spawned.
             let mut prev: Option<&NotationNote> = None;
             for note in &notes.0 {
-                let visible = note.start_beat + note.duration_beats >= now - VISIBLE_BEATS_BEHIND
-                    && note.start_beat <= now + VISIBLE_BEATS_AHEAD;
+                let visible = note.start_beat + note.duration_beats >= now - beats_behind
+                    && note.start_beat <= now + beats_ahead;
                 if visible {
                     spawn_note_glyphs(parent, &bravura, &tie_material, note, prev, now);
                 }
@@ -643,6 +692,31 @@ fn spawn_note_glyphs(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn visible_beats_ahead_scales_with_panel_width() {
+        let (_, narrow_ahead) = visible_beats(200.0);
+        let (_, wide_ahead) = visible_beats(2000.0);
+        assert!(
+            wide_ahead > narrow_ahead * 5.0,
+            "a much wider panel should show proportionally more beats ahead"
+        );
+    }
+
+    #[test]
+    fn visible_beats_ahead_never_goes_negative_for_a_panel_narrower_than_playhead_x() {
+        let (_, ahead) = visible_beats(10.0); // narrower than PLAYHEAD_X itself
+        assert!(ahead >= 0.0);
+    }
+
+    #[test]
+    fn visible_beats_behind_is_independent_of_panel_width() {
+        // The space behind the playhead is bounded by PLAYHEAD_X, which is
+        // fixed — widening the panel only grows what's visible ahead.
+        let (behind_narrow, _) = visible_beats(200.0);
+        let (behind_wide, _) = visible_beats(2000.0);
+        assert_eq!(behind_narrow, behind_wide);
+    }
 
     #[test]
     fn staff_step_places_e4_at_the_bottom_line() {

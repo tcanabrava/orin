@@ -47,15 +47,26 @@ pub(super) fn sync_music_score(state: Res<EditorState>, mut notes: ResMut<MusicS
 
 /// Keeps [`MusicScorePlayhead`] following the same tick position
 /// `playback::update_playhead_view`'s moving line already derives from
-/// [`Playhead`] — ordered `.after(playback::advance_playhead)` like that
-/// system, so it reads the same frame's `elapsed`, not last frame's.
+/// [`Playhead`] while a take is actually playing (or paused mid-take) —
+/// ordered `.after(playback::advance_playhead)` like that system, so it
+/// reads the same frame's `elapsed`, not last frame's. The rest of the
+/// time — the ordinary "just editing, nothing running" state — there's no
+/// playback position to follow, so this instead follows `EditorState::
+/// scroll_beat` (already in beat units, see `grid.rs`'s own use of it).
+/// Without this fallback the score stayed pinned wherever it was last set
+/// (beat 0 on a fresh song), so a note more than a dozen-ish beats from the
+/// very start of the song (`music_score`'s own fixed visible-window width)
+/// could never enter the panel's visible window at all, no matter how far
+/// the grid itself was scrolled to bring it into view.
 pub(super) fn sync_music_score_playhead(
     playhead: Res<Playhead>,
+    state: Res<EditorState>,
     mut score_playhead: ResMut<MusicScorePlayhead>,
 ) {
-    if playhead.secs_per_tick <= 0.0 {
-        return;
+    if playhead.playing && playhead.secs_per_tick > 0.0 {
+        let cur_tick = playhead.elapsed / playhead.secs_per_tick;
+        score_playhead.0 = (cur_tick / TICKS_PER_BEAT as f32) as f64;
+    } else {
+        score_playhead.0 = state.scroll_beat as f64;
     }
-    let cur_tick = playhead.elapsed / playhead.secs_per_tick;
-    score_playhead.0 = (cur_tick / TICKS_PER_BEAT as f32) as f64;
 }
