@@ -11,7 +11,7 @@
 
 use bevy::prelude::*;
 
-use crate::music_score::{MusicScoreNotes, MusicScorePlayhead, NotationNote};
+use crate::music_score::{MusicScoreNotes, MusicScorePlayhead, NotationNote, split_at_bar_lines};
 
 use super::TICKS_PER_BEAT;
 use super::playback::{Playhead, build_harp, note_midi};
@@ -22,7 +22,11 @@ use super::state::EditorState;
 /// gate every other EditorState-derived rebuild in `song_editor::mod`'s own
 /// system list uses. A note whose hole/technique the current harp can't
 /// resolve (e.g. an Overblow on a hole that doesn't support it) has nothing
-/// to draw and is skipped, same as gameplay's own bridge.
+/// to draw and is skipped, same as gameplay's own bridge. `super::
+/// BEATS_PER_BAR` (the editor has no editable time signature of its own,
+/// see that constant's own definition) feeds `split_at_bar_lines` so a note
+/// crossing a bar line becomes several tied segments instead of one
+/// oversized notehead.
 pub(super) fn sync_music_score(state: Res<EditorState>, mut notes: ResMut<MusicScoreNotes>) {
     let harp = build_harp(&state.key, state.harmonica_kind);
     notes.0 = state
@@ -34,8 +38,10 @@ pub(super) fn sync_music_score(state: Res<EditorState>, mut notes: ResMut<MusicS
                 start_beat: n.tick as f64 / TICKS_PER_BEAT as f64,
                 duration_beats: n.len.max(1) as f64 / TICKS_PER_BEAT as f64,
                 midi,
+                tied_from_previous: false,
             })
         })
+        .flat_map(|note| split_at_bar_lines(note, super::BEATS_PER_BAR as f64))
         .collect();
 }
 

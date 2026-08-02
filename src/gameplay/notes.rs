@@ -345,11 +345,16 @@ pub fn build_scheduled_notes(
 /// (`chart.timing`), so this stays correct across a tempo change mid-song,
 /// not just for a flat-tempo chart. A note with no resolvable
 /// `expected_pitch` (the harp can't produce it) has nothing to draw on a
-/// staff and is skipped, same as it already can never be hit.
+/// staff and is skipped, same as it already can never be hit. `beats_per_bar`
+/// (the chart's own time signature numerator) feeds
+/// [`crate::music_score::split_at_bar_lines`] so a note crossing one or more
+/// bar lines becomes several tied segments instead of a single oversized
+/// notehead.
 pub fn notes_to_notation(
     notes: &[ScheduledNote],
     resolution: u32,
     tempo_map: &[crate::song::chart::TempoPoint],
+    beats_per_bar: f64,
 ) -> Vec<crate::music_score::NotationNote> {
     notes
         .iter()
@@ -363,8 +368,10 @@ pub fn notes_to_notation(
                 duration_beats: (end_tick.saturating_sub(start_tick)).max(1) as f64
                     / resolution as f64,
                 midi,
+                tied_from_previous: false,
             })
         })
+        .flat_map(|note| crate::music_score::split_at_bar_lines(note, beats_per_bar))
         .collect()
 }
 

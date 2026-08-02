@@ -24,8 +24,12 @@
 //! vertically centered on their staff position.
 
 use bevy::prelude::*;
+use bevy::ui_render::prelude::MaterialNode;
 
 use crate::audio_system::midi::midi_to_note;
+
+mod tie_material;
+use tie_material::{TieMaterialHandle, TieMaterialPlugin};
 
 // ── SMuFL glyphs (Bravura) ──────────────────────────────────────────────
 //
@@ -59,6 +63,44 @@ pub struct NotationNote {
     pub start_beat: f64,
     pub duration_beats: f64,
     pub midi: u8,
+    /// True for every segment after the first when [`split_at_bar_lines`]
+    /// split a longer note across a bar line — [`spawn_note_glyphs`] draws
+    /// a short tie mark connecting it back to the segment immediately
+    /// before it (always the note's own preceding beats, since a split
+    /// segment starts exactly where the previous one ended). `false` for a
+    /// note that was never split, and for a split note's own first segment.
+    pub tied_from_previous: bool,
+}
+
+/// Splits `note` into one segment per bar it spans, so a note that would
+/// otherwise be drawn as a single oversized notehead with no indication of
+/// its true length instead becomes a run of bar-sized segments tied
+/// together (see [`NotationNote::tied_from_previous`]). A note entirely
+/// within one bar comes back unchanged (a one-element `Vec`). Splits only
+/// at bar lines, not at every beat — this module's engraving is
+/// deliberately coarse (see the module doc comment), so a note that starts
+/// off the beat within a single bar still draws as one slightly-
+/// mispositioned notehead, same as before this function existed.
+pub fn split_at_bar_lines(note: NotationNote, beats_per_bar: f64) -> Vec<NotationNote> {
+    if beats_per_bar <= 0.0 || note.duration_beats <= 0.0 {
+        return vec![note];
+    }
+    let end = note.start_beat + note.duration_beats;
+    let mut segments = Vec::new();
+    let mut pos = note.start_beat;
+    while pos < end {
+        let bar_index = (pos / beats_per_bar).floor();
+        let next_bar_start = (bar_index + 1.0) * beats_per_bar;
+        let seg_end = next_bar_start.min(end);
+        segments.push(NotationNote {
+            start_beat: pos,
+            duration_beats: seg_end - pos,
+            midi: note.midi,
+            tied_from_previous: !segments.is_empty(),
+        });
+        pos = seg_end;
+    }
+    segments
 }
 
 /// Diatonic staff step for `midi`, treble clef, where E4 (the staff's
@@ -227,6 +269,31 @@ const STEM_THICKNESS_SP: f32 = 0.12; // engravingDefaults.stemThickness
 const LEDGER_EXTENSION_SP: f32 = 0.4;
 const LEDGER_THICKNESS_SP: f32 = 0.16;
 
+/// A tied-note connector: a real curved arc, drawn via
+/// [`tie_material::TieMaterial`] (a `UiMaterial` fragment shader) rather
+/// than a `bevy_ui` `Node`/`BackgroundColor` rectangle, which can only ever
+/// be flat — SMuFL has no single tie codepoint either (a real tie is a
+/// drawn bezier arc, not a glyph). Not derived from `bravura_metadata.json`
+/// (there's nothing to derive — SMuFL doesn't specify tie geometry).
+/// [`TIE_GAP_SP`] is deliberately *not* a multiple of 0.5 — staff lines and
+/// spaces sit at every 0.5 staff-space step, so a half-integer gap would
+/// occasionally start the arc's bounding box flush against a staff line,
+/// visually merging with it. The arc's *width* isn't one of these
+/// constants — [`spawn_note_glyphs`] derives it per tie from the real pixel
+/// gap between the two tied noteheads' own onset positions, so it actually
+/// spans from one notehead to the next rather than sitting at a fixed size
+/// next to whichever note happens to be the tied-to one.
+/// [`TIE_END_MARGIN_SP`] pulls each end in from the notehead it's closest
+/// to, clearing the glyph itself (a `Filled`/`Half` notehead is
+/// [`NoteheadKind::width_sp`] wide; this splits the difference against a
+/// wider `Whole` notehead rather than tracking each end's own kind).
+const TIE_END_MARGIN_SP: f32 = 1.3;
+const TIE_GAP_SP: f32 = 0.15;
+const TIE_ARC_HEIGHT_SP: f32 = 0.7;
+/// Never let the arc's own bounding box collapse to (near) nothing when
+/// two tied segments' onsets land very close together in pixels.
+const TIE_MIN_WIDTH_PX: f32 = 4.0;
+
 /// `accidentalSharp`'s own bounding-box width (`glyphBBoxes.accidentalSharp`
 /// — `bBoxNE.x - bBoxSW.x` = `0.996 - 0.0`), plus a small fixed gap before
 /// the notehead it belongs to.
@@ -300,7 +367,8 @@ pub struct MusicScorePlugin;
 
 impl Plugin for MusicScorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MusicScoreNotes>()
+        app.add_plugins(TieMaterialPlugin)
+            .init_resource::<MusicScoreNotes>()
             .init_resource::<MusicScorePlayhead>()
             .add_systems(Startup, load_bravura_font)
             .add_systems(
@@ -408,12 +476,16 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
 fn rebuild_score_notes(
     mut commands: Commands,
     bravura: Option<Res<BravuraFont>>,
+    tie_material: Option<Res<TieMaterialHandle>>,
     notes: Res<MusicScoreNotes>,
     playhead: Res<MusicScorePlayhead>,
     layers: Query<Entity, With<MusicScoreNotesLayer>>,
     existing: Query<Entity, With<MusicScoreNoteGlyph>>,
 ) {
     let Some(bravura) = bravura else { return };
+    let Some(tie_material) = tie_material else {
+        return;
+    };
     for glyph in &existing {
         commands.entity(glyph).despawn();
     }
@@ -421,13 +493,20 @@ fn rebuild_score_notes(
     let now = playhead.0;
     for layer in &layers {
         commands.entity(layer).with_children(|parent| {
+            // `prev` tracks the immediately-preceding element of `notes.0`
+            // regardless of visibility — `split_at_bar_lines` always
+            // produces a split note's segments as consecutive entries, so
+            // this is reliably "the segment `note` was tied from" whenever
+            // `note.tied_from_previous` is set, even if that segment itself
+            // scrolled out of the visible window and wasn't spawned.
+            let mut prev: Option<&NotationNote> = None;
             for note in &notes.0 {
-                if note.start_beat + note.duration_beats < now - VISIBLE_BEATS_BEHIND
-                    || note.start_beat > now + VISIBLE_BEATS_AHEAD
-                {
-                    continue;
+                let visible = note.start_beat + note.duration_beats >= now - VISIBLE_BEATS_BEHIND
+                    && note.start_beat <= now + VISIBLE_BEATS_AHEAD;
+                if visible {
+                    spawn_note_glyphs(parent, &bravura, &tie_material, note, prev, now);
                 }
-                spawn_note_glyphs(parent, &bravura, note, now);
+                prev = Some(note);
             }
         });
     }
@@ -436,7 +515,9 @@ fn rebuild_score_notes(
 fn spawn_note_glyphs(
     parent: &mut ChildSpawnerCommands,
     bravura: &BravuraFont,
+    tie_material: &TieMaterialHandle,
     note: &NotationNote,
+    prev: Option<&NotationNote>,
     now: f64,
 ) {
     let x = ((note.start_beat - now) * PIXELS_PER_BEAT as f64) as f32;
@@ -444,7 +525,10 @@ fn spawn_note_glyphs(
     let kind = notehead_kind(note.duration_beats);
     let notehead_y = y_for_step(step);
 
-    if needs_sharp(note.midi) {
+    // A tied continuation is the same sounded pitch as the segment before
+    // it — standard engraving shows the accidental once, on the first
+    // segment, not restated on every tied-to note.
+    if needs_sharp(note.midi) && !note.tied_from_previous {
         parent.spawn((
             Node {
                 position_type: PositionType::Absolute,
@@ -483,6 +567,31 @@ fn spawn_note_glyphs(
         MusicScoreNoteGlyph,
         crate::dialogs::font_fallback::SkipFontFallback,
     ));
+
+    // Tie mark: a real curved arc (see `tie_material`'s own doc comment),
+    // spanning the actual pixel gap from the previous segment's notehead
+    // to this one's — not a fixed size, since that gap varies with how
+    // long the previous (tied-from) segment was.
+    if note.tied_from_previous
+        && let Some(prev) = prev
+    {
+        let prev_x = ((prev.start_beat - now) * PIXELS_PER_BEAT as f64) as f32;
+        let margin = TIE_END_MARGIN_SP * STAFF_LINE_SPACING;
+        let left = prev_x + margin;
+        let width = (x - margin - left).max(TIE_MIN_WIDTH_PX);
+        parent.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(left),
+                top: Val::Px(notehead_y + TIE_GAP_SP * STAFF_LINE_SPACING),
+                width: Val::Px(width),
+                height: Val::Px(TIE_ARC_HEIGHT_SP * STAFF_LINE_SPACING),
+                ..default()
+            },
+            MaterialNode(tie_material.0.clone()),
+            MusicScoreNoteGlyph,
+        ));
+    }
 
     if kind.has_stem() {
         let stem_up = step < 4; // below the middle line (B4) -> stem up
@@ -615,5 +724,70 @@ mod tests {
         assert!(!NoteheadKind::Whole.has_stem());
         assert!(NoteheadKind::Half.has_stem());
         assert!(NoteheadKind::Filled.has_stem());
+    }
+
+    fn note(start_beat: f64, duration_beats: f64) -> NotationNote {
+        NotationNote {
+            start_beat,
+            duration_beats,
+            midi: 60,
+            tied_from_previous: false,
+        }
+    }
+
+    #[test]
+    fn split_at_bar_lines_leaves_a_note_within_one_bar_untouched() {
+        let segments = split_at_bar_lines(note(1.0, 2.0), 4.0);
+        assert_eq!(segments, vec![note(1.0, 2.0)]);
+        assert!(!segments[0].tied_from_previous);
+    }
+
+    #[test]
+    fn split_at_bar_lines_splits_a_note_crossing_one_bar_line() {
+        // Starts at beat 2 of bar 0 (4 beats/bar), lasts 4 beats: ends at
+        // beat 6, i.e. beat 2 of bar 1. Splits into [2, 4) and [4, 6).
+        let segments = split_at_bar_lines(note(2.0, 4.0), 4.0);
+        assert_eq!(segments.len(), 2);
+        assert_eq!(segments[0].start_beat, 2.0);
+        assert_eq!(segments[0].duration_beats, 2.0);
+        assert!(!segments[0].tied_from_previous);
+        assert_eq!(segments[1].start_beat, 4.0);
+        assert_eq!(segments[1].duration_beats, 2.0);
+        assert!(segments[1].tied_from_previous);
+    }
+
+    #[test]
+    fn split_at_bar_lines_splits_a_note_spanning_several_bars() {
+        // Starts at beat 3 of bar 0, lasts 10 beats: ends at beat 13
+        // (beat 1 of bar 3). Segments: [3,4), [4,8), [8,12), [12,13).
+        let segments = split_at_bar_lines(note(3.0, 10.0), 4.0);
+        let expected: Vec<(f64, f64)> = vec![(3.0, 1.0), (4.0, 4.0), (8.0, 4.0), (12.0, 1.0)];
+        let actual: Vec<(f64, f64)> = segments
+            .iter()
+            .map(|s| (s.start_beat, s.duration_beats))
+            .collect();
+        assert_eq!(actual, expected);
+        assert!(!segments[0].tied_from_previous);
+        assert!(segments[1..].iter().all(|s| s.tied_from_previous));
+    }
+
+    #[test]
+    fn split_at_bar_lines_preserves_midi() {
+        let segments = split_at_bar_lines(
+            NotationNote {
+                start_beat: 2.0,
+                duration_beats: 4.0,
+                midi: 67,
+                tied_from_previous: false,
+            },
+            4.0,
+        );
+        assert!(segments.iter().all(|s| s.midi == 67));
+    }
+
+    #[test]
+    fn split_at_bar_lines_on_a_note_starting_exactly_on_a_bar_line_needs_no_split() {
+        let segments = split_at_bar_lines(note(4.0, 4.0), 4.0);
+        assert_eq!(segments, vec![note(4.0, 4.0)]);
     }
 }

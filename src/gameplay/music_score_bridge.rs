@@ -50,7 +50,22 @@ fn sync_music_score_notes(
         return;
     };
     let timing = &manifest.chart.timing;
-    score_notes.0 = notes_to_notation(&song_notes.notes, timing.resolution, &timing.tempo_map);
+    let beats_per_bar = manifest
+        .chart
+        .song
+        .time_signature
+        .as_deref()
+        .unwrap_or("4/4")
+        .split('/')
+        .next()
+        .and_then(|n| n.parse::<f64>().ok())
+        .unwrap_or(4.0);
+    score_notes.0 = notes_to_notation(
+        &song_notes.notes,
+        timing.resolution,
+        &timing.tempo_map,
+        beats_per_bar,
+    );
 }
 
 /// Keeps [`MusicScorePlayhead`] following the same [`GameplayClock`] every
