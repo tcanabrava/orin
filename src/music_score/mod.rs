@@ -369,6 +369,7 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
                 ..default()
             },
             TextColor(Color::WHITE),
+            crate::dialogs::font_fallback::SkipFontFallback,
         ));
         // "Now" reference line — notes scroll toward/through this the same
         // way the falling-note highway approaches its own hit line.
@@ -461,6 +462,7 @@ fn spawn_note_glyphs(
             },
             TextColor(Color::WHITE),
             MusicScoreNoteGlyph,
+            crate::dialogs::font_fallback::SkipFontFallback,
         ));
     }
 
@@ -479,6 +481,7 @@ fn spawn_note_glyphs(
         },
         TextColor(Color::WHITE),
         MusicScoreNoteGlyph,
+        crate::dialogs::font_fallback::SkipFontFallback,
     ));
 
     if kind.has_stem() {

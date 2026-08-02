@@ -33,6 +33,7 @@ const EMOJI_CHARS: &[char] = &[
     '\u{1F4BE}', // 💾 floppy disk (Save)
     '\u{1F4C2}', // 📂 open folder (Load)
     '\u{1F3A4}', // 🎤 microphone (Practice)
+    '\u{1F514}', // 🔔 bell (Song Editor Metronome)
 ];
 /// Characters missing from `FreeSans.otf` that `fallback_symbols.ttf` covers.
 const SYMBOL_CHARS: &[char] = &[
@@ -40,10 +41,14 @@ const SYMBOL_CHARS: &[char] = &[
     '\u{270E}', // ✎ pencil (Edit)
     '\u{23F8}', // ⏸ pause bars (Pause)
     '\u{2717}', // ✗ cross mark (Practice "missed")
+    '\u{23F9}', // ⏹ stop square (Song Editor Record "Finish")
+    '\u{23FA}', // ⏺ record circle (Song Editor Record status)
 ];
 /// Characters missing from `FreeSans.otf` that `fallback_arrows.ttf` covers.
 const ARROW_CHARS: &[char] = &[
     '\u{21BB}', // ↻ clockwise open circle arrow (technique cycle)
+    '\u{21B6}', // ↶ anticlockwise top semicircle arrow (Song Editor Undo)
+    '\u{21B7}', // ↷ clockwise top semicircle arrow (Song Editor Redo)
 ];
 
 fn fallback_kind(c: char) -> Option<FallbackKind> {
@@ -108,6 +113,20 @@ fn load_fallback_fonts(mut fonts: ResMut<Assets<Font>>, mut commands: Commands) 
 #[derive(Component)]
 struct GeneratedSpan;
 
+/// Opts a `Text` entity out of this whole system. `apply_font_fallback`
+/// otherwise runs on *every* `Text` in the game and — since its job is to
+/// patch specific known gaps in `FreeSans.otf` — treats any character it
+/// doesn't recognize as "must be the default font," unconditionally
+/// resetting `TextFont.font` back to [`FontSource::default()`] the moment
+/// `Text` changes (including on spawn). That's correct for this module's
+/// own reactive icon+label text, but wrong for anything spawning `Text`
+/// with a deliberately different font for its own reasons entirely
+/// unrelated to this module — e.g. `music_score`'s Bravura/SMuFL glyphs,
+/// which this system would otherwise clobber back to `FreeSans` (which has
+/// no glyph at those Private-Use-Area codepoints) on the very next pass.
+#[derive(Component)]
+pub struct SkipFontFallback;
+
 /// Rewrites any changed [`Text`] containing a known-missing character: the
 /// entity's own `Text`/`TextFont` become the first run, and each further run
 /// is appended as a [`TextSpan`] child sourcing the matching fallback font.
@@ -116,7 +135,10 @@ struct GeneratedSpan;
 fn apply_font_fallback(
     mut commands: Commands,
     fallback: Option<Res<FallbackFonts>>,
-    mut texts: Query<(Entity, &Text, &mut TextFont, &TextColor, Option<&Children>), Changed<Text>>,
+    mut texts: Query<
+        (Entity, &Text, &mut TextFont, &TextColor, Option<&Children>),
+        (Changed<Text>, Without<SkipFontFallback>),
+    >,
     generated: Query<(), With<GeneratedSpan>>,
 ) {
     let Some(fallback) = fallback else { return };
