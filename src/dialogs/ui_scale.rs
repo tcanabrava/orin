@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 
 /// UI scale never goes below the natural size, and caps out well before it
-/// gets impractical.
-const MIN_SCALE: f32 = 1.0;
-const MAX_SCALE: f32 = 8.0;
+/// gets impractical. `pub` so the Options page's zoom slider
+/// (`menu::pages::options`) can share the exact same bounds.
+pub const MIN_SCALE: f32 = 1.0;
+pub const MAX_SCALE: f32 = 8.0;
 const SCALE_STEP: f32 = 1.2;
 
 /// One step up/down, clamped to `[MIN_SCALE, MAX_SCALE]` — shared by the

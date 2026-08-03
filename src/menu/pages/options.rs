@@ -60,7 +60,8 @@ impl Plugin for OptionsPlugin {
                     propagate_preview_layers,
                     update_mic_banner,
                     sync_mic_combobox,
-                    update_zoom_label,
+                    update_zoom_slider_visuals,
+                    sync_zoom_slider_from_ui_scale,
                 )
                     .run_if(in_state(MenuPage::Options)),
             );
@@ -289,7 +290,7 @@ fn spawn_left_column(
     spawn_adaptive_difficulty_toggle(commands, parent, adaptive_difficulty.0, loc);
     spawn_fullscreen_toggle(commands, parent, fullscreen.0, loc);
     spawn_colorblind_palette_toggle(commands, parent, colorblind_palette.0, loc);
-    spawn_zoom_toggle(commands, parent, ui_scale, loc);
+    spawn_zoom_slider(commands, parent, ui_scale, loc);
 }
 
 fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localization) {
@@ -404,16 +405,14 @@ fn spawn_fullscreen_toggle(
     )));
 }
 
-/// On-screen equivalent of `dialogs::ui_scale::change_scaling`'s Arrow
-/// Up/Down handling — that used to be the *only* way to change `UiScale`,
-/// unusable on a touch-only device with no keyboard.
-fn zoom_out(_: On<Pointer<Click>>, mut ui_scale: ResMut<UiScale>) {
-    ui_scale.0 = crate::dialogs::ui_scale::scale_down(ui_scale.0);
-}
+/// Marks the zoom slider's own track, so its `SliderValue` can be told apart
+/// from the volume/latency sliders', which also carry one.
+#[derive(Component, Default, Clone)]
+struct ZoomSlider;
 
-fn zoom_in(_: On<Pointer<Click>>, mut ui_scale: ResMut<UiScale>) {
-    ui_scale.0 = crate::dialogs::ui_scale::scale_up(ui_scale.0);
-}
+/// The fill bar inside the zoom slider track.
+#[derive(Component, Default, Clone)]
+struct ZoomSliderFill;
 
 fn zoom_label_text(loc: &Localization, scale: f32) -> String {
     loc.msg_args(
@@ -423,46 +422,107 @@ fn zoom_label_text(loc: &Localization, scale: f32) -> String {
     .into()
 }
 
-/// A row with zoom-out/zoom-in buttons plus a live "Zoom: N%" readout —
-/// same shape as [`spawn_fullscreen_toggle`], but two buttons instead of
-/// one pill since this isn't a binary on/off.
-fn spawn_zoom_toggle(commands: &mut Commands, parent: Entity, scale: f32, loc: &Localization) {
-    let row = commands
-        .spawn(Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(8.0),
-            ..default()
-        })
-        .id();
-    commands.entity(row).with_children(|r| {
-        r.spawn_empty()
-            .apply_scene(button::small(&loc.msg("options-zoom-out"), zoom_out));
-        r.spawn_empty()
-            .apply_scene(button::small(&loc.msg("options-zoom-in"), zoom_in));
-        r.spawn((
-            Text::new(zoom_label_text(loc, scale)),
-            TextFont {
-                font_size: FontSize::Px(16.0),
-                ..default()
-            },
-            TextColor(Color::WHITE),
-            ZoomLabel,
-        ));
-    });
-    commands.entity(parent).add_child(row);
+/// Where `scale` sits between `dialogs::ui_scale`'s `MIN_SCALE`/`MAX_SCALE`,
+/// as a `0.0..=1.0` fraction — shared by the slider's initial spawn position
+/// and its live fill width.
+fn zoom_fraction(scale: f32) -> f32 {
+    use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+    ((scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)).clamp(0.0, 1.0)
 }
 
-fn update_zoom_label(
-    ui_scale: Res<UiScale>,
+/// Commits the dragged/stepped value to the real `UiScale` only once the
+/// interaction is finished (`is_final`), never on every drag frame:
+/// `UiScale` changing forces Bevy to re-rasterize every visible glyph at the
+/// new effective size, and applying that continuously mid-drag is exactly
+/// the GPU-memory-exhaustion crash `dialogs::ui_scale`'s doc comment
+/// describes fixing for the keyboard shortcut. The live drag preview comes
+/// from `SliderValue` instead (mirrored onto the fill/label by
+/// [`update_zoom_slider_visuals`]), which costs nothing to update every frame.
+fn set_zoom(ev: On<ValueChange<f32>>, mut ui_scale: ResMut<UiScale>) {
+    if ev.is_final {
+        ui_scale.0 = ev.value;
+    }
+}
+
+/// A labelled zoom slider, replacing the old +/- buttons — on-screen
+/// equivalent of `dialogs::ui_scale::change_scaling`'s Arrow Up/Down
+/// handling, which used to be the *only* way to change `UiScale`, unusable
+/// on a touch-only device with no keyboard.
+fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &Localization) {
+    use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+
+    let label = String::from(loc.msg("options-zoom"));
+    let row = spawn_slider_row(commands, parent, &label);
+    let frac = zoom_fraction(scale);
+
+    let track = commands
+        .spawn_scene(zoom_slider_scene(scale, frac))
+        .insert((SliderRange::new(MIN_SCALE, MAX_SCALE), SliderStep(0.1)))
+        .id();
+    commands.entity(row).add_child(track);
+
+    spawn_slider_value_label(commands, row, zoom_label_text(loc, scale), ZoomLabel);
+    commands
+        .entity(row)
+        .insert(Tooltip(String::from(loc.msg("options-zoom-tooltip"))));
+}
+
+/// The zoom slider track: a `bsn!` `Slider` + fill, wired to [`set_zoom`].
+fn zoom_slider_scene(value: f32, frac: f32) -> impl Scene {
+    bsn! {
+        Slider { track_click: {TrackClick::Snap} }
+        SliderValue({value})
+        Node { width: {Val::Px(220.0)}, height: {Val::Px(14.0)} }
+        BackgroundColor({TRACK_BG})
+        ZoomSlider
+        on(set_zoom)
+        Children [
+            (
+                Node { width: {Val::Percent(frac * 100.0)}, height: {Val::Percent(100.0)} }
+                BackgroundColor({Color::srgb(0.55, 0.45, 0.85)})
+                ZoomSliderFill
+                Pickable { should_block_lower: {false}, is_hoverable: {false} }
+            )
+        ]
+    }
+}
+
+/// Mirrors the zoom slider's own live `SliderValue` (updated every drag
+/// frame by `slider_self_update`, regardless of `is_final`) onto its fill
+/// and "Zoom: N%" label — safe to run continuously, unlike touching
+/// `UiScale` itself (see [`set_zoom`]).
+fn update_zoom_slider_visuals(
     loc: Res<Localization>,
+    sliders: Query<&SliderValue, (With<ZoomSlider>, Changed<SliderValue>)>,
+    mut fills: Query<&mut Node, With<ZoomSliderFill>>,
     mut labels: Query<&mut Text, With<ZoomLabel>>,
+) {
+    let Ok(value) = sliders.single() else {
+        return;
+    };
+    for mut node in &mut fills {
+        node.width = Val::Percent(zoom_fraction(value.0) * 100.0);
+    }
+    for mut text in &mut labels {
+        *text = Text::new(zoom_label_text(&loc, value.0));
+    }
+}
+
+/// Keeps the slider's own `SliderValue` in step with `UiScale` when it
+/// changes from outside the slider (the Arrow Up/Down shortcut) — otherwise
+/// the slider would silently drift out of sync with the actual scale until
+/// next dragged. `SliderValue` is an immutable component (replace via
+/// `insert`, not `&mut`), same as every other `bevy_ui_widgets` value type.
+fn sync_zoom_slider_from_ui_scale(
+    ui_scale: Res<UiScale>,
+    sliders: Query<Entity, With<ZoomSlider>>,
+    mut commands: Commands,
 ) {
     if !ui_scale.is_changed() {
         return;
     }
-    for mut text in &mut labels {
-        *text = Text::new(zoom_label_text(&loc, ui_scale.0));
+    for entity in &sliders {
+        commands.entity(entity).insert(SliderValue(ui_scale.0));
     }
 }
 
@@ -1117,6 +1177,21 @@ mod tests {
     fn zoom_label_shows_the_rounded_percent() {
         let loc = Localization::default();
         assert_eq!(zoom_label_text(&loc, 1.0), "options-zoom-label");
+    }
+
+    #[test]
+    fn zoom_fraction_spans_min_to_max() {
+        use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+        assert_eq!(zoom_fraction(MIN_SCALE), 0.0);
+        assert_eq!(zoom_fraction(MAX_SCALE), 1.0);
+        assert!((zoom_fraction((MIN_SCALE + MAX_SCALE) / 2.0) - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn zoom_fraction_clamps_outside_the_range() {
+        use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+        assert_eq!(zoom_fraction(MIN_SCALE - 5.0), 0.0);
+        assert_eq!(zoom_fraction(MAX_SCALE + 5.0), 1.0);
     }
 
     #[test]
