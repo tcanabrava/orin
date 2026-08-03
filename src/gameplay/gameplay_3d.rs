@@ -595,6 +595,18 @@ pub(super) struct NoteBuildState<'w> {
     adaptive: Res<'w, AdaptiveDifficulty>,
 }
 
+/// Display/theming context bundled into one `SystemParam`, same reason as
+/// [`NoteBuildState`] — `setup` was one param away from Bevy's arity limit
+/// once `CompactLayout` joined the list. Unrelated to note-building, so a
+/// separate bundle rather than folding into that one.
+#[derive(bevy::ecs::system::SystemParam)]
+pub(super) struct HudContext<'w> {
+    theme: Res<'w, LoadedTheme>,
+    loc: Res<'w, Localization>,
+    bravura: Option<Res<'w, BravuraFont>>,
+    compact: Res<'w, crate::responsive::CompactLayout>,
+}
+
 pub fn setup(
     mut commands: Commands,
     selected: Res<SelectedSong>,
@@ -609,10 +621,9 @@ pub fn setup(
     shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
     note_theme: Res<SelectedNoteTheme3d>,
     mut cameras: Query<(&mut Camera, &mut Transform), With<Camera2d>>,
-    theme: Res<LoadedTheme>,
-    loc: Res<Localization>,
-    bravura: Option<Res<BravuraFont>>,
+    hud: HudContext,
 ) {
+    let compact = hud.compact.0;
     let Some(manifest): Option<&SongManifest> = manifests.get(&selected.0) else {
         error!("SongManifest not ready when entering Playing (3D) state");
         return;
@@ -702,8 +713,9 @@ pub fn setup(
         chart.song.tempo_bpm,
         beats_per_bar,
         shape_materials,
-        theme.twelve_bar_colors(),
-        &loc,
+        hud.theme.twelve_bar_colors(),
+        &hud.loc,
+        compact,
     );
     let note_markers: Vec<NoteMarker> = note_build
         .song_notes
@@ -725,12 +737,14 @@ pub fn setup(
         &note_build.adaptive.sections,
         &note_build.adaptive.learned,
     );
-    if let Some(bravura) = &bravura {
+    if !compact
+        && let Some(bravura) = &hud.bravura
+    {
         super::gameplay_2d::spawn_gameplay_music_score(&mut commands, bravura);
     }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
     let harp_hint = crate::song::harmonica::harp_banner(&chart.harmonica, key);
-    spawn_countdown(&mut commands, &loc, Some(&harp_hint));
+    spawn_countdown(&mut commands, &hud.loc, Some(&harp_hint));
 }
 
 fn spawn_harmonica_3d(
@@ -793,6 +807,7 @@ fn spawn_hud_overlay(
     mut shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
     twelve_bar_colors: TwelveBarColors,
     loc: &Localization,
+    compact: bool,
 ) {
     let title = format!("{} \u{2014} {}", chart.song.artist, chart.song.title);
     let info = String::from(
@@ -820,109 +835,119 @@ fn spawn_hud_overlay(
         .and_then(|m| m.description.as_deref());
     let chart_author = chart.metadata.as_ref().and_then(|m| m.author.as_deref());
 
-    commands
-        .spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                // Below the song-progress bar (`BAR_HEIGHT`, pinned at the very
-                // top across the full width and always painted above the HUD —
-                // see `BAR_Z_INDEX`) so its text is never covered by it.
-                top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
-                left: Val::Px(8.0),
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(4.0),
-                padding: UiRect::all(Val::Px(8.0)),
-                // Fixed so the panel doesn't grow or shrink with the current
-                // song's title/description length — long text wraps instead.
-                max_width: Val::Px(420.0),
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
-            GlobalZIndex(1),
-            GameplayRoot,
-        ))
-        .with_children(|p| {
-            for (text, size, color) in [
-                (title.as_str(), 18.0f32, Color::WHITE),
-                (info.as_str(), 15.0, Color::srgb(0.65, 0.70, 0.80)),
-                (harp_info.as_str(), 15.0, Color::srgb(0.45, 0.72, 0.55)),
-            ] {
-                p.spawn((
-                    Text::new(text.to_string()),
-                    TextFont {
-                        font_size: FontSize::Px(size),
-                        ..default()
-                    },
-                    TextColor(color),
-                ));
-            }
-            if let Some(desc) = description {
-                p.spawn((
-                    Text::new(desc.to_string()),
-                    TextFont {
-                        font_size: FontSize::Px(15.0),
-                        ..default()
-                    },
-                    TextColor(Color::srgb(0.50, 0.50, 0.55)),
-                ));
-            }
-            if let Some(author) = chart_author {
-                p.spawn((
-                    Text::new(String::from(loc.msg_args(
-                        "gameplay-chart-author",
-                        &[("author", author.to_string())],
-                    ))),
-                    TextFont {
-                        font_size: FontSize::Px(15.0),
-                        ..default()
-                    },
-                    TextColor(Color::srgb(0.40, 0.40, 0.45)),
-                ));
-            }
+    // Top-left info box: song info, phrase/tab aids, metronome, legends —
+    // all supplementary, so it's skipped entirely in compact mode rather
+    // than trimmed piecemeal (nothing essential lives in it).
+    if !compact {
+        commands
+            .spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    // Below the song-progress bar (`BAR_HEIGHT`, pinned at the very
+                    // top across the full width and always painted above the HUD —
+                    // see `BAR_Z_INDEX`) so its text is never covered by it.
+                    top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
+                    left: Val::Px(8.0),
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(4.0),
+                    padding: UiRect::all(Val::Px(8.0)),
+                    // Fixed so the panel doesn't grow or shrink with the current
+                    // song's title/description length — long text wraps instead.
+                    max_width: Val::Px(420.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
+                GlobalZIndex(1),
+                GameplayRoot,
+            ))
+            .with_children(|p| {
+                for (text, size, color) in [
+                    (title.as_str(), 18.0f32, Color::WHITE),
+                    (info.as_str(), 15.0, Color::srgb(0.65, 0.70, 0.80)),
+                    (harp_info.as_str(), 15.0, Color::srgb(0.45, 0.72, 0.55)),
+                ] {
+                    p.spawn((
+                        Text::new(text.to_string()),
+                        TextFont {
+                            font_size: FontSize::Px(size),
+                            ..default()
+                        },
+                        TextColor(color),
+                    ));
+                }
+                if let Some(desc) = description {
+                    p.spawn((
+                        Text::new(desc.to_string()),
+                        TextFont {
+                            font_size: FontSize::Px(15.0),
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.50, 0.50, 0.55)),
+                    ));
+                }
+                if let Some(author) = chart_author {
+                    p.spawn((
+                        Text::new(String::from(loc.msg_args(
+                            "gameplay-chart-author",
+                            &[("author", author.to_string())],
+                        ))),
+                        TextFont {
+                            font_size: FontSize::Px(15.0),
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.40, 0.40, 0.45)),
+                    ));
+                }
 
-            // Live phrase / groove banner (driven by phrase_overlay::update_phrase)
-            spawn_phrase_banner(p);
-            // Tab-notation ribbon for the current phrase (phrase_overlay::update_tab_ribbon)
-            spawn_tab_ribbon(p);
+                // Live phrase / groove banner (driven by phrase_overlay::update_phrase)
+                spawn_phrase_banner(p);
+                // Tab-notation ribbon for the current phrase (phrase_overlay::update_tab_ribbon)
+                spawn_tab_ribbon(p);
 
-            // Blow/draw legend
-            super::gameplay_2d::spawn_blow_draw_legend(p, loc, 12.0, 4.0);
+                // Blow/draw legend
+                super::gameplay_2d::spawn_blow_draw_legend(p, loc, 12.0, 4.0);
 
-            // Metronome
-            p.spawn(Node {
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(6.0),
-                margin: UiRect::top(Val::Px(8.0)),
-                ..default()
-            })
-            .with_children(|metro| {
-                spawn_metronome(metro, loc, beats_per_bar, bpm);
+                // Metronome
+                p.spawn(Node {
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(6.0),
+                    margin: UiRect::top(Val::Px(8.0)),
+                    ..default()
+                })
+                .with_children(|metro| {
+                    spawn_metronome(metro, loc, beats_per_bar, bpm);
+                });
+
+                // Animated tail previews for the techniques legend (built up front so the UI
+                // closures only borrow a ready slice, not the material store).
+                let legend_materials = build_legend_materials(&mut shape_materials);
+
+                // Technique colour legend
+                p.spawn(Node {
+                    margin: UiRect::top(Val::Px(8.0)),
+                    ..default()
+                })
+                .with_children(|leg| {
+                    spawn_modifier_legend(leg, loc, &legend_materials);
+                });
             });
-
-            // Animated tail previews for the techniques legend (built up front so the UI
-            // closures only borrow a ready slice, not the material store).
-            let legend_materials = build_legend_materials(&mut shape_materials);
-
-            // Technique colour legend
-            p.spawn(Node {
-                margin: UiRect::top(Val::Px(8.0)),
-                ..default()
-            })
-            .with_children(|leg| {
-                spawn_modifier_legend(leg, loc, &legend_materials);
-            });
-        });
+    }
 
     // 12-bar blues grid + score, grouped top-right — clear of the note
     // highway, which sits center-screen, instead of stacked under the song
     // info: the grid's fixed width used to force the info panel above to
     // match it, growing/shrinking the whole panel with whatever else was in
     // it (in particular the song title/description).
+    let hud_top = if compact {
+        8.0 + BAR_HEIGHT
+    } else {
+        8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT
+    };
     commands
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
+                top: Val::Px(hud_top),
                 right: Val::Px(8.0),
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::FlexStart,
@@ -933,25 +958,27 @@ fn spawn_hud_overlay(
             GameplayRoot,
         ))
         .with_children(|row| {
-            row.spawn((
-                Node {
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(4.0),
-                    padding: UiRect::all(Val::Px(8.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
-            ))
-            .with_children(|grid| {
-                spawn_12_bar_grid(
-                    grid,
-                    chords,
-                    key,
-                    crate::song::harmonica::Progression::Standard,
-                    &GridConfig::for_3d(),
-                    twelve_bar_colors,
-                );
-            });
+            if !compact {
+                row.spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(4.0),
+                        padding: UiRect::all(Val::Px(8.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
+                ))
+                .with_children(|grid| {
+                    spawn_12_bar_grid(
+                        grid,
+                        chords,
+                        key,
+                        crate::song::harmonica::Progression::Standard,
+                        &GridConfig::for_3d(),
+                        twelve_bar_colors,
+                    );
+                });
+            }
 
             row.spawn((
                 Node {
