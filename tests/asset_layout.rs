@@ -170,7 +170,7 @@ fn schema_validator(path: &str) -> jsonschema::Validator {
 fn validation_errors(validator: &jsonschema::Validator, instance: &serde_json::Value) -> String {
     validator
         .iter_errors(instance)
-        .map(|e| format!("    - {e} (at /{path})", path = e.instance_path))
+        .map(|e| format!("    - {e} (at /{path})", path = e.instance_path()))
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -371,7 +371,7 @@ fn theme_json_validates_against_schema() {
 
         let errors: Vec<String> = validator
             .iter_errors(&instance)
-            .map(|e| format!("    - {e} (at /{path})", path = e.instance_path))
+            .map(|e| format!("    - {e} (at /{path})", path = e.instance_path()))
             .collect();
         if !errors.is_empty() {
             report.push_str(&format!(
