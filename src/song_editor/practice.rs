@@ -397,7 +397,11 @@ enum MsgAction {
 /// own result) before the first one is readable.
 fn decide_msg_action(is_result_msg: bool, hold_active: bool, has_pending: bool) -> MsgAction {
     if is_result_msg {
-        if hold_active { MsgAction::Queue } else { MsgAction::ShowNew }
+        if hold_active {
+            MsgAction::Queue
+        } else {
+            MsgAction::ShowNew
+        }
     } else if hold_active {
         MsgAction::Keep
     } else if has_pending {
@@ -444,10 +448,7 @@ mod tests {
 
     #[test]
     fn a_result_shows_immediately_when_nothing_is_held() {
-        assert_eq!(
-            decide_msg_action(true, false, false),
-            MsgAction::ShowNew
-        );
+        assert_eq!(decide_msg_action(true, false, false), MsgAction::ShowNew);
     }
 
     #[test]
@@ -478,10 +479,7 @@ mod tests {
 
     #[test]
     fn a_prompt_wins_once_the_hold_expires_and_nothing_is_pending() {
-        assert_eq!(
-            decide_msg_action(false, false, false),
-            MsgAction::ShowNew
-        );
+        assert_eq!(decide_msg_action(false, false, false), MsgAction::ShowNew);
     }
 
     // ── freq_matches ─────────────────────────────────────────────────────────

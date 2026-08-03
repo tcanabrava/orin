@@ -403,9 +403,7 @@ pub fn setup(
         &adaptive.sections,
         &adaptive.learned,
     );
-    if !compact
-        && let Some(bravura) = &bravura
-    {
+    if !compact && let Some(bravura) = &bravura {
         spawn_gameplay_music_score(&mut commands, bravura);
     }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);

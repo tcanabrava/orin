@@ -737,9 +737,7 @@ pub fn setup(
         &note_build.adaptive.sections,
         &note_build.adaptive.learned,
     );
-    if !compact
-        && let Some(bravura) = &hud.bravura
-    {
+    if !compact && let Some(bravura) = &hud.bravura {
         super::gameplay_2d::spawn_gameplay_music_score(&mut commands, bravura);
     }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
