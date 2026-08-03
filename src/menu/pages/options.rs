@@ -91,8 +91,9 @@ struct SliderValueLabel(VolumeSlider);
 #[derive(Component, Default, Clone)]
 struct HarmonicaButton(String);
 
-/// The "no microphone" warning banner, shown only while [`MicStatus::Failed`].
-/// See TODO.md: "No microphone = silent failure."
+/// The "no microphone" warning banner, hidden only while
+/// [`MicStatus::Connected`] — see [`mic_banner_visible`]. See TODO.md: "No
+/// microphone = silent failure."
 #[derive(Component)]
 struct MicBanner;
 
@@ -895,20 +896,28 @@ fn harmonica_button_visuals(
 // ── Microphone picker / status banner ───────────────────────────────────────
 
 /// The name of the device actually connected right now, or `None` while
-/// [`MicStatus::Failed`]. Used (rather than the raw `AudioSettings::input_device`
-/// preference) so the picker highlights reality — if a saved device went
-/// missing and capture fell back to the default, that's what lights up.
+/// [`MicStatus::Failed`]/[`MicStatus::AwaitingPermission`]. Used (rather
+/// than the raw `AudioSettings::input_device` preference) so the picker
+/// highlights reality — if a saved device went missing and capture fell
+/// back to the default, that's what lights up.
 fn connected_device_name(status: &MicStatus) -> Option<&str> {
     match status {
         MicStatus::Connected { device_name } => Some(device_name.as_str()),
-        MicStatus::Failed { .. } => None,
+        MicStatus::Failed { .. } | MicStatus::AwaitingPermission => None,
     }
 }
 
-/// A dismiss-free warning banner, visible only while the microphone failed to
-/// open, with a Retry button that re-runs `audio_input::start_capture`.
+/// Whether the mic warning banner (and the device combobox it stands in
+/// for) should be visible — anything other than a successful connection.
+fn mic_banner_visible(status: &MicStatus) -> bool {
+    !matches!(status, MicStatus::Connected { .. })
+}
+
+/// A dismiss-free warning banner, hidden only once the microphone actually
+/// connects (see [`mic_banner_visible`]), with a Retry button that re-runs
+/// `audio_input::start_capture`.
 fn spawn_mic_banner(commands: &mut Commands, parent: Entity, status: &MicStatus) {
-    let visible = matches!(status, MicStatus::Failed { .. });
+    let visible = mic_banner_visible(status);
     let text = mic_banner_text(status);
 
     let banner = commands
@@ -950,6 +959,9 @@ fn spawn_mic_banner(commands: &mut Commands, parent: Entity, status: &MicStatus)
 fn mic_banner_text(status: &MicStatus) -> String {
     match status {
         MicStatus::Failed { reason } => format!("No microphone: {reason}"),
+        MicStatus::AwaitingPermission => {
+            "Waiting for microphone permission — grant it, then retry".to_string()
+        }
         MicStatus::Connected { .. } => String::new(),
     }
 }
@@ -983,7 +995,7 @@ fn update_mic_banner(
     if !status.is_changed() {
         return;
     }
-    let visible = matches!(*status, MicStatus::Failed { .. });
+    let visible = mic_banner_visible(&status);
     for mut node in &mut banners {
         node.display = if visible {
             Display::Flex
@@ -1299,6 +1311,63 @@ mod tests {
         let loc = Localization::default();
         assert_eq!(fullscreen_label_text(&loc, true), "options-fullscreen-on");
         assert_eq!(fullscreen_label_text(&loc, false), "options-fullscreen-off");
+    }
+
+    #[test]
+    fn zoom_label_shows_the_rounded_percent() {
+        let loc = Localization::default();
+        assert_eq!(zoom_label_text(&loc, 1.0), "options-zoom-label");
+    }
+
+    #[test]
+    fn mic_banner_hidden_only_once_connected() {
+        assert!(!mic_banner_visible(&MicStatus::Connected {
+            device_name: "Mic".into(),
+        }));
+        assert!(mic_banner_visible(&MicStatus::Failed {
+            reason: "no device".into(),
+        }));
+        assert!(mic_banner_visible(&MicStatus::AwaitingPermission));
+    }
+
+    #[test]
+    fn connected_device_name_is_none_unless_connected() {
+        assert_eq!(
+            connected_device_name(&MicStatus::Connected {
+                device_name: "USB Mic".into(),
+            }),
+            Some("USB Mic")
+        );
+        assert_eq!(
+            connected_device_name(&MicStatus::Failed {
+                reason: "no device".into(),
+            }),
+            None
+        );
+        assert_eq!(connected_device_name(&MicStatus::AwaitingPermission), None);
+    }
+
+    #[test]
+    fn mic_banner_text_is_distinct_per_status() {
+        assert_eq!(
+            mic_banner_text(&MicStatus::Connected {
+                device_name: "Mic".into(),
+            }),
+            ""
+        );
+        assert!(
+            mic_banner_text(&MicStatus::Failed {
+                reason: "no device".into(),
+            })
+            .contains("no device")
+        );
+        assert_ne!(
+            mic_banner_text(&MicStatus::AwaitingPermission),
+            mic_banner_text(&MicStatus::Failed {
+                reason: "no device".into(),
+            }),
+            "awaiting-permission needs its own message, not the generic failure one"
+        );
     }
 
     #[test]

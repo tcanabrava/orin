@@ -49,6 +49,14 @@ pub struct AudioCapture {
 pub enum MicStatus {
     Connected { device_name: String },
     Failed { reason: String },
+    /// Android's `RECORD_AUDIO` and iOS's `NSMicrophoneUsageDescription`
+    /// both require an explicit runtime permission prompt before capture
+    /// can succeed — this is somewhere for that state to land distinct
+    /// from a hard failure, so the Options page can show "waiting on
+    /// permission" rather than a generic error. Nothing sets this today —
+    /// there's no permission API to check on desktop — this is groundwork
+    /// for a future mobile-specific permission check to use.
+    AwaitingPermission,
 }
 
 /// Names of every input device the current host reports, in host-listed
