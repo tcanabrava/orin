@@ -248,6 +248,7 @@ pub fn setup(
                         .with_children(|metro| {
                             spawn_metronome(metro, &loc, beats_per_bar, bpm);
                         });
+                        crate::spectrogram::spawn_style_toggle(left, *spectrogram_style, &loc);
                         left.spawn(Node {
                             width: Val::Percent(100.0),
                             flex_grow: 1.0,

@@ -204,6 +204,63 @@ pub(super) fn spawn_mod_panel(
                 )
                 .insert(super::ui::UndoRedoButton::Redo);
 
+                // On-screen equivalents of Delete/Backspace and Ctrl+C/
+                // Ctrl+V (`interaction::grid_keys`/`handle_copy_paste`) —
+                // those are the *only* way to delete/copy/paste on a
+                // touch-only device with no keyboard. Paste has no cursor
+                // position to anchor on without a mouse, so it lands at the
+                // start of the current view (`state.scroll_beat`) instead
+                // of "wherever the mouse is," unlike the keyboard shortcut.
+                transport_button(
+                    transport,
+                    loc.msg("editor-delete"),
+                    loc.msg("editor-delete-tooltip"),
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                        super::interaction::delete_selected(&mut state);
+                    },
+                );
+                transport_button(
+                    transport,
+                    loc.msg("editor-copy"),
+                    loc.msg("editor-copy-tooltip"),
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>,
+                     state: Res<EditorState>,
+                     mut clipboard: ResMut<super::clipboard::NoteClipboard>| {
+                        if !state.selected.is_empty() {
+                            clipboard.0 = super::clipboard::copy_selected(&state.notes, &state.selected);
+                        }
+                    },
+                );
+                transport_button(
+                    transport,
+                    loc.msg("editor-paste"),
+                    loc.msg("editor-paste-tooltip"),
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>,
+                     mut state: ResMut<EditorState>,
+                     clipboard: Res<super::clipboard::NoteClipboard>| {
+                        if clipboard.0.is_empty() {
+                            return;
+                        }
+                        let tick = state.scroll_beat * super::TICKS_PER_BEAT;
+                        let hole_count = state.hole_count();
+                        let (pasted, next_id) = super::clipboard::paste_targets(
+                            &clipboard.0,
+                            tick,
+                            hole_count,
+                            &state.notes,
+                            state.next_id,
+                        );
+                        if !pasted.is_empty() {
+                            state.next_id = next_id;
+                            state.selected = pasted.iter().map(|n| n.id).collect();
+                            state.notes.extend(pasted);
+                        }
+                    },
+                );
+
                 // The metronome click, shared with gameplay/the Bending
                 // Trainer via the same `MetronomeMuted` global (see
                 // `metronome`'s module doc) — clicks during Record/Play/

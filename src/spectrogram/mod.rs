@@ -15,11 +15,14 @@
 mod bars;
 mod oscilloscope;
 
+use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 use bevy::ui_render::prelude::UiMaterialPlugin;
+use bevy_fluent::Localization;
 
 use crate::app::AppState;
 use crate::audio_system::pitch_detect::AudioFrame;
+use crate::localization::LocalizationExt;
 
 pub use oscilloscope::OscMaterial;
 use oscilloscope::OscilloscopeMaterial;
@@ -119,7 +122,12 @@ impl Plugin for SpectrogramPlugin {
             .add_systems(Update, analyze_audio.run_if(in_state(AppState::Playing)))
             .add_systems(
                 Update,
-                switch_visualization.run_if(in_state(AppState::Playing)),
+                (
+                    switch_visualization_on_key,
+                    rebuild_on_style_change,
+                    update_style_label,
+                )
+                    .run_if(in_state(AppState::Playing)),
             )
             .add_systems(
                 Update,
@@ -137,18 +145,35 @@ impl Plugin for SpectrogramPlugin {
     }
 }
 
-/// Cycles the visualization style on **V** and rebuilds the spectrogram in place.
-fn switch_visualization(
+/// Cycles the visualization style on **V** — [`rebuild_on_style_change`]
+/// does the actual rebuild, so this and [`cycle_style_button`] (the
+/// on-screen equivalent, since **V** used to be the *only* way to change
+/// this — unusable on a touch-only device with no keyboard) share it
+/// instead of each duplicating the despawn/respawn dance.
+fn switch_visualization_on_key(
     keys: Res<ButtonInput<KeyCode>>,
     mut style: ResMut<SpectrogramStyle>,
+) {
+    if keys.just_pressed(KeyCode::KeyV) {
+        *style = style.next();
+    }
+}
+
+fn cycle_style_button(_: On<Pointer<Click>>, mut style: ResMut<SpectrogramStyle>) {
+    *style = style.next();
+}
+
+/// Rebuilds the spectrogram in place whenever [`SpectrogramStyle`] changes,
+/// regardless of what changed it (key press or the on-screen button).
+fn rebuild_on_style_change(
+    style: Res<SpectrogramStyle>,
     osc: Res<OscMaterial>,
     roots: Query<(Entity, Option<&Children>), With<SpectrogramRoot>>,
     mut commands: Commands,
 ) {
-    if !keys.just_pressed(KeyCode::KeyV) {
+    if !style.is_changed() {
         return;
     }
-    *style = style.next();
     let style = *style; // Copy, so each closure below can capture it freely.
     let handle = osc.0.clone();
     for (root, children) in &roots {
@@ -161,6 +186,60 @@ fn switch_visualization(
         commands
             .entity(root)
             .with_children(move |c| spawn_content(c, style, &handle));
+    }
+}
+
+fn style_label_text(loc: &Localization, style: SpectrogramStyle) -> String {
+    match style {
+        SpectrogramStyle::Bars => loc.msg("jam-spectrogram-style-bars"),
+        SpectrogramStyle::Oscilloscope => loc.msg("jam-spectrogram-style-oscilloscope"),
+    }
+    .into()
+}
+
+/// Marks the live "current style" label spawned alongside
+/// [`spawn_style_toggle`]'s button.
+#[derive(Component)]
+struct StyleLabel;
+
+/// A button + live label that cycles [`SpectrogramStyle`] — the on-screen
+/// equivalent of the **V** key, same "small button + plain label" shape
+/// `jam::session`'s own Loop/Call-and-Response toggles already use.
+pub fn spawn_style_toggle(parent: &mut ChildSpawnerCommands, style: SpectrogramStyle, loc: &Localization) {
+    parent
+        .spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(8.0),
+            ..default()
+        })
+        .with_children(|row| {
+            row.spawn_empty().apply_scene(crate::dialogs::button::small(
+                &loc.msg("jam-spectrogram-style-button"),
+                cycle_style_button,
+            ));
+            row.spawn((
+                Text::new(style_label_text(loc, style)),
+                TextFont {
+                    font_size: FontSize::Px(15.0),
+                    ..default()
+                },
+                TextColor(Color::srgb(0.70, 0.70, 0.80)),
+                StyleLabel,
+            ));
+        });
+}
+
+fn update_style_label(
+    style: Res<SpectrogramStyle>,
+    loc: Res<Localization>,
+    mut labels: Query<&mut Text, With<StyleLabel>>,
+) {
+    if !style.is_changed() {
+        return;
+    }
+    for mut text in &mut labels {
+        *text = Text::new(style_label_text(&loc, *style));
     }
 }
 

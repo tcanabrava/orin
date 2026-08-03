@@ -62,6 +62,7 @@ impl Plugin for OptionsPlugin {
                     update_adaptive_difficulty_label,
                     update_fullscreen_label,
                     update_colorblind_palette_label,
+                    update_zoom_label,
                 )
                     .run_if(in_state(MenuPage::Options)),
             );
@@ -133,6 +134,10 @@ struct FullscreenLabel;
 #[derive(Component)]
 struct ColorblindPaletteLabel;
 
+/// The "Zoom: N%" readout beside the zoom in/out buttons.
+#[derive(Component)]
+struct ZoomLabel;
+
 /// Current level for a given slider kind.
 fn audio_level(settings: &AudioSettings, kind: VolumeSlider) -> f32 {
     match kind {
@@ -157,6 +162,7 @@ fn setup_options_menu(
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
     colorblind_palette: Res<crate::settings::ColorblindPalette>,
+    ui_scale: Res<UiScale>,
 ) {
     let root = spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
 
@@ -216,6 +222,7 @@ fn setup_options_menu(
         adaptive_difficulty,
         fullscreen,
         colorblind_palette,
+        ui_scale.0,
     );
     spawn_right_column(&mut commands, right_layout, &loc);
 }
@@ -234,6 +241,7 @@ fn spawn_left_column(
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
     colorblind_palette: Res<crate::settings::ColorblindPalette>,
+    ui_scale: f32,
 ) {
     spawn_mic_banner(commands, parent, &mic_status);
     spawn_volume_slider(
@@ -298,6 +306,7 @@ fn spawn_left_column(
     spawn_adaptive_difficulty_toggle(commands, parent, adaptive_difficulty.0, loc);
     spawn_fullscreen_toggle(commands, parent, fullscreen.0, loc);
     spawn_colorblind_palette_toggle(commands, parent, colorblind_palette.0, loc);
+    spawn_zoom_toggle(commands, parent, ui_scale, loc);
 }
 
 fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localization) {
@@ -518,6 +527,68 @@ fn update_fullscreen_label(
     }
     for mut text in &mut labels {
         *text = Text::new(fullscreen_label_text(&loc, enabled.0));
+    }
+}
+
+/// On-screen equivalent of `dialogs::ui_scale::change_scaling`'s Arrow
+/// Up/Down handling — that used to be the *only* way to change `UiScale`,
+/// unusable on a touch-only device with no keyboard.
+fn zoom_out(_: On<Pointer<Click>>, mut ui_scale: ResMut<UiScale>) {
+    ui_scale.0 = crate::dialogs::ui_scale::scale_down(ui_scale.0);
+}
+
+fn zoom_in(_: On<Pointer<Click>>, mut ui_scale: ResMut<UiScale>) {
+    ui_scale.0 = crate::dialogs::ui_scale::scale_up(ui_scale.0);
+}
+
+fn zoom_label_text(loc: &Localization, scale: f32) -> String {
+    loc.msg_args(
+        "options-zoom-label",
+        &[("percent", (scale * 100.0).round().to_string())],
+    )
+    .into()
+}
+
+/// A row with zoom-out/zoom-in buttons plus a live "Zoom: N%" readout —
+/// same shape as [`spawn_fullscreen_toggle`], but two buttons instead of
+/// one pill since this isn't a binary on/off.
+fn spawn_zoom_toggle(commands: &mut Commands, parent: Entity, scale: f32, loc: &Localization) {
+    let row = commands
+        .spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(8.0),
+            ..default()
+        })
+        .id();
+    commands.entity(row).with_children(|r| {
+        r.spawn_empty()
+            .apply_scene(button::small(&loc.msg("options-zoom-out"), zoom_out));
+        r.spawn_empty()
+            .apply_scene(button::small(&loc.msg("options-zoom-in"), zoom_in));
+        r.spawn((
+            Text::new(zoom_label_text(loc, scale)),
+            TextFont {
+                font_size: FontSize::Px(16.0),
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            ZoomLabel,
+        ));
+    });
+    commands.entity(parent).add_child(row);
+}
+
+fn update_zoom_label(
+    ui_scale: Res<UiScale>,
+    loc: Res<Localization>,
+    mut labels: Query<&mut Text, With<ZoomLabel>>,
+) {
+    if !ui_scale.is_changed() {
+        return;
+    }
+    for mut text in &mut labels {
+        *text = Text::new(zoom_label_text(&loc, ui_scale.0));
     }
 }
 

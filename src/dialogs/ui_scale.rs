@@ -6,6 +6,18 @@ const MIN_SCALE: f32 = 1.0;
 const MAX_SCALE: f32 = 8.0;
 const SCALE_STEP: f32 = 1.2;
 
+/// One step up/down, clamped to `[MIN_SCALE, MAX_SCALE]` — shared by the
+/// arrow-key handler below and the Options page's on-screen +/- buttons
+/// (`menu::pages::options`), since Arrow Up/Down used to be the *only* way
+/// to change `UiScale` — unusable on a touch-only device with no keyboard.
+pub fn scale_up(current: f32) -> f32 {
+    (current * SCALE_STEP).min(MAX_SCALE)
+}
+
+pub fn scale_down(current: f32) -> f32 {
+    (current / SCALE_STEP).max(MIN_SCALE)
+}
+
 /// Arrow-key UI scaling. Snaps `UiScale` straight to the new value rather
 /// than tweening toward it: Bevy's font atlas caches a rasterized glyph per
 /// *exact* effective size (font_size × scale), so smoothly animating the
@@ -16,11 +28,11 @@ const SCALE_STEP: f32 = 1.2;
 /// instead of dozens avoids that entirely.
 pub fn change_scaling(input: Res<ButtonInput<KeyCode>>, mut ui_scale: ResMut<UiScale>) {
     if input.just_pressed(KeyCode::ArrowUp) {
-        ui_scale.0 = (ui_scale.0 * SCALE_STEP).min(MAX_SCALE);
+        ui_scale.0 = scale_up(ui_scale.0);
         info!("Scaling up! Scale: {}", ui_scale.0);
     }
     if input.just_pressed(KeyCode::ArrowDown) {
-        ui_scale.0 = (ui_scale.0 / SCALE_STEP).max(MIN_SCALE);
+        ui_scale.0 = scale_down(ui_scale.0);
         info!("Scaling down! Scale: {}", ui_scale.0);
     }
 }
@@ -28,6 +40,26 @@ pub fn change_scaling(input: Res<ButtonInput<KeyCode>>, mut ui_scale: ResMut<UiS
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scale_up_steps_by_the_scale_step() {
+        assert!((scale_up(1.0) - SCALE_STEP).abs() < 1e-6);
+    }
+
+    #[test]
+    fn scale_down_steps_by_the_scale_step() {
+        assert!((scale_down(2.4) - 2.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn scale_up_clamps_at_the_max() {
+        assert_eq!(scale_up(MAX_SCALE), MAX_SCALE);
+    }
+
+    #[test]
+    fn scale_down_clamps_at_the_min() {
+        assert_eq!(scale_down(MIN_SCALE), MIN_SCALE);
+    }
 
     fn app_with_scale(scale: f32) -> App {
         let mut app = App::new();
