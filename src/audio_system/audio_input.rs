@@ -57,7 +57,9 @@ pub enum MicStatus {
 pub fn input_device_names() -> Vec<String> {
     let host = cpal::default_host();
     match host.input_devices() {
-        Ok(devices) => devices.filter_map(|d| d.name().ok()).collect(),
+        Ok(devices) => devices
+            .filter_map(|d| d.description().ok().map(|desc| desc.name().to_string()))
+            .collect(),
         Err(_) => Vec::new(),
     }
 }
@@ -119,16 +121,21 @@ pub fn create_audio_capture(
     let host = cpal::default_host();
     let device = device_name
         .and_then(|name| {
-            host.input_devices()
-                .ok()?
-                .find(|d| d.name().map(|n| n == name).unwrap_or(false))
+            host.input_devices().ok()?.find(|d| {
+                d.description()
+                    .map(|desc| desc.name() == name)
+                    .unwrap_or(false)
+            })
         })
         .or_else(|| host.default_input_device())
         .ok_or("no input device available")?;
-    let device_name = device.name().unwrap_or_else(|_| "unknown".to_string());
+    let device_name = device
+        .description()
+        .map(|desc| desc.name().to_string())
+        .unwrap_or_else(|_| "unknown".to_string());
 
     let config = device.default_input_config()?;
-    let sample_rate = config.sample_rate().0;
+    let sample_rate = config.sample_rate();
     let channels = config.channels() as usize;
     let sample_format = config.sample_format();
     let stream_config: StreamConfig = config.into();

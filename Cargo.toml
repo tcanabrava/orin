@@ -8,7 +8,7 @@ license = "MIT"
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
 # its Play button (and user-supplied .wav background tracks).
 bevy = { version = "0.19.0", features = ["wav"] }
-cpal = "0.15"
+cpal = "0.17"
 rustfft = "6.4"
 crossbeam-channel = "0.5"
 # Audio decode for Song Editor tempo analysis (ogg via lewton; matches the
