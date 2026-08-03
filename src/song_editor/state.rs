@@ -761,11 +761,8 @@ pub(super) fn max_bend(hole: u8) -> f32 {
     }
 }
 
-/// Matches `song::harmonica::hole_notes`'s own `over` field exactly (holes
-/// 1, 4, 5, 6 only — 2 and 3 have no overblow reed defined in this harp
-/// model), so a note the editor lets you tag `Overblow` always has a real
-/// pitch downstream (scoring, playback, `music_score`'s notation) instead
-/// of silently resolving to nothing.
+/// Matches `song::harmonica::hole_notes`'s `over` field exactly — holes
+/// 1/4/5/6 only, or the pitch resolves to nothing downstream.
 pub(super) fn overblow_ok(hole: u8) -> bool {
     matches!(hole, 1 | 4 | 5 | 6)
 }
@@ -996,8 +993,3 @@ pub(super) fn toggle_tempo_point(state: &mut EditorState, tick: usize) {
     let bpm = bpm_at(&state.tempo_map(), tick) + TEMPO_STEP_BPM;
     state.tempo_changes.push((tick, bpm));
 }
-
-// Timeline erase/remove and silence-track range logic — `song_end_tick`,
-// `normalize_range`, `silence_gaps`, `split_side_range`, `erase_range`,
-// `remove_range` — live in `ranges.rs` (split out to stay under the
-// file-size budget; none of them touch `EditorState` itself).
