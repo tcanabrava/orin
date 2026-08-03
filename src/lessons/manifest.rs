@@ -81,7 +81,7 @@ pub fn parse_lesson(bytes: &[u8]) -> Result<LessonManifest, String> {
         jsonschema::validator_for(&schema).map_err(|e| format!("schema is invalid: {e}"))?;
     let errors: Vec<String> = validator
         .iter_errors(&value)
-        .map(|e| format!("{e} (at /{})", e.instance_path))
+        .map(|e| format!("{e} (at /{})", e.instance_path()))
         .collect();
     if !errors.is_empty() {
         return Err(errors.join("; "));

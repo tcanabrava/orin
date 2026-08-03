@@ -89,7 +89,7 @@ impl SongChartLoader {
 
             let errors: Vec<String> = validator
                 .iter_errors(&chart_value)
-                .map(|e| format!("  - {e} (at /{path})", path = e.instance_path))
+                .map(|e| format!("  - {e} (at /{path})", path = e.instance_path()))
                 .collect();
 
             if !errors.is_empty() {

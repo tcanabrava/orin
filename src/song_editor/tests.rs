@@ -1279,7 +1279,7 @@ fn serialize_harpchart_validates_against_the_song_schema() {
     let validator = jsonschema::validator_for(&schema).expect("schema compiles");
     let errors: Vec<String> = validator
         .iter_errors(&value)
-        .map(|e| format!("  - {e} (at /{path})", path = e.instance_path))
+        .map(|e| format!("  - {e} (at /{path})", path = e.instance_path()))
         .collect();
     assert!(
         errors.is_empty(),
