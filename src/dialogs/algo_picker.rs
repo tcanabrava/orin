@@ -1,22 +1,27 @@
 // SPDX-License-Identifier: MIT
 
-//! Shared pitch-detection algorithm picker: a [`combobox`] plus a read-only
-//! explanation of whichever algorithm is selected. Used on the Options page;
-//! in the Bending Trainer, so a player can quickly compare algorithms while
-//! actually bending notes; and in the Song Editor's Record mode, since a
-//! take reads pitches off the same global detector. All three drive the same
-//! global [`AudioSettings::pitch_algorithm`] via [`on_algo_selected`], so
-//! picking one anywhere takes effect everywhere immediately.
+//! Shared pitch-detection algorithm picker: a [`combobox`] whose tooltip
+//! explains whichever algorithm is selected, instead of a separate static
+//! panel. Used on the Options page; in the Bending Trainer, so a player can
+//! quickly compare algorithms while actually bending notes; and in the Song
+//! Editor's Record mode, since a take reads pitches off the same global
+//! detector. All three drive the same global [`AudioSettings::
+//! pitch_algorithm`] via [`on_algo_selected`], so picking one anywhere takes
+//! effect everywhere immediately.
 
 use bevy::prelude::*;
 
 use crate::audio_system::pitch_detect::PitchAlgorithm;
 use crate::dialogs::combobox::ComboboxSelect;
+use crate::dialogs::tooltip::Tooltip;
 use crate::settings::AudioSettings;
 
-/// The read-only text explaining the currently selected algorithm.
+/// Marks an entity (a pitch-algorithm combobox's root, from
+/// [`attach_algo_tooltip`]) whose [`Tooltip`] should always describe
+/// whichever algorithm [`AudioSettings::pitch_algorithm`] currently is —
+/// kept in sync by [`update_algo_tooltip`].
 #[derive(Component)]
-pub struct AlgoExplanation;
+pub struct AlgoTooltip;
 
 /// Every algorithm's label, in [`PitchAlgorithm::all`]'s order — the options
 /// list for a `dialogs::combobox`-based algorithm picker.
@@ -39,59 +44,40 @@ pub fn on_algo_selected(ev: On<ComboboxSelect>, mut settings: ResMut<AudioSettin
     }
 }
 
-/// A read-only box explaining the currently selected pitch algorithm, `width`
-/// pixels wide (the Options page and the Bending Trainer's side column want
-/// different widths).
-pub fn spawn_algo_explanation(
+/// Attaches a [`Tooltip`] describing `selected` to a pitch-algorithm
+/// combobox's root entity (the `Entity` returned by
+/// `combobox::spawn_combobox`), kept current by [`update_algo_tooltip`] —
+/// replaces the old always-visible explanation panel with an on-hover one.
+pub fn attach_algo_tooltip(
     commands: &mut Commands,
-    parent: Entity,
-    width: f32,
+    combobox_root: Entity,
     selected: PitchAlgorithm,
 ) {
-    let panel = commands
-        .spawn((
-            Node {
-                width: Val::Px(width),
-                padding: UiRect::all(Val::Px(10.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.10, 0.10, 0.14, 0.85)),
-        ))
-        .id();
-    commands.entity(panel).with_children(|p| {
-        p.spawn((
-            Text::new(selected.description()),
-            TextFont {
-                font_size: FontSize::Px(15.0),
-                ..default()
-            },
-            TextColor(Color::srgb(0.75, 0.78, 0.88)),
-            AlgoExplanation,
-        ));
-    });
-    commands.entity(parent).add_child(panel);
+    commands
+        .entity(combobox_root)
+        .insert((Tooltip(selected.description().to_string()), AlgoTooltip));
 }
 
-/// Keep every explanation box in step with the chosen algorithm.
-pub fn update_algo_explanation(
+/// Keeps every [`AlgoTooltip`]'s text in step with the chosen algorithm.
+pub fn update_algo_tooltip(
     settings: Res<AudioSettings>,
-    mut texts: Query<&mut Text, With<AlgoExplanation>>,
+    mut tooltips: Query<&mut Tooltip, With<AlgoTooltip>>,
 ) {
     if !settings.is_changed() {
         return;
     }
-    for mut text in &mut texts {
-        *text = Text::new(settings.pitch_algorithm.description());
+    for mut tooltip in &mut tooltips {
+        tooltip.0 = settings.pitch_algorithm.description().to_string();
     }
 }
 
-/// Runs [`update_algo_explanation`] unconditionally: it only touches entities
-/// carrying [`AlgoExplanation`], so it's a no-op on any screen that hasn't
+/// Runs [`update_algo_tooltip`] unconditionally: it only touches entities
+/// carrying [`AlgoTooltip`], so it's a no-op on any screen that hasn't
 /// spawned this widget.
 pub struct AlgoPickerPlugin;
 
 impl Plugin for AlgoPickerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_algo_explanation);
+        app.add_systems(Update, update_algo_tooltip);
     }
 }

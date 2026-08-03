@@ -31,7 +31,7 @@ use crate::app::AppState;
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button, spawn_menu_root};
 
-use crate::dialogs::algo_picker::{algo_labels, on_algo_selected, spawn_algo_explanation};
+use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
 use crate::dialogs::checkbox;
 use crate::dialogs::combobox;
@@ -275,7 +275,7 @@ fn spawn_left_column(
 
     spawn_harmonica_row(commands, parent, &previews_harmonica, &selected_harmonica.0);
 
-    combobox::spawn_combobox(
+    let algo_combo = combobox::spawn_combobox(
         commands,
         parent,
         parent,
@@ -284,7 +284,7 @@ fn spawn_left_column(
         settings.pitch_algorithm.label(),
         on_algo_selected,
     );
-    spawn_algo_explanation(commands, parent, 560.0, settings.pitch_algorithm);
+    attach_algo_tooltip(commands, algo_combo, settings.pitch_algorithm);
 
     spawn_note_numbers_toggle(commands, parent, loc, show_numbers.0);
     spawn_adaptive_difficulty_toggle(commands, parent, adaptive_difficulty.0, loc);

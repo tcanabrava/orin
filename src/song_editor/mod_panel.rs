@@ -23,7 +23,7 @@ use super::ui::{
     EditModeGroup, ModButton, ModeButton, PlayModeGroup, RecordModeGroup, TimelineToolButton,
 };
 use crate::audio_system::pitch_detect::{PitchAlgorithm, PitchRange};
-use crate::dialogs::algo_picker::{algo_labels, on_algo_selected, spawn_algo_explanation};
+use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::combobox;
 use crate::localization::LocalizationExt;
 use crate::theme::SongEditorColors;
@@ -451,7 +451,7 @@ pub(super) fn spawn_mod_panel(
             // take already in progress, since recording reads pitches off
             // the same continuously-running mic pipeline every other mode
             // does (see `record.rs`'s module docs).
-            combobox::spawn_combobox(
+            let algo_combo = combobox::spawn_combobox(
                 g.commands_mut(),
                 record_group_id,
                 editor_root,
@@ -460,7 +460,7 @@ pub(super) fn spawn_mod_panel(
                 algorithm.label(),
                 on_algo_selected,
             );
-            spawn_algo_explanation(g.commands_mut(), record_group_id, 380.0, algorithm);
+            attach_algo_tooltip(g.commands_mut(), algo_combo, algorithm);
         });
 
         panel

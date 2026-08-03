@@ -24,7 +24,7 @@ use crate::app::AppState;
 use crate::audio_system::midi::{next_key, prev_key};
 use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use crate::audio_system::wav::encode_wav;
-use crate::dialogs::algo_picker::{algo_labels, on_algo_selected, spawn_algo_explanation};
+use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
 use crate::dialogs::combobox;
 use crate::localization::LocalizationExt;
@@ -618,8 +618,8 @@ pub fn setup(
             });
 
             // ── Detect algorithm: combobox (same global AudioSettings::
-            // pitch_algorithm the Options page drives) + its explanation ────
-            combobox::spawn_combobox(
+            // pitch_algorithm the Options page drives), tooltip explains it ──
+            let algo_combo = combobox::spawn_combobox(
                 left.commands_mut(),
                 left_id,
                 root_id,
@@ -628,7 +628,7 @@ pub fn setup(
                 audio.pitch_algorithm.label(),
                 on_algo_selected,
             );
-            spawn_algo_explanation(left.commands_mut(), left_id, 420.0, audio.pitch_algorithm);
+            attach_algo_tooltip(left.commands_mut(), algo_combo, audio.pitch_algorithm);
 
             // ── Ear-training target: readout (set by clicking the diagram
             // below, not stepper buttons — see `on_diagram_cell_clicked`) +
