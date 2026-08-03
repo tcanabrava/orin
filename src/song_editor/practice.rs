@@ -29,11 +29,13 @@ const GOOD_WINDOW: f64 = 0.130;
 /// After 200 ms past the onset the note is marked Missed.
 const MISS_WINDOW: f64 = 0.200;
 
-/// How long a hit/miss result stays on screen before a "waiting for the next
-/// note" prompt is allowed to replace it. Without this, the tick right after
-/// a hit immediately re-evaluates the next (already-`Waiting`) note and
-/// overwrites the result before it's readable — see `practice_tick`.
-const MSG_HOLD_SECS: f32 = 0.6;
+/// How long a hit/miss result stays on screen before anything else (a
+/// "waiting for the next note" prompt, or the *next* note's own result) is
+/// allowed to replace it — long enough to actually read "Perfect G4 +100",
+/// not just register that something flashed. Without this, the tick right
+/// after a hit immediately re-evaluates the next (already-`Waiting`) note
+/// and overwrites the result before it's readable — see `practice_tick`.
+const MSG_HOLD_SECS: f32 = 1.0;
 
 /// 2^(0.5/12) — frequency ratio spanning ±50 cents.
 /// Detected pitches within this band of the expected frequency count as a match.
@@ -76,6 +78,14 @@ pub(super) struct PracticeState {
     /// Seconds left before [`MSG_HOLD_SECS`] releases its hold on `msg` —
     /// see that constant's doc comment.
     msg_hold: f32,
+    /// A result message that arrived while `msg`'s hold was still active —
+    /// queued rather than dropped, so a note scored quickly after another
+    /// (common at any reasonable tempo) still gets its own moment on
+    /// screen instead of silently losing its feedback. Only the latest
+    /// queued result is kept; a still-newer one replaces it rather than
+    /// building up a backlog that would lag further and further behind
+    /// actual play.
+    pending_msg: Option<LocalizedStr>,
 }
 
 impl PracticeState {
@@ -335,24 +345,66 @@ pub(super) fn practice_tick(
     practice.misses += misses_delta;
     practice.score += score_delta;
     practice.msg_hold = (practice.msg_hold - dt as f32).max(0.0);
-    if let Some(msg) = new_msg
-        && should_update_msg(is_result_msg, practice.msg_hold)
-    {
-        practice.msg = msg;
-        if is_result_msg {
-            practice.msg_hold = MSG_HOLD_SECS;
+    let hold_active = practice.msg_hold > 0.0;
+
+    match decide_msg_action(is_result_msg, hold_active, practice.pending_msg.is_some()) {
+        MsgAction::ShowNew => {
+            if let Some(msg) = new_msg {
+                practice.msg = msg;
+                practice.pending_msg = None;
+                if is_result_msg {
+                    practice.msg_hold = MSG_HOLD_SECS;
+                }
+            }
         }
+        MsgAction::Queue => practice.pending_msg = new_msg,
+        MsgAction::PromotePending => {
+            if let Some(pending) = practice.pending_msg.take() {
+                practice.msg = pending;
+                practice.msg_hold = MSG_HOLD_SECS;
+            }
+        }
+        MsgAction::Keep => {}
     }
 }
 
-/// Whether a freshly-computed status message should replace the one
-/// currently on screen: a hit/miss result always wins (and — separately —
-/// arms a fresh hold, see `practice_tick`); a "waiting for the next note"
-/// prompt only wins once the previous result's hold has counted down to
-/// zero. Without this, the tick right after a hit immediately overwrites the
-/// result with the next note's prompt before it's readable.
-fn should_update_msg(is_result_msg: bool, msg_hold: f32) -> bool {
-    is_result_msg || msg_hold <= 0.0
+/// What `practice_tick` should do with `msg`/`msg_hold`/`pending_msg` this
+/// tick.
+#[derive(PartialEq, Eq, Debug)]
+enum MsgAction {
+    /// Show this tick's own message now (arming a fresh hold only applies
+    /// to a result — `practice_tick` checks `is_result_msg` itself for
+    /// that, since it's the one place that already has it in scope).
+    ShowNew,
+    /// A previous result is still being held — queue this tick's result
+    /// instead of dropping it.
+    Queue,
+    /// The hold just released and a result was already queued from an
+    /// earlier tick — show that instead of this tick's own message (a
+    /// "waiting for the next note" prompt, since a result always takes
+    /// the `Queue`/`ShowNew` path above instead of reaching this one).
+    PromotePending,
+    /// Nothing to do — keep whatever's currently shown.
+    Keep,
+}
+
+/// Decides message precedence for one `practice_tick` pass: a result
+/// always wins eventually (immediately if nothing's being held, queued
+/// otherwise — never dropped); a "waiting for the next note" prompt only
+/// wins once both the hold *and* any queued result are out of the way.
+/// Without this, the tick right after a hit immediately overwrites the
+/// result with the next note's prompt (or, just as bad, the *next* note's
+/// own result) before the first one is readable.
+fn decide_msg_action(is_result_msg: bool, hold_active: bool, has_pending: bool) -> MsgAction {
+    if is_result_msg {
+        if hold_active { MsgAction::Queue } else { MsgAction::ShowNew }
+    } else if hold_active {
+        MsgAction::Keep
+    } else if has_pending {
+        MsgAction::PromotePending
+    } else {
+        MsgAction::ShowNew
+    }
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -388,23 +440,48 @@ mod tests {
         state
     }
 
-    // ── should_update_msg ────────────────────────────────────────────────────
+    // ── decide_msg_action ────────────────────────────────────────────────────
 
     #[test]
-    fn a_result_message_always_wins() {
-        assert!(should_update_msg(true, 0.6));
-        assert!(should_update_msg(true, 0.0));
+    fn a_result_shows_immediately_when_nothing_is_held() {
+        assert_eq!(
+            decide_msg_action(true, false, false),
+            MsgAction::ShowNew
+        );
+    }
+
+    #[test]
+    fn a_result_queues_instead_of_dropping_when_a_hold_is_active() {
+        // The bug this whole thing exists to fix: a second note scored
+        // quickly after another used to overwrite the first result
+        // immediately (or worse, silently lose it) instead of respecting
+        // the hold.
+        assert_eq!(decide_msg_action(true, true, false), MsgAction::Queue);
+        // Still queues (replacing whatever was already queued) even if
+        // something was already pending.
+        assert_eq!(decide_msg_action(true, true, true), MsgAction::Queue);
     }
 
     #[test]
     fn a_prompt_is_blocked_while_the_hold_is_active() {
-        assert!(!should_update_msg(false, 0.6));
-        assert!(!should_update_msg(false, 0.001));
+        assert_eq!(decide_msg_action(false, true, false), MsgAction::Keep);
+        assert_eq!(decide_msg_action(false, true, true), MsgAction::Keep);
     }
 
     #[test]
-    fn a_prompt_wins_once_the_hold_expires() {
-        assert!(should_update_msg(false, 0.0));
+    fn a_pending_result_is_promoted_over_a_fresh_prompt_once_the_hold_expires() {
+        assert_eq!(
+            decide_msg_action(false, false, true),
+            MsgAction::PromotePending
+        );
+    }
+
+    #[test]
+    fn a_prompt_wins_once_the_hold_expires_and_nothing_is_pending() {
+        assert_eq!(
+            decide_msg_action(false, false, false),
+            MsgAction::ShowNew
+        );
     }
 
     // ── freq_matches ─────────────────────────────────────────────────────────
