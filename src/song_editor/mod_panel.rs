@@ -61,6 +61,7 @@ pub(super) fn spawn_mod_panel(
             .spawn(Node {
                 width: Val::Percent(100.0),
                 flex_direction: FlexDirection::Row,
+                flex_wrap: FlexWrap::Wrap,
                 align_items: AlignItems::Center,
                 column_gap: Val::Px(8.0),
                 ..default()
