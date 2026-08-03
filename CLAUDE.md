@@ -44,8 +44,9 @@ Manual testing needs a mic, audio out, and a display.
 
 - **Crate = lib + bins.** `src/lib.rs` re-exports subsystems so the game and
   tools share them: `audio_system`, `song`, `gameplay`, `scoring`,
-  `song_editor`, `lessons`, `menu`, `dialogs`, `spectrogram`, `theme`,
-  `localization`, `settings`, `profile`, `assets_management`.
+  `song_editor`, `lessons`, `menu`, `dialogs`, `music_score`, `responsive`,
+  `spectrogram`, `theme`, `localization`, `settings`, `profile`,
+  `assets_management`.
 - **Audio input path:** cpal callback → mono downmix → 4096-sample chunks
   with 50% overlap (`audio_system/audio_input.rs`) → crossbeam channel →
   `process_audio` in `main.rs` → one FFT per chunk (`pitch_detect::analyze`)
@@ -899,6 +900,126 @@ Manual testing needs a mic, audio out, and a display.
   against something real instead of reading as empty. Only the waveform
   row itself stays blank in that case — there's genuinely no waveform
   data without decoded audio.
+- **A shared music-notation staff renders with the Bravura SMuFL font**
+  (`src/music_score/`, a new top-level module, sibling to `spectrogram` —
+  used by Play 2D/3D, below the song-progress bar, and by the Song Editor,
+  in its own fixed chrome below the grid). Deliberately coarse, not a
+  sight-reading tool: noteheads (whole/half/filled by duration), stems,
+  ledger lines, sharp accidentals, ties across a bar line, and a single
+  eighth-note flag — no beaming, no sixteenth-or-shorter flag tier, no
+  dotted durations, single treble clef only. `assets/fonts/Bravura.otf`
+  (SIL OFL, `Bravura-OFL.txt` alongside it) is bundled and loaded the same
+  `Font::from_bytes` way as `dialogs::font_fallback`'s small icon fonts;
+  every glyph codepoint and every relative measurement (notehead width,
+  stem attachment point, ledger-line extension) comes straight from
+  Bravura's own published `bravura_metadata.json` — the one thing that
+  *couldn't* be derived that way, `GLYPH_BASELINE_CORRECTION` (correcting
+  for Bevy positioning a `Text` node's bounding box top-left rather than
+  the font's own SMuFL-relative glyph origin), is an estimate, flagged in
+  its own doc comment as the first thing to adjust by eye.
+  - **`NotationNote { start_beat, duration_beats, midi }`** (beats, not
+    ticks or seconds) is the module's only input — it never touches a
+    chart's tempo map or an editor's own tick resolution, so each of the
+    three call sites converts its own time representation first: gameplay
+    (`gameplay::music_score_bridge`) goes `ScheduledNote::time` (seconds)
+    through `song::chart::seconds_to_tick`; the Song Editor
+    (`song_editor::music_score_bridge`) just divides its own
+    already-tempo-independent `GridNote::tick` by `TICKS_PER_BEAT`. This
+    is the same split `gameplay::metronome_overlay`/`song_editor::
+    metronome` already use for the same reason (two genuinely different
+    clocks/note models) — not duplicated logic, since the actual
+    rendering stays 100% inside `music_score` either way.
+  - **A note that crosses one or more bar lines is split into per-bar
+    segments and tied together** (`split_at_bar_lines`, called by both
+    bridges with their own `beats_per_bar`) rather than drawn as one
+    oversized notehead — `NotationNote::tied_from_previous` marks every
+    segment after the first, which suppresses that segment's own
+    accidental (a tie doesn't restate one) and draws a tie mark back to
+    the segment before it. The tie itself is a *real curved arc*, not a
+    flat rectangle: `music_score::tie_material::TieMaterial` is a
+    `UiMaterial` fragment shader (`assets/shaders/music_score_tie.wgsl`),
+    the same "custom shader for a shape a plain `Node` can't express"
+    pattern `gameplay::note_tail_2d::NoteTail2dMaterial` already
+    established — one shared material handle covers every tie, since
+    unlike the note tail this shape never varies. Its bounding box spans
+    the *real* pixel gap between the two tied noteheads' own onset
+    positions (computed from the immediately-preceding entry in
+    `MusicScoreNotes`, which `split_at_bar_lines` guarantees is the
+    tied-from segment), not a fixed size — an earlier version centered a
+    fixed-width box on the second note alone and never actually reached
+    the first.
+  - **The visible window sizes itself from the panel's own on-screen
+    width**, independent of any other host UI (the falling-note highway's
+    own lookahead, the Song Editor grid's own column count): `visible_
+    beats(panel_width_px)` derives how many beats fit on each side of the
+    "now" reference line from `ComputedNode` (read via a `MusicScorePanel`
+    marker on the panel's root), converted from physical to logical px the
+    same way `gameplay_2d::size_note_tails` already has to. Rebuilds also
+    fire on `Changed<ComputedNode>` (first layout pass, a window resize),
+    not just on note/playhead changes. The Song Editor's own
+    `MusicScorePlayhead` — which only gameplay's clock naturally drives —
+    falls back to `EditorState::scroll_beat` whenever nothing is actually
+    playing, so panning the grid pans the score with it instead of the
+    score staying pinned whichever beat playback last stopped at (usually
+    0).
+  - **`dialogs::font_fallback::apply_font_fallback` runs on *every* `Text`
+    entity in the game**, not just the ones its own small icon fonts
+    cover — for a single-run string whose character isn't one of its own
+    known gaps, it unconditionally resets `TextFont.font` back to
+    `FontSource::default()`, since that system's whole contract assumes
+    it's the only thing ever touching `TextFont.font`. `music_score`'s
+    Bravura glyphs (Private-Use-Area SMuFL codepoints, never in that
+    system's own gap lists) got silently clobbered back to the default
+    font — the actual cause of an early "tofu box" bug, not a font or
+    Bevy/Parley limitation. Fixed with a general opt-out marker,
+    `dialogs::font_fallback::SkipFontFallback`, rather than special-casing
+    SMuFL codepoints into that system.
+  - **This surfaced a real, unrelated harp-model bug while testing**: the
+    Song Editor's own `state::overblow_ok` allowed Overblow on holes 1–6,
+    but `song::harmonica::hole_notes` only defines a real overblow reed
+    for 1/4/5/6 — holes 2/3 fell through the gap (the editor accepted the
+    click, but no pitch existed anywhere downstream: scoring, playback,
+    or this staff). Fixed `overblow_ok` to match `hole_notes` exactly.
+- **Responsive/compact layout for narrow windows** (`src/responsive.rs`).
+  `CompactLayout` (a `Resource`) is derived every frame from the primary
+  window's width divided by `UiScale` (the same effective-width math
+  `song_editor::interaction`'s own scroll-clamping already used) crossing a
+  single shared `COMPACT_BREAKPOINT_PX` (900.0) — one definition of
+  "compact" reused everywhere, rather than each screen picking its own
+  threshold. Deliberately **not live-reactive**: `gameplay_2d::setup`/
+  `gameplay_3d::setup` and `song_editor::ui::setup` each read
+  `Res<CompactLayout>` once, at `OnEnter(AppState::Playing)`/
+  `OnEnter(AppState::SongEditor2)`, and branch what they spawn — a resize
+  *during* a song or edit session doesn't retroactively reflow it. Live-
+  reflowing an already-spawned scene would need despawn/respawn logic on
+  par with a second setup system, for a scenario that matters far less than
+  "the screen you land on already fits" — extend this only if that turns
+  out to be wrong.
+  - **Play 2D/3D compact**: the note highway (2D) / 3D scene stays, plus a
+    minimal score/combo/feedback readout; everything else gameplay's HUD
+    normally shows — song info, phrase banner, tab ribbon, the 12-bar
+    grid, metronome, technique legend, and the `music_score` notation
+    staff — is skipped entirely rather than shrunk, since none of it is
+    essential to actually playing. `gameplay_3d::setup` bundles `theme`/
+    `loc`/`bravura`/`compact` into a new `HudContext` `SystemParam`
+    (mirroring the file's own pre-existing `NoteBuildState`) purely
+    because plain individual params would have put it one over Bevy's
+    function-system arity limit — nothing about the four belonging
+    together otherwise.
+  - **Song Editor compact**: `meta_form::spawn_meta_form`'s three
+    side-by-side columns (content-kind/harmonica/snap fields, the rest of
+    the fields + MIDI row, the color legend) stack vertically instead —
+    the tightest rigid constraint found anywhere in the app (≈1122px
+    before clipping, no wrap, only vertical scrolling available). The top
+    transport strip (`mod_panel.rs`) also gained `flex_wrap`, unconditionally
+    (not gated on `CompactLayout` at all — wrapping only engages once
+    content overflows, so it's a strict improvement on wide screens too).
+    The note grid needed no changes — it already self-scrolls horizontally
+    regardless of window width (`grid.rs`'s own `visible_beats`/
+    `GridScrollTrack`).
+  - **Menu pages are out of scope** — they already handle overflow via
+    `menu::scene::spawn_menu_root`'s scroll area, so they were judged
+    reasonably small-screen-safe already.
 - **Lessons** (`src/lessons/` — `manifest.rs`/`catalog.rs`/`progress.rs` —
   plus `src/menu/pages/lessons.rs`; design in `docs/lessons_plan.md`):
   `assets/lessons/<unit>/<lesson>/lesson.json` (schema
@@ -1121,6 +1242,21 @@ Manual testing needs a mic, audio out, and a display.
   `loc.msg()` (Fluent); a `build.rs` scan + `LocalizedStr` newtype fail the
   build on raw literals. Locales: en-US, pt-BR, es-ES — add keys to all;
   `locales_define_the_same_keys` walks the directory and enforces parity.
+  **A key with a variable uses Fluent's own `{$name}` syntax** (e.g.
+  `jam-generate-key = Key: {$key}`) — `LocalizationExt::msg_args`
+  (`localization.rs`) builds a real `fluent::FluentArgs` from the
+  `&[(&str, String)]` it's given and resolves it through
+  `fluent_content::Request::args`/`Content::content`, i.e. Fluent's own
+  `format_pattern`, not a hand-rolled string replace. One wrinkle:
+  Fluent wraps every interpolated argument in bidi-isolation marks
+  (FSI/PDI, U+2068/U+2069) by default, meant for prose mixing scripts —
+  overkill for short single-language UI labels, and `bevy_fluent`'s
+  bundle loader exposes no setting to turn it off
+  (`FluentBundle::set_use_isolating` isn't reachable through it), so
+  `msg_args` strips those marks from the result via the pure, tested
+  `strip_bidi_isolates` helper rather than let invisible formatting
+  characters leak into rendered/logged text. `msg` (no args) skips all of
+  this — it's a plain `self.content(key)` lookup, no `FluentArgs` involved.
   Runtime *loading* of those locales (`localization::load_locales`) is a
   fixed `LOCALES` list, each loaded by explicit path
   (`locales/<lang>/main.ftl.ron`), not `AssetServer::load_folder` — the

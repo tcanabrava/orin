@@ -29,6 +29,9 @@ bevy_fluent = "0.15.0"
 # The `Content` trait used to resolve Fluent message keys; bevy_fluent builds on
 # this same version but does not re-export the trait.
 fluent_content = "0.0.5"
+# `FluentArgs`, for native `{$name}` variable interpolation via `msg_args`;
+# bevy_fluent builds on this same version but does not re-export it.
+fluent = "0.16"
 unic-langid = "0.9"
 # Detect the OS UI language so the game starts in the player's locale.
 sys-locale = "0.3"

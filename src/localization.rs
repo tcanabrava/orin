@@ -26,7 +26,8 @@
 use bevy::prelude::*;
 use bevy_fluent::exts::fluent::BundleExt;
 use bevy_fluent::prelude::*;
-use fluent_content::Content;
+use fluent::FluentArgs;
+use fluent_content::{Content, Request};
 use unic_langid::LanguageIdentifier;
 
 /// Every shipped locale, matched 1:1 with a folder under `assets/locales/`
@@ -249,12 +250,12 @@ pub trait LocalizationExt {
     /// a forgotten or not-yet-loaded translation is visible rather than blank.
     fn msg(&self, key: &str) -> LocalizedStr;
 
-    /// Like [`msg`] but substitutes `%name%` placeholders in the FTL template
-    /// with the supplied values before returning the result.
+    /// Like [`msg`] but resolves Fluent's own `{$name}` variables in the FTL
+    /// template against the supplied values.
     ///
     /// FTL example:
     /// ```text
-    /// practice-done = Done — %hits%/%total% notes · %score% pts
+    /// practice-done = Done — {$hits}/{$total} notes · {$score} pts
     /// ```
     /// Call site:
     /// ```ignore
@@ -272,15 +273,29 @@ impl LocalizationExt for Localization {
     }
 
     fn msg_args(&self, key: &str, args: &[(&str, String)]) -> LocalizedStr {
-        let mut s = self.content(key).unwrap_or_else(|| {
+        let mut fluent_args = FluentArgs::new();
+        for (name, value) in args {
+            fluent_args.set(*name, value.clone());
+        }
+        let request = Request::new(key).args(&fluent_args);
+        let s = self.content(request).unwrap_or_else(|| {
             warn!("Missing translation for {key:?}");
             key.to_string()
         });
-        for (name, value) in args {
-            s = s.replace(&format!("%{name}%"), value.as_str());
-        }
-        LocalizedStr::new(s)
+        LocalizedStr::new(strip_bidi_isolates(s))
     }
+}
+
+/// Strips Fluent's bidi-isolation marks (FSI/PDI, U+2068/U+2069), which
+/// `format_pattern` wraps around every interpolated argument by default so
+/// RTL/LTR content can't bleed into each other — meant for prose mixing
+/// scripts, not our short, single-language UI labels. `bevy_fluent`'s
+/// bundle loader has no setting to turn this off
+/// (`FluentBundle::set_use_isolating` isn't reachable through it), so this
+/// strips them after the fact rather than letting invisible formatting
+/// characters leak into rendered/logged text.
+fn strip_bidi_isolates(s: String) -> String {
+    s.replace(['\u{2068}', '\u{2069}'], "")
 }
 
 #[cfg(test)]
@@ -308,6 +323,12 @@ mod tests {
                 }
             })
             .collect()
+    }
+
+    #[test]
+    fn strip_bidi_isolates_removes_fsi_pdi_marks() {
+        let wrapped = "Score: \u{2068}100\u{2069} pts".to_string();
+        assert_eq!(super::strip_bidi_isolates(wrapped), "Score: 100 pts");
     }
 
     /// Every locale must define exactly the same message keys as the default

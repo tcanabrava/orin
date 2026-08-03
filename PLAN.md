@@ -58,6 +58,18 @@ one-line index of what's landed.
 - **Compact layout for narrow windows** (`src/responsive.rs`) — Play
   2D/3D and the Song Editor adapt below a shared width breakpoint; menus
   were already scroll-safe and out of scope.
+- **Android/iOS prep, desktop-verifiable groundwork** — on-screen
+  equivalents for every keyboard-only action found (UI zoom, the Song
+  Editor's Delete/Copy/Paste, the spectrogram's style cycle), plus
+  `MicStatus::AwaitingPermission` groundwork for a future mobile
+  permission-prompt flow. The actual Android/iOS build config
+  (`#[bevy_main]`, `[package.metadata.android]`, an Xcode project) is
+  deliberately deferred — this sandbox has no NDK and can never have
+  Xcode, so writing unverifiable config wasn't worth it yet. See
+  `ROADMAP.md`'s Mobile section (currently still listed as a non-goal —
+  worth revisiting given this) for the full research findings (cpal
+  already has real Android/iOS mic input support; Bevy's own mobile
+  toolchain story is real but immature).
 
 ## Current work
 

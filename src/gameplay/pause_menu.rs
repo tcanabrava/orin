@@ -1030,7 +1030,7 @@ mod tests {
     // ── loop_label_text ───────────────────────────────────────────────────────
     //
     // `Localization::default()` has no bundle loaded, so `loc.msg(key)`/
-    // `loc.msg_args(key, ...)` fall back to the key itself with no `%name%`
+    // `loc.msg_args(key, ...)` fall back to the key itself with no `{$name}`
     // placeholders to substitute into — these only exercise which key (and,
     // for the active case, which args) the active/inactive dispatch picks,
     // not the translated/formatted text.

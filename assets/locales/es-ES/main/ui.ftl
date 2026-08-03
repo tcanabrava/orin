@@ -39,10 +39,10 @@ play-3d = Jugar en 3D
 # Generar Jam (base sintetizada, sin necesidad de una canción)
 jam-generate-title = Generar una Base de Jam
 jam-generate-start = Empezar la Jam
-jam-generate-key = Tono: %key%
-jam-generate-tempo = Tempo: %bpm%
-jam-generate-progression = Progresión: %progression%
-jam-generate-position = Posición: %position%
+jam-generate-key = Tono: {$key}
+jam-generate-tempo = Tempo: {$bpm}
+jam-generate-progression = Progresión: {$progression}
+jam-generate-position = Posición: {$position}
 
 # Créditos
 credits-back-to-menu = Volver al Menú
@@ -66,7 +66,7 @@ options-colorblind-palette-on = Paleta para daltonismo: activada
 options-colorblind-palette-off = Paleta para daltonismo: desactivada
 options-zoom-out = − Reducir zoom
 options-zoom-in = + Aumentar zoom
-options-zoom-label = Zoom: %percent%%
+options-zoom-label = Zoom: {$percent}%
 options-pitch-detect = Detección de tono
 options-microphone = Micrófono
 options-note-labels-button = Etiquetas de notas
@@ -186,25 +186,25 @@ drag-denied-overdraw = La overaspiración solo está disponible en los orificios
 drag-denied-overlap = Ya hay otra nota aquí
 
 # Song Editor 2 — confirmación de la herramienta Borrar/Quitar de la línea de tiempo
-editor-confirm-erase = ¿Borrar del compás %from% al %to%? Se eliminará cada nota de ese tramo — el resto de la canción se queda exactamente donde está.
-editor-confirm-remove = ¿Quitar del compás %from% al %to%? Se eliminará cada nota de ese tramo, y todo lo siguiente se desplazará hacia atrás para cerrar el hueco.
+editor-confirm-erase = ¿Borrar del compás {$from} al {$to}? Se eliminará cada nota de ese tramo — el resto de la canción se queda exactamente donde está.
+editor-confirm-remove = ¿Quitar del compás {$from} al {$to}? Se eliminará cada nota de ese tramo, y todo lo siguiente se desplazará hacia atrás para cerrar el hueco.
 
 # Song Editor 2 — mensajes del modo de práctica
 practice-no-music = No hay música de fondo configurada — ¡toca junto con la partitura!
-practice-prompt = ▶ Toca %note%…
-practice-wrong-note = ▶ %got% → se necesita %expected%
-practice-hit-perfect = ✓ PERFECTO  %note%  +%pts% pts
-practice-hit-good = ✓ BIEN  %note%  +%pts% pts
-practice-missed = ✗ Fallaste %note%
-practice-done = Hecho — %hits%/%total% notas  ·  %score% pts
-editor-record-status = ⏺ Grabando — %count% notas capturadas
-editor-count-in-status = ⏳ Prepárate — grabación en %seconds%s
+practice-prompt = ▶ Toca {$note}…
+practice-wrong-note = ▶ {$got} → se necesita {$expected}
+practice-hit-perfect = ✓ PERFECTO  {$note}  +{$pts} pts
+practice-hit-good = ✓ BIEN  {$note}  +{$pts} pts
+practice-missed = ✗ Fallaste {$note}
+practice-done = Hecho — {$hits}/{$total} notas  ·  {$score} pts
+editor-record-status = ⏺ Grabando — {$count} notas capturadas
+editor-count-in-status = ⏳ Prepárate — grabación en {$seconds}s
 editor-metronome-tooltip = Alterna el clic del metrónomo durante Grabar/Reproducir/Practicar
-editor-save-success = ✓ Guardado: %path%
-editor-save-warning = ⚠ Guardado con avisos: %detail%
-editor-save-failed = ✗ Error al guardar: %detail%
-editor-load-success = ✓ Cargado: %path%
-editor-load-failed = ✗ Error al cargar: %detail%
+editor-save-success = ✓ Guardado: {$path}
+editor-save-warning = ⚠ Guardado con avisos: {$detail}
+editor-save-failed = ✗ Error al guardar: {$detail}
+editor-load-success = ✓ Cargado: {$path}
+editor-load-failed = ✗ Error al cargar: {$detail}
 
 # Song Editor 2 — descripciones de los botones
 editor-back-tooltip = Salir del editor y volver al menú principal
@@ -234,7 +234,7 @@ editor-debug-recording-erase = Borrar Grabación
 editor-debug-recording-erase-tooltip = Descarta el audio bruto capturado para que la próxima grabación empiece de cero
 editor-debug-recording-off = Apagado
 editor-debug-recording-armed = Listo — pulsa Play para grabar
-editor-debug-recording-status = Grabando — %secs%s capturados
+editor-debug-recording-status = Grabando — {$secs}s capturados
 mod-blow-tooltip = Establecer la nota seleccionada como soplo (exhalar)
 mod-draw-tooltip = Establecer la nota seleccionada como aspiración (inhalar)
 mod-bend-tooltip = Alternar la profundidad de doblado de la nota seleccionada: ninguno → medio tono → tono completo → tono y medio
@@ -270,12 +270,12 @@ lesson-locked = bloqueada
 lesson-passed = Superada
 lesson-start = Empezar la Lección
 lesson-mark-done = Marcar como Hecha
-lesson-goal-accuracy = Objetivo: %pct%% de precisión general
-lesson-goal-technique = Objetivo: %pct%% de precisión en las notas de %technique%
+lesson-goal-accuracy = Objetivo: {$pct}% de precisión general
+lesson-goal-technique = Objetivo: {$pct}% de precisión en las notas de {$technique}
 lesson-goal-finish = Objetivo: tocarla hasta el final
-lesson-goal-scale-adherence = Objetivo: %pct%% de las notas dentro de la escala o mejor
-lesson-goal-chord-tone-adherence = Objetivo: %pct%% de las notas como notas del acorde
-lesson-goal-phrase-discipline = Objetivo: %pct%% de las notas tocadas fuera de una pausa — deja espacio
+lesson-goal-scale-adherence = Objetivo: {$pct}% de las notas dentro de la escala o mejor
+lesson-goal-chord-tone-adherence = Objetivo: {$pct}% de las notas como notas del acorde
+lesson-goal-phrase-discipline = Objetivo: {$pct}% de las notas tocadas fuera de una pausa — deja espacio
 lesson-complete-banner = LECCIÓN SUPERADA
 lesson-failed-banner = Objetivo no alcanzado — relee la lección e inténtalo de nuevo
 
@@ -553,9 +553,9 @@ gameplay-legend-blow = ■ SOPLO
 gameplay-legend-draw = ■ ASPIRACIÓN
 harmonica-overlay-hint-view = Armónica  ·  se ilumina mientras tocas
 harmonica-overlay-hint-select = Armónica  ·  haz clic en una nota para seleccionarla
-gameplay-chart-info = Tono: %key%  ♩ = %bpm%  %time_sig%
-gameplay-chart-author = Canción: %author%
-gameplay-techniques-toggle = %arrow% TÉCNICAS
+gameplay-chart-info = Tono: {$key}  ♩ = {$bpm}  {$time_sig}
+gameplay-chart-author = Canción: {$author}
+gameplay-techniques-toggle = {$arrow} TÉCNICAS
 
 # Menú de pausa
 pause-quit-song = Salir de la canción
@@ -563,17 +563,17 @@ pause-finish-lesson = Terminar lección
 pause-wait-for-note-button = ⏸ Esperar nota
 pause-wait-for-note-on = Esperar nota: activado
 pause-wait-for-note-off = Esperar nota: desactivado
-pause-speed = Velocidad: %pct%%
+pause-speed = Velocidad: {$pct}%
 pause-adaptive-difficulty-button = Dificultad adaptativa
 pause-adaptive-difficulty-on = Dificultad adaptativa: activada
 pause-adaptive-difficulty-off = Dificultad adaptativa: desactivada
-pause-phrase-section = Sección: %name% — Aprendido: %pct%%
+pause-phrase-section = Sección: {$name} — Aprendido: {$pct}%
 pause-phrase-no-sections = No hay frases en esta canción
 pause-drag-section-hint = Haz clic en una sección de la barra de progreso de arriba para seleccionarla
 pause-notes-update-hint = Las notas se actualizan en vivo — reanuda para verlas
 pause-clear-loop = Borrar bucle
 pause-loop-off = Bucle: desactivado
-pause-loop-range = Bucle: %start%s–%end%s
+pause-loop-range = Bucle: {$start}s–{$end}s
 pause-drag-loop-hint = Arrastra en la barra de progreso de arriba para definir un rango de bucle
 
 # Overlay del metrónomo
@@ -584,16 +584,16 @@ metronome-feel-shuffle = ritmo: shuffle
 
 # Entrenador de Bends
 bending-drill-off = Ejercicio: apagado
-bending-drill-on = Ejercicio: encendido · racha %streak%
+bending-drill-on = Ejercicio: encendido · racha {$streak}
 bending-hint = Esc para volver  ·  M silencia el clic  ·  feel alterna recto/shuffle
 bending-no-note-for-technique = Este agujero no tiene nota para esa técnica.
-bending-key-label = Tono: %key%
+bending-key-label = Tono: {$key}
 bending-listen-button = 🔊 Escuchar
 bending-drill-button = 🎲 Ejercicio
-bending-play-it-target = Tócala — objetivo %note%
-bending-in-tune = ✓ Afinado  (%note%)
-bending-cents-sharp = ↑ %cents% cents agudo  (objetivo %note%)
-bending-cents-flat = ↓ %cents% cents grave  (objetivo %note%)
+bending-play-it-target = Tócala — objetivo {$note}
+bending-in-tune = ✓ Afinado  ({$note})
+bending-cents-sharp = ↑ {$cents} cents agudo  (objetivo {$note})
+bending-cents-flat = ↓ {$cents} cents grave  (objetivo {$note})
 bending-detect-label = Detectar
 
 # Jam Session
@@ -630,23 +630,23 @@ results-technique-overdraw = Overdraw
 results-technique-slide = Slide
 results-technique-clean-attack = Ataque limpio
 results-avg-timing-offset = Desfase medio de tiempo
-results-increase-latency = Aumentar el retraso de entrada a %ms%ms
-results-decrease-latency = Reducir el retraso de entrada a %ms%ms
-results-score = Puntuación: %points%
+results-increase-latency = Aumentar el retraso de entrada a {$ms}ms
+results-decrease-latency = Reducir el retraso de entrada a {$ms}ms
+results-score = Puntuación: {$points}
 results-best-score = Mejor puntuación
 
 # Calibración de latencia
 calibration-title = Calibración de Latencia
 calibration-mean-offset-placeholder = Desfase medio: —
-calibration-mean-offset = Desfase medio: %sign%%ms%ms
+calibration-mean-offset = Desfase medio: {$sign}{$ms}ms
 calibration-suggested-placeholder = Actual: —   →   Sugerido: —
-calibration-suggested = Actual: %current%ms   →   Sugerido: %suggested%ms
+calibration-suggested = Actual: {$current}ms   →   Sugerido: {$suggested}ms
 
 # Opciones
 options-input-lag = Retardo de entrada
 
 # Recorrido guiado del tutorial (menu::tutorial)
-tutorial-step = Paso %n% de %total%
+tutorial-step = Paso {$n} de {$total}
 tutorial-skip = Saltar Tutorial
 tutorial-title-main = Menú Principal
 tutorial-body-main = Tu base — ve a Jugar, abre Opciones o encuentra Ayuda / Acerca de desde aquí.

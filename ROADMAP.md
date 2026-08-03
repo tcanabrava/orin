@@ -113,6 +113,27 @@ remains:
   based settings/profile persistence and the `~/Harmonicon` external-folder
   watcher (`notify-debouncer-full`), none of which have browser
   equivalents.
+- Explore Android/iOS. Early groundwork is done: every keyboard-only
+  action found (UI zoom, the Song Editor's Delete/Copy/Paste, the
+  spectrogram's style cycle) now has an on-screen equivalent, and
+  `MicStatus::AwaitingPermission` exists for a future mobile permission
+  prompt to land in. Research findings that changed the picture from the
+  old "poor fit" framing: mic input is *not* blocked the way it is for
+  wasm — checked cpal 0.17.3's own source directly, and both Android
+  (`host/aaudio`) and iOS (`host/coreaudio/ios`) have real, non-stub
+  input support, unlike the wasm/Web Audio backend, which has none at
+  all. What's actually still unsettled is Bevy's own mobile toolchain:
+  it has a working `examples/mobile` reference (`#[bevy_main]`, the
+  `android-game-activity` feature, an Xcode project +
+  `build_rust_deps.sh`), but no single current, actively-maintained tool
+  goes all the way to a store-ready build (`cargo-apk` is explicitly
+  deprecated and can't produce a Play Store AAB; the community's
+  `bevy_game_template` leans on a custom fork of `xbuild`, itself
+  unmaintained upstream) — a Bevy maintainer's own words: shipping to
+  mobile is "possible... but not easy." The actual build config
+  (`#[bevy_main]`, `[package.metadata.android]`, an Xcode project) is
+  unattempted so far — it needs a real Android NDK/SDK or a Mac with
+  Xcode to write against, neither available in this dev environment.
 - Accessibility: mirrored layout for left-handed players, fully
   keyboard-navigable menus. (Colorblind-safe note palettes are done — an
   Options-page toggle swaps the Play2D/Play3D note highway's blow/draw
@@ -127,4 +148,3 @@ remains:
 
 - Multiplayer / online leaderboards.
 - Non-harmonica instruments.
-- Mobile (mic latency + Bevy mobile maturity make this a poor fit today).

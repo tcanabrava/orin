@@ -3235,6 +3235,7 @@ dependencies = [
  "crossbeam-channel",
  "dirs",
  "figment",
+ "fluent",
  "fluent_content",
  "getrandom 0.3.4",
  "getrandom 0.4.3",

@@ -41,10 +41,10 @@ play-3d = Play 3D
 # Generate Jam (synthesized backing, no song required)
 jam-generate-title = Generate a Jam Backing
 jam-generate-start = Start Jam
-jam-generate-key = Key: %key%
-jam-generate-tempo = Tempo: %bpm%
-jam-generate-progression = Progression: %progression%
-jam-generate-position = Position: %position%
+jam-generate-key = Key: {$key}
+jam-generate-tempo = Tempo: {$bpm}
+jam-generate-progression = Progression: {$progression}
+jam-generate-position = Position: {$position}
 
 # Credits
 credits-back-to-menu = Back to Menu
@@ -68,7 +68,7 @@ options-colorblind-palette-on = Colorblind Palette: on
 options-colorblind-palette-off = Colorblind Palette: off
 options-zoom-out = − Zoom Out
 options-zoom-in = + Zoom In
-options-zoom-label = Zoom: %percent%%
+options-zoom-label = Zoom: {$percent}%
 options-pitch-detect = Pitch detect
 options-microphone = Microphone
 options-note-labels-button = Note labels
@@ -188,25 +188,25 @@ drag-denied-overdraw = Overdraw is only available on holes 7–10
 drag-denied-overlap = Another note is already here
 
 # Song Editor 2 — Erase/Remove timeline tool confirmation
-editor-confirm-erase = Erase bar %from% to bar %to%? Every note in that range will be deleted — the rest of the song stays exactly where it is.
-editor-confirm-remove = Remove bar %from% to bar %to%? Every note in that range will be deleted, and everything after it will shift earlier to close the gap.
+editor-confirm-erase = Erase bar {$from} to bar {$to}? Every note in that range will be deleted — the rest of the song stays exactly where it is.
+editor-confirm-remove = Remove bar {$from} to bar {$to}? Every note in that range will be deleted, and everything after it will shift earlier to close the gap.
 
 # Song Editor 2 — practice mode feedback
 practice-no-music = No background music set — play along with the chart!
-practice-prompt = ▶ Play %note%…
-practice-wrong-note = ▶ %got% → need %expected%
-practice-hit-perfect = ✓ PERFECT  %note%  +%pts% pts
-practice-hit-good = ✓ GOOD  %note%  +%pts% pts
-practice-missed = ✗ Missed %note%
-practice-done = Done — %hits%/%total% notes  ·  %score% pts
-editor-record-status = ⏺ Recording — %count% notes captured
-editor-count-in-status = ⏳ Get ready — recording in %seconds%s
+practice-prompt = ▶ Play {$note}…
+practice-wrong-note = ▶ {$got} → need {$expected}
+practice-hit-perfect = ✓ PERFECT  {$note}  +{$pts} pts
+practice-hit-good = ✓ GOOD  {$note}  +{$pts} pts
+practice-missed = ✗ Missed {$note}
+practice-done = Done — {$hits}/{$total} notes  ·  {$score} pts
+editor-record-status = ⏺ Recording — {$count} notes captured
+editor-count-in-status = ⏳ Get ready — recording in {$seconds}s
 editor-metronome-tooltip = Toggle the metronome click during Record/Play/Practice
-editor-save-success = ✓ Saved: %path%
-editor-save-warning = ⚠ Saved with warnings: %detail%
-editor-save-failed = ✗ Save failed: %detail%
-editor-load-success = ✓ Loaded: %path%
-editor-load-failed = ✗ Load failed: %detail%
+editor-save-success = ✓ Saved: {$path}
+editor-save-warning = ⚠ Saved with warnings: {$detail}
+editor-save-failed = ✗ Save failed: {$detail}
+editor-load-success = ✓ Loaded: {$path}
+editor-load-failed = ✗ Load failed: {$detail}
 
 # Song Editor 2 — button tooltips
 editor-back-tooltip = Leave the editor and return to the main menu
@@ -236,7 +236,7 @@ editor-debug-recording-erase = Erase Recording
 editor-debug-recording-erase-tooltip = Discard the captured raw audio so the next take starts fresh
 editor-debug-recording-off = Off
 editor-debug-recording-armed = Armed — press Play to record
-editor-debug-recording-status = Recording — %secs%s captured
+editor-debug-recording-status = Recording — {$secs}s captured
 mod-blow-tooltip = Set the selected note to a blow (exhale) note
 mod-draw-tooltip = Set the selected note to a draw (inhale) note
 mod-bend-tooltip = Cycle the selected note's bend depth: none → half step → whole step → step and a half
@@ -272,12 +272,12 @@ lesson-locked = locked
 lesson-passed = Passed
 lesson-start = Start Lesson
 lesson-mark-done = Mark as Done
-lesson-goal-accuracy = Goal: %pct%% overall accuracy
-lesson-goal-technique = Goal: %pct%% accuracy on %technique% notes
+lesson-goal-accuracy = Goal: {$pct}% overall accuracy
+lesson-goal-technique = Goal: {$pct}% accuracy on {$technique} notes
 lesson-goal-finish = Goal: play it through to the end
-lesson-goal-scale-adherence = Goal: %pct%% of notes in-scale or better
-lesson-goal-chord-tone-adherence = Goal: %pct%% of notes as chord tones
-lesson-goal-phrase-discipline = Goal: %pct%% of notes played outside a rest — leave space
+lesson-goal-scale-adherence = Goal: {$pct}% of notes in-scale or better
+lesson-goal-chord-tone-adherence = Goal: {$pct}% of notes as chord tones
+lesson-goal-phrase-discipline = Goal: {$pct}% of notes played outside a rest — leave space
 lesson-complete-banner = LESSON PASSED
 lesson-failed-banner = Goal not reached — read the lesson again and retry
 
@@ -555,9 +555,9 @@ gameplay-legend-blow = ■ BLOW
 gameplay-legend-draw = ■ DRAW
 harmonica-overlay-hint-view = Harmonica  ·  lights up as you play
 harmonica-overlay-hint-select = Harmonica  ·  click a note to select it
-gameplay-chart-info = Key: %key%  ♩ = %bpm%  %time_sig%
-gameplay-chart-author = Chart: %author%
-gameplay-techniques-toggle = %arrow% TECHNIQUES
+gameplay-chart-info = Key: {$key}  ♩ = {$bpm}  {$time_sig}
+gameplay-chart-author = Chart: {$author}
+gameplay-techniques-toggle = {$arrow} TECHNIQUES
 
 # Pause menu
 pause-quit-song = Quit Song
@@ -565,17 +565,17 @@ pause-finish-lesson = Finish Lesson
 pause-wait-for-note-button = ⏸ Wait for Note
 pause-wait-for-note-on = Wait for Note: on
 pause-wait-for-note-off = Wait for Note: off
-pause-speed = Speed: %pct%%
+pause-speed = Speed: {$pct}%
 pause-adaptive-difficulty-button = Adaptive Difficulty
 pause-adaptive-difficulty-on = Adaptive Difficulty: on
 pause-adaptive-difficulty-off = Adaptive Difficulty: off
-pause-phrase-section = Section: %name% — Learned: %pct%%
+pause-phrase-section = Section: {$name} — Learned: {$pct}%
 pause-phrase-no-sections = No phrases in this song
 pause-drag-section-hint = Click a section on the progress bar above to select it
 pause-notes-update-hint = Notes update live — resume to see them
 pause-clear-loop = Clear Loop
 pause-loop-off = Loop: off
-pause-loop-range = Loop: %start%s–%end%s
+pause-loop-range = Loop: {$start}s–{$end}s
 pause-drag-loop-hint = Drag on the progress bar above to set a loop range
 
 # Metronome overlay
@@ -586,16 +586,16 @@ metronome-feel-shuffle = feel: shuffle
 
 # Bending Trainer
 bending-drill-off = Drill: off
-bending-drill-on = Drill: on · streak %streak%
+bending-drill-on = Drill: on · streak {$streak}
 bending-hint = Esc to go back  ·  M mutes the click  ·  feel toggles straight/shuffle
 bending-no-note-for-technique = This hole has no note for that technique.
-bending-key-label = Key: %key%
+bending-key-label = Key: {$key}
 bending-listen-button = 🔊 Listen
 bending-drill-button = 🎲 Drill
-bending-play-it-target = Play it — target %note%
-bending-in-tune = ✓ In tune  (%note%)
-bending-cents-sharp = ↑ %cents% cents sharp  (target %note%)
-bending-cents-flat = ↓ %cents% cents flat  (target %note%)
+bending-play-it-target = Play it — target {$note}
+bending-in-tune = ✓ In tune  ({$note})
+bending-cents-sharp = ↑ {$cents} cents sharp  (target {$note})
+bending-cents-flat = ↓ {$cents} cents flat  (target {$note})
 bending-detect-label = Detect
 
 # Jam Session
@@ -632,23 +632,23 @@ results-technique-overdraw = Overdraw
 results-technique-slide = Slide
 results-technique-clean-attack = Clean attack
 results-avg-timing-offset = Avg timing offset
-results-increase-latency = Increase Input lag to %ms%ms
-results-decrease-latency = Decrease Input lag to %ms%ms
-results-score = Score: %points%
+results-increase-latency = Increase Input lag to {$ms}ms
+results-decrease-latency = Decrease Input lag to {$ms}ms
+results-score = Score: {$points}
 results-best-score = Best score
 
 # Latency calibration
 calibration-title = Latency Calibration
 calibration-mean-offset-placeholder = Mean offset: —
-calibration-mean-offset = Mean offset: %sign%%ms%ms
+calibration-mean-offset = Mean offset: {$sign}{$ms}ms
 calibration-suggested-placeholder = Current: —   →   Suggested: —
-calibration-suggested = Current: %current%ms   →   Suggested: %suggested%ms
+calibration-suggested = Current: {$current}ms   →   Suggested: {$suggested}ms
 
 # Options
 options-input-lag = Input lag
 
 # Guided tutorial tour (menu::tutorial)
-tutorial-step = Step %n% of %total%
+tutorial-step = Step {$n} of {$total}
 tutorial-skip = Skip Tutorial
 tutorial-title-main = Main Menu
 tutorial-body-main = Your home base — head into Play, open Options, or find Help / About from here.
