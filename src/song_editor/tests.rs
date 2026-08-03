@@ -526,13 +526,13 @@ fn sticky_bend_arms_without_a_selection_and_applies_to_a_compatible_hole() {
 fn sticky_pitch_falls_back_to_normal_on_an_incompatible_hole_but_stays_armed() {
     let mut s = EditorState::default();
     apply_modifier(&mut s, ModButton::Overblow);
-    // Hole 8 can't overblow (only 1..=6) — this one note falls back...
+    // Hole 8 can't overblow (only 1/4/5/6) — this one note falls back...
     select_or_add(&mut s, 8, 0);
     assert_eq!(s.notes[0].pitch, Pitch::Normal);
     // ...but the sticky arm itself wasn't cleared by that rejection.
-    select_or_add(&mut s, 3, 4);
+    select_or_add(&mut s, 4, 4);
     assert_eq!(
-        s.notes.iter().find(|n| n.hole == 3).unwrap().pitch,
+        s.notes.iter().find(|n| n.hole == 4).unwrap().pitch,
         Pitch::Overblow
     );
 }
@@ -625,11 +625,11 @@ fn arming_overdraw_then_blow_with_nothing_selected_clears_the_pitch() {
 fn a_new_note_placed_with_armed_overblow_is_never_tagged_draw() {
     let mut s = EditorState::default();
     // Arm Draw first, then Overblow — before the fix these were two
-    // independent sticky fields, so a hole-1..=6 note placed here would
-    // have landed as `pitch: Overblow, dir: Draw`.
+    // independent sticky fields, so an overblow-capable note placed here
+    // would have landed as `pitch: Overblow, dir: Draw`.
     apply_modifier(&mut s, ModButton::Draw);
     apply_modifier(&mut s, ModButton::Overblow);
-    select_or_add(&mut s, 3, 0);
+    select_or_add(&mut s, 4, 0);
     let n = &s.notes[0];
     assert_eq!(n.pitch, Pitch::Overblow);
     assert_eq!(n.dir, Dir::Blow);
@@ -649,14 +649,14 @@ fn a_new_note_placed_with_armed_overdraw_is_never_tagged_blow() {
 #[test]
 fn setting_overblow_on_a_selected_note_forces_its_direction_and_propagates() {
     let mut s = EditorState::default();
-    select_or_add(&mut s, 3, 0);
+    select_or_add(&mut s, 4, 0);
     apply_modifier(&mut s, ModButton::Draw); // starts as Draw
     select_or_add(&mut s, 5, 0); // a simultaneous chord note, also Draw
-    s.selected = vec![s.note_at(3, 0).unwrap().id];
+    s.selected = vec![s.note_at(4, 0).unwrap().id];
     apply_modifier(&mut s, ModButton::Overblow);
-    let hole3 = s.notes.iter().find(|n| n.hole == 3).unwrap();
-    assert_eq!(hole3.pitch, Pitch::Overblow);
-    assert_eq!(hole3.dir, Dir::Blow);
+    let hole4 = s.notes.iter().find(|n| n.hole == 4).unwrap();
+    assert_eq!(hole4.pitch, Pitch::Overblow);
+    assert_eq!(hole4.dir, Dir::Blow);
     // The whole chord follows — direction is whole-player, not per-hole.
     assert_eq!(s.notes.iter().find(|n| n.hole == 5).unwrap().dir, Dir::Blow);
 }
@@ -664,7 +664,7 @@ fn setting_overblow_on_a_selected_note_forces_its_direction_and_propagates() {
 #[test]
 fn clicking_draw_on_a_selected_overblow_note_clears_its_pitch() {
     let mut s = EditorState::default();
-    select_or_add(&mut s, 3, 0);
+    select_or_add(&mut s, 4, 0);
     apply_modifier(&mut s, ModButton::Overblow);
     assert_eq!(s.notes[0].pitch, Pitch::Overblow);
     apply_modifier(&mut s, ModButton::Draw);
@@ -726,17 +726,38 @@ fn wah_cycles_through_rates_and_caps_at_none() {
 }
 
 #[test]
-fn overblow_only_on_low_holes() {
-    let mut s = EditorState::default();
-    select_or_add(&mut s, 8, 0);
-    apply_modifier(&mut s, ModButton::Overblow);
-    assert_eq!(s.notes[0].pitch, Pitch::Normal);
-    select_or_add(&mut s, 3, 0);
-    apply_modifier(&mut s, ModButton::Overblow);
-    assert_eq!(
-        s.notes.iter().find(|n| n.hole == 3).unwrap().pitch,
-        Pitch::Overblow
-    );
+fn overblow_only_on_holes_with_a_reed_to_overblow() {
+    // `song::harmonica::hole_notes` only defines an overblow reed for
+    // 1/4/5/6 — `state::overblow_ok` must agree exactly, or a note tagged
+    // `Overblow` on some other hole (holes 2/3 included: this codebase's
+    // harp model, unlike some looser "any of 1-6" conventions, doesn't
+    // give them one) resolves to no pitch anywhere downstream (scoring,
+    // playback, `music_score`'s notation) despite the editor having
+    // accepted the click. Each hole gets its own fresh `EditorState` —
+    // editing a selected note's pitch also syncs `sticky_pitch` to match,
+    // so accumulating one shared state across holes would let an earlier
+    // successful Overblow silently pre-apply to (and then, via the second
+    // click, un-apply from) a later hole regardless of its own compatibility.
+    for hole in [2, 3, 7, 8, 9, 10] {
+        let mut s = EditorState::default();
+        select_or_add(&mut s, hole, 0);
+        apply_modifier(&mut s, ModButton::Overblow);
+        assert_eq!(
+            s.notes[0].pitch,
+            Pitch::Normal,
+            "hole {hole} has no overblow reed"
+        );
+    }
+    for hole in [1, 4, 5, 6] {
+        let mut s = EditorState::default();
+        select_or_add(&mut s, hole, 0);
+        apply_modifier(&mut s, ModButton::Overblow);
+        assert_eq!(
+            s.notes[0].pitch,
+            Pitch::Overblow,
+            "hole {hole} does have one"
+        );
+    }
 }
 
 #[test]

@@ -761,8 +761,13 @@ pub(super) fn max_bend(hole: u8) -> f32 {
     }
 }
 
+/// Matches `song::harmonica::hole_notes`'s own `over` field exactly (holes
+/// 1, 4, 5, 6 only — 2 and 3 have no overblow reed defined in this harp
+/// model), so a note the editor lets you tag `Overblow` always has a real
+/// pitch downstream (scoring, playback, `music_score`'s notation) instead
+/// of silently resolving to nothing.
 pub(super) fn overblow_ok(hole: u8) -> bool {
-    (1..=6).contains(&hole)
+    matches!(hole, 1 | 4 | 5 | 6)
 }
 
 pub(super) fn overdraw_ok(hole: u8) -> bool {
