@@ -100,6 +100,7 @@ fn main() {
     ))
     .add_plugins((
         harmonicon::dialogs::algo_picker::AlgoPickerPlugin,
+        harmonicon::dialogs::checkbox::CheckboxPlugin,
         harmonicon::dialogs::combobox::ComboboxPlugin,
         harmonicon::dialogs::confirm_dialog::ConfirmDialogPlugin,
         harmonicon::dialogs::file_dialog::FileDialogsPlugin,

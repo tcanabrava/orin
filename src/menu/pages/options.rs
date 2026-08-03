@@ -33,7 +33,9 @@ use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button, spawn_menu_root};
 
 use crate::dialogs::algo_picker::{algo_labels, on_algo_selected, spawn_algo_explanation};
 use crate::dialogs::button;
+use crate::dialogs::checkbox;
 use crate::dialogs::combobox;
+use crate::dialogs::tooltip::Tooltip;
 
 /// Owns the Options page: builds it on entry, tears it down on exit, and runs
 /// the slider/preview interaction systems while it's open.
@@ -58,10 +60,6 @@ impl Plugin for OptionsPlugin {
                     propagate_preview_layers,
                     update_mic_banner,
                     sync_mic_combobox,
-                    update_note_numbers_label,
-                    update_adaptive_difficulty_label,
-                    update_fullscreen_label,
-                    update_colorblind_palette_label,
                     update_zoom_label,
                 )
                     .run_if(in_state(MenuPage::Options)),
@@ -119,23 +117,7 @@ struct LatencySliderFill;
 #[derive(Component)]
 struct LatencySliderLabel;
 
-/// The "Note labels: ..." readout beside the note-numbers toggle.
-#[derive(Component)]
-struct NoteNumbersLabel;
-
-/// The "Adaptive Difficulty: on/off" readout beside its toggle.
-#[derive(Component)]
-struct AdaptiveDifficultyLabel;
-
-/// The "Fullscreen: on/off" readout beside its toggle.
-#[derive(Component)]
-struct FullscreenLabel;
-
-/// The "Colorblind Palette: on/off" readout beside its toggle.
-#[derive(Component)]
-struct ColorblindPaletteLabel;
-
-/// The "Zoom: N%" readout beside the zoom in/out buttons.
+/// The "Zoom: N%" readout beside the zoom slider.
 #[derive(Component)]
 struct ZoomLabel;
 
@@ -335,65 +317,28 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
 
 /// Flips whether falling notes show their hole number instead of the
 /// blow/draw arrow (`gameplay_2d`/`gameplay_3d`'s note spawners read this).
-fn toggle_note_numbers(_: On<Pointer<Click>>, mut show: ResMut<ShowNoteNumbers>) {
-    show.0 = !show.0;
+fn set_note_numbers(ev: On<ValueChange<bool>>, mut show: ResMut<ShowNoteNumbers>) {
+    show.0 = ev.value;
 }
 
-fn note_numbers_label_text(loc: &Localization, show: bool) -> String {
-    if show {
-        loc.msg("options-note-labels-numbers").into()
-    } else {
-        loc.msg("options-note-labels-arrows").into()
-    }
-}
-
-/// A row with a pill button that flips [`ShowNoteNumbers`] plus a label
-/// reflecting the current choice — same shape as the pause menu's
-/// `WaitForNoteMode` toggle.
+/// A checkbox bound to [`ShowNoteNumbers`], with a tooltip explaining the
+/// two display modes it switches between.
 fn spawn_note_numbers_toggle(
     commands: &mut Commands,
     parent: Entity,
     loc: &Localization,
     show_numbers: bool,
 ) {
-    let row = commands
-        .spawn(Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(8.0),
-            ..default()
-        })
-        .id();
-    commands.entity(row).with_children(|r| {
-        r.spawn_empty().apply_scene(button::small(
-            &loc.msg("options-note-labels-button"),
-            toggle_note_numbers,
-        ));
-        r.spawn((
-            Text::new(note_numbers_label_text(loc, show_numbers)),
-            TextFont {
-                font_size: FontSize::Px(16.0),
-                ..default()
-            },
-            TextColor(Color::WHITE),
-            NoteNumbersLabel,
-        ));
-    });
-    commands.entity(parent).add_child(row);
-}
-
-/// Keeps the toggle's label in step with [`ShowNoteNumbers`].
-fn update_note_numbers_label(
-    show: Res<ShowNoteNumbers>,
-    loc: Res<Localization>,
-    mut labels: Query<&mut Text, With<NoteNumbersLabel>>,
-) {
-    if !show.is_changed() {
-        return;
-    }
-    for mut text in &mut labels {
-        *text = Text::new(note_numbers_label_text(&loc, show.0));
-    }
+    let row = checkbox::spawn_checkbox(
+        commands,
+        parent,
+        &loc.msg("options-note-labels"),
+        show_numbers,
+        set_note_numbers,
+    );
+    commands
+        .entity(row)
+        .insert(Tooltip(String::from(loc.msg("options-note-labels-tooltip"))));
 }
 
 /// Flips the single global adaptive-difficulty setting — not per-song, see
@@ -403,132 +348,60 @@ fn update_note_numbers_label(
 /// `gameplay::adaptive_difficulty::AdaptiveDifficulty` cache — that only
 /// gets (re)seeded from this setting at the next song's start, or flipped
 /// directly by the pause menu's own toggle for an immediate mid-song effect.
-fn toggle_adaptive_difficulty(
-    _: On<Pointer<Click>>,
+fn set_adaptive_difficulty(
+    ev: On<ValueChange<bool>>,
     mut enabled: ResMut<crate::settings::AdaptiveDifficultyEnabled>,
 ) {
-    enabled.0 = !enabled.0;
+    enabled.0 = ev.value;
 }
 
-fn adaptive_difficulty_label_text(loc: &Localization, enabled: bool) -> String {
-    if enabled {
-        loc.msg("options-adaptive-difficulty-on").into()
-    } else {
-        loc.msg("options-adaptive-difficulty-off").into()
-    }
-}
-
-/// A row with a pill button that flips the global adaptive-difficulty
-/// setting plus a label reflecting the current choice — same shape as
-/// [`spawn_note_numbers_toggle`].
+/// A checkbox bound to the global adaptive-difficulty setting — see
+/// `settings::AdaptiveDifficultyEnabled`'s doc comment for what it does and
+/// how it interacts with the pause menu's own live toggle.
 fn spawn_adaptive_difficulty_toggle(
     commands: &mut Commands,
     parent: Entity,
     enabled: bool,
     loc: &Localization,
 ) {
-    let row = commands
-        .spawn(Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(8.0),
-            ..default()
-        })
-        .id();
-    commands.entity(row).with_children(|r| {
-        r.spawn_empty().apply_scene(button::small(
-            &loc.msg("options-adaptive-difficulty"),
-            toggle_adaptive_difficulty,
-        ));
-        r.spawn((
-            Text::new(adaptive_difficulty_label_text(loc, enabled)),
-            TextFont {
-                font_size: FontSize::Px(16.0),
-                ..default()
-            },
-            TextColor(Color::WHITE),
-            AdaptiveDifficultyLabel,
-        ));
-    });
-    commands.entity(parent).add_child(row);
-}
-
-fn update_adaptive_difficulty_label(
-    enabled: Res<crate::settings::AdaptiveDifficultyEnabled>,
-    loc: Res<Localization>,
-    mut labels: Query<&mut Text, With<AdaptiveDifficultyLabel>>,
-) {
-    if !enabled.is_changed() {
-        return;
-    }
-    for mut text in &mut labels {
-        *text = Text::new(adaptive_difficulty_label_text(&loc, enabled.0));
-    }
+    let row = checkbox::spawn_checkbox(
+        commands,
+        parent,
+        &loc.msg("options-adaptive-difficulty"),
+        enabled,
+        set_adaptive_difficulty,
+    );
+    commands.entity(row).insert(Tooltip(String::from(
+        loc.msg("options-adaptive-difficulty-tooltip"),
+    )));
 }
 
 /// Flips the fullscreen preference; `settings::apply_fullscreen` mirrors the
 /// resulting `FullscreenEnabled` onto the primary window's `WindowMode`.
-fn toggle_fullscreen(
-    _: On<Pointer<Click>>,
+fn set_fullscreen(
+    ev: On<ValueChange<bool>>,
     mut fullscreen: ResMut<crate::settings::FullscreenEnabled>,
 ) {
-    fullscreen.0 = !fullscreen.0;
+    fullscreen.0 = ev.value;
 }
 
-fn fullscreen_label_text(loc: &Localization, enabled: bool) -> String {
-    if enabled {
-        loc.msg("options-fullscreen-on").into()
-    } else {
-        loc.msg("options-fullscreen-off").into()
-    }
-}
-
-/// A row with a pill button that flips the fullscreen setting plus a label
-/// reflecting the current choice — same shape as
-/// [`spawn_adaptive_difficulty_toggle`].
+/// A checkbox bound to the fullscreen setting.
 fn spawn_fullscreen_toggle(
     commands: &mut Commands,
     parent: Entity,
     enabled: bool,
     loc: &Localization,
 ) {
-    let row = commands
-        .spawn(Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(8.0),
-            ..default()
-        })
-        .id();
-    commands.entity(row).with_children(|r| {
-        r.spawn_empty().apply_scene(button::small(
-            &loc.msg("options-fullscreen"),
-            toggle_fullscreen,
-        ));
-        r.spawn((
-            Text::new(fullscreen_label_text(loc, enabled)),
-            TextFont {
-                font_size: FontSize::Px(16.0),
-                ..default()
-            },
-            TextColor(Color::WHITE),
-            FullscreenLabel,
-        ));
-    });
-    commands.entity(parent).add_child(row);
-}
-
-fn update_fullscreen_label(
-    enabled: Res<crate::settings::FullscreenEnabled>,
-    loc: Res<Localization>,
-    mut labels: Query<&mut Text, With<FullscreenLabel>>,
-) {
-    if !enabled.is_changed() {
-        return;
-    }
-    for mut text in &mut labels {
-        *text = Text::new(fullscreen_label_text(&loc, enabled.0));
-    }
+    let row = checkbox::spawn_checkbox(
+        commands,
+        parent,
+        &loc.msg("options-fullscreen"),
+        enabled,
+        set_fullscreen,
+    );
+    commands.entity(row).insert(Tooltip(String::from(
+        loc.msg("options-fullscreen-tooltip"),
+    )));
 }
 
 /// On-screen equivalent of `dialogs::ui_scale::change_scaling`'s Arrow
@@ -596,67 +469,30 @@ fn update_zoom_label(
 /// Flips whether scored notes use the fixed colorblind-safe blow/draw pair
 /// instead of the active theme's own note colors — see
 /// `settings::ColorblindPalette`'s doc comment.
-fn toggle_colorblind_palette(
-    _: On<Pointer<Click>>,
+fn set_colorblind_palette(
+    ev: On<ValueChange<bool>>,
     mut enabled: ResMut<crate::settings::ColorblindPalette>,
 ) {
-    enabled.0 = !enabled.0;
+    enabled.0 = ev.value;
 }
 
-fn colorblind_palette_label_text(loc: &Localization, enabled: bool) -> String {
-    if enabled {
-        loc.msg("options-colorblind-palette-on").into()
-    } else {
-        loc.msg("options-colorblind-palette-off").into()
-    }
-}
-
-/// A row with a pill button that flips the colorblind-palette setting plus a
-/// label reflecting the current choice — same shape as
-/// [`spawn_fullscreen_toggle`].
+/// A checkbox bound to the colorblind-palette setting.
 fn spawn_colorblind_palette_toggle(
     commands: &mut Commands,
     parent: Entity,
     enabled: bool,
     loc: &Localization,
 ) {
-    let row = commands
-        .spawn(Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(8.0),
-            ..default()
-        })
-        .id();
-    commands.entity(row).with_children(|r| {
-        r.spawn_empty().apply_scene(button::small(
-            &loc.msg("options-colorblind-palette"),
-            toggle_colorblind_palette,
-        ));
-        r.spawn((
-            Text::new(colorblind_palette_label_text(loc, enabled)),
-            TextFont {
-                font_size: FontSize::Px(16.0),
-                ..default()
-            },
-            TextColor(Color::WHITE),
-            ColorblindPaletteLabel,
-        ));
-    });
-    commands.entity(parent).add_child(row);
-}
-
-fn update_colorblind_palette_label(
-    enabled: Res<crate::settings::ColorblindPalette>,
-    loc: Res<Localization>,
-    mut labels: Query<&mut Text, With<ColorblindPaletteLabel>>,
-) {
-    if !enabled.is_changed() {
-        return;
-    }
-    for mut text in &mut labels {
-        *text = Text::new(colorblind_palette_label_text(&loc, enabled.0));
-    }
+    let row = checkbox::spawn_checkbox(
+        commands,
+        parent,
+        &loc.msg("options-colorblind-palette"),
+        enabled,
+        set_colorblind_palette,
+    );
+    commands.entity(row).insert(Tooltip(String::from(
+        loc.msg("options-colorblind-palette-tooltip"),
+    )));
 }
 
 /// A labelled row of harmonica-model choice buttons, each showing a rendered
@@ -1278,42 +1114,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn note_numbers_label_picks_the_arrows_or_numbers_key() {
-        let loc = Localization::default();
-        assert_eq!(
-            note_numbers_label_text(&loc, false),
-            "options-note-labels-arrows"
-        );
-        assert_eq!(
-            note_numbers_label_text(&loc, true),
-            "options-note-labels-numbers"
-        );
-    }
-
-    #[test]
-    fn adaptive_difficulty_label_picks_the_on_or_off_key() {
-        // `Localization::default()` has no bundle loaded, so `loc.msg(key)`
-        // falls back to the key itself — this only exercises which key the
-        // on/off dispatch picks, not the translated text.
-        let loc = Localization::default();
-        assert_eq!(
-            adaptive_difficulty_label_text(&loc, true),
-            "options-adaptive-difficulty-on"
-        );
-        assert_eq!(
-            adaptive_difficulty_label_text(&loc, false),
-            "options-adaptive-difficulty-off"
-        );
-    }
-
-    #[test]
-    fn fullscreen_label_picks_the_on_or_off_key() {
-        let loc = Localization::default();
-        assert_eq!(fullscreen_label_text(&loc, true), "options-fullscreen-on");
-        assert_eq!(fullscreen_label_text(&loc, false), "options-fullscreen-off");
-    }
-
-    #[test]
     fn zoom_label_shows_the_rounded_percent() {
         let loc = Localization::default();
         assert_eq!(zoom_label_text(&loc, 1.0), "options-zoom-label");
@@ -1370,16 +1170,4 @@ mod tests {
         );
     }
 
-    #[test]
-    fn colorblind_palette_label_picks_the_on_or_off_key() {
-        let loc = Localization::default();
-        assert_eq!(
-            colorblind_palette_label_text(&loc, true),
-            "options-colorblind-palette-on"
-        );
-        assert_eq!(
-            colorblind_palette_label_text(&loc, false),
-            "options-colorblind-palette-off"
-        );
-    }
 }
