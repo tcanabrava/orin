@@ -66,6 +66,7 @@ pub fn setup(
     adaptive: Res<AdaptiveDifficulty>,
     loc: Res<Localization>,
     bravura: Option<Res<BravuraFont>>,
+    compact: Res<crate::responsive::CompactLayout>,
 ) {
     let Some(manifest) = manifests.get(&selected.0) else {
         error!("SongManifest not ready when entering Playing state");
@@ -146,6 +147,7 @@ pub fn setup(
             .unwrap_or(4)
     };
 
+    let compact = compact.0;
     commands
         .spawn((
             Node {
@@ -176,12 +178,21 @@ pub fn setup(
             ));
 
             // ── Left panel: note highway + harmonica ─────────────────────────
+            let left_top_padding = if compact {
+                8.0 + BAR_HEIGHT
+            } else {
+                8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT
+            };
             root.spawn(Node {
-                width: Val::Percent(60.0),
+                width: if compact {
+                    Val::Percent(88.0)
+                } else {
+                    Val::Percent(60.0)
+                },
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
                 padding: UiRect {
-                    top: Val::Px(8.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
+                    top: Val::Px(left_top_padding),
                     ..UiRect::all(Val::Px(8.0))
                 },
                 row_gap: Val::Px(4.0),
@@ -218,111 +229,122 @@ pub fn setup(
             });
 
             // ── Right panel: info + 12-bar + metronome + score ───────────────
+            let right_top_padding = if compact {
+                12.0 + BAR_HEIGHT
+            } else {
+                12.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT
+            };
             root.spawn(Node {
-                width: Val::Percent(40.0),
+                width: if compact {
+                    Val::Px(140.0)
+                } else {
+                    Val::Percent(40.0)
+                },
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
                 padding: UiRect {
-                    top: Val::Px(12.0 + BAR_HEIGHT + music_score::PANEL_HEIGHT),
+                    top: Val::Px(right_top_padding),
                     ..UiRect::all(Val::Px(12.0))
                 },
                 row_gap: Val::Px(12.0),
                 ..default()
             })
             .with_children(|right| {
-                // Song info
-                right
-                    .spawn(Node {
-                        flex_direction: FlexDirection::Column,
-                        row_gap: Val::Px(3.0),
-                        ..default()
-                    })
-                    .with_children(|col| {
-                        col.spawn((
-                            Text::new(title),
-                            TextFont {
-                                font_size: FontSize::Px(18.0),
-                                ..default()
-                            },
-                            TextColor(Color::WHITE),
-                        ));
-                        col.spawn((
-                            Text::new(info),
-                            TextFont {
-                                font_size: FontSize::Px(15.0),
-                                ..default()
-                            },
-                            TextColor(Color::srgb(0.60, 0.65, 0.75)),
-                        ));
-                        col.spawn((
-                            Text::new(harp_info),
-                            TextFont {
-                                font_size: FontSize::Px(15.0),
-                                ..default()
-                            },
-                            TextColor(Color::srgb(0.45, 0.72, 0.55)),
-                        ));
-                        if let Some(desc) = description {
+                if !compact {
+                    // Song info
+                    right
+                        .spawn(Node {
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(3.0),
+                            ..default()
+                        })
+                        .with_children(|col| {
                             col.spawn((
-                                Text::new(desc.to_string()),
+                                Text::new(title),
+                                TextFont {
+                                    font_size: FontSize::Px(18.0),
+                                    ..default()
+                                },
+                                TextColor(Color::WHITE),
+                            ));
+                            col.spawn((
+                                Text::new(info),
                                 TextFont {
                                     font_size: FontSize::Px(15.0),
                                     ..default()
                                 },
-                                TextColor(Color::srgb(0.50, 0.50, 0.55)),
+                                TextColor(Color::srgb(0.60, 0.65, 0.75)),
                             ));
-                        }
-                        if let Some(author) = chart_author {
                             col.spawn((
-                                Text::new(String::from(loc.msg_args(
-                                    "gameplay-chart-author",
-                                    &[("author", author.to_string())],
-                                ))),
+                                Text::new(harp_info),
                                 TextFont {
                                     font_size: FontSize::Px(15.0),
                                     ..default()
                                 },
-                                TextColor(Color::srgb(0.40, 0.40, 0.45)),
+                                TextColor(Color::srgb(0.45, 0.72, 0.55)),
                             ));
-                        }
-                    });
+                            if let Some(desc) = description {
+                                col.spawn((
+                                    Text::new(desc.to_string()),
+                                    TextFont {
+                                        font_size: FontSize::Px(15.0),
+                                        ..default()
+                                    },
+                                    TextColor(Color::srgb(0.50, 0.50, 0.55)),
+                                ));
+                            }
+                            if let Some(author) = chart_author {
+                                col.spawn((
+                                    Text::new(String::from(loc.msg_args(
+                                        "gameplay-chart-author",
+                                        &[("author", author.to_string())],
+                                    ))),
+                                    TextFont {
+                                        font_size: FontSize::Px(15.0),
+                                        ..default()
+                                    },
+                                    TextColor(Color::srgb(0.40, 0.40, 0.45)),
+                                ));
+                            }
+                        });
 
-                // Live phrase / groove banner (driven by phrase_overlay::update_phrase)
-                spawn_phrase_banner(right);
-                // Tab-notation ribbon for the current phrase (phrase_overlay::update_tab_ribbon)
-                spawn_tab_ribbon(right);
+                    // Live phrase / groove banner (driven by phrase_overlay::update_phrase)
+                    spawn_phrase_banner(right);
+                    // Tab-notation ribbon for the current phrase (phrase_overlay::update_tab_ribbon)
+                    spawn_tab_ribbon(right);
 
-                // 12-bar blues grid
-                right
-                    .spawn(Node {
-                        flex_direction: FlexDirection::Column,
-                        row_gap: Val::Px(3.0),
-                        ..default()
-                    })
-                    .with_children(|grid| {
-                        spawn_12_bar_grid(
-                            grid,
-                            &chords,
-                            key,
-                            crate::song::harmonica::Progression::Standard,
-                            &GridConfig::for_2d(),
-                            theme.twelve_bar_colors(),
-                        );
-                    });
+                    // 12-bar blues grid
+                    right
+                        .spawn(Node {
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(3.0),
+                            ..default()
+                        })
+                        .with_children(|grid| {
+                            spawn_12_bar_grid(
+                                grid,
+                                &chords,
+                                key,
+                                crate::song::harmonica::Progression::Standard,
+                                &GridConfig::for_2d(),
+                                theme.twelve_bar_colors(),
+                            );
+                        });
 
-                // Metronome
-                right
-                    .spawn(Node {
-                        flex_direction: FlexDirection::Column,
-                        row_gap: Val::Px(6.0),
-                        ..default()
-                    })
-                    .with_children(|metro| {
-                        spawn_metronome(metro, &loc, beats_per_bar, bpm);
-                    });
+                    // Metronome
+                    right
+                        .spawn(Node {
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(6.0),
+                            ..default()
+                        })
+                        .with_children(|metro| {
+                            spawn_metronome(metro, &loc, beats_per_bar, bpm);
+                        });
 
-                // Technique colour legend
-                spawn_modifier_legend(right, &loc, &legend_materials);
+                    // Technique colour legend
+                    spawn_modifier_legend(right, &loc, &legend_materials);
+                }
 
                 // Score
                 right
@@ -381,7 +403,9 @@ pub fn setup(
         &adaptive.sections,
         &adaptive.learned,
     );
-    if let Some(bravura) = &bravura {
+    if !compact
+        && let Some(bravura) = &bravura
+    {
         spawn_gameplay_music_score(&mut commands, bravura);
     }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
