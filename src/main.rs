@@ -20,6 +20,7 @@ use harmonicon::localization::LocalizationPlugin;
 use harmonicon::menu::MenuPlugin;
 use harmonicon::music_score::MusicScorePlugin;
 use harmonicon::profile::ProfilePlugin;
+use harmonicon::responsive::ResponsivePlugin;
 use harmonicon::settings::SettingsPlugin;
 use harmonicon::song::SongPlugin;
 use harmonicon::spectrogram::SpectrogramPlugin;
@@ -95,6 +96,7 @@ fn main() {
         SettingsPlugin,
         ProfilePlugin,
         MusicScorePlugin,
+        ResponsivePlugin,
     ))
     .add_plugins((
         harmonicon::dialogs::algo_picker::AlgoPickerPlugin,

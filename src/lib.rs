@@ -25,6 +25,7 @@ pub mod menu;
 pub mod music_score;
 pub mod note_bench;
 pub mod profile;
+pub mod responsive;
 pub mod scoring;
 pub mod settings;
 pub mod song;
