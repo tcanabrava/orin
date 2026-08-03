@@ -66,9 +66,17 @@ options-zoom-tooltip = Ajusta el tamaño de toda la interfaz.
 options-zoom-label = Zoom: {$percent}%
 options-pitch-detect = Detección de tono
 options-microphone = Micrófono
+options-microphone-tooltip = De qué dispositivo de entrada capturar tu armónica.
+options-mic-retry-tooltip = Intenta reconectar con el micrófono.
 options-note-labels = Etiquetas de notas
 options-note-labels-tooltip = Muestra las notas que caen como números de agujero, en vez de flechas de soplar/aspirar.
+options-harmonica-tooltip = Qué modelo de armónica aparece en el juego en 3D.
+options-music-volume-tooltip = Volumen de la pista de acompañamiento.
+options-metronome-volume-tooltip = Volumen del clic del metrónomo.
+options-theme-tooltip = Cambia el tema visual de los menús.
 options-calibrate-input-lag = Calibrar la latencia de entrada
+options-calibrate-input-lag-tooltip = Mide la latencia de audio de tu equipo y la aplica automáticamente.
+options-back-tooltip = Vuelve al menú principal.
 theme-back-to-options = ← Volver a Opciones
 
 # Compartido
@@ -640,6 +648,7 @@ calibration-suggested = Actual: {$current}ms   →   Sugerido: {$suggested}ms
 
 # Opciones
 options-input-lag = Retardo de entrada
+options-input-lag-tooltip = Adelanta/retrasa las notas detectadas para ajustarse al retardo de audio de tu equipo.
 
 # Recorrido guiado del tutorial (menu::tutorial)
 tutorial-step = Paso {$n} de {$total}

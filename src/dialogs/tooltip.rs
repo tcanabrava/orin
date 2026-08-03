@@ -17,8 +17,11 @@ use bevy::window::PrimaryWindow;
 
 /// Text to show in a floating tooltip when this entity is hovered. Expected
 /// to already be localized (`loc.msg(...)`) by the caller — see
-/// `crate::localization`.
-#[derive(Component, Clone)]
+/// `crate::localization`. `Default` (an empty string) only exists so a
+/// `bsn!` scene can include `Tooltip({...})` as a plain patch — `bsn!`
+/// requires every component it touches to implement `FromTemplate`, which
+/// derives from `Default`.
+#[derive(Component, Clone, Default)]
 pub struct Tooltip(pub String);
 
 /// The floating tooltip panel — one instance, repositioned and re-labelled

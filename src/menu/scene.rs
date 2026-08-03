@@ -138,7 +138,7 @@ pub(crate) fn spawn_button<M: 'static>(
     parent: Entity,
     label: &str,
     on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
-) {
+) -> Entity {
     let node = Node {
         min_width: Val::Px(260.0),
         padding: UiRect::axes(Val::Px(32.0), Val::Px(14.0)),
@@ -147,7 +147,6 @@ pub(crate) fn spawn_button<M: 'static>(
         ..default()
     };
 
-    println!("Creating a default button with label: {label}");
     // Plain button: authored declaratively; click + hover ride along as
     // inline on(...)
     let e = commands
@@ -155,6 +154,7 @@ pub(crate) fn spawn_button<M: 'static>(
         .insert(node)
         .id();
     commands.entity(parent).add_child(e);
+    e
 }
 
 pub(crate) fn cleanup_menu(mut commands: Commands, roots: Query<Entity, With<MenuRoot>>) {

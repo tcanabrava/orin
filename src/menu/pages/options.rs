@@ -227,11 +227,12 @@ fn spawn_left_column(
     colorblind_palette: Res<crate::settings::ColorblindPalette>,
     ui_scale: f32,
 ) {
-    spawn_mic_banner(commands, parent, &mic_status);
+    spawn_mic_banner(commands, parent, &mic_status, loc);
     spawn_volume_slider(
         commands,
         parent,
         "Music",
+        &loc.msg("options-music-volume-tooltip"),
         VolumeSlider::Music,
         settings.music_volume,
         set_music_volume,
@@ -240,6 +241,7 @@ fn spawn_left_column(
         commands,
         parent,
         "Metronome",
+        &loc.msg("options-metronome-volume-tooltip"),
         VolumeSlider::Metronome,
         settings.metronome_volume,
         set_metronome_volume,
@@ -273,7 +275,7 @@ fn spawn_left_column(
         })
         .collect();
 
-    spawn_harmonica_row(commands, parent, &previews_harmonica, &selected_harmonica.0);
+    spawn_harmonica_row(commands, parent, loc, &previews_harmonica, &selected_harmonica.0);
 
     let algo_combo = combobox::spawn_combobox(
         commands,
@@ -294,13 +296,17 @@ fn spawn_left_column(
 }
 
 fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localization) {
-    spawn_button(
+    let theme_btn = spawn_button(
         commands,
         parent,
         "Theme",
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Theme),
     );
-    spawn_button(
+    commands.entity(theme_btn).insert(Tooltip(String::from(
+        loc.msg("options-theme-tooltip"),
+    )));
+
+    let calibrate_btn = spawn_button(
         commands,
         parent,
         &loc.msg("options-calibrate-input-lag"),
@@ -308,12 +314,19 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
             state.set(AppState::Calibration)
         },
     );
-    spawn_button(
+    commands.entity(calibrate_btn).insert(Tooltip(String::from(
+        loc.msg("options-calibrate-input-lag-tooltip"),
+    )));
+
+    let back_btn = spawn_button(
         commands,
         parent,
         &loc.msg("back"),
         |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
+    commands
+        .entity(back_btn)
+        .insert(Tooltip(String::from(loc.msg("options-back-tooltip"))));
 }
 
 /// Flips whether falling notes show their hole number instead of the
@@ -452,7 +465,8 @@ fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &
     use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
 
     let label = String::from(loc.msg("options-zoom"));
-    let row = spawn_slider_row(commands, parent, &label);
+    let tooltip = String::from(loc.msg("options-zoom-tooltip"));
+    let row = spawn_slider_row(commands, parent, &label, &tooltip);
     let frac = zoom_fraction(scale);
 
     let track = commands
@@ -462,9 +476,6 @@ fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &
     commands.entity(row).add_child(track);
 
     spawn_slider_value_label(commands, row, zoom_label_text(loc, scale), ZoomLabel);
-    commands
-        .entity(row)
-        .insert(Tooltip(String::from(loc.msg("options-zoom-tooltip"))));
 }
 
 /// The zoom slider track: a `bsn!` `Slider` + fill, wired to [`set_zoom`].
@@ -561,7 +572,7 @@ fn spawn_colorblind_palette_toggle(
 fn spawn_harmonica_row(
     commands: &mut Commands,
     parent: Entity,
-
+    loc: &Localization,
     previews: &[(Handle<Image>, String)],
     selected: &str,
 ) {
@@ -586,6 +597,7 @@ fn spawn_harmonica_row(
                 ..default()
             },
             TextColor(Color::WHITE),
+            Tooltip(String::from(loc.msg("options-harmonica-tooltip"))),
         ));
         for (image, name) in previews {
             let is_selected = name == selected;
@@ -812,7 +824,12 @@ fn mic_banner_visible(status: &MicStatus) -> bool {
 /// A dismiss-free warning banner, hidden only once the microphone actually
 /// connects (see [`mic_banner_visible`]), with a Retry button that re-runs
 /// `audio_input::start_capture`.
-fn spawn_mic_banner(commands: &mut Commands, parent: Entity, status: &MicStatus) {
+fn spawn_mic_banner(
+    commands: &mut Commands,
+    parent: Entity,
+    status: &MicStatus,
+    loc: &Localization,
+) {
     let visible = mic_banner_visible(status);
     let text = mic_banner_text(status);
 
@@ -846,7 +863,10 @@ fn spawn_mic_banner(commands: &mut Commands, parent: Entity, status: &MicStatus)
             TextColor(Color::srgb(0.95, 0.85, 0.85)),
             MicBannerText,
         ));
-        b.spawn_empty().apply_scene(mic_retry_button_scene());
+        b.spawn_empty()
+            .apply_scene(mic_retry_button_scene(String::from(
+                loc.msg("options-mic-retry-tooltip"),
+            )));
     });
 
     commands.entity(parent).add_child(banner);
@@ -862,11 +882,12 @@ fn mic_banner_text(status: &MicStatus) -> String {
     }
 }
 
-fn mic_retry_button_scene() -> impl Scene {
+fn mic_retry_button_scene(tooltip: String) -> impl Scene {
     bsn! {
         Button
         Node { padding: {UiRect::axes(Val::Px(12.0), Val::Px(6.0))} }
         BackgroundColor({button::color_default()})
+        Tooltip({tooltip})
         on(|_: On<Pointer<Click>>, mut commands: Commands| {
             commands.queue(audio_input::start_capture);
         })
@@ -931,7 +952,10 @@ fn spawn_mic_combobox(
         connected.unwrap_or("None"),
         on_mic_selected,
     );
-    commands.entity(root).insert(MicCombobox);
+    commands.entity(root).insert((
+        MicCombobox,
+        Tooltip(String::from(loc.msg("options-microphone-tooltip"))),
+    ));
 }
 
 fn on_mic_selected(
@@ -979,10 +1003,11 @@ fn set_input_latency(ev: On<ValueChange<f32>>, mut settings: ResMut<AudioSetting
 /// callback; the label/readout stay imperative (they carry the custom font,
 /// which `bsn!` can't set in 0.19).
 /// The shared row shell every Options slider builds on: a 420px row with a
-/// 110px label, already attached to `parent` — `spawn_volume_slider`/
-/// `spawn_latency_slider` differ only in the label text and, once this
-/// returns, which slider track/value-readout they add to the row.
-fn spawn_slider_row(commands: &mut Commands, parent: Entity, label: &str) -> Entity {
+/// 110px label carrying `tooltip`, already attached to `parent` —
+/// `spawn_volume_slider`/`spawn_latency_slider`/`spawn_zoom_slider` differ
+/// only in the label/tooltip text and, once this returns, which slider
+/// track/value-readout they add to the row.
+fn spawn_slider_row(commands: &mut Commands, parent: Entity, label: &str, tooltip: &str) -> Entity {
     let row = commands
         .spawn(Node {
             width: Val::Px(420.0),
@@ -1006,6 +1031,9 @@ fn spawn_slider_row(commands: &mut Commands, parent: Entity, label: &str) -> Ent
             TextColor(Color::WHITE),
         ));
     });
+    commands
+        .entity(row)
+        .insert(Tooltip(tooltip.to_string()));
     commands.entity(parent).add_child(row);
     row
 }
@@ -1040,13 +1068,13 @@ fn spawn_slider_value_label(
 fn spawn_volume_slider<M: 'static>(
     commands: &mut Commands,
     parent: Entity,
-
     label: &str,
+    tooltip: &str,
     kind: VolumeSlider,
     value: f32,
     on_change: impl IntoObserverSystem<ValueChange<f32>, (), M> + Clone + Sync + 'static,
 ) {
-    let row = spawn_slider_row(commands, parent, label);
+    let row = spawn_slider_row(commands, parent, label, tooltip);
 
     // SliderRange/SliderStep have no Default, so they can't be bsn! patches —
     // insert them after the scene is spawned.
@@ -1103,7 +1131,8 @@ fn spawn_latency_slider(
 ) {
     let frac = (value_ms as f32 / LATENCY_MAX_MS as f32).clamp(0.0, 1.0);
     let label = String::from(loc.msg("options-input-lag"));
-    let row = spawn_slider_row(commands, parent, &label);
+    let tooltip = String::from(loc.msg("options-input-lag-tooltip"));
+    let row = spawn_slider_row(commands, parent, &label, &tooltip);
 
     let track = commands
         .spawn_scene(latency_slider_scene(value_ms as f32, frac))

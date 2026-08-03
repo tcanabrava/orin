@@ -66,9 +66,17 @@ options-zoom-tooltip = Ajusta o tamanho de toda a interface.
 options-zoom-label = Zoom: {$percent}%
 options-pitch-detect = Detecção de tom
 options-microphone = Microfone
+options-microphone-tooltip = De qual dispositivo de entrada captar sua gaita.
+options-mic-retry-tooltip = Tenta reconectar ao microfone.
 options-note-labels = Rótulos das notas
 options-note-labels-tooltip = Mostra as notas que caem como números de furo, em vez de setas de sopro/sucção.
+options-harmonica-tooltip = Qual modelo de gaita aparece no jogo em 3D.
+options-music-volume-tooltip = Volume da faixa de acompanhamento.
+options-metronome-volume-tooltip = Volume do clique do metrônomo.
+options-theme-tooltip = Muda o tema visual dos menus.
 options-calibrate-input-lag = Calibrar a latência de entrada
+options-calibrate-input-lag-tooltip = Mede a latência de áudio do seu equipamento e a aplica automaticamente.
+options-back-tooltip = Volta ao menu principal.
 theme-back-to-options = ← Voltar às Opções
 
 # Compartilhado
@@ -640,6 +648,7 @@ calibration-suggested = Atual: {$current}ms   →   Sugerido: {$suggested}ms
 
 # Opções
 options-input-lag = Atraso de entrada
+options-input-lag-tooltip = Adianta/atrasa as notas detectadas para bater com o atraso de áudio do seu equipamento.
 
 # Tour guiado do tutorial (menu::tutorial)
 tutorial-step = Passo {$n} de {$total}

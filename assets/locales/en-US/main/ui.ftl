@@ -68,9 +68,17 @@ options-zoom-tooltip = Scale the whole UI up or down.
 options-zoom-label = Zoom: {$percent}%
 options-pitch-detect = Pitch detect
 options-microphone = Microphone
+options-microphone-tooltip = Which input device to capture your harmonica from.
+options-mic-retry-tooltip = Try reconnecting to the microphone.
 options-note-labels = Note labels
 options-note-labels-tooltip = Show falling notes as hole numbers instead of blow/draw arrows.
+options-harmonica-tooltip = Which harmonica model appears in 3D gameplay.
+options-music-volume-tooltip = Backing-track volume.
+options-metronome-volume-tooltip = Metronome click volume.
+options-theme-tooltip = Change the menu's visual theme.
 options-calibrate-input-lag = Calibrate input lag
+options-calibrate-input-lag-tooltip = Measure your setup's audio latency and apply it automatically.
+options-back-tooltip = Return to the main menu.
 theme-back-to-options = ← Back to Options
 
 # Shared
@@ -642,6 +650,7 @@ calibration-suggested = Current: {$current}ms   →   Suggested: {$suggested}ms
 
 # Options
 options-input-lag = Input lag
+options-input-lag-tooltip = Shift detected notes earlier/later to match your setup's audio delay.
 
 # Guided tutorial tour (menu::tutorial)
 tutorial-step = Step {$n} of {$total}
