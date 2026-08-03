@@ -584,12 +584,18 @@ pub(super) fn spawn_meta_form(
     root: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    compact: bool,
 ) {
     const MID: usize = FIELDS.len() / 2;
     root.spawn(Node {
         width: Val::Percent(100.0),
-        flex_direction: FlexDirection::Row,
+        flex_direction: if compact {
+            FlexDirection::Column
+        } else {
+            FlexDirection::Row
+        },
         column_gap: Val::Px(24.0),
+        row_gap: Val::Px(24.0),
         padding: UiRect::all(Val::Px(12.0)),
         ..default()
     })

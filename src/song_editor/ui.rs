@@ -327,6 +327,7 @@ pub(super) fn setup(
     state: Res<EditorState>,
     audio: Res<AudioSettings>,
     bravura: Option<Res<crate::music_score::BravuraFont>>,
+    compact: Res<crate::responsive::CompactLayout>,
 ) {
     let colors = theme.song_editor_colors();
     let mode = state.mode;
@@ -413,7 +414,7 @@ pub(super) fn setup(
                     ScrollArea,
                 ))
                 .with_children(|scroll| {
-                    super::scroll::spawn_form_scroll_content(scroll, &loc, colors);
+                    super::scroll::spawn_form_scroll_content(scroll, &loc, colors, compact.0);
                 })
                 .id();
             super::scroll::spawn_editor_scrollbar(outer, scroll_area, colors);
