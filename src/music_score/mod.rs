@@ -7,12 +7,15 @@
 //! drive it by writing [`MusicScoreNotes`]/[`MusicScorePlayhead`].
 //!
 //! Deliberately not full music engraving: noteheads (whole/half/filled by
-//! duration), stems, ledger lines, and sharp accidentals only — no
-//! beaming, no eighth/sixteenth flags, no ties, single treble clef only.
-//! This is a supplementary visual, not a sight-reading tool (the Song
-//! Editor's own tab readout already exists for players who want exact
-//! rhythm) — see `docs/lessons_plan.md`'s framing of the tab readout for
-//! the same reasoning applied here.
+//! duration), stems, ledger lines, sharp accidentals, ties across a bar
+//! line ([`split_at_bar_lines`]), and a single eighth-note flag
+//! ([`has_eighth_flag`]) only — no beaming, no sixteenth-or-shorter flag
+//! tier (anything shorter than an eighth still rounds up to one flag), no
+//! dotted durations, single treble clef only. This is a supplementary
+//! visual, not a sight-reading tool (the Song Editor's own tab readout
+//! already exists for players who want exact rhythm) — see
+//! `docs/lessons_plan.md`'s framing of the tab readout for the same
+//! reasoning applied here.
 //!
 //! Every glyph's relative geometry (notehead width, stem attachment point,
 //! ledger-line extension) is taken directly from Bravura's own published
@@ -45,6 +48,8 @@ mod glyph {
     pub const NOTEHEAD_HALF: &str = "\u{E0A3}";
     pub const NOTEHEAD_BLACK: &str = "\u{E0A4}";
     pub const ACCIDENTAL_SHARP: &str = "\u{E262}";
+    pub const FLAG_8TH_UP: &str = "\u{E240}";
+    pub const FLAG_8TH_DOWN: &str = "\u{E241}";
 }
 
 // ── Pure notation logic ──────────────────────────────────────────────────
@@ -208,6 +213,22 @@ pub fn notehead_kind(duration_beats: f64) -> NoteheadKind {
     } else {
         NoteheadKind::Filled
     }
+}
+
+/// Midpoint between a quarter note (1.0 beat) and an eighth (0.5) — same
+/// "midpoint between adjacent standard durations" philosophy
+/// [`notehead_kind`] already uses for its own thresholds.
+const EIGHTH_FLAG_THRESHOLD_BEATS: f64 = 0.75;
+
+/// Whether a note gets a single eighth-note flag drawn at its stem tip.
+/// Deliberately coarse per this module's "eighth notes only" scope (see the
+/// module doc comment): anything shorter than an eighth still gets exactly
+/// one flag, not two — there's no sixteenth-note (or shorter) flag tier.
+/// Only meaningful for a note that already has a stem at all
+/// (`NoteheadKind::Filled` — `Half`/`Whole` are always `>= 1.5` beats, well
+/// above this threshold, so they never qualify regardless).
+pub fn has_eighth_flag(duration_beats: f64) -> bool {
+    duration_beats < EIGHTH_FLAG_THRESHOLD_BEATS
 }
 
 // ── Layout constants ──────────────────────────────────────────────────────
@@ -669,6 +690,45 @@ fn spawn_note_glyphs(
             BackgroundColor(Color::WHITE),
             MusicScoreNoteGlyph,
         ));
+
+        if has_eighth_flag(note.duration_beats) {
+            // The flag attaches at the stem's tip, the end away from the
+            // notehead — `stem_top` itself for an up-stem (the rect's own
+            // top edge), or `stem_top + stem_len_px` for a down-stem (its
+            // bottom edge). Both `flag8thUp`/`flag8thDown`'s own SMuFL
+            // origin sits right at that same attachment point
+            // (`glyphsWithAnchors.flag8thUp/Down`'s `stemUpNW`/
+            // `stemDownSW`, both within 0.15 staff spaces of (0, 0)), so
+            // no extra offset beyond the shared `GLYPH_BASELINE_
+            // CORRECTION` every other glyph in this module already needs.
+            let stem_tip_y = if stem_up {
+                stem_top
+            } else {
+                stem_top + stem_len_px
+            };
+            let flag_glyph = if stem_up {
+                glyph::FLAG_8TH_UP
+            } else {
+                glyph::FLAG_8TH_DOWN
+            };
+            parent.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(stem_x),
+                    top: Val::Px(stem_tip_y - GLYPH_BASELINE_CORRECTION),
+                    ..default()
+                },
+                Text::new(flag_glyph),
+                TextFont {
+                    font: FontSource::Handle(bravura.0.clone()),
+                    font_size: FontSize::Px(GLYPH_FONT_PX),
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                MusicScoreNoteGlyph,
+                crate::dialogs::font_fallback::SkipFontFallback,
+            ));
+        }
     }
 
     let ledger_width_px = (kind.width_sp() + 2.0 * LEDGER_EXTENSION_SP) * STAFF_LINE_SPACING;
@@ -798,6 +858,22 @@ mod tests {
         assert!(!NoteheadKind::Whole.has_stem());
         assert!(NoteheadKind::Half.has_stem());
         assert!(NoteheadKind::Filled.has_stem());
+    }
+
+    #[test]
+    fn has_eighth_flag_is_true_only_below_the_quarter_eighth_midpoint() {
+        assert!(!has_eighth_flag(1.0)); // quarter note
+        assert!(!has_eighth_flag(0.75)); // exactly the midpoint: rounds up to quarter
+        assert!(has_eighth_flag(0.5)); // eighth note
+        assert!(has_eighth_flag(0.25)); // sixteenth: still rounds to one flag
+    }
+
+    #[test]
+    fn has_eighth_flag_never_applies_to_half_or_whole_notes() {
+        // Half/whole are always well above the flag threshold, so a note
+        // long enough to have no stem at all never picks one up either.
+        assert!(!has_eighth_flag(2.0));
+        assert!(!has_eighth_flag(4.0));
     }
 
     fn note(start_beat: f64, duration_beats: f64) -> NotationNote {
