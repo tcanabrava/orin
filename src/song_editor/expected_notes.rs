@@ -268,7 +268,7 @@ pub(super) fn spawn_expected_notes_mode_button(
         ModeButton::ExpectedNotes,
         loc.msg("editor-mode-expected"),
         loc.msg("editor-mode-expected-tooltip"),
-        "\u{25C7}",
+        "\u{2713}",
         style,
         colors,
         |_: On<Pointer<Click>>,

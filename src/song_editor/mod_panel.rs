@@ -71,7 +71,7 @@ pub(super) fn spawn_mod_panel(
             .with_children(|transport| {
                 transport_button(
                     transport,
-                    loc.msg("back"),
+                    loc.msg("editor-back-label"),
                     loc.msg("editor-back-tooltip"),
                     "\u{2190}",
                     style,
@@ -146,7 +146,7 @@ pub(super) fn spawn_mod_panel(
                     ModeButton::Play,
                     loc.msg("editor-mode-play"),
                     loc.msg("editor-mode-play-tooltip"),
-                    "\u{25B6}",
+                    "\u{1F3B5}",
                     style,
                     colors,
                     |_: On<Pointer<Click>>,
@@ -292,7 +292,7 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-metronome"),
                     loc.msg("editor-metronome-tooltip"),
-                    "\u{2669}",
+                    "\u{1F514}",
                     style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>,
@@ -464,7 +464,7 @@ pub(super) fn spawn_mod_panel(
                     TimelineToolButton(TimelineTool::Tempo),
                     loc.msg("editor-tool-tempo"),
                     loc.msg("editor-tool-tempo-tooltip"),
-                    "\u{266A}",
+                    "\u{2669}",
                     style,
                     colors,
                 );

@@ -30,6 +30,7 @@ use super::{MIDI_PURPOSE, TICKS_PER_BEAT};
 use crate::audio_system::synth::render_pcm;
 use crate::dialogs::combobox::{ComboboxSelect, spawn_combobox};
 use crate::dialogs::file_dialog::FileChosen;
+use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
 use crate::song::chart::{TempoPoint, seconds_to_tick};
 use crate::song::midi::{
@@ -310,7 +311,7 @@ pub(super) fn rebuild_midi_track_combobox(
     let Some(first) = options.first().cloned() else {
         return;
     };
-    spawn_combobox(
+    let combo = spawn_combobox(
         &mut commands,
         slot_entity,
         backdrop_parent,
@@ -319,6 +320,9 @@ pub(super) fn rebuild_midi_track_combobox(
         &first,
         on_midi_track_selected,
     );
+    commands.entity(combo).insert(Tooltip(String::from(
+        loc.msg("editor-field-midi-track-tooltip"),
+    )));
 }
 
 fn on_midi_track_selected(

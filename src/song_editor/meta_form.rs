@@ -357,11 +357,12 @@ pub(super) fn spawn_field_row(
                 state.lesson_progression = cycle_next(&PROGRESSIONS, &state.lesson_progression);
             });
         } else {
-            btn.observe(
-                move |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
-                    state.focus = Some(field);
-                },
-            );
+            btn.insert(Tooltip(String::from(loc.msg("editor-field-text-tooltip"))))
+                .observe(
+                    move |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                        state.focus = Some(field);
+                    },
+                );
         }
 
         btn.with_children(|b| {
@@ -529,7 +530,7 @@ pub(super) fn spawn_scale_combobox(
         return;
     };
     let options: Vec<String> = Scale::all().iter().map(|s| s.label().to_string()).collect();
-    spawn_combobox(
+    let combo = spawn_combobox(
         &mut commands,
         slot_entity,
         backdrop,
@@ -538,6 +539,9 @@ pub(super) fn spawn_scale_combobox(
         state.scale.label(),
         on_scale_selected,
     );
+    commands
+        .entity(combo)
+        .insert(Tooltip(String::from(loc.msg("editor-field-scale-tooltip"))));
 }
 
 fn on_scale_selected(ev: On<ComboboxSelect>, mut state: ResMut<EditorState>) {
