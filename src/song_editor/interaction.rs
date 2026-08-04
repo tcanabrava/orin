@@ -110,9 +110,8 @@ pub(super) fn select_or_add(state: &mut EditorState, hole: u8, tick: usize) {
 /// `hole`/`tick` in or out of the current multi-selection instead of
 /// replacing it outright — this is what lets more than one note be
 /// selected at once. Clicking empty space still behaves like a plain click
-/// (creates and exclusively selects a new note): extending a selection
-/// only makes sense against a note that already exists, there's nothing to
-/// "add" a freshly-placed one to.
+/// (creates and exclusively selects a new note): there's nothing existing
+/// to "add" a freshly-placed note to.
 pub(super) fn select_or_add_ctrl(state: &mut EditorState, hole: u8, tick: usize) {
     if let Some(existing) = state
         .notes
@@ -379,16 +378,14 @@ pub(super) fn grid_keys(
 }
 
 /// Ctrl+C copies every selected note into [`NoteClipboard`] verbatim
-/// (nothing is deleted, unlike Delete); a copy with nothing selected
-/// leaves a previous clipboard untouched. Ctrl+V pastes it back at the
-/// tick under the mouse — read from [`GridArea`]'s own
-/// `RelativeCursorPosition` the same way a note-grid click resolves its
-/// tick, but without requiring a click, so any hover position counts.
-/// Does nothing if the pointer isn't over the grid at all (paste has no
-/// well-defined "current time" without it) or if nothing's ever been
-/// copied. See [`paste_targets`] for which pasted notes get silently
-/// skipped (out-of-range hole, or a spot already occupied); the notes that
-/// *did* land become the new selection, ready to be nudged into place.
+/// (nothing deleted, unlike Delete); copying with nothing selected leaves
+/// a previous clipboard untouched. Ctrl+V pastes it back at the tick under
+/// the mouse — read from [`GridArea`]'s own `RelativeCursorPosition` the
+/// same way a grid click resolves its tick, but without requiring a click,
+/// so any hover position counts. Does nothing if the pointer isn't over
+/// the grid, or nothing's been copied. See [`paste_targets`] for which
+/// pasted notes get silently skipped (out-of-range hole, spot already
+/// occupied); the notes that land become the new selection.
 pub(super) fn handle_copy_paste(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<EditorState>,
@@ -425,11 +422,9 @@ pub(super) fn handle_copy_paste(
 
 /// `Ctrl+Z` undoes the last content edit (note placement/move/resize/
 /// delete, paste, Erase/Remove, a whole recording take, ...); `Ctrl+Y`
-/// redoes it — see `undo::UndoHistory` for exactly what counts as an edit
-/// and why. Same `state.focus`/`ctrl_held` gating as
-/// [`handle_copy_paste`], so typing into a meta-form text field never
-/// steals these from whatever text editing a browser/OS-level Ctrl+Z might
-/// otherwise mean there.
+/// redoes it — see `undo::UndoHistory` for what counts as an edit. Same
+/// `state.focus`/`ctrl_held` gating as [`handle_copy_paste`], so typing
+/// into a meta-form text field never steals these keys.
 pub(super) fn handle_undo_redo(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<EditorState>,
@@ -497,11 +492,11 @@ pub(super) fn pan_keys(
 /// Pans the grid horizontally on wheel input — but only while the pointer
 /// is actually over the grid ([`GridArea`]'s own [`Hovered`]). Without this
 /// gate, scrolling anywhere else in the editor (the meta/lesson form, say)
-/// would *also* pan the grid sideways at the same time the vertical
-/// `ScrollArea` scrolls the page — two unrelated scroll effects firing off
-/// one wheel gesture. Wheel events are still drained every frame regardless
-/// of hover, so an un-applied gesture can't linger and pan the grid a frame
-/// late once the pointer moves onto it.
+/// would also pan the grid sideways while the vertical `ScrollArea` scrolls
+/// the page — two unrelated scroll effects from one wheel gesture. Wheel
+/// events are still drained every frame regardless of hover, so an
+/// un-applied gesture can't linger and pan the grid late once the pointer
+/// moves onto it.
 pub(super) fn pan_wheel(
     mut wheel: MessageReader<MouseWheel>,
     file_dialog: Res<FileDialog>,
@@ -571,12 +566,12 @@ const MIN_THUMB_W: f32 = 24.0;
 /// `scroll_px`/`total_px`/`view_w`/`track_w` (the caller's job to keep
 /// consistent — see `update_grid_scrollbar`). `total_px` is floored at
 /// `view_w` so a song shorter than the view (or empty) still yields a
-/// full-width thumb rather than dividing by something smaller than the
-/// view — [`scrollbar_needed`] is what actually decides whether to show it
-/// at all. The thumb's left offset is clamped to the track so it can't run
-/// past the track's own right edge even if `scroll_px` is momentarily
-/// larger than the song supports (e.g. right after deleting notes shortens
-/// it out from under the current scroll position).
+/// full-width thumb instead of dividing by something smaller than the
+/// view — [`scrollbar_needed`] decides whether to show it at all. The
+/// thumb's left offset is clamped to the track so it can't run past the
+/// track's right edge even if `scroll_px` is momentarily larger than the
+/// song supports (e.g. right after deleting notes shortens it out from
+/// under the current scroll position).
 fn scrollbar_thumb(scroll_px: f32, total_px: f32, view_w: f32, track_w: f32) -> (f32, f32) {
     let total_px = total_px.max(view_w).max(1.0);
     let width = (view_w / total_px * track_w).clamp(MIN_THUMB_W.min(track_w), track_w);
@@ -647,9 +642,9 @@ pub(super) fn scrollbar_marker(tick: usize, len: usize, end_tick: usize) -> (f32
 /// Rebuilds the scrollbar's note markers (see [`GridScrollMarker`])
 /// whenever the notes change: one small rectangle per note, horizontal =
 /// its time span across the whole song, vertical = its hole lane — the
-/// scrollbar as a minimap. Blow/draw keep their usual colours. All
+/// scrollbar as a minimap, blow/draw keeping their usual colours. All
 /// percent-positioned (see [`scrollbar_marker`]) and `Pickable::IGNORE`,
-/// so they neither care about the track's pixel size nor steal drags from
+/// so they don't care about the track's pixel size or steal drags from
 /// the thumb.
 pub(super) fn update_scrollbar_markers(
     mut commands: Commands,
