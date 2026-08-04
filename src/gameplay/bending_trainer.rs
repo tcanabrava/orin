@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-//! Standalone Bending Trainer: the Let's Bend-style harmonica bend diagram + the
-//! metronome, with a directly pickable key and an adjustable tempo — no song.
+//! Standalone Bending Trainer: the Let's Bend-style harmonica bend diagram +
+//! the metronome, with a directly pickable key and adjustable tempo — no
+//! song. Its own [`AppState::BendingTrainer`](crate::app::AppState), driving
+//! the decoupled [`MetronomeTempo`] and its own copy of the gameplay clock
+//! so the metronome ticks with nothing loaded. The harp is synthesised for
+//! the chosen key (transposed Richter layout), rebuilding the diagram
+//! whenever the key changes.
 //!
-//! It's its own [`AppState::BendingTrainer`](crate::app::AppState), driving the
-//! decoupled [`MetronomeTempo`] and its own copy of the gameplay clock so the
-//! metronome ticks without any song loaded. The harp is synthesised for the
-//! chosen key (transposed Richter layout) and the diagram is rebuilt whenever
-//! the key changes.
-//!
-//! Two columns, the same split `jam::session` uses: left has
-//! everything but the harmonica itself (title, key control, detect-algorithm
-//! picker, ear-training target/Listen, tuner readout, drill toggle, tempo
-//! control, hint line); right is entirely the harmonica — the bend diagram
-//! plus its technique hint/drill explanation text.
+//! Two columns, the same split `jam::session` uses: left has everything but
+//! the harmonica itself (title, key control, detect-algorithm picker,
+//! ear-training target/Listen, tuner readout, drill toggle, tempo control,
+//! hint line); right is entirely the harmonica — the bend diagram plus its
+//! technique hint/drill explanation text.
 
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::picking::events::{Click, Out, Over, Pointer};
@@ -159,11 +158,11 @@ impl Default for TrainerTarget {
 
 /// Maps a diagram [`Row`] to the [`Technique`] it represents — the diagram
 /// distinguishes which *wing* a bend/over sits on (`BlowBend`/`DrawBend`,
-/// `Overblow`/`Overdraw`) since that determines which reed it's read off;
-/// `Technique` doesn't need that distinction (`Technique::note` resolves it
-/// from the hole number instead), so several `Row`s collapse to one
-/// `Technique`. `None` only for a `Row::*Bend` index outside 0..=2, which
-/// never actually appears in [`super::harmonica_overlay`]'s `ROWS` table.
+/// `Overblow`/`Overdraw`, since that determines which reed it's read off),
+/// but `Technique` resolves that from the hole number instead
+/// (`Technique::note`), so several `Row`s collapse to one `Technique`.
+/// `None` only for a `Row::*Bend` index outside 0..=2, which never actually
+/// appears in [`super::harmonica_overlay`]'s `ROWS` table.
 fn row_to_technique(row: Row) -> Option<Technique> {
     match row {
         Row::Blow => Some(Technique::Blow),
