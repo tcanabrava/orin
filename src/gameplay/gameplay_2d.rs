@@ -435,19 +435,18 @@ pub(super) fn spawn_gameplay_music_score(commands: &mut Commands, bravura: &Brav
 }
 
 /// Rebuilds `SongNotes`/`NoteRenderAssets::play_mode_tags` whenever
-/// `AdaptiveDifficulty` changes while a 2D song is loaded — e.g. the pause
-/// menu's manual phrase override — so unlocking/relocking notes takes
-/// effect immediately instead of only on the next Restart. Score state
-/// (hit/missed/held/sustain_scored/pitch/amp samples) carries over for
-/// notes that still exist in the rebuilt list (matched by
-/// `(time, hole, is_blow)` — stable across a rebuild since both lists
-/// derive from the same chart); newly unlocked notes start fresh.
+/// `AdaptiveDifficulty` changes while a 2D song is loaded (e.g. the pause
+/// menu's manual phrase override), so unlocking/relocking takes effect
+/// immediately instead of only on the next Restart. Score state carries
+/// over for notes that still exist in the rebuilt list (matched by
+/// `(time, hole, is_blow)`, stable since both lists derive from the same
+/// chart); newly unlocked notes start fresh.
 ///
 /// Every current `NoteVisual` is despawned unconditionally rather than
 /// reconciled in place: its `note_id` is a *positional* index into
 /// `SongNotes::notes`, and the rebuild can shift that position for every
-/// note after the edited phrase — a surviving entity would otherwise end up
-/// rendering a different note's data under its old index.
+/// note after the edited phrase, so a surviving entity would otherwise
+/// render a different note's data under its old index.
 /// `spawn_visible_notes` re-spawns everything within `LOOKAHEAD` fresh next
 /// frame, using the corrected indices.
 pub(super) fn resync_notes_on_adaptive_change(
@@ -1016,14 +1015,13 @@ pub(super) fn harp_pitches(active: &ActivePitches, valid_notes: &ValidHarpNotes)
 
 /// One hole cell's brightness/hint glow step for one frame — the shared
 /// core of `update_holes`/`update_holes_3d`, which differ only in the final
-/// paint (`BackgroundColor` vs. `StandardMaterial` emissive/base color, done
-/// by each caller with the resulting `state.brightness`/`state.is_blow`).
+/// paint (each caller applies the resulting `state.brightness`/
+/// `state.is_blow` to its own `BackgroundColor`/`StandardMaterial`).
 /// Matches `cell`'s blow/draw MIDI notes against `harp_pitches` (an actual
-/// played hit always wins), falls back to a dimmer "hint" floor from the
-/// scoring overlay's `ActiveTargets` if neither reed is sounding, and
-/// smooths `state.brightness` toward whichever target that resolved to —
-/// fast attack toward a brighter target, slower decay toward a dimmer one,
-/// so a hit flashes up instantly but fades out naturally.
+/// hit always wins), falls back to a dimmer "hint" floor from the scoring
+/// overlay's `ActiveTargets` if neither reed sounds, and smooths
+/// `state.brightness` toward that target — fast attack, slower decay, so a
+/// hit flashes up instantly but fades out naturally.
 pub(super) fn step_hole_glow(
     state: &mut HoleState,
     blow: Option<u8>,
