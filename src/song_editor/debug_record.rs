@@ -48,6 +48,7 @@ use crate::audio_system::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
+use crate::settings::ActionButtonStyle;
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 
@@ -115,6 +116,7 @@ pub(super) fn spawn_debug_recording_controls(
     panel: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    style: ActionButtonStyle,
 ) {
     panel
         .spawn(Node {
@@ -169,6 +171,8 @@ pub(super) fn spawn_debug_recording_controls(
         panel,
         loc.msg("editor-debug-recording-erase"),
         loc.msg("editor-debug-recording-erase-tooltip"),
+        "\u{25D9}",
+        style,
         colors.btn_bg,
         erase_debug_recording,
     );

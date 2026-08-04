@@ -13,7 +13,7 @@ use super::playback::{EditorAudio, EditorProgressFill, Playhead, PlayheadLine};
 use super::state::{EditorState, Mode, Scroll, TimelineTool};
 use super::{BEAT_W, HOLE_COL_W, NOTE_PAD, ROW_H, grid_height};
 use crate::audio_system::pitch_detect::PitchAlgorithm;
-use crate::settings::AudioSettings;
+use crate::settings::{ActionButtonStyle, AudioSettings};
 use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
 
@@ -328,6 +328,7 @@ pub(super) fn setup(
     audio: Res<AudioSettings>,
     bravura: Option<Res<crate::music_score::BravuraFont>>,
     compact: Res<crate::responsive::CompactLayout>,
+    action_button_style: Res<ActionButtonStyle>,
 ) {
     let colors = theme.song_editor_colors();
     let mode = state.mode;
@@ -383,6 +384,7 @@ pub(super) fn setup(
             root_id,
             audio.pitch_algorithm,
             bravura.as_deref(),
+            *action_button_style,
         );
 
         // The form fields (meta form, lesson form, status bar), in their
@@ -434,6 +436,7 @@ fn spawn_fixed_chrome(
     editor_root: Entity,
     algorithm: PitchAlgorithm,
     bravura: Option<&crate::music_score::BravuraFont>,
+    action_button_style: ActionButtonStyle,
 ) {
     root.spawn((
         GridRowContainer,
@@ -610,5 +613,13 @@ fn spawn_fixed_chrome(
         ));
     });
 
-    spawn_mod_panel(root, loc, colors, mode, editor_root, algorithm);
+    spawn_mod_panel(
+        root,
+        loc,
+        colors,
+        mode,
+        editor_root,
+        algorithm,
+        action_button_style,
+    );
 }

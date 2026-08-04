@@ -20,7 +20,7 @@ use super::{LOAD_PURPOSE, SAVE_PURPOSE};
 use crate::audio_system::pitch_detect::PitchRange;
 use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
 use crate::localization::LocalizationExt;
-use crate::settings::AudioSettings;
+use crate::settings::{ActionButtonStyle, AudioSettings};
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 
@@ -35,11 +35,14 @@ pub(super) fn spawn_file_buttons(
     panel: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    style: ActionButtonStyle,
 ) {
     transport_button(
         panel,
         loc.msg("editor-save"),
         loc.msg("editor-save-tooltip"),
+        "\u{1F4BE}",
+        style,
         colors.transport_save,
         |_: On<Pointer<Click>>,
          state: Res<EditorState>,
@@ -79,6 +82,8 @@ pub(super) fn spawn_file_buttons(
         panel,
         loc.msg("editor-load"),
         loc.msg("editor-load-tooltip"),
+        "\u{1F4C2}",
+        style,
         colors.transport_load,
         |_: On<Pointer<Click>>,
          state: Res<EditorState>,
@@ -110,11 +115,14 @@ pub(super) fn spawn_playback_buttons(
     panel: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    style: ActionButtonStyle,
 ) {
     transport_button(
         panel,
         loc.msg("editor-play"),
         loc.msg("editor-play-tooltip"),
+        "\u{25B6}",
+        style,
         colors.transport_play,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,
@@ -161,6 +169,8 @@ pub(super) fn spawn_playback_buttons(
         panel,
         loc.msg("editor-pause"),
         loc.msg("editor-pause-tooltip"),
+        "\u{23F8}",
+        style,
         colors.transport_pause,
         |_: On<Pointer<Click>>,
          mut playhead: ResMut<Playhead>,
@@ -172,6 +182,8 @@ pub(super) fn spawn_playback_buttons(
         panel,
         loc.msg("editor-stop"),
         loc.msg("editor-stop-tooltip"),
+        "\u{23F9}",
+        style,
         colors.transport_stop,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,
@@ -198,6 +210,8 @@ pub(super) fn spawn_playback_buttons(
         panel,
         loc.msg("editor-practice"),
         loc.msg("editor-practice-tooltip"),
+        "\u{25CE}",
+        style,
         colors.transport_practice,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,
@@ -255,11 +269,14 @@ pub(super) fn spawn_record_buttons(
     panel: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    style: ActionButtonStyle,
 ) {
     transport_button(
         panel,
         loc.msg("editor-play"),
         loc.msg("editor-record-play-tooltip"),
+        "\u{25B6}",
+        style,
         colors.transport_record,
         |_: On<Pointer<Click>>,
          state: Res<EditorState>,
@@ -289,6 +306,8 @@ pub(super) fn spawn_record_buttons(
         panel,
         loc.msg("editor-pause"),
         loc.msg("editor-pause-tooltip"),
+        "\u{23F8}",
+        style,
         colors.transport_pause,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,
@@ -317,6 +336,8 @@ pub(super) fn spawn_record_buttons(
         panel,
         loc.msg("editor-stop"),
         loc.msg("editor-record-stop-tooltip"),
+        "\u{23F9}",
+        style,
         colors.transport_stop,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,
@@ -341,6 +362,8 @@ pub(super) fn spawn_record_buttons(
         panel,
         loc.msg("editor-finish"),
         loc.msg("editor-finish-tooltip"),
+        "\u{25C0}",
+        style,
         colors.transport_stop,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,

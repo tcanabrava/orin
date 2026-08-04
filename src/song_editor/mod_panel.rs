@@ -26,6 +26,7 @@ use crate::audio_system::pitch_detect::{PitchAlgorithm, PitchRange};
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::combobox;
 use crate::localization::LocalizationExt;
+use crate::settings::ActionButtonStyle;
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 
@@ -45,6 +46,7 @@ pub(super) fn spawn_mod_panel(
     mode: Mode,
     editor_root: Entity,
     algorithm: PitchAlgorithm,
+    style: ActionButtonStyle,
 ) {
     root.spawn((
         Node {
@@ -71,6 +73,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("back"),
                     loc.msg("editor-back-tooltip"),
+                    "\u{2190}",
+                    style,
                     colors.transport_back,
                     |_: On<Pointer<Click>>,
                      mut next: ResMut<NextState<AppState>>,
@@ -91,6 +95,8 @@ pub(super) fn spawn_mod_panel(
                     ModeButton::Edit,
                     loc.msg("editor-mode-edit"),
                     loc.msg("editor-mode-edit-tooltip"),
+                    "\u{270E}",
+                    style,
                     colors,
                     |_: On<Pointer<Click>>,
                      mut state: ResMut<EditorState>,
@@ -119,6 +125,8 @@ pub(super) fn spawn_mod_panel(
                     ModeButton::Record,
                     loc.msg("editor-mode-record"),
                     loc.msg("editor-mode-record-tooltip"),
+                    "\u{23FA}",
+                    style,
                     colors,
                     |_: On<Pointer<Click>>,
                      mut state: ResMut<EditorState>,
@@ -138,6 +146,8 @@ pub(super) fn spawn_mod_panel(
                     ModeButton::Play,
                     loc.msg("editor-mode-play"),
                     loc.msg("editor-mode-play-tooltip"),
+                    "\u{25B6}",
+                    style,
                     colors,
                     |_: On<Pointer<Click>>,
                      mut state: ResMut<EditorState>,
@@ -164,6 +174,8 @@ pub(super) fn spawn_mod_panel(
                     ModeButton::Lock,
                     loc.msg("editor-lock"),
                     loc.msg("editor-lock-tooltip"),
+                    "\u{1F512}",
+                    style,
                     colors,
                     |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
                         state.user_locked = !state.user_locked;
@@ -183,6 +195,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-undo"),
                     loc.msg("editor-undo-tooltip"),
+                    "\u{21B6}",
+                    style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>,
                      mut state: ResMut<EditorState>,
@@ -195,6 +209,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-redo"),
                     loc.msg("editor-redo-tooltip"),
+                    "\u{21B7}",
+                    style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>,
                      mut state: ResMut<EditorState>,
@@ -215,6 +231,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-delete"),
                     loc.msg("editor-delete-tooltip"),
+                    "\u{2717}",
+                    style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
                         super::interaction::delete_selected(&mut state);
@@ -224,6 +242,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-copy"),
                     loc.msg("editor-copy-tooltip"),
+                    "\u{25C8}",
+                    style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>,
                      state: Res<EditorState>,
@@ -237,6 +257,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-paste"),
                     loc.msg("editor-paste-tooltip"),
+                    "\u{21B4}",
+                    style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>,
                      mut state: ResMut<EditorState>,
@@ -270,6 +292,8 @@ pub(super) fn spawn_mod_panel(
                     transport,
                     loc.msg("editor-metronome"),
                     loc.msg("editor-metronome-tooltip"),
+                    "\u{2669}",
+                    style,
                     colors.btn_bg,
                     |_: On<Pointer<Click>>,
                      mut muted: ResMut<crate::gameplay::metronome_overlay::MetronomeMuted>| {
@@ -281,11 +305,11 @@ pub(super) fn spawn_mod_panel(
                 // Dev-only ("--features dev") benchmark ground-truth mode —
                 // see `expected_notes`'s own module docs.
                 #[cfg(feature = "dev")]
-                super::expected_notes::spawn_expected_notes_mode_button(transport, loc, colors);
+                super::expected_notes::spawn_expected_notes_mode_button(transport, loc, colors, style);
 
                 panel_separator(transport);
 
-                spawn_file_buttons(transport, loc, colors);
+                spawn_file_buttons(transport, loc, colors, style);
 
                 // Dev-only debugging aid — see `debug_record`'s own module
                 // docs. Deliberately in this always-visible strip, not a
@@ -295,7 +319,7 @@ pub(super) fn spawn_mod_panel(
                 // ends up gated on `RecordState::active` or
                 // `PracticeState::active` — see `sync_raw_capture`.
                 #[cfg(feature = "dev")]
-                super::debug_record::spawn_debug_recording_controls(transport, loc, colors);
+                super::debug_record::spawn_debug_recording_controls(transport, loc, colors, style);
             });
 
         panel
@@ -326,6 +350,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Blow,
                     loc.msg("mod-blow"),
                     loc.msg("mod-blow-tooltip"),
+                    "\u{2191}",
+                    style,
                     colors,
                 );
                 mod_button(
@@ -333,6 +359,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Draw,
                     loc.msg("mod-draw"),
                     loc.msg("mod-draw-tooltip"),
+                    "\u{2193}",
+                    style,
                     colors,
                 );
                 panel_separator(g);
@@ -341,6 +369,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Bend,
                     loc.msg("mod-bend"),
                     loc.msg("mod-bend-tooltip"),
+                    "\u{007E}",
+                    style,
                     colors,
                 );
                 mod_button(
@@ -348,6 +378,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Overblow,
                     loc.msg("mod-overblow"),
                     loc.msg("mod-overblow-tooltip"),
+                    "\u{21C8}",
+                    style,
                     colors,
                 );
                 mod_button(
@@ -355,6 +387,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Overdraw,
                     loc.msg("mod-overdraw"),
                     loc.msg("mod-overdraw-tooltip"),
+                    "\u{21CA}",
+                    style,
                     colors,
                 );
                 mod_button(
@@ -362,6 +396,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Slide,
                     loc.msg("mod-slide"),
                     loc.msg("mod-slide-tooltip"),
+                    "\u{2194}",
+                    style,
                     colors,
                 );
                 mod_button(
@@ -369,6 +405,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Wah,
                     loc.msg("mod-wah"),
                     loc.msg("mod-wah-tooltip"),
+                    "\u{2248}",
+                    style,
                     colors,
                 );
                 mod_button(
@@ -376,6 +414,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Vibrato,
                     loc.msg("mod-vibrato"),
                     loc.msg("mod-vibrato-tooltip"),
+                    "\u{2195}",
+                    style,
                     colors,
                 );
                 g.spawn(Node {
@@ -387,6 +427,8 @@ pub(super) fn spawn_mod_panel(
                     ModButton::Delete,
                     loc.msg("mod-delete"),
                     loc.msg("mod-delete-tooltip"),
+                    "\u{25CB}",
+                    style,
                     colors,
                 );
                 panel_separator(g);
@@ -395,6 +437,8 @@ pub(super) fn spawn_mod_panel(
                     TimelineToolButton(TimelineTool::Select),
                     loc.msg("editor-tool-select"),
                     loc.msg("editor-tool-select-tooltip"),
+                    "\u{25FB}",
+                    style,
                     colors,
                 );
                 timeline_tool_button(
@@ -402,6 +446,8 @@ pub(super) fn spawn_mod_panel(
                     TimelineToolButton(TimelineTool::Erase),
                     loc.msg("editor-tool-erase"),
                     loc.msg("editor-tool-erase-tooltip"),
+                    "\u{25AD}",
+                    style,
                     colors,
                 );
                 timeline_tool_button(
@@ -409,6 +455,8 @@ pub(super) fn spawn_mod_panel(
                     TimelineToolButton(TimelineTool::Remove),
                     loc.msg("editor-tool-remove"),
                     loc.msg("editor-tool-remove-tooltip"),
+                    "\u{25FC}",
+                    style,
                     colors,
                 );
                 timeline_tool_button(
@@ -416,6 +464,8 @@ pub(super) fn spawn_mod_panel(
                     TimelineToolButton(TimelineTool::Tempo),
                     loc.msg("editor-tool-tempo"),
                     loc.msg("editor-tool-tempo-tooltip"),
+                    "\u{266A}",
+                    style,
                     colors,
                 );
             });
@@ -443,7 +493,7 @@ pub(super) fn spawn_mod_panel(
         // here, so there's nothing to query for.
         let record_group_id = record_group_ec.id();
         record_group_ec.with_children(|g| {
-            spawn_record_buttons(g, loc, colors);
+            spawn_record_buttons(g, loc, colors, style);
 
             // Detect algorithm: same shared combobox (and global
             // `AudioSettings::pitch_algorithm`) as Options/Bending Trainer —
@@ -482,12 +532,12 @@ pub(super) fn spawn_mod_panel(
                 },
             ))
             .with_children(|g| {
-                spawn_playback_buttons(g, loc, colors);
+                spawn_playback_buttons(g, loc, colors, style);
             });
 
         // Dev-only ("--features dev") benchmark ground-truth mode — see
         // `expected_notes`'s own module docs.
         #[cfg(feature = "dev")]
-        super::expected_notes::spawn_expected_notes_group(panel, loc, colors, mode);
+        super::expected_notes::spawn_expected_notes_group(panel, loc, colors, mode, style);
     });
 }

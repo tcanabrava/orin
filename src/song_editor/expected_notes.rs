@@ -64,6 +64,7 @@ use super::ui::{ExpectedNotesGroup, GridContent, ModButton, ModeButton};
 use crate::app::AppState;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
+use crate::settings::ActionButtonStyle;
 use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
 
@@ -260,12 +261,15 @@ pub(super) fn spawn_expected_notes_mode_button(
     transport: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    style: ActionButtonStyle,
 ) {
     super::panel_widgets::mode_button(
         transport,
         ModeButton::ExpectedNotes,
         loc.msg("editor-mode-expected"),
         loc.msg("editor-mode-expected-tooltip"),
+        "\u{25C7}",
+        style,
         colors,
         |_: On<Pointer<Click>>,
          mut state: ResMut<EditorState>,
@@ -309,6 +313,8 @@ fn spawn_expected_mod_button(
     kind: ModButton,
     label: crate::localization::LocalizedStr,
     tooltip: crate::localization::LocalizedStr,
+    icon: &str,
+    style: ActionButtonStyle,
     colors: SongEditorColors,
 ) {
     panel
@@ -333,7 +339,9 @@ fn spawn_expected_mod_button(
         )
         .with_children(|b| {
             b.spawn((
-                Text::new(String::from(label)),
+                Text::new(super::panel_widgets::button_content_text(
+                    style, icon, &label,
+                )),
                 TextFont {
                     font_size: FontSize::Px(14.0),
                     ..default()
@@ -354,6 +362,7 @@ pub(super) fn spawn_expected_notes_group(
     loc: &Localization,
     colors: SongEditorColors,
     mode: Mode,
+    style: ActionButtonStyle,
 ) {
     panel
         .spawn((
@@ -379,6 +388,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Blow,
                 loc.msg("mod-blow"),
                 loc.msg("mod-blow-tooltip"),
+                "\u{2191}",
+                style,
                 colors,
             );
             spawn_expected_mod_button(
@@ -386,6 +397,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Draw,
                 loc.msg("mod-draw"),
                 loc.msg("mod-draw-tooltip"),
+                "\u{2193}",
+                style,
                 colors,
             );
             spawn_expected_mod_button(
@@ -393,6 +406,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Bend,
                 loc.msg("mod-bend"),
                 loc.msg("mod-bend-tooltip"),
+                "\u{007E}",
+                style,
                 colors,
             );
             spawn_expected_mod_button(
@@ -400,6 +415,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Overblow,
                 loc.msg("mod-overblow"),
                 loc.msg("mod-overblow-tooltip"),
+                "\u{21C8}",
+                style,
                 colors,
             );
             spawn_expected_mod_button(
@@ -407,6 +424,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Overdraw,
                 loc.msg("mod-overdraw"),
                 loc.msg("mod-overdraw-tooltip"),
+                "\u{21CA}",
+                style,
                 colors,
             );
             spawn_expected_mod_button(
@@ -414,6 +433,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Slide,
                 loc.msg("mod-slide"),
                 loc.msg("mod-slide-tooltip"),
+                "\u{2194}",
+                style,
                 colors,
             );
             spawn_expected_mod_button(
@@ -421,6 +442,8 @@ pub(super) fn spawn_expected_notes_group(
                 ModButton::Delete,
                 loc.msg("mod-delete"),
                 loc.msg("mod-delete-tooltip"),
+                "\u{25CB}",
+                style,
                 colors,
             );
         });

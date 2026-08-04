@@ -20,22 +20,40 @@ use super::ui::{BendDot, ModButton, ModButtonLabel, ModeButton, TimelineToolButt
 use crate::dialogs::confirm_dialog::OpenConfirmDialog;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizedStr;
+use crate::settings::ActionButtonStyle;
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 
+/// The display text for an action button under `style` — icon alone, icon
+/// beside the label, or the label alone. Shared by every button shape in
+/// this file, and by `ModButtonLabel::base` (`panel::update_mod_panel`'s
+/// live Wah/Vibrato Hz suffix is appended on top of whatever this returns,
+/// so it stays correct under every style without that system needing to
+/// know about icons or `ActionButtonStyle` itself).
+pub(super) fn button_content_text(style: ActionButtonStyle, icon: &str, label: &str) -> String {
+    match style {
+        ActionButtonStyle::IconOnly => icon.to_string(),
+        ActionButtonStyle::TextBesideIcon => format!("{icon} {label}"),
+        ActionButtonStyle::TextOnly => label.to_string(),
+    }
+}
+
 /// The shared button shell every panel button in this file builds on: a
-/// padded, bordered button with a tooltip and a single-line white label,
-/// observing one click handler. `mode_button`/`transport_button` are plain
-/// wrappers over this (the only two shapes here with no per-button extras).
-/// `mod_button`/`timeline_tool_button` need extra
-/// per-button children (`BendDot`, a swappable label, a `kind`-dependent
-/// observer body) that don't fit this shape cleanly, so they stay separate
-/// rather than forcing a less-readable shared abstraction onto them.
+/// padded, bordered button with a tooltip and a single-line white label
+/// (rendered via [`button_content_text`]), observing one click handler.
+/// `mode_button`/`transport_button` are plain wrappers over this (the only
+/// two shapes here with no per-button extras). `mod_button`/
+/// `timeline_tool_button` need extra per-button children (`BendDot`, a
+/// swappable label, a `kind`-dependent observer body) that don't fit this
+/// shape cleanly, so they stay separate rather than forcing a
+/// less-readable shared abstraction onto them.
 fn spawn_button_shell<'a, M: 'static>(
     panel: &'a mut ChildSpawnerCommands,
     bg: Color,
     label: LocalizedStr,
     tooltip: LocalizedStr,
+    icon: &str,
+    style: ActionButtonStyle,
     on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
 ) -> EntityCommands<'a> {
     let mut ec = panel.spawn((
@@ -53,7 +71,7 @@ fn spawn_button_shell<'a, M: 'static>(
     ));
     ec.observe(on_click).with_children(|b| {
         b.spawn((
-            Text::new(String::from(label)),
+            Text::new(button_content_text(style, icon, &label)),
             TextFont {
                 font_size: FontSize::Px(14.0),
                 ..default()
@@ -70,10 +88,12 @@ pub(super) fn mode_button<M: 'static>(
     kind: ModeButton,
     label: LocalizedStr,
     tooltip: LocalizedStr,
+    icon: &str,
+    style: ActionButtonStyle,
     colors: SongEditorColors,
     on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
 ) {
-    spawn_button_shell(panel, colors.btn_bg, label, tooltip, on_click).insert(kind);
+    spawn_button_shell(panel, colors.btn_bg, label, tooltip, icon, style, on_click).insert(kind);
 }
 
 /// An Erase/Remove timeline-tool toggle button — see `TimelineToolButton`.
@@ -82,6 +102,8 @@ pub(super) fn timeline_tool_button(
     kind: TimelineToolButton,
     label: LocalizedStr,
     tooltip: LocalizedStr,
+    icon: &str,
+    style: ActionButtonStyle,
     colors: SongEditorColors,
 ) {
     panel
@@ -127,7 +149,7 @@ pub(super) fn timeline_tool_button(
         )
         .with_children(|b| {
             b.spawn((
-                Text::new(String::from(label)),
+                Text::new(button_content_text(style, icon, &label)),
                 TextFont {
                     font_size: FontSize::Px(14.0),
                     ..default()
@@ -143,6 +165,8 @@ pub(super) fn mod_button(
     kind: ModButton,
     label: LocalizedStr,
     tooltip: LocalizedStr,
+    icon: &str,
+    style: ActionButtonStyle,
     colors: SongEditorColors,
 ) {
     panel
@@ -166,7 +190,7 @@ pub(super) fn mod_button(
             },
         )
         .with_children(|b| {
-            let base = String::from(label);
+            let base = button_content_text(style, icon, &label);
             let mut text = b.spawn((
                 Text::new(base.clone()),
                 TextFont {
@@ -217,8 +241,39 @@ pub(super) fn transport_button<'a, M: 'static>(
     panel: &'a mut ChildSpawnerCommands,
     label: LocalizedStr,
     tooltip: LocalizedStr,
+    icon: &str,
+    style: ActionButtonStyle,
     bg: Color,
     on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
 ) -> EntityCommands<'a> {
-    spawn_button_shell(panel, bg, label, tooltip, on_click)
+    spawn_button_shell(panel, bg, label, tooltip, icon, style, on_click)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn icon_only_shows_just_the_icon() {
+        assert_eq!(
+            button_content_text(ActionButtonStyle::IconOnly, "\u{21B6}", "Undo"),
+            "\u{21B6}"
+        );
+    }
+
+    #[test]
+    fn text_beside_icon_shows_both() {
+        assert_eq!(
+            button_content_text(ActionButtonStyle::TextBesideIcon, "\u{21B6}", "Undo"),
+            "\u{21B6} Undo"
+        );
+    }
+
+    #[test]
+    fn text_only_shows_just_the_label() {
+        assert_eq!(
+            button_content_text(ActionButtonStyle::TextOnly, "\u{21B6}", "Undo"),
+            "Undo"
+        );
+    }
 }
