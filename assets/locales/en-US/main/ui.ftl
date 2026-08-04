@@ -149,6 +149,8 @@ editor-snap-mode-shuffle = ‹ Shuffle (swing 8ths) ›
 editor-snap-mode-triplet = ‹ Triplet 8ths ›
 
 # Song Editor 2 — color legend (third meta-form column)
+editor-legend-toggle = Legend
+editor-legend-toggle-tooltip = Show or hide the color-legend column.
 editor-legend-notes = Note colors (grid)
 editor-legend-normal = Normal blow/draw note
 editor-legend-bend = Bend (deeper bend = redder)

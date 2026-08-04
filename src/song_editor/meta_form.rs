@@ -18,8 +18,8 @@ use super::state::{
 };
 use super::timeline_overlay::{RANGE_HIGHLIGHT_COLOR, SPLIT_LINE_COLOR};
 use super::ui::{
-    ContentKindText, EditorRoot, HarmonicaKindText, HoleColumnContent, MetaFieldBox, MetaFieldText,
-    MidiTrackComboboxSlot, ScaleComboboxSlot, SnapModeText,
+    ContentKindText, EditorRoot, HarmonicaKindText, HoleColumnContent, LegendColumn, MetaFieldBox,
+    MetaFieldText, MidiTrackComboboxSlot, ScaleComboboxSlot, SnapModeText,
 };
 use super::{HEADER_H, MIDI_PURPOSE, MUSIC_PURPOSE, ROW_H, SILENCE_ROW_H, grid_height};
 use crate::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
@@ -133,14 +133,15 @@ const FORM_LABEL_W: f32 = 110.0;
 pub(super) fn spawn_form_column(
     root: &mut ChildSpawnerCommands,
     build: impl FnOnce(&mut ChildSpawnerCommands),
-) {
+) -> Entity {
     root.spawn(Node {
         flex_direction: FlexDirection::Column,
         row_gap: Val::Px(6.0),
         flex_grow: 1.0,
         ..default()
     })
-    .with_children(build);
+    .with_children(build)
+    .id()
 }
 
 /// A labelled click-to-cycle button row: `<label>:  [ current value ]` — the
@@ -589,6 +590,7 @@ pub(super) fn spawn_meta_form(
     loc: &Localization,
     colors: SongEditorColors,
     compact: bool,
+    legend_visible: bool,
 ) {
     const MID: usize = FIELDS.len() / 2;
     root.spawn(Node {
@@ -618,10 +620,43 @@ pub(super) fn spawn_meta_form(
             }
             spawn_midi_track_row(col, loc, colors);
         });
-        spawn_form_column(form, |col| {
+        let legend_col = spawn_form_column(form, |col| {
             spawn_color_legend(col, loc, colors);
         });
+        form.commands().entity(legend_col).insert((
+            LegendColumn,
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(6.0),
+                flex_grow: 1.0,
+                display: if legend_visible {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
+                ..default()
+            },
+        ));
     });
+}
+
+/// Shows/hides the meta form's third (legend) column to match
+/// `EditorState::legend_visible` — toggled by the mod panel's "ℹ Legend"
+/// button (`mod_panel.rs`).
+pub(super) fn update_legend_visibility(
+    state: Res<EditorState>,
+    mut columns: Query<&mut Node, With<LegendColumn>>,
+) {
+    if !state.is_changed() {
+        return;
+    }
+    for mut node in &mut columns {
+        node.display = if state.legend_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
 }
 
 // ── Color legend ──────────────────────────────────────────────────────────────

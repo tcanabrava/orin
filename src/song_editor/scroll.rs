@@ -87,8 +87,9 @@ pub(super) fn spawn_form_scroll_content(
     loc: &Localization,
     colors: SongEditorColors,
     compact: bool,
+    legend_visible: bool,
 ) {
-    spawn_meta_form(scroll, loc, colors, compact);
+    spawn_meta_form(scroll, loc, colors, compact, legend_visible);
     spawn_lesson_form(scroll, loc, colors);
 
     scroll.spawn((

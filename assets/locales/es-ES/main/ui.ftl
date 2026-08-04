@@ -147,6 +147,8 @@ editor-snap-mode-shuffle = ‹ Shuffle (corcheas con swing) ›
 editor-snap-mode-triplet = ‹ Tresillos de corchea ›
 
 # Song Editor 2 — leyenda de colores (tercera columna del formulario)
+editor-legend-toggle = Leyenda
+editor-legend-toggle-tooltip = Muestra u oculta la columna de leyenda de colores.
 editor-legend-notes = Colores de las notas (cuadrícula)
 editor-legend-normal = Nota normal de soplo/aspiración
 editor-legend-bend = Bend (cuanto más profundo, más rojo)

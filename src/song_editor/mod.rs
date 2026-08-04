@@ -228,6 +228,8 @@ impl Plugin for SongEditor2Plugin {
                     ),
                     panel::update_mode_visibility
                         .run_if(resource_exists_and_changed::<state::EditorState>),
+                    meta_form::update_legend_visibility
+                        .run_if(resource_exists_and_changed::<state::EditorState>),
                     panel::update_technique_button_visibility
                         .run_if(resource_exists_and_changed::<state::EditorState>),
                     panel::update_meta_fields.run_if(

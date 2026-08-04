@@ -302,6 +302,20 @@ pub(super) fn spawn_mod_panel(
                 )
                 .insert(super::ui::MetronomeToggleButton);
 
+                // Toggles the meta form's third (color-legend) column — see
+                // `meta_form::update_legend_visibility`.
+                transport_button(
+                    transport,
+                    loc.msg("editor-legend-toggle"),
+                    loc.msg("editor-legend-toggle-tooltip"),
+                    "\u{2139}",
+                    style,
+                    colors.btn_bg,
+                    |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                        state.legend_visible = !state.legend_visible;
+                    },
+                );
+
                 // Dev-only ("--features dev") benchmark ground-truth mode —
                 // see `expected_notes`'s own module docs.
                 #[cfg(feature = "dev")]

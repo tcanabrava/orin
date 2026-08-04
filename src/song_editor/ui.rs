@@ -159,6 +159,12 @@ pub(super) enum UndoRedoButton {
 #[derive(Component, Clone, Copy, PartialEq, Debug)]
 pub(super) struct MetronomeToggleButton;
 
+/// The meta form's third column (`meta_form::spawn_color_legend`), shown
+/// only while `EditorState::legend_visible` — see `meta_form::
+/// update_legend_visibility` and the mod panel's "ℹ Legend" toggle button.
+#[derive(Component)]
+pub(super) struct LegendColumn;
+
 /// Wraps the note-editing button cluster (Blow, Draw, Bend, ...), shown only
 /// in [`Mode::Edit`]. See `update_mode_visibility`.
 #[derive(Component)]
@@ -416,7 +422,13 @@ pub(super) fn setup(
                     ScrollArea,
                 ))
                 .with_children(|scroll| {
-                    super::scroll::spawn_form_scroll_content(scroll, &loc, colors, compact.0);
+                    super::scroll::spawn_form_scroll_content(
+                        scroll,
+                        &loc,
+                        colors,
+                        compact.0,
+                        state.legend_visible,
+                    );
                 })
                 .id();
             super::scroll::spawn_editor_scrollbar(outer, scroll_area, colors);

@@ -461,6 +461,11 @@ pub(super) struct EditorState {
     /// occasionally, not every session, and shouldn't compete with the note
     /// grid for screen space by default. See `lesson_form::spawn_lesson_form`.
     pub(super) lesson_details_expanded: bool,
+    /// Whether the meta form's third column (`meta_form::spawn_color_legend`)
+    /// is shown — toggled by the mod panel's "ℹ Legend" button
+    /// (`mod_panel.rs`). Visible by default, same as before this toggle
+    /// existed.
+    pub(super) legend_visible: bool,
     /// User's own Lock toggle, independent of `mode`. See [`EditorState::locked`].
     pub(super) user_locked: bool,
     pub(super) harmonica_kind: HarmonicaKind,
@@ -531,6 +536,7 @@ impl Default for EditorState {
             lesson_technique: "normal".into(),
             lesson_progression: "none".into(),
             lesson_details_expanded: false,
+            legend_visible: true,
             user_locked: false,
             harmonica_kind: HarmonicaKind::default(),
             snap_mode: SnapMode::default(),
