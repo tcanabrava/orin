@@ -880,9 +880,13 @@ fn spawn_color_legend(
     col.spawn((
         Text::new(loc.msg("editor-legend-scrollbar-note").to_string()),
         TextFont {
-            font_size: FontSize::Px(11.5),
+            font_size: FontSize::Px(10.0),
             ..default()
         },
         TextColor(colors.label.with_alpha(0.75)),
+        Node {
+            max_width: Val::Px(220.0),
+            ..default()
+        },
     ));
 }
