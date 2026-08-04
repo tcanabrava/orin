@@ -2,20 +2,19 @@
 
 //! Call-and-response phrases: a chart's consecutive `TrackItem::call: true`
 //! items are synthesized into a one-shot "call" demo (reusing
-//! `audio_system::synth` — the same one behind the song editor's own Play
-//! button), played automatically before the phrase's notes arrive
-//! as the scored "response." The response notes are ordinary
-//! `ScheduledNote`s with `force_wait: true` (see `gameplay::wait_freeze_
-//! index`), so the player is always given the freeze-and-wait treatment to
-//! echo them, regardless of the practice-only `WaitForNoteMode` toggle.
+//! `audio_system::synth`, the same synth behind the song editor's own Play
+//! button), played automatically before the phrase's notes arrive as the
+//! scored "response." The response notes are ordinary `ScheduledNote`s with
+//! `force_wait: true` (see `gameplay::wait_freeze_index`), so the player
+//! always gets the freeze-and-wait treatment to echo them, regardless of
+//! the practice-only `WaitForNoteMode` toggle.
 //!
-//! Deliberately *not* a clock-jumping feature: the demo plays as a plain
-//! fire-and-forget overlay sound (exactly like a hit-feedback or button
-//! click), timed by working backwards from the response's own authored
-//! start time — `GameplayClock`/the music sink are never touched, so this
-//! can't run afoul of the sink-anchoring invariant (see `CLAUDE.md`'s clock
-//! notes). A chart author simply needs to leave enough silence before a
-//! call group for its demo to finish playing.
+//! Deliberately not a clock-jumping feature: the demo plays as a plain
+//! fire-and-forget overlay sound, timed by working backwards from the
+//! response's own authored start time — `GameplayClock`/the music sink are
+//! never touched, so this can't run afoul of the sink-anchoring invariant
+//! (see `CLAUDE.md`'s clock notes). A chart author just needs to leave
+//! enough silence before a call group for its demo to finish playing.
 
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::prelude::*;
@@ -47,17 +46,15 @@ struct CallCue {
 
 /// Every call-phrase cue for the current song, built once at song setup
 /// (`setup_call_cues`) and fired in time order by `fire_call_cues`. Empty
-/// for any chart with no `call: true` items — every chart before this
-/// feature existed, and any chart that doesn't use it.
+/// for any chart with no `call: true` items.
 #[derive(Resource, Default)]
 pub struct CallCues(Vec<CallCue>);
 
 /// Index ranges into `track` (`start..end`, half-open) of each maximal run
 /// of consecutive `call: true` items — one call-and-response phrase group
-/// per range. Pure so it's directly testable without a loaded chart; charts
-/// are assumed authored with a phrase's items contiguous in track order
-/// (the same assumption `resolve_item_time`/scoring already make about
-/// track order generally).
+/// per range. Pure so it's directly testable without a loaded chart;
+/// assumes charts are authored with a phrase's items contiguous in track
+/// order, same assumption `resolve_item_time`/scoring already make.
 pub(super) fn call_phrase_groups(track: &[TrackItem]) -> Vec<(usize, usize)> {
     let mut groups = Vec::new();
     let mut start = None;
@@ -89,9 +86,8 @@ fn natural_pitch(chart: &HarpChart, event: &crate::song::chart::NoteEvent) -> St
 /// 1:1 from the chart modifiers that have an `audio_system::synth::Expr`
 /// equivalent. Every other modifier (bend, overblow/overdraw, slide) is
 /// already baked into the resolved MIDI pitch the caller passes as `freq`
-/// (see `target_pitch`), so there's nothing further to render for them —
-/// the demo doesn't need to reproduce *how* a note is played, only what it
-/// sounds like.
+/// (see `target_pitch`) — the demo only needs to reproduce what a note
+/// sounds like, not how it's played.
 fn demo_expr(modifiers: &[Modifier]) -> Expr {
     modifiers
         .iter()
@@ -103,13 +99,12 @@ fn demo_expr(modifiers: &[Modifier]) -> Expr {
         .unwrap_or(Expr::None)
 }
 
-/// Builds the [`PhraseNote`]s for one call-phrase group (`track[start..end]`,
-/// as returned by [`call_phrase_groups`]), on the tick grid `audio_system::
-/// synth::render_pcm` expects — ticks relative to the group's own first
-/// item, not the song's start. `bpm` is the chart's nominal tempo; a chart
-/// with tempo automation mid-phrase renders against that single nominal
-/// value, same simplification the song editor itself makes (one tempo
-/// field, no mid-song automation).
+/// Builds the [`PhraseNote`]s for one call-phrase group
+/// (`track[start..end]`, from [`call_phrase_groups`]), on the tick grid
+/// `audio_system::synth::render_pcm` expects — ticks relative to the
+/// group's own first item, not the song's start. `bpm` is the chart's
+/// nominal tempo; a chart with tempo automation mid-phrase renders against
+/// that single value, same simplification the song editor itself makes.
 pub(super) fn build_phrase_notes(
     chart: &HarpChart,
     track_group: &[TrackItem],
@@ -140,10 +135,10 @@ pub(super) fn build_phrase_notes(
 
 /// Synthesizes every call-phrase group in the loaded chart into a scheduled
 /// [`CallCue`], timed to finish playing [`LEAD_BUFFER_SECS`] before the
-/// group's first response note. Runs once at song setup, same point
-/// `gameplay_2d`/`gameplay_3d`'s own `setup` build `SongNotes` — Jam Session
-/// has no `SongNotes`/response notes to lead into, so this only needs to run
-/// for the two scored modes (see the `run_if` on its registration).
+/// group's first response note. Runs once at song setup, the same point
+/// `gameplay_2d`/`gameplay_3d`'s own `setup` build `SongNotes` — Jam
+/// Session has no `SongNotes`/response notes to lead into, so this only
+/// runs for the two scored modes (see the `run_if` on its registration).
 pub(super) fn setup_call_cues(
     mut commands: Commands,
     selected: Res<SelectedSong>,

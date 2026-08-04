@@ -103,13 +103,12 @@ pub fn tab_label(hole: u8, is_blow: bool, modifiers: &[Modifier]) -> String {
     s
 }
 
-/// The tab-notation sequence (space-separated [`tab_label`]s) for every note
-/// event in the phrase currently active at `clock` — the same
-/// phrase-boundary rule as [`active_phrase_groove`] (persists from the most
-/// recent item that declared a phrase), but collecting *every* event from
-/// the phrase's start up to the next phrase's start (or the end of the
-/// track), not just the ones the clock has already reached — the point is
-/// letting a player read the whole phrase ahead, like sheet music.
+/// The tab-notation sequence (space-separated [`tab_label`]s) for every
+/// note event in the phrase currently active at `clock` — same
+/// phrase-boundary rule as [`active_phrase_groove`], but collecting every
+/// event from the phrase's start up to the next phrase's start (or track
+/// end), not just ones the clock has already reached, so a player can read
+/// the whole phrase ahead, like sheet music.
 pub fn phrase_tab_sequence(items: &[(f64, Option<&str>, &[NoteEvent])], clock: f64) -> String {
     if clock < 0.0 {
         return String::new();
@@ -145,9 +144,8 @@ pub fn phrase_tab_sequence(items: &[(f64, Option<&str>, &[NoteEvent])], clock: f
 /// Times of track items that can move the banner ([`update_phrase`]) or the
 /// tab ribbon ([`update_tab_ribbon`]) off their current label — precomputed
 /// once at song start so [`watch_phrase_boundaries`] can locate the active
-/// boundary with a `partition_point` instead of the two label systems
-/// scanning (`update_phrase`) or fully re-collecting (`update_tab_ribbon`)
-/// the whole chart track every frame.
+/// boundary with a `partition_point` instead of either label system
+/// scanning/re-collecting the whole chart track every frame.
 #[derive(Resource, Default)]
 struct PhraseBoundaries {
     /// Items that declare a phrase and/or a groove — the banner changes
@@ -186,10 +184,10 @@ fn setup_phrase_boundaries(
 
 /// Emitted whenever the clock crosses a phrase/groove boundary, in either
 /// direction — a `handle_loop_boundary` rewind crosses boundaries backward
-/// and must re-emit too, which falls out for free here since the boundary
-/// index is recomputed from the clock each frame (not advanced
-/// incrementally), so a rewind simply produces a smaller index that still
-/// compares unequal to the previous frame's.
+/// and must re-emit too, which falls out for free since the boundary index
+/// is recomputed from the clock each frame (not advanced incrementally),
+/// so a rewind simply produces a smaller index that still compares
+/// unequal to the previous frame's.
 #[derive(Message)]
 struct PhraseChanged;
 
