@@ -73,25 +73,20 @@ pub struct ScheduledNote {
     pub phrase_section: usize,
     /// The full set of expected MIDI pitches for this note's chart
     /// `TrackItem`, shared identically by every sibling `ScheduledNote` the
-    /// item produced (one per `NoteEvent` — see `gameplay_2d::
-    /// build_combined_notes`/`gameplay_3d::build_notes_3d`). Empty for an
-    /// ordinary single-event item, which is the signal `judge::score_notes`
-    /// uses to skip the simultaneity check entirely — nothing about
-    /// single-note charts changes. Non-empty (a `PlayMode::Chord`/`Split`
-    /// item — two or more `events` at the same `time`) means this note's
-    /// own onset only counts as "playing" while *every* pitch in the set
-    /// sounds together, not just its own — the chord-target primitive
-    /// `docs/lessons_plan.md` calls for, built on the chart format's
-    /// existing multi-event `TrackItem` shape rather than a new schema
-    /// field.
+    /// item produced (one per `NoteEvent`). Empty for an ordinary
+    /// single-event item — the signal `judge::score_notes` uses to skip the
+    /// simultaneity check entirely. Non-empty (a `PlayMode::Chord`/`Split`
+    /// item, two or more `events` at the same `time`) means this note's
+    /// onset only counts as "playing" while every pitch in the set sounds
+    /// together, not just its own — built on the chart format's existing
+    /// multi-event `TrackItem` shape rather than a new schema field.
     pub chord_pitches: Vec<u8>,
-    /// From the chart's `TrackItem::call` — this note is the "response" half
-    /// of a call-and-response phrase. `clock::tick_clock`'s wait-freeze
-    /// condition treats it like `WaitForNoteMode` being on, regardless of
-    /// whether the player actually has that practice toggle enabled:
-    /// freezing here isn't optional the way it is for an ordinary note,
-    /// since the whole drill is "echo what you just heard, in your own
-    /// time." See `gameplay::call_response`.
+    /// From the chart's `TrackItem::call` — this note is the "response"
+    /// half of a call-and-response phrase. `clock::tick_clock`'s
+    /// wait-freeze condition treats it like `WaitForNoteMode` being on
+    /// regardless of the player's own practice toggle: the whole drill is
+    /// "echo what you just heard, in your own time," so freezing isn't
+    /// optional here. See `gameplay::call_response`.
     pub force_wait: bool,
 }
 
@@ -105,13 +100,12 @@ pub struct ScheduledNote {
 pub struct SongNotes {
     pub notes: Vec<ScheduledNote>,
     /// Index of the first not-fully-resolved note (not `missed`, and not
-    /// both `hit` and `sustain_scored`). Advanced forward by `judge::
-    /// score_notes` as a prefix of notes finishes for good; rewound by
-    /// `clock::handle_loop_boundary` on a loop wrap, since notes before the
-    /// loop's start are no longer "permanently done" once it can replay
-    /// them. Purely a per-frame scan-avoidance optimization — correctness
-    /// never depends on its exact value, only that it's `<=` the true first
-    /// unresolved index.
+    /// both `hit` and `sustain_scored`). Advanced by `judge::score_notes`
+    /// as a prefix finishes for good; rewound by `clock::
+    /// handle_loop_boundary` on a loop wrap, since notes before the loop's
+    /// start are no longer "permanently done" once it can replay them.
+    /// Purely a scan-avoidance optimization — correctness only needs it
+    /// `<=` the true first unresolved index.
     pub cursor: usize,
 }
 
@@ -256,12 +250,11 @@ pub fn play_mode_label(mode: Option<&PlayMode>) -> Option<&'static str> {
 }
 
 /// Builds every `ScheduledNote` a chart produces, gated by adaptive
-/// difficulty's current unlock state — the shared core of `gameplay_2d`'s
-/// and `gameplay_3d`'s own note-list builders (`build_combined_notes`/
-/// `build_notes_3d` before this was extracted), which differed only in
-/// whether they also collected each item's [`play_mode_label`] tag (2D's
-/// chord/split badge; 3D has no such badge and discards it). Sorted by
-/// `time` — `score_notes`/the spawn-window helpers above all rely on that.
+/// difficulty's current unlock state — shared by `gameplay_2d` and
+/// `gameplay_3d`'s note-list builders, which differ only in whether they
+/// also collect each item's [`play_mode_label`] tag (2D's chord/split
+/// badge; 3D has none). Sorted by `time` — `score_notes`/the spawn-window
+/// helpers above all rely on that.
 pub fn build_scheduled_notes(
     chart: &HarpChart,
     adaptive: &AdaptiveDifficulty,
@@ -338,18 +331,15 @@ pub fn build_scheduled_notes(
     combined.into_iter().unzip()
 }
 
-/// Converts scored notes' real-time `time`/`duration` (seconds) into the
-/// beat-based [`crate::music_score::NotationNote`]s the shared score
-/// overlay draws — see that module's own doc comment for why it never
-/// touches a tempo map itself. `resolution`/`tempo_map` are the chart's own
-/// (`chart.timing`), so this stays correct across a tempo change mid-song,
-/// not just for a flat-tempo chart. A note with no resolvable
-/// `expected_pitch` (the harp can't produce it) has nothing to draw on a
-/// staff and is skipped, same as it already can never be hit. `beats_per_bar`
-/// (the chart's own time signature numerator) feeds
-/// [`crate::music_score::split_at_bar_lines`] so a note crossing one or more
-/// bar lines becomes several tied segments instead of a single oversized
-/// notehead.
+/// Converts scored notes' real-time `time`/`duration` into the beat-based
+/// [`crate::music_score::NotationNote`]s the shared score overlay draws
+/// (that module never touches a tempo map itself — see its own doc
+/// comment). `resolution`/`tempo_map` are the chart's own, so this stays
+/// correct across a mid-song tempo change. A note with no resolvable
+/// `expected_pitch` has nothing to draw and is skipped, same as it already
+/// can never be hit. `beats_per_bar` feeds
+/// [`crate::music_score::split_at_bar_lines`] so a note crossing bar lines
+/// becomes tied segments instead of one oversized notehead.
 pub fn notes_to_notation(
     notes: &[ScheduledNote],
     resolution: u32,
