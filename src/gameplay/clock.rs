@@ -108,38 +108,30 @@ impl GameplayClock {
 }
 
 /// Ticks the single [`GameplayClock`] all gameplay systems read. Once the
-/// countdown finishes and the song's music starts, the clock is kept
-/// anchored to the `AudioSink` playback position instead of free-running on
-/// `Time::delta` — otherwise decoder start-up delay and frame hitches drift
-/// the notes out of sync with the audio over a long song. Jam Session has no
-/// long track to drift against and stays frame-timer driven (metronome-led).
+/// countdown finishes and music starts, the clock stays anchored to the
+/// `AudioSink` position instead of free-running on `Time::delta` —
+/// otherwise decoder start-up delay and frame hitches drift notes out of
+/// sync over a long song. Jam Session has no long track to drift against
+/// and stays frame-timer driven (metronome-led).
 ///
-/// Two things can take the clock off that path, and both work the same way:
-/// the music sink should or shouldn't be audible right now
-/// (`should_play`), computed once and compared against the sink's own
-/// `is_paused()` so `AudioSink::pause`/`play` only ever fires on the actual
-/// edge — calling it ~60 times a second turned out to visibly upset the
-/// audio backend (observed as odd behaviour in the *microphone* input, a
-/// fully separate pipeline, which only makes sense if repeatedly toggling
-/// the output stream was disturbing a shared audio graph/server).
+/// Two things take the clock off that path, both via a `should_play` flag
+/// compared against the sink's own `is_paused()` so `AudioSink::pause`/
+/// `play` only fire on the actual edge — calling them ~60 times a second
+/// visibly upset the audio backend (observed as odd behaviour in the
+/// *microphone* input, a separate pipeline, implying it was disturbing a
+/// shared audio graph/server):
 ///
-/// - `WaitForNoteMode` on (or the due note's own `ScheduledNote::force_wait`
-///   — a call-and-response phrase's response notes always freeze, whether
-///   or not the player has that practice toggle on) and a playable note due
-///   and still unhit (`first_due_unresolved_note`): the clock simply isn't
-///   advanced this frame, holding it exactly at the hit line. `judge::
-///   score_notes` keeps re-judging the same held instant every frame, so
-///   the moment the player plays the note it scores (typically a Perfect,
-///   since the offset never moved) and the very next frame the condition is
-///   false again. Jam Session never populates `SongNotes`, so this is a
-///   no-op there.
-/// - `PracticeSpeed` below 100%: real time-stretched audio isn't
-///   implemented, so the sink just pauses instead of playing pitch-shifted,
-///   and the clock free-runs on `Time::delta` scaled by the speed instead of
-///   anchoring (the sink's position wouldn't mean anything at the wrong
-///   speed anyway). Coming back to 100% re-seeks the sink to the clock's
-///   current position (`GameplayClock::rewind_to`) before resuming it, since
-///   it sat still the whole time the clock kept moving.
+/// - `WaitForNoteMode` on (or the due note's own `ScheduledNote::
+///   force_wait` — a call-and-response response always freezes regardless
+///   of the practice toggle) with a playable note due and unhit
+///   (`first_due_unresolved_note`): the clock simply isn't advanced this
+///   frame, holding it at the hit line until the player plays the note.
+///   Jam Session never populates `SongNotes`, so this is a no-op there.
+/// - `PracticeSpeed` below 100%: time-stretched audio isn't implemented,
+///   so the sink just pauses and the clock free-runs on `Time::delta`
+///   scaled by the speed (the sink's position means nothing at the wrong
+///   speed). Returning to 100% re-seeks the sink to the clock's current
+///   position before resuming it, since it sat still while the clock moved.
 pub(crate) fn tick_clock(
     mut clock: ResMut<GameplayClock>,
     time: Res<Time>,

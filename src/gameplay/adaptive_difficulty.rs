@@ -2,18 +2,16 @@
 
 //! Per-phrase note unlocking ("adaptive difficulty"). A chart is divided
 //! into musical-phrase sections using the existing `TrackItem::phrase` tag
-//! (see `phrase_overlay`'s identical boundary rule) — no chart schema change
-//! needed, since every bundled/external song already tags phrases densely.
+//! (same boundary rule as `phrase_overlay`) — no schema change needed.
 //! Each section has its own persisted "learned" fraction
-//! (`profile::SongRecord::phrase_learned`). Only a prefix of a section's
-//! notes are unlocked (spawned/scored) at a time; clearing a section
-//! cleanly bumps its learned fraction, unlocking more of it on the next
-//! attempt. A manual pause-menu override takes effect immediately, mid-song
-//! — `gameplay_2d`/`gameplay_3d`'s `resync_notes_on_adaptive_change` rebuild
+//! (`profile::SongRecord::phrase_learned`); only a prefix of its notes are
+//! unlocked (spawned/scored) at a time, and clearing a section cleanly
+//! bumps that fraction, unlocking more on the next attempt. A manual
+//! pause-menu override takes effect immediately mid-song —
+//! `gameplay_2d`/`gameplay_3d`'s `resync_notes_on_adaptive_change` rebuild
 //! `SongNotes` the moment [`AdaptiveDifficulty`] changes, carrying over
-//! already-resolved score state via [`carry_over_note_state`] so a note the
-//! player already hit or missed doesn't reset just because the list was
-//! rebuilt around it.
+//! already-resolved score state via [`carry_over_note_state`] so a
+//! previously hit/missed note doesn't reset just because the list rebuilt.
 
 use bevy::prelude::*;
 use std::collections::HashMap;
@@ -66,17 +64,15 @@ pub fn group_phrase_sections(
 }
 
 /// Stable per-section keys for persisting `learned` progress across a chart
-/// re-edit, one per `sections` entry, in order: a section's own phrase name,
-/// unless an earlier section already used that same name (a chart with a
-/// repeated tag, e.g. two "chorus" sections), in which case later
-/// occurrences are disambiguated with a `" #2"`, `" #3"`, ... suffix. This is
-/// the read/write boundary [`learned_vec_from_map`]/[`write_learned_into_map`]
-/// use to translate between the session's ordinal `Vec<f32>` (indexed by
-/// section position — what `unlocked_flags`/`bump_learned_sections` expect)
-/// and `profile::SongRecord::phrase_learned`'s persisted, name-keyed map:
-/// keying by name means a phrase tag being reordered, inserted, or removed
-/// elsewhere in the chart doesn't silently misapply an unrelated section's
-/// progress the way keying by ordinal position used to.
+/// re-edit: a section's own phrase name, unless an earlier section already
+/// used it (e.g. two "chorus" sections), in which case later occurrences
+/// get a `" #2"`, `" #3"`, ... suffix. The read/write boundary
+/// [`learned_vec_from_map`]/[`write_learned_into_map`] use to translate
+/// between the session's ordinal `Vec<f32>` (indexed by section position,
+/// what `unlocked_flags`/`bump_learned_sections` expect) and
+/// `profile::SongRecord::phrase_learned`'s persisted, name-keyed map —
+/// keying by name means reordering/inserting/removing a phrase tag
+/// elsewhere in the chart can't misapply an unrelated section's progress.
 pub fn section_keys(sections: &[PhraseSection]) -> Vec<String> {
     let mut counts: HashMap<&str, usize> = HashMap::new();
     sections
@@ -151,11 +147,10 @@ const fn active_note_count(note_count: usize, learned: f32) -> usize {
 /// `gameplay_3d` build their `ScheduledNote`s in, so each can filter while
 /// building without duplicating phrase grouping. Within a section, the
 /// first `active_note_count` notes (in time order) are unlocked — a prefix
-/// reveal, not an evenly-spaced sampling, so a single percentage is enough
-/// to describe (and manually set) how far into the phrase play has been
-/// unlocked. `learned` is indexed by section ordinal; a missing/short entry
-/// defaults to unlearned (0.0). When `enabled` is false every note is
-/// unlocked regardless of `learned`.
+/// reveal, not scattered sampling, so a single percentage fully describes
+/// how far into the phrase play has been unlocked. `learned` is indexed by
+/// section ordinal; a missing/short entry defaults to unlearned (0.0).
+/// `enabled: false` unlocks every note regardless of `learned`.
 pub fn unlocked_flags(
     items: &[(f64, Option<&str>, usize)],
     sections: &[PhraseSection],
@@ -250,18 +245,15 @@ pub fn track_items<'a>(
 }
 
 /// Copies resolved score state (`hit`, `missed`, `held`, `sustain_scored`,
-/// `pitch_samples`, `amp_samples`) from `old` into matching notes in `new` —
-/// matched by `(time, hole, is_blow)`, which stays stable across an
-/// adaptive-difficulty rebuild since both lists derive from the same chart:
-/// a note present in both *is* the same chart note regardless of which
-/// other notes got unlocked/relocked around it. Used when the pause menu
-/// changes `learned`/`enabled` mid-song (`gameplay_2d`/`gameplay_3d`'s
-/// `resync_notes_on_adaptive_change`) so already-hit/missed notes don't
-/// reset just because the note list was rebuilt. A note with no match in
-/// `old` (freshly unlocked) keeps its default, unresolved state; `used`
-/// guards against double-matching two notes that happen to share an
-/// identical key (e.g. a chord/split voicing the same hole/direction twice
-/// at once — vanishingly rare, but cheap to guard against).
+/// `pitch_samples`, `amp_samples`) from `old` into matching notes in `new`,
+/// matched by `(time, hole, is_blow)` — stable across a rebuild since both
+/// lists derive from the same chart, regardless of which other notes got
+/// unlocked/relocked around a given note. Used when the pause menu changes
+/// `learned`/`enabled` mid-song so already-hit/missed notes don't reset
+/// just because the list was rebuilt. A note with no match in `old`
+/// (freshly unlocked) keeps its default unresolved state; `used` guards
+/// against double-matching two notes sharing an identical key (e.g. a
+/// chord/split voicing the same hole/direction twice — rare, cheap to guard).
 pub fn carry_over_note_state(old: &[ScheduledNote], new: &mut [ScheduledNote]) {
     let mut used = vec![false; old.len()];
     for note in new.iter_mut() {
@@ -321,14 +313,13 @@ pub fn rebuild_song_notes(
 /// Live per-session cache of a song's phrase sections + adaptive-difficulty
 /// state — built once at song start (`setup_adaptive_difficulty`) from the
 /// chart, [`PlayerProfile`] (learned progress), and the global
-/// `settings::AdaptiveDifficultyEnabled` setting (on/off), read by the
-/// note-unlock filter (`gameplay_2d`/`gameplay_3d` setup), the progress-bar
-/// phrase strip (`song_progress_overlay`), and the pause menu's manual
-/// phrase selector. The pause menu's own on/off toggle writes through to
-/// both `settings::AdaptiveDifficultyEnabled` (persisted, global) and this
-/// resource's `enabled` directly — changing it here is also what drives the
-/// immediate mid-song note re-unlock (`resync_notes_on_adaptive_change` in
-/// each gameplay mode) and the progress-bar overlay's live re-tint.
+/// `settings::AdaptiveDifficultyEnabled` setting, read by the note-unlock
+/// filter (`gameplay_2d`/`gameplay_3d` setup), the progress-bar phrase strip
+/// (`song_progress_overlay`), and the pause menu's phrase selector. The
+/// pause menu's on/off toggle writes through to both
+/// `settings::AdaptiveDifficultyEnabled` (persisted, global) and this
+/// resource's `enabled` directly, driving both the immediate mid-song
+/// note re-unlock and the progress-bar overlay's live re-tint.
 #[derive(Resource, Default)]
 pub struct AdaptiveDifficulty {
     pub enabled: bool,
