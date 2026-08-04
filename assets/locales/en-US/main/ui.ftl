@@ -79,6 +79,11 @@ options-theme-tooltip = Change the menu's visual theme.
 options-calibrate-input-lag = Calibrate input lag
 options-calibrate-input-lag-tooltip = Measure your setup's audio latency and apply it automatically.
 options-back-tooltip = Return to the main menu.
+options-button-style = Action buttons
+options-button-style-tooltip = How Song Editor action buttons show icon and label.
+options-button-style-icon-only = Icon only
+options-button-style-text-beside-icon = Text beside icon
+options-button-style-text-only = Text only
 theme-back-to-options = ← Back to Options
 
 # Shared

@@ -77,6 +77,11 @@ options-theme-tooltip = Muda o tema visual dos menus.
 options-calibrate-input-lag = Calibrar a latência de entrada
 options-calibrate-input-lag-tooltip = Mede a latência de áudio do seu equipamento e a aplica automaticamente.
 options-back-tooltip = Volta ao menu principal.
+options-button-style = Botões de ação
+options-button-style-tooltip = Como os botões de ação do Editor de Músicas mostram ícone e texto.
+options-button-style-icon-only = Somente ícone
+options-button-style-text-beside-icon = Texto ao lado do ícone
+options-button-style-text-only = Somente texto
 theme-back-to-options = ← Voltar às Opções
 
 # Compartilhado

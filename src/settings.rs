@@ -85,6 +85,53 @@ pub struct FullscreenEnabled(pub bool);
 #[derive(Resource, Default)]
 pub struct ColorblindPalette(pub bool);
 
+/// How the Song Editor's action buttons (transport strip, mod panel,
+/// timeline tools, ...) render their icon/label — see
+/// `song_editor::panel_widgets::spawn_button_shell`, which is the one place
+/// that reads this. `TextOnly` is the default so an existing player's UI
+/// doesn't change until they opt in.
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
+pub enum ActionButtonStyle {
+    IconOnly,
+    TextBesideIcon,
+    #[default]
+    TextOnly,
+}
+
+impl ActionButtonStyle {
+    /// All three styles, in the order the Options combobox lists them.
+    pub fn all() -> &'static [ActionButtonStyle] {
+        &[
+            ActionButtonStyle::IconOnly,
+            ActionButtonStyle::TextBesideIcon,
+            ActionButtonStyle::TextOnly,
+        ]
+    }
+
+    /// Locale key for this style's combobox label — a real UI phrase,
+    /// unlike `PitchAlgorithm::label`'s bare acronyms, so this goes through
+    /// `loc.msg` rather than being shown directly.
+    pub fn loc_key(self) -> &'static str {
+        match self {
+            ActionButtonStyle::IconOnly => "options-button-style-icon-only",
+            ActionButtonStyle::TextBesideIcon => "options-button-style-text-beside-icon",
+            ActionButtonStyle::TextOnly => "options-button-style-text-only",
+        }
+    }
+
+    /// Inverse of [`loc_key`](Self::loc_key) resolved against `loc` — for UI
+    /// that deals in the combobox's plain selected string rather than the
+    /// enum itself. `None` for anything that isn't one of [`Self::all`]'s
+    /// current labels.
+    pub fn from_localized_label(loc: &bevy_fluent::Localization, label: &str) -> Option<Self> {
+        use crate::localization::LocalizationExt;
+        Self::all()
+            .iter()
+            .copied()
+            .find(|s| &*loc.msg(s.loc_key()) == label)
+    }
+}
+
 /// The on-disk shape of the settings. `#[serde(default)]` lets an older or
 /// hand-edited file omit fields and still load.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -103,6 +150,7 @@ struct Settings {
     adaptive_difficulty_enabled: bool,
     fullscreen: bool,
     colorblind_palette: bool,
+    action_button_style: ActionButtonStyle,
 }
 
 impl Default for Settings {
@@ -121,6 +169,7 @@ impl Default for Settings {
             adaptive_difficulty_enabled: false,
             fullscreen: false,
             colorblind_palette: false,
+            action_button_style: ActionButtonStyle::default(),
         }
     }
 }
@@ -181,6 +230,7 @@ impl Plugin for SettingsPlugin {
             .init_resource::<AdaptiveDifficultyEnabled>()
             .init_resource::<FullscreenEnabled>()
             .init_resource::<ColorblindPalette>()
+            .init_resource::<ActionButtonStyle>()
             .init_resource::<PendingSave>()
             .add_systems(Startup, apply_loaded_settings)
             // Save whenever either settings resource changes. The Startup load
@@ -198,7 +248,8 @@ impl Plugin for SettingsPlugin {
                          note_numbers: Res<ShowNoteNumbers>,
                          adaptive_difficulty: Res<AdaptiveDifficultyEnabled>,
                          fullscreen: Res<FullscreenEnabled>,
-                         colorblind_palette: Res<ColorblindPalette>| {
+                         colorblind_palette: Res<ColorblindPalette>,
+                         action_button_style: Res<ActionButtonStyle>| {
                             audio.is_changed()
                                 || theme_2d.is_changed()
                                 || theme_3d.is_changed()
@@ -208,6 +259,7 @@ impl Plugin for SettingsPlugin {
                                 || adaptive_difficulty.is_changed()
                                 || fullscreen.is_changed()
                                 || colorblind_palette.is_changed()
+                                || action_button_style.is_changed()
                         },
                     ),
                     tick_pending_save,
@@ -234,6 +286,7 @@ pub fn apply_loaded_settings(
     mut adaptive_difficulty: ResMut<AdaptiveDifficultyEnabled>,
     mut fullscreen: ResMut<FullscreenEnabled>,
     mut colorblind_palette: ResMut<ColorblindPalette>,
+    mut action_button_style: ResMut<ActionButtonStyle>,
 ) {
     let settings = load_settings();
     audio.music_volume = settings.music_volume;
@@ -249,8 +302,9 @@ pub fn apply_loaded_settings(
     adaptive_difficulty.0 = settings.adaptive_difficulty_enabled;
     fullscreen.0 = settings.fullscreen;
     colorblind_palette.0 = settings.colorblind_palette;
+    *action_button_style = settings.action_button_style;
     info!(
-        "Loaded settings: music={:.2} metronome={:.2} latency={}ms themes(2d={}, 3d={}) harmonica={} ui_theme={} note_numbers={} adaptive_difficulty={} fullscreen={} colorblind_palette={}",
+        "Loaded settings: music={:.2} metronome={:.2} latency={}ms themes(2d={}, 3d={}) harmonica={} ui_theme={} note_numbers={} adaptive_difficulty={} fullscreen={} colorblind_palette={} action_button_style={:?}",
         audio.music_volume,
         audio.metronome_volume,
         audio.input_latency_ms,
@@ -262,6 +316,7 @@ pub fn apply_loaded_settings(
         adaptive_difficulty.0,
         fullscreen.0,
         colorblind_palette.0,
+        *action_button_style,
     );
 }
 
@@ -276,6 +331,7 @@ fn save_current(
     adaptive_difficulty: &AdaptiveDifficultyEnabled,
     fullscreen: &FullscreenEnabled,
     colorblind_palette: &ColorblindPalette,
+    action_button_style: &ActionButtonStyle,
 ) {
     save_settings(&Settings {
         music_volume: audio.music_volume,
@@ -291,6 +347,7 @@ fn save_current(
         adaptive_difficulty_enabled: adaptive_difficulty.0,
         fullscreen: fullscreen.0,
         colorblind_palette: colorblind_palette.0,
+        action_button_style: *action_button_style,
     });
 }
 
@@ -329,6 +386,7 @@ fn tick_pending_save(
     adaptive_difficulty: Res<AdaptiveDifficultyEnabled>,
     fullscreen: Res<FullscreenEnabled>,
     colorblind_palette: Res<ColorblindPalette>,
+    action_button_style: Res<ActionButtonStyle>,
 ) {
     let (should_save, remaining) = tick_debounce(pending.0, time.delta_secs());
     pending.0 = remaining;
@@ -343,6 +401,7 @@ fn tick_pending_save(
             &adaptive_difficulty,
             &fullscreen,
             &colorblind_palette,
+            &action_button_style,
         );
     }
 }
@@ -361,6 +420,7 @@ fn flush_pending_save_on_exit(
     adaptive_difficulty: Res<AdaptiveDifficultyEnabled>,
     fullscreen: Res<FullscreenEnabled>,
     colorblind_palette: Res<ColorblindPalette>,
+    action_button_style: Res<ActionButtonStyle>,
 ) {
     if exit.read().next().is_none() || pending.0.is_none() {
         return;
@@ -376,6 +436,7 @@ fn flush_pending_save_on_exit(
         &adaptive_difficulty,
         &fullscreen,
         &colorblind_palette,
+        &action_button_style,
     );
 }
 
@@ -402,6 +463,8 @@ fn apply_fullscreen(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::localization::LocalizationExt;
+    use bevy_fluent::Localization;
 
     // ── AdaptiveDifficultyEnabled ────────────────────────────────────────────────
 
@@ -445,6 +508,48 @@ mod tests {
     fn missing_colorblind_palette_field_defaults_off_via_serde_default() {
         let s: Settings = serde_json::from_str("{}").unwrap();
         assert!(!s.colorblind_palette);
+    }
+
+    // ── ActionButtonStyle ────────────────────────────────────────────────────
+
+    #[test]
+    fn action_button_style_defaults_to_text_only() {
+        assert_eq!(ActionButtonStyle::default(), ActionButtonStyle::TextOnly);
+        assert_eq!(
+            Settings::default().action_button_style,
+            ActionButtonStyle::TextOnly
+        );
+    }
+
+    #[test]
+    fn missing_action_button_style_field_defaults_via_serde_default() {
+        let s: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(s.action_button_style, ActionButtonStyle::TextOnly);
+    }
+
+    #[test]
+    fn from_localized_label_round_trips_every_style() {
+        let loc = Localization::default();
+        for style in ActionButtonStyle::all() {
+            // `Localization::default()` has no bundle loaded, so `loc.msg`
+            // falls back to the key itself — this only exercises the
+            // round trip through whatever `loc.msg` actually returns, not
+            // real translated text.
+            let label = loc.msg(style.loc_key());
+            assert_eq!(
+                ActionButtonStyle::from_localized_label(&loc, &label),
+                Some(*style)
+            );
+        }
+    }
+
+    #[test]
+    fn from_localized_label_rejects_unknown_text() {
+        let loc = Localization::default();
+        assert_eq!(
+            ActionButtonStyle::from_localized_label(&loc, "not a real label"),
+            None
+        );
     }
 
     // ── tick_debounce ────────────────────────────────────────────────────────

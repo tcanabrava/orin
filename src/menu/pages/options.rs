@@ -146,6 +146,7 @@ fn setup_options_menu(
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
     colorblind_palette: Res<crate::settings::ColorblindPalette>,
+    action_button_style: Res<crate::settings::ActionButtonStyle>,
     ui_scale: Res<UiScale>,
 ) {
     let root = spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
@@ -206,6 +207,7 @@ fn setup_options_menu(
         adaptive_difficulty,
         fullscreen,
         colorblind_palette,
+        *action_button_style,
         ui_scale.0,
     );
     spawn_right_column(&mut commands, right_layout, &loc);
@@ -225,6 +227,7 @@ fn spawn_left_column(
     adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
     fullscreen: Res<crate::settings::FullscreenEnabled>,
     colorblind_palette: Res<crate::settings::ColorblindPalette>,
+    action_button_style: crate::settings::ActionButtonStyle,
     ui_scale: f32,
 ) {
     spawn_mic_banner(commands, parent, &mic_status, loc);
@@ -293,6 +296,7 @@ fn spawn_left_column(
     spawn_fullscreen_toggle(commands, parent, fullscreen.0, loc);
     spawn_colorblind_palette_toggle(commands, parent, colorblind_palette.0, loc);
     spawn_zoom_slider(commands, parent, ui_scale, loc);
+    spawn_action_button_style_combobox(commands, parent, loc, action_button_style);
 }
 
 fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localization) {
@@ -516,6 +520,43 @@ fn update_zoom_slider_visuals(
     }
     for mut text in &mut labels {
         *text = Text::new(zoom_label_text(&loc, value.0));
+    }
+}
+
+/// A combobox picking `settings::ActionButtonStyle` — how the Song Editor's
+/// action buttons render (icon only, icon + text, or text only).
+fn spawn_action_button_style_combobox(
+    commands: &mut Commands,
+    parent: Entity,
+    loc: &Localization,
+    current: crate::settings::ActionButtonStyle,
+) {
+    let options: Vec<String> = crate::settings::ActionButtonStyle::all()
+        .iter()
+        .map(|s| String::from(loc.msg(s.loc_key())))
+        .collect();
+    let combo = combobox::spawn_combobox(
+        commands,
+        parent,
+        parent,
+        &loc.msg("options-button-style"),
+        &options,
+        &loc.msg(current.loc_key()),
+        on_action_button_style_selected,
+    );
+    commands.entity(combo).insert(Tooltip(String::from(
+        loc.msg("options-button-style-tooltip"),
+    )));
+}
+
+fn on_action_button_style_selected(
+    ev: On<combobox::ComboboxSelect>,
+    loc: Res<Localization>,
+    mut style: ResMut<crate::settings::ActionButtonStyle>,
+) {
+    if let Some(picked) = crate::settings::ActionButtonStyle::from_localized_label(&loc, &ev.value)
+    {
+        *style = picked;
     }
 }
 
