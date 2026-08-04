@@ -27,9 +27,9 @@ pub(super) struct PauseMenuRoot;
 /// Practice aid: when on, gameplay freezes the instant a playable note
 /// reaches the hit line without having been hit, instead of letting it run
 /// out and become a miss — resuming the moment it's hit (see
-/// `super::note_due_and_unresolved` and `super::tick_clock`). Off by
-/// default; a standing player preference (like `JamLoop`), so it isn't reset
-/// between restarts/songs.
+/// `super::note_due_and_unresolved`/`super::tick_clock`). Off by default; a
+/// standing player preference (like `JamLoop`), not reset between
+/// restarts/songs.
 #[derive(Resource, Default)]
 pub struct WaitForNoteMode(pub bool);
 
@@ -71,7 +71,7 @@ pub(super) fn update_wait_mode_label(
 /// free; real time-stretched audio is a later upgrade, so `tick_clock` just
 /// pauses the music sink below 100% instead of playing it pitch-shifted.
 /// `1.0` (100%) by default; a standing player preference (like
-/// `WaitForNoteMode`), so it isn't reset between restarts/songs.
+/// `WaitForNoteMode`), not reset between restarts/songs.
 #[derive(Resource, Clone, Copy, PartialEq)]
 pub struct PracticeSpeed(pub f32);
 
@@ -359,12 +359,11 @@ fn clamp_learned(value: f32) -> f32 {
     value.clamp(0.0, 1.0)
 }
 
-/// Sets the selected phrase's learned fraction directly to `value` — the
-/// slider replacement for the old "-25%"/"+25%" buttons. Updates both the
-/// live `AdaptiveDifficulty` (so the progress bar's rectangle re-tints
-/// immediately, and so `resync_notes_on_adaptive_change` in
-/// `gameplay_2d`/`gameplay_3d` rebuilds the note highway on the very next
-/// frame) and the persisted `PlayerProfile` (so it survives a restart too).
+/// Sets the selected phrase's learned fraction directly to `value`. Updates
+/// both the live `AdaptiveDifficulty` (so the progress bar's rectangle
+/// re-tints immediately, and `resync_notes_on_adaptive_change` in
+/// `gameplay_2d`/`gameplay_3d` rebuilds the note highway next frame) and
+/// the persisted `PlayerProfile` (so it survives a restart).
 fn set_selected_phrase_learned(
     value: f32,
     selected: &SelectedPhraseIndex,
@@ -478,12 +477,12 @@ fn phrase_learned_slider_scene(value: f32) -> impl Scene {
 }
 
 /// Keeps the phrase-learned slider's fill/value and readout in step with
-/// the currently selected phrase's learned fraction — needed both when
-/// `AdaptiveDifficulty` changes (dragging the slider itself, or any other
-/// source) and when `SelectedPhraseIndex` changes (clicking a different
-/// section on the progress-bar overlay), since either can mean this slider
-/// should now show a different number. Not gated on `Paused`, same
-/// reasoning as `update_wait_mode_label`.
+/// the selected phrase's learned fraction — needed both when
+/// `AdaptiveDifficulty` changes (dragging the slider, or any other source)
+/// and when `SelectedPhraseIndex` changes (clicking a different section on
+/// the progress-bar overlay), since either can change what this slider
+/// should show. Not gated on `Paused`, same reasoning as
+/// `update_wait_mode_label`.
 pub(super) fn update_phrase_learned_slider(
     selected: Res<SelectedPhraseIndex>,
     adaptive: Res<AdaptiveDifficulty>,
@@ -510,24 +509,22 @@ pub(super) fn update_phrase_learned_slider(
     }
 }
 
-/// Spawns the (initially hidden) pause overlay. Tagged `GameplayRoot` so it is
-/// torn down with the rest of the scene. Two columns, side by side: the left
-/// one is transport actions only (Resume/Restart/Quit Song, + Finish Lesson
-/// where it applies); the right one is every practice aid, so the two don't
-/// visually compete — a slip of the mouse over the "big" actions shouldn't be
-/// one misclick away from a tweak knob, or vice versa. Most of the tree is
-/// authored declaratively with `bsn!`; sliders and their readouts are
-/// imperative (`SliderRange`/`SliderStep` have no `Default`, so they can't be
-/// bsn! patches, and labels need the default font, which `bsn!` can't set in
-/// 0.19).
+/// Spawns the (initially hidden) pause overlay. Tagged `GameplayRoot` so
+/// it's torn down with the scene. Two columns: left is transport actions
+/// only (Resume/Restart/Quit Song, + Finish Lesson where it applies); right
+/// is every practice aid — kept apart so a slip of the mouse over the "big"
+/// actions isn't one misclick from a tweak knob, or vice versa. Most of the
+/// tree is authored declaratively with `bsn!`; sliders and their readouts
+/// are imperative (`SliderRange`/`SliderStep` have no `Default`, so they
+/// can't be bsn! patches, and labels need the default font, which `bsn!`
+/// can't set in 0.19).
 ///
-/// Speed and Wait-for-Note are practice aids for a scored, fixed-length song
-/// — Jam Session has no notes to wait for and no fixed pacing to slow down —
-/// so they're omitted entirely in that mode rather than shown disabled. The
-/// A–B loop controls stay in every mode: dragging a range on the (now
-/// always-present, see `song_progress_overlay`) progress bar while paused is
-/// exactly "select a part of the song to repeat", which is just as useful
-/// for free-play practice as for a scored run.
+/// Speed and Wait-for-Note are practice aids for a scored, fixed-length
+/// song — Jam Session has no notes to wait for and no fixed pacing to slow
+/// down — so they're omitted entirely in that mode rather than shown
+/// disabled. The A–B loop controls stay in every mode: dragging a range on
+/// the progress bar while paused is "select a part of the song to repeat,"
+/// just as useful for free-play practice as for a scored run.
 pub(super) fn setup_pause_menu(
     mut commands: Commands,
     mode: Res<GameplayMode>,

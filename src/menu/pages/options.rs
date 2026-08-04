@@ -461,10 +461,9 @@ fn set_zoom(ev: On<ValueChange<f32>>, mut ui_scale: ResMut<UiScale>) {
     }
 }
 
-/// A labelled zoom slider, replacing the old +/- buttons — on-screen
-/// equivalent of `dialogs::ui_scale::change_scaling`'s Arrow Up/Down
-/// handling, which used to be the *only* way to change `UiScale`, unusable
-/// on a touch-only device with no keyboard.
+/// A labelled zoom slider — the on-screen equivalent of
+/// `dialogs::ui_scale::change_scaling`'s Arrow Up/Down handling, which
+/// alone is unusable on a touch-only device with no keyboard.
 fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &Localization) {
     use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
 
