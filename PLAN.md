@@ -85,6 +85,20 @@ No open Song Editor items remain in `TODO.md` — undo/redo, the
 metronome/count-in, note audition, save/validation feedback, and the
 swing/triplet grid snap are all done (see Shipped above).
 
+3. **Repo-wide comment-shortening pass** (in progress): tightening
+   overly long `///`/`//!` doc comments throughout `src/`, keeping every
+   load-bearing fact (invariants, workaround reasons, cross-references)
+   but cutting restatement/padding/historical narration. Done so far:
+   `song_editor/{lesson_form,record,state,timeline}.rs`,
+   `gameplay/{song_progress_overlay,notes}.rs` (6 files, 3 commits).
+   Comment-line counts by directory at the start of this pass (for
+   picking up where it left off): `song_editor/` 1923 (29 files left),
+   `gameplay/` 1627 (29 files left), `menu/`+`dialogs/`+`jam/` 1150 (39
+   files), `audio_system/`+`song/`+`lessons/`+`music_score/`+top-level
+   1600 (32 files). Parallel subagents repeatedly hit the session's
+   usage limit mid-run with most work lost (uncommitted edits don't
+   survive a killed agent) — doing this file-by-file directly instead.
+
 ## Working practices
 
 - Keep the pure-logic/ECS split: new mechanics get pure functions + unit
