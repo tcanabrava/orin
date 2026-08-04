@@ -65,12 +65,11 @@ pub(super) enum Row {
 /// The diagram's rows, top to bottom, with their left-hand label and color.
 ///
 /// Grouped by actual breath direction, not music theory or hole family:
-/// blow sits above draw, and every row that's played by *blowing* (blow
-/// bends, holes 7–10, plus overblow, holes 1/4/5/6) sits above the blow row;
-/// every row played by *drawing* (draw bends, holes 1–6, plus overdraw,
-/// holes 7–10) sits below the draw row. So the top half of the diagram is
-/// always "blow" and the bottom half is always "draw" — position alone
-/// tells a player which way to breathe, with color reinforcing it.
+/// every row played by *blowing* (blow bends, holes 7–10, plus overblow,
+/// holes 1/4/5/6) sits above the blow row, and every row played by
+/// *drawing* (draw bends, holes 1–6, plus overdraw, holes 7–10) sits below
+/// the draw row — so the top half is always "blow" and the bottom half
+/// always "draw," position alone telling a player which way to breathe.
 const ROWS: [(&str, Row, Color); 10] = [
     ("overblow \u{2191}", Row::Overblow, BLOW_COLOR),
     ("1\u{00BD} \u{2191}", Row::BlowBend(2), BLOW_COLOR),
@@ -101,15 +100,13 @@ fn note_for(h: &HoleNotes, hole: u8, row: Row) -> Option<&str> {
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 /// The shared shape of all three harmonica-diagram spawners below: a hint
-/// line, then a header row of hole numbers, then one row per `rows` entry —
-/// `spawn_harmonica_overlay`/`_selectable`/`spawn_chromatic_overlay` differ
-/// only in the technique vocabulary (`Row`/`ChromaticRow`), how a cell's
-/// note is looked up (`note_for`), and whether/how a cell becomes clickable
-/// (`spawn_cell`, called only for a hole/row combination that actually has a
-/// note — `None => spawn_empty` is the same for every caller). `note_for`
-/// and `spawn_cell` take `hole`/`kind` rather than closing purely over
-/// per-cell state so a caller (the selectable diagram) can still tag the
-/// spawned cell with which (hole, row) it is.
+/// line, a header row of hole numbers, then one row per `rows` entry. The
+/// three callers differ only in the technique vocabulary (`Row`/
+/// `ChromaticRow`), how a cell's note is looked up (`note_for`), and
+/// whether/how a cell becomes clickable (`spawn_cell`, called only when a
+/// hole/row combination actually has a note). `note_for`/`spawn_cell` take
+/// `hole`/`kind` rather than closing over per-cell state so the selectable
+/// diagram can still tag the spawned cell with which (hole, row) it is.
 fn spawn_diagram<RowKind: Copy>(
     parent: &mut ChildSpawnerCommands,
     loc: &Localization,
@@ -217,9 +214,8 @@ pub struct DiagramCellTarget {
 /// Like [`spawn_harmonica_overlay`], but every note cell is clickable —
 /// tagged with [`DiagramCellTarget`] and given `on_click` as a shared
 /// `.observe(...)` — for a UI that lets the player pick a hole/technique
-/// directly off the diagram (the Bending Trainer's target picker) instead of
-/// separate stepper controls. Diatonic only, same as the plain diagram's
-/// bend rows; a chromatic harp falls back to the ordinary, non-selectable
+/// directly off the diagram (the Bending Trainer's target picker). Diatonic
+/// only; a chromatic harp falls back to the ordinary, non-selectable
 /// [`spawn_chromatic_overlay`] (dead code for the trainer today, which is
 /// diatonic-only by design, but kept safe rather than assumed).
 pub fn spawn_harmonica_overlay_selectable<M: 'static>(
