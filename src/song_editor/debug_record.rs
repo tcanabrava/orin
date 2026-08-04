@@ -2,35 +2,33 @@
 
 //! Dev-only ("--features dev") debugging aid — never wired up outside it,
 //! see `mod.rs`'s conditional `mod debug_record;`. A "Debug Recording"
-//! checkbox (always visible in the mod panel's top strip, regardless of
+//! checkbox (always visible in the mod panel's top strip regardless of
 //! mode — see `mod_panel.rs`'s own comment on why) dumps the *raw*
 //! microphone audio to a WAV file, written next to `recorded.harpchart`
 //! (what the live detector actually produced) and `expected.harpchart`
 //! (the hand-annotated ground truth, see `expected_notes`'s module docs)
 //! in `assets/debug_songs/<song name>/` whenever the song is saved — so a
 //! pitch-detection miss can be diagnosed against exactly what the mic
-//! heard, not just what the detector reported for it.
+//! heard, not just what the detector reported.
 //!
-//! The checkbox itself only *arms* this: checking it never starts capturing
-//! anything by itself. [`sync_raw_capture`] gates the actual capture on
+//! The checkbox itself only *arms* this: checking it never starts
+//! capturing by itself. [`sync_raw_capture`] gates the actual capture on
 //! *either* [`RecordState::active`] or [`PracticeState::active`] — Play (in
-//! either Record or Play/Practice mode) is what actually starts a take.
-//! Deliberately both, not just Record mode: Record mode's live note
-//! capture *punches in* over whatever notes already occupy the span it's
-//! recording over (see `record.rs`'s module docs), so recording there would
-//! silently overwrite hand-authored "ground truth" notes with whatever the
-//! live detector itself guessed — circular for benchmarking. Practice mode
-//! never touches `EditorState::notes` at all (`practice::practice_tick`
-//! takes no `EditorState` access), so playing along to an already-correct,
-//! by-hand-authored chart with Practice mode's Play button — while this
-//! checkbox is on — captures the mic audio without disturbing the ground
-//! truth `note_bench` will compare it against.
+//! either mode) is what actually starts a take. Deliberately both, not
+//! just Record mode: Record mode's live note capture *punches in* over
+//! whatever notes already occupy the span it's recording over (see
+//! `record.rs`'s module docs), so recording there would silently
+//! overwrite hand-authored "ground truth" notes with the live detector's
+//! own guesses — circular for benchmarking. Practice mode never touches
+//! `EditorState::notes` at all, so playing along to an already-correct
+//! chart with Practice mode's Play button — while this checkbox is on —
+//! captures the mic audio without disturbing the ground truth
+//! `note_bench` will compare it against.
 //!
-//! The raw audio itself is tapped from `audio_system::pipeline`'s
-//! [`RawCaptureBuffer`] (a generic, also dev-only resource living there for
-//! the same reason `AudioFrame` does — see its own doc comment): this
-//! module only decides *when* that tap should be running and *what* to do
-//! with what it collected.
+//! The raw audio is tapped from `audio_system::pipeline`'s
+//! [`RawCaptureBuffer`] (a generic, also dev-only resource — see its own
+//! doc comment): this module only decides *when* that tap should run and
+//! *what* to do with what it collected.
 
 use bevy::ecs::query::Has;
 use bevy::picking::Pickable;
@@ -105,13 +103,11 @@ struct DebugWaveformBar(usize);
 // ── UI ────────────────────────────────────────────────────────────────────────
 
 /// Spawned once into the mod panel's always-visible top strip
-/// (`mod_panel.rs`, alongside Save/Load) — not a mode-specific group, since
-/// it needs to work from either Record or Play/Practice mode (see the
-/// module docs): a real checkbox (`bevy_ui_widgets::Checkbox`, per this
-/// project's own preference for that crate's widgets over hand-rolled ones)
-/// plus an "Erase" button and a status label reflecting whether it's armed
-/// and, while a take is actually running, how much audio has been captured
-/// so far.
+/// (`mod_panel.rs`, alongside Save/Load) — not a mode-specific group,
+/// since it needs to work from either Record or Play/Practice mode (see
+/// the module docs): a real checkbox plus an "Erase" button and a status
+/// label reflecting whether it's armed and, while a take is running, how
+/// much audio has been captured so far.
 pub(super) fn spawn_debug_recording_controls(
     panel: &mut ChildSpawnerCommands,
     loc: &Localization,
@@ -194,14 +190,12 @@ fn erase_debug_recording(_: On<Pointer<Click>>, mut raw: ResMut<RawCaptureBuffer
 }
 
 /// Spawned once into the fixed chrome (`ui::spawn_fixed_chrome`), right
-/// below the grid's own horizontal scrollbar — hidden by default
-/// (`Node::display: None`), shown only while the checkbox is checked (see
-/// [`update_debug_waveform`]). A plain flexbox bar chart (each bar
-/// `flex_grow: 1.0`, anchored to the bottom via `AlignItems::FlexEnd`)
-/// rather than the header music waveform's absolute-positioned, tempo-map-
-/// aligned bars: this strip has no chart timeline to align against — it's
-/// just "what did the mic capture, squashed to fit" — so it doesn't need
-/// that geometry at all.
+/// below the grid's own horizontal scrollbar — hidden by default, shown
+/// only while the checkbox is checked (see [`update_debug_waveform`]). A
+/// plain flexbox bar chart (each bar `flex_grow: 1.0`, anchored to the
+/// bottom) rather than the header music waveform's absolute-positioned,
+/// tempo-map-aligned bars: this strip has no chart timeline to align
+/// against, just "what did the mic capture, squashed to fit."
 pub(super) fn spawn_debug_waveform_strip(
     root: &mut ChildSpawnerCommands,
     colors: SongEditorColors,
@@ -339,13 +333,12 @@ fn update_debug_record_status_label(
 // ── Recording lifecycle ──────────────────────────────────────────────────────
 
 /// Keeps [`RawCaptureBuffer`] in step with the checkbox and the Record
-/// take's own start/stop, every frame: only actually accumulates while both
-/// the checkbox is checked and a take is active, and clears out whatever a
-/// previous take captured the instant a new one begins — the same
+/// take's own start/stop, every frame: only accumulates while both the
+/// checkbox is checked and a take is active, and clears whatever a
+/// previous take captured the instant a new one begins — same
 /// "recording again replaces" behaviour the ordinary note punch-in already
-/// has, rather than silently appending onto stale audio from an earlier,
-/// unrelated take. The checkbox itself never starts or stops anything here
-/// — only Play (`RecordState::active` going true) does.
+/// has. The checkbox itself never starts or stops anything here — only
+/// Play (`RecordState::active` going true) does.
 fn sync_raw_capture(
     checkbox: Query<Has<Checked>, With<DebugRecordCheckbox>>,
     record: Res<RecordState>,
@@ -372,10 +365,9 @@ fn sync_raw_capture(
 /// Writes `recorded.harpchart` + `expected.harpchart` plus the take's raw
 /// WAV into `assets/debug_songs/<song name>/` whenever the song is saved —
 /// a separate `FileChosen{purpose: SAVE_PURPOSE}` consumer alongside
-/// `harpchart::handle_save_chosen` (same message, same purpose, different
-/// concern, same split-by-consumer pattern `harpchart`/`lesson_form`'s own
-/// save handlers already use). Skipped entirely if nothing was actually
-/// captured, so turning the checkbox on and off without ever taking
+/// `harpchart::handle_save_chosen` (same split-by-consumer pattern
+/// `harpchart`/`lesson_form`'s own save handlers use). Skipped entirely if
+/// nothing was captured, so toggling the checkbox without ever taking
 /// anything doesn't litter the debug folder with empty recordings.
 fn write_debug_recording_on_save(
     mut chosen: MessageReader<FileChosen>,
