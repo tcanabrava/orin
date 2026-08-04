@@ -62,14 +62,14 @@ pub(super) struct NoteVisual3D {
 }
 
 /// A hole-number label tracking a 3D note (`ShowNoteNumbers` on). 3D notes
-/// are opaque meshes with nowhere to put a number *on* them the way the 2D
-/// head can, so this is a separate UI `Text` entity, positioned every frame
-/// by projecting `target`'s world position through the gameplay camera
+/// are opaque meshes with nowhere to put a number *on* them, so this is a
+/// separate UI `Text` entity, positioned every frame by projecting
+/// `target`'s world position through the gameplay camera
 /// (`update_note_hole_labels_3d`) rather than living in the note's own
 /// entity hierarchy — UI layout doesn't propagate through 3D `Transform`
-/// parents. Despawns itself once `target` no longer exists (the note scrolled
-/// past and was recycled), so nothing needs to reach back into this entity
-/// from `update_notes_3d`.
+/// parents. Despawns itself once `target` no longer exists (scrolled past
+/// and recycled), so nothing needs to reach back into it from
+/// `update_notes_3d`.
 #[derive(Component)]
 pub(super) struct NoteHoleLabel3D {
     target: Entity,
@@ -88,11 +88,10 @@ pub(super) struct NoteRenderAssets3D {
 }
 
 /// `(note_w, head_depth, tail_len)` for `hole`/`duration` — everything
-/// `spawn_visible_notes_3d` (at spawn) and `update_notes_3d` (every frame,
-/// for positioning/recycling) need beyond what's already on `ScheduledNote`.
-/// Recomputed on demand rather than cached on the entity, since it only
-/// depends on data that's already cheap to look up: the hole's configured
-/// width and the note's own duration.
+/// `spawn_visible_notes_3d` (at spawn) and `update_notes_3d` (every frame)
+/// need beyond what's already on `ScheduledNote`. Recomputed on demand
+/// rather than cached, since it's cheap: just the hole's configured width
+/// and the note's own duration.
 fn note_dimensions(assets: &NoteRenderAssets3D, hole: u8, duration: f64) -> (f32, f32, f32) {
     let hole_cfg = assets.holes.get(hole.saturating_sub(1) as usize);
     let note_w = hole_cfg.map(|h| h.w).unwrap_or(LANE_WIDTH - LANE_GAP);
@@ -132,13 +131,12 @@ fn note_depth(duration: f64) -> f32 {
 
 // ── Harmonica model config ────────────────────────────────────────────────────
 
-/// The fallback layout when a model has no `holes.json`: holes evenly spaced
-/// across the lanes at the harmonica's resting position, sized to the
-/// chart's actual hole count. (No bundled 3D model currently ships a
-/// chromatic `holes.json`, so a chromatic chart's *note lanes* line up
-/// correctly even though the harmonica prop itself still renders as
-/// whichever diatonic model is selected — that needs a matching 3D asset,
-/// not just code.)
+/// The fallback layout when a model has no `holes.json`: holes evenly
+/// spaced across the lanes at the harmonica's resting position, sized to
+/// the chart's actual hole count. (No bundled 3D model ships a chromatic
+/// `holes.json`, so a chromatic chart's *note lanes* line up correctly
+/// even though the harmonica prop still renders as whichever diatonic
+/// model is selected — that needs a matching 3D asset, not just code.)
 fn default_model_layout(hole_count: u8) -> HarmonicaModelConfig {
     HarmonicaModelConfig {
         model_translation: [0.0, LANE_Y + 0.45, HARP_Z],
@@ -278,13 +276,13 @@ fn create_hit_zone(commands: &mut Commands, center_x: f32, total_width: f32) {
     });
 }
 
-/// Spawns each note as a 3D comet: an elongated cube head (from the theme's glTF)
-/// tinted by blow/draw colour, trailing a flat ribbon that runs the technique's
-/// animation via [`NoteTail3dMaterial`] — the 3D twin of the 2D head+tail comet.
-/// Builds every note's score state (`SongNotes`) plus the render config
-/// `spawn_visible_notes_3d` needs (`NoteRenderAssets3D`) — no entities yet.
-/// Notes are spawned lazily, in a `LOOKAHEAD` window around the playhead,
-/// mirroring the 2D highway (`gameplay_2d::spawn_visible_notes`).
+/// Spawns each note as a 3D comet: an elongated cube head (from the theme's
+/// glTF) tinted by blow/draw colour, trailing a flat ribbon that runs the
+/// technique's animation via [`NoteTail3dMaterial`] — the 3D twin of the 2D
+/// head+tail comet. Builds every note's score state (`SongNotes`) plus the
+/// render config `spawn_visible_notes_3d` needs (`NoteRenderAssets3D`) — no
+/// entities yet; notes spawn lazily in a `LOOKAHEAD` window around the
+/// playhead, mirroring `gameplay_2d::spawn_visible_notes`.
 fn build_song_notes_3d(
     chart: &HarpChart,
     head_mesh: Handle<Mesh>,
@@ -306,20 +304,19 @@ fn build_song_notes_3d(
 }
 
 /// Rebuilds `SongNotes` whenever `AdaptiveDifficulty` changes while a 3D
-/// song is loaded — e.g. the pause menu's manual phrase override — so
-/// unlocking/relocking notes takes effect immediately instead of only on
-/// the next Restart. Score state (hit/missed/held/sustain_scored/pitch/amp
-/// samples) carries over for notes that still exist in the rebuilt list
-/// (matched by `(time, hole, is_blow)` — stable across a rebuild since both
+/// song is loaded (e.g. the pause menu's manual phrase override), so
+/// unlocking/relocking takes effect immediately instead of only on the
+/// next Restart. Score state carries over for notes that still exist in
+/// the rebuilt list (matched by `(time, hole, is_blow)`, stable since both
 /// lists derive from the same chart); newly unlocked notes start fresh.
-/// `NoteRenderAssets3D` doesn't need touching — nothing about it depends on
-/// which notes are unlocked.
+/// `NoteRenderAssets3D` doesn't need touching — nothing about it depends
+/// on which notes are unlocked.
 ///
 /// Every current `NoteVisual3D` is despawned unconditionally rather than
 /// reconciled in place: its `note_id` is a *positional* index into
 /// `SongNotes::notes`, and the rebuild can shift that position for every
-/// note after the edited phrase — a surviving entity would otherwise end up
-/// rendering a different note's data under its old index.
+/// note after the edited phrase, so a surviving entity would otherwise
+/// render a different note's data under its old index.
 /// `spawn_visible_notes_3d` re-spawns everything within `LOOKAHEAD` fresh
 /// next frame, using the corrected indices.
 pub(super) fn resync_notes_on_adaptive_change(
@@ -381,13 +378,12 @@ pub fn spawn_visible_notes_3d(
 }
 
 /// A note's base (un-hit, un-missed) blow/draw appearance: `(r, g, b,
-/// emissive_r, emissive_g, emissive_b)`, `r`/`g`/`b` from `colors` (the
-/// active theme's note colors, or the fixed colorblind-safe pair — see
-/// `theme::effective_note_colors`); the emissive glow stays a fixed
-/// per-direction accent regardless of palette, a secondary bloom effect
-/// layered on top of the (now palette-driven) base color. Shared by
-/// `spawn_note_visual_3d` and `update_note_visuals_3d` so the two can't
-/// drift out of sync.
+/// emissive_r, emissive_g, emissive_b)`. `r`/`g`/`b` come from `colors`
+/// (the active theme's note colors, or the fixed colorblind-safe pair —
+/// see `theme::effective_note_colors`); the emissive glow stays a fixed
+/// per-direction accent regardless of palette, a secondary bloom layered
+/// on top of the palette-driven base color. Shared by `spawn_note_visual_3d`
+/// and `update_note_visuals_3d` so the two can't drift out of sync.
 fn note_base_appearance(colors: NoteColors, is_blow: bool) -> (f32, f32, f32, f32, f32, f32) {
     let c = if is_blow { colors.blow } else { colors.draw }.to_srgba();
     let (emit_r, emit_g, emit_b) = if is_blow {
@@ -524,14 +520,12 @@ const NOTE_LABEL_OFFSET: Vec2 = Vec2::new(-24.0, -20.0);
 
 /// Converts a `Camera::world_to_viewport` result into the `Val::Px` a UI
 /// `Node`'s `left`/`top` needs, offset to the label's anchor point.
-/// `world_to_viewport` already resolves through `logical_viewport_rect()`,
-/// so its result is in the same logical-window-pixel space `Val::Px` is —
-/// *except* that bevy_ui additionally multiplies every `Val::Px` by
-/// [`UiScale`] before converting to physical pixels
-/// (`propagate_ui_target_cameras` in `bevy_ui`), a multiplier the camera
-/// projection knows nothing about. Dividing by `ui_scale` here cancels that
-/// back out, so the label lands under the note regardless of the player's
-/// UI zoom level (`dialogs::ui_scale`, arrow keys).
+/// `world_to_viewport` resolves through `logical_viewport_rect()`, the same
+/// logical-window-pixel space `Val::Px` is in — except bevy_ui additionally
+/// multiplies every `Val::Px` by [`UiScale`] before converting to physical
+/// pixels, a multiplier the camera projection knows nothing about. Dividing
+/// by `ui_scale` here cancels that back out, so the label lands under the
+/// note regardless of the player's UI zoom level (`dialogs::ui_scale`).
 fn note_label_position(viewport_px: Vec2, ui_scale: f32) -> Vec2 {
     viewport_px / ui_scale + NOTE_LABEL_OFFSET
 }
@@ -540,13 +534,13 @@ fn note_label_position(viewport_px: Vec2, ui_scale: f32) -> Vec2 {
 /// position, or hides it once the note is behind the camera, or despawns it
 /// once the note itself is gone (scrolled past and recycled).
 ///
-/// Reads the note's local `Transform`, not `GlobalTransform`: `update_notes_3d`
-/// (earlier in the same `Update` chain) writes `Transform.translation.z` every
-/// frame, but `GlobalTransform` propagation only runs afterward, in
-/// `PostUpdate` — reading it here would always be one frame stale, which
-/// reads as the label trailing behind its note. Note root entities have no
-/// transform parent, so the local `Transform` already *is* world space; no
-/// propagation to wait on.
+/// Reads the note's local `Transform`, not `GlobalTransform`:
+/// `update_notes_3d` (earlier in the same `Update` chain) writes
+/// `Transform.translation.z` every frame, but `GlobalTransform`
+/// propagation only runs afterward in `PostUpdate` — reading it here would
+/// always be one frame stale, the label trailing behind its note. Note
+/// root entities have no transform parent, so the local `Transform`
+/// already *is* world space; nothing to wait on.
 pub fn update_note_hole_labels_3d(
     mut commands: Commands,
     camera: Query<(&Camera, &GlobalTransform), With<GameplayCamera3D>>,
