@@ -8,12 +8,11 @@ use crate::song::chart::Scale;
 
 // ── Note model types ─────────────────────────────────────────────────────────
 
-/// The pitch technique of a note. Mutually exclusive — a note is exactly one of
-/// these. `Bend` carries its depth in semitones (0.5, 1.0 or 1.5). `Bend`,
-/// `Overblow` and `Overdraw` only apply to [`HarmonicaKind::Diatonic`]; `Slide`
-/// (the chromatic slide button, a half-step raise) only to
-/// [`HarmonicaKind::Chromatic`] — which is in play is gated by which mod
-/// buttons the UI shows for the current [`EditorState::harmonica_kind`].
+/// The pitch technique of a note. Mutually exclusive. `Bend` carries its depth
+/// in semitones (0.5, 1.0 or 1.5). `Bend`, `Overblow` and `Overdraw` only
+/// apply to [`HarmonicaKind::Diatonic`]; `Slide` (the chromatic slide button,
+/// a half-step raise) only to [`HarmonicaKind::Chromatic`] — gated by which
+/// mod buttons the UI shows for [`EditorState::harmonica_kind`].
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) enum Pitch {
     Normal,
@@ -33,12 +32,11 @@ pub(super) enum HarmonicaKind {
     Chromatic,
 }
 
-/// An expression technique layered on top of the pitch. At most one at a time;
-/// either may combine with any [`Pitch`]. Both carry their oscillation rate in
-/// Hz, cycled through by repeatedly clicking the mod button — same pattern as
-/// `Bend`'s depth. Defined in `audio_system::synth` (shared synthesis
-/// vocabulary, also used by `gameplay::call_response`'s call-and-response
-/// demo audio); re-exported here under its established name.
+/// An expression technique layered on top of the pitch. At most one at a
+/// time; either may combine with any [`Pitch`]. Both carry their oscillation
+/// rate in Hz, cycled through by repeatedly clicking the mod button — same
+/// pattern as `Bend`'s depth. Defined in `audio_system::synth` (shared with
+/// `gameplay::call_response`'s demo audio); re-exported under its established name.
 pub(super) use crate::audio_system::synth::Expr;
 
 /// Breath direction: blow (exhale) or draw (inhale). Every note is one or the
@@ -70,15 +68,11 @@ pub(super) enum Mode {
 
 /// What kind of content the editor is authoring — toggled by the "Record
 /// Song"/"Record Lesson" button next to the harmonica-kind one. `Song`
-/// (the original, only behaviour) saves/loads a plain `.harpchart`, same as
-/// always. `Lesson` shows the extra `LESSON_FIELDS` panel
-/// (`lesson_form::spawn_lesson_form`) and saves/loads a `lesson.json`
-/// instead — see `lesson_form::serialize_lesson`. Doesn't affect anything
-/// about how notes are edited; the grid/mod-panel/playback all work exactly
-/// the same regardless, since a chart-backed lesson's chart *is* an ordinary
-/// `.harpchart` (written alongside the `lesson.json`, at `song/
-/// chart.harpchart` relative to it, exactly like a shipped lesson's own
-/// folder layout).
+/// saves/loads a plain `.harpchart`. `Lesson` shows the extra
+/// `LESSON_FIELDS` panel (`lesson_form::spawn_lesson_form`) and saves/loads
+/// a `lesson.json` instead (see `lesson_form::serialize_lesson`), written
+/// alongside its own `.harpchart` at `song/chart.harpchart` — same layout as
+/// a shipped lesson. Doesn't affect note editing, playback, or the grid.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub(super) enum ContentKind {
     #[default]
@@ -142,40 +136,34 @@ pub(super) enum Side {
 /// fixed at the press position, `end` follows the pointer. Not normalized —
 /// `end` can be less than `start` — see [`normalize_range`]. Mirrors
 /// [`DragState`]'s role for note dragging: set by `Pointer<DragStart>`,
-/// live-updated by `Pointer<Drag>`; `Pointer<DragEnd>` then either keeps
-/// it as the Select tool's persisted selection (an `end` that genuinely
-/// moved past `start`) or, since `bevy_picking` fires
-/// `DragStart` on any nonzero pixel motion — meaning ordinary mouse jitter
-/// during a plain click routinely produces one of these — falls back to
-/// treating a same-tick `start`/`end` exactly like the click it was meant
-/// to be, against [`EditorState::timeline_split`]. Deliberately *not* what
-/// drives `Pointer<Click>`: a `Click` and a `DragEnd` fire on the same
-/// release whenever the pointer is still over the ruler at release (true
-/// for most drags), `Click` first — routing every decision through the
-/// `Drag*` chain alone avoids that race outright instead of coordinating
-/// two competing handlers.
+/// live-updated by `Pointer<Drag>`; `Pointer<DragEnd>` then either keeps it
+/// as the Select tool's persisted selection (an `end` that genuinely moved
+/// past `start`), or — since `bevy_picking` fires `DragStart` on any
+/// nonzero pixel motion, so ordinary click jitter routinely produces one —
+/// falls back to treating a same-tick `start`/`end` as the click it was
+/// meant to be, against [`EditorState::timeline_split`]. Deliberately not
+/// driven by `Pointer<Click>`: `Click` and `DragEnd` both fire on the same
+/// release, `Click` first, so routing every decision through `Drag*` alone
+/// avoids that race instead of coordinating two competing handlers.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) struct TimelineDrag {
     pub(super) start: usize,
     pub(super) end: usize,
     /// [`Scroll::px`] at the moment the drag started. `Pointer<Drag>` only
     /// reports pointer motion, but the grid can keep scrolling *under* a
-    /// held drag (wheel pan) — the span's moving end is pointer motion
-    /// *plus* however far the content scrolled since the press
-    /// (`timeline::drag_end_tick`), so scrolling mid-drag extends the
-    /// selection over the newly revealed area instead of silently pinning
-    /// it to wherever the content sat at press time.
+    /// held drag (wheel pan), so the span's moving end is pointer motion
+    /// *plus* scroll delta since the press (`timeline::drag_end_tick`) —
+    /// this lets a mid-drag wheel pan extend the selection over newly
+    /// revealed area instead of pinning it to the press-time content.
     pub(super) scroll_px: f32,
-    /// Accumulated pointer motion since the press, already divided by the
-    /// UI scale — the last `Pointer<Drag>::distance.x` seen. Kept so a
-    /// wheel-scroll frame with a *stationary* pointer (no `Drag` event
-    /// fires at all then) can still recompute `end` from the new scroll
-    /// position — see `timeline::sync_selection_with_scroll`.
+    /// Accumulated pointer motion since the press (already ÷ UI scale) —
+    /// the last `Pointer<Drag>::distance.x` seen. Lets a wheel-scroll frame
+    /// with a stationary pointer (no `Drag` event fires then) still
+    /// recompute `end` — see `timeline::sync_selection_with_scroll`.
     pub(super) pointer_px: f32,
-    /// True while the button is still held (press → release). A released
-    /// Select span stays in [`TimelineSelection`] as the persisted
-    /// selection, but must stop tracking scroll — only a *live* gesture
-    /// follows the grid panning under it.
+    /// True while the button is still held. A released Select span stays in
+    /// [`TimelineSelection`] as the persisted selection but stops tracking
+    /// scroll — only a *live* gesture follows the grid panning under it.
     pub(super) live: bool,
 }
 
@@ -393,9 +381,8 @@ pub(super) struct EditorState {
     pub(super) notes: Vec<GridNote>,
     pub(super) next_id: u32,
     /// Dev-only benchmark ground truth — see `expected_notes`'s docs.
-    /// Hand-placed, never collision-checked. Always present (an empty `Vec`
-    /// costs nothing) rather than `#[cfg]`-gated, so the many `EditorState {
-    /// ..default() }` sites here and in tests don't need touching.
+    /// Hand-placed, never collision-checked. Always present rather than
+    /// `#[cfg]`-gated, so `EditorState { ..default() }` sites don't need touching.
     #[cfg_attr(not(feature = "dev"), allow(dead_code))]
     pub(super) expected_notes: Vec<GridNote>,
     #[cfg_attr(not(feature = "dev"), allow(dead_code))]
@@ -405,22 +392,18 @@ pub(super) struct EditorState {
     #[cfg_attr(not(feature = "dev"), allow(dead_code))]
     pub(super) expected_selected: Option<u32>,
     /// Separate from `dragging`: `notes`/`expected_notes` are independent id
-    /// spaces, so reusing `dragging` (which `live_resize`/`update_move_ghost`
-    /// match purely by id) risks one layer's drag updating the other's note.
+    /// spaces, so reusing `dragging` risks one layer's drag updating the
+    /// other's note (`live_resize`/`update_move_ghost` match purely by id).
     #[cfg_attr(not(feature = "dev"), allow(dead_code))]
     pub(super) expected_dragging: Option<DragState>,
-    /// Every currently-selected note id, in the order each was added to the
-    /// selection — empty means nothing selected. A plain click replaces the
-    /// whole selection with one id ([`EditorState::select_only`]); a
-    /// Ctrl+click toggles one id in or out ([`EditorState::
-    /// toggle_selected`]) without disturbing the rest, which is what lets
-    /// multiple notes be selected at once. [`EditorState::selected_note`]/
-    /// [`EditorState::selected_note_mut`] — the mod panel's "the selected
-    /// note's own fields" source — read the *last* entry as the "primary"
-    /// note technique edits (Bend, Overblow, ...) apply to; Move and Delete
-    /// are the two operations that act on the whole set instead of just the
-    /// primary (see `interaction::delete_selected` and the note drag
-    /// observers in `grid.rs`).
+    /// Currently-selected note ids, in add order — empty means nothing
+    /// selected. A plain click replaces the whole selection
+    /// ([`EditorState::select_only`]); Ctrl+click toggles one id without
+    /// disturbing the rest ([`EditorState::toggle_selected`]), enabling
+    /// multi-select. [`EditorState::selected_note`]/`_mut` (the mod panel's
+    /// field source) read the *last* entry as the "primary" note technique
+    /// edits apply to; Move and Delete act on the whole set instead (see
+    /// `interaction::delete_selected` and the drag observers in `grid.rs`).
     pub(super) selected: Vec<u32>,
     pub(super) scroll_beat: usize,
     pub(super) dragging: Option<DragState>,
@@ -429,7 +412,7 @@ pub(super) struct EditorState {
     /// `(tick, bpm)` pairs in the editor's own tick unit, added via the
     /// timeline's Tempo tool (`timeline::tempo_tool_click`). Not
     /// necessarily sorted as edits land; [`EditorState::tempo_map`] sorts
-    /// on read. Empty for the overwhelmingly common single-tempo case.
+    /// on read. Empty for the common single-tempo case.
     pub(super) tempo_changes: Vec<(usize, f32)>,
     pub(super) key: String,
     pub(super) position: String,
@@ -456,10 +439,9 @@ pub(super) struct EditorState {
     pub(super) lesson_threshold: String,
     pub(super) lesson_technique: String,
     pub(super) lesson_progression: String,
-    /// Whether the lesson-fields panel's body (the two field columns) is
-    /// expanded — folded by default, since lesson metadata is filled in
-    /// occasionally, not every session, and shouldn't compete with the note
-    /// grid for screen space by default. See `lesson_form::spawn_lesson_form`.
+    /// Whether the lesson-fields panel's body is expanded — folded by
+    /// default so it doesn't compete with the note grid for screen space.
+    /// See `lesson_form::spawn_lesson_form`.
     pub(super) lesson_details_expanded: bool,
     /// Whether the meta form's third column (`meta_form::spawn_color_legend`)
     /// is shown — toggled by the mod panel's "ℹ Legend" button
@@ -474,30 +456,25 @@ pub(super) struct EditorState {
     pub(super) snap_mode: SnapMode,
     pub(super) timeline_tool: TimelineTool,
     /// A split point placed by a plain click-and-release on the timeline
-    /// ruler (no meaningful drag) — persists across frames (unlike
-    /// `timeline_drag`, which only lives for one gesture) until a second
-    /// such click picks a side and consumes it, or the tool is switched.
+    /// ruler — persists across frames (unlike `timeline_drag`, which only
+    /// lives for one gesture) until a second click picks a side and
+    /// consumes it, or the tool is switched.
     pub(super) timeline_split: Option<usize>,
     /// A range the user has committed to (a placed split's side, or a
-    /// released drag span) and is now waiting on the confirm dialog's
-    /// answer for. Set right before opening the dialog; read and cleared
-    /// once `ConfirmChosen` arrives — see `timeline::handle_timeline_confirm`.
+    /// released drag span) and is waiting on the confirm dialog's answer
+    /// for. Set right before opening the dialog; read and cleared once
+    /// `ConfirmChosen` arrives — see `timeline::handle_timeline_confirm`.
     pub(super) pending_timeline_op: Option<(TimelineTool, usize, usize)>,
 
     /// The mod buttons' persistent "current setting" for notes not yet
-    /// placed — separate from any single note's own fields. Clicking a mod
-    /// button always updates the relevant one of these, regardless of
-    /// whether a note is currently selected, and it stays armed (see
-    /// `interaction::apply_modifier`) until cycled back to its own "off"
-    /// value (`Pitch::Normal`/`Expr::None`; direction has no "off" value —
-    /// a note is always Blow or Draw — so `sticky_dir` only switches, never
-    /// clears) or `set_harmonica_kind` sanitizes it away, same as it
-    /// already does for every placed note's own pitch. `select_or_add`
-    /// applies these to every newly placed note, silently skipping
-    /// `sticky_pitch` (falling back to `Pitch::Normal` for that one note)
-    /// when it doesn't fit the hole — the same "silently do nothing on an
-    /// incompatible hole" rule clicking a pitch button on a selected note
-    /// already has.
+    /// placed. Clicking a mod button always updates the relevant one of
+    /// these regardless of selection, and it stays armed (see
+    /// `interaction::apply_modifier`) until cycled back to "off"
+    /// (`Pitch::Normal`/`Expr::None`; `sticky_dir` has no off value, so it
+    /// only switches) or sanitized away by `set_harmonica_kind`.
+    /// `select_or_add` applies these to every newly placed note, silently
+    /// falling back to `Pitch::Normal` for `sticky_pitch` when it doesn't
+    /// fit the hole.
     pub(super) sticky_dir: Dir,
     pub(super) sticky_pitch: Pitch,
     pub(super) sticky_expr: Expr,
@@ -710,11 +687,8 @@ pub(super) struct Scroll {
 /// selection the Erase/Remove buttons act on. Its own resource rather than
 /// an `EditorState` field for the same reason [`Scroll`] is: the span
 /// updates on every pointer move during a drag, and routing that through
-/// `EditorState` would either rebuild the whole grid every one of those
-/// frames or (the old guard against exactly that) suppress the
-/// scroll-driven rebuilds a mid-drag wheel pan needs — notes scrolled into
-/// view during a selection were never spawned, so only what was visible at
-/// press time could be selected.
+/// `EditorState` would either rebuild the whole grid every frame or
+/// suppress the scroll-driven rebuilds a mid-drag wheel pan needs.
 #[derive(Resource, Default)]
 pub(super) struct TimelineSelection {
     pub(super) drag: Option<TimelineDrag>,
@@ -778,15 +752,13 @@ pub(super) fn overdraw_ok(hole: u8) -> bool {
 }
 
 /// The breath direction `pitch` physically requires, if any — `Overblow`
-/// only exists while *blowing* (the name says so), `Overdraw` only while
-/// *drawing*, regardless of which reed the resulting pitch happens to sit
-/// near (`song::harmonica::hole_notes`'s doc comment: overblow sounds a
-/// semitone above the *draw* reed, overdraw above the *blow* reed — the
-/// technique name is about the breath action, not the reed). `Bend`/`Slide`
-/// have no such constraint — a bend can be dialed in on either a blow or a
-/// draw note depending on the hole. Used to keep a note's `dir` and `pitch`
-/// from drifting into a physically impossible pairing (e.g. "overblow"
-/// tagged on a draw note) as either one changes independently.
+/// only exists while *blowing*, `Overdraw` only while *drawing*, regardless
+/// of which reed the resulting pitch sits near (`song::harmonica::
+/// hole_notes`: overblow sounds a semitone above the *draw* reed, overdraw
+/// above the *blow* reed — the technique name is about breath action, not
+/// reed). `Bend`/`Slide` have no such constraint. Used to keep a note's
+/// `dir` and `pitch` from drifting into a physically impossible pairing as
+/// either changes independently.
 pub(super) fn pitch_forced_dir(pitch: Pitch) -> Option<Dir> {
     match pitch {
         Pitch::Overblow => Some(Dir::Blow),
@@ -860,9 +832,8 @@ pub(super) fn overlaps(a: &GridNote, b: &GridNote) -> bool {
 /// Every note transitively overlapping `id` in time (including `id` itself):
 /// starting from `id`, repeatedly pulls in any note overlapping one already
 /// in the group until nothing new joins — the shared traversal
-/// `enforce_direction`/`enforce_expr` each build on, since a change to one
-/// note in a stack of simultaneous notes must propagate to every note that
-/// note's stack overlaps in turn, not just its immediate neighbors.
+/// `enforce_direction`/`enforce_expr` build on, so a change propagates
+/// through a whole stack of simultaneous notes, not just immediate neighbors.
 fn overlapping_group(state: &EditorState, id: u32) -> Vec<u32> {
     let mut group = vec![id];
     let mut i = 0;
@@ -893,11 +864,10 @@ pub(super) fn enforce_direction(state: &mut EditorState, id: u32) {
     }
 }
 
-/// Wah (hand cupping) and vibrato (breath/diaphragm) are both whole-player
-/// techniques: whichever one you're doing, it colours every hole sounding at
-/// that instant, not just one. So `id`'s `expr` — Wah, Vibrato, or None — is
-/// propagated to every note that overlaps it in time, transitively, the same
-/// way `enforce_direction` propagates a shared Blow/Draw.
+/// Wah (hand cupping) and vibrato (breath/diaphragm) are whole-player
+/// techniques: whichever you're doing colours every hole sounding at that
+/// instant, not just one. So `id`'s `expr` is propagated to every note that
+/// overlaps it in time, transitively, same as `enforce_direction` for Blow/Draw.
 pub(super) fn enforce_expr(state: &mut EditorState, id: u32) {
     let Some(expr) = state.note_by_id(id).map(|n| n.expr) else {
         return;
@@ -926,15 +896,11 @@ pub(super) fn note_rect(note: &GridNote) -> (f32, f32, f32, f32) {
 /// additional tempo-change points (`tempo_changes`, added via the
 /// timeline's Tempo tool) — the representation every tick↔real-time
 /// conversion in the editor reads, via `song::chart::
-/// tick_to_seconds`/`seconds_to_tick`. Ticks here are the editor's own
-/// tick unit (`TICKS_PER_BEAT` per beat), which is also exactly the
-/// `resolution` the editor writes to a saved chart's `timing.resolution`
-/// (`harpchart::serialize_harpchart`) — so this can be handed straight to
-/// those functions with no unit conversion. A duplicate tick (e.g. a
-/// tempo-change point placed at tick 0, where the opening tempo already
-/// applies) silently keeps the earlier-sorted entry rather than erroring —
-/// same "always resolves to something reasonable" spirit the rest of the
-/// editor's fallback chains follow.
+/// tick_to_seconds`/`seconds_to_tick`. Ticks are the editor's own tick unit
+/// (`TICKS_PER_BEAT` per beat), which is exactly the `resolution` the
+/// editor writes to a saved chart's `timing.resolution`
+/// (`harpchart::serialize_harpchart`), so no unit conversion is needed. A
+/// duplicate tick silently keeps the earlier-sorted entry rather than erroring.
 pub(super) fn build_tempo_map(
     tempo: &str,
     tempo_changes: &[(usize, f32)],
@@ -979,9 +945,8 @@ const TEMPO_STEP_BPM: f32 = 10.0;
 /// (`timeline::on_timeline_click_tempo`): removes the closest existing
 /// tempo-change point within [`TEMPO_POINT_SNAP_TICKS`] of `tick`, or adds
 /// a new one at `tick` (bpm = [`bpm_at`] plus [`TEMPO_STEP_BPM`]) if none is
-/// that close. A tick at or near 0 — already controlled by the opening
-/// tempo's `Field::Tempo` box — is a no-op rather than adding a point
-/// [`build_tempo_map`] would just discard as a tick-0 collision.
+/// that close. A tick at or near 0 is a no-op — that's already controlled
+/// by the opening tempo's `Field::Tempo` box.
 pub(super) fn toggle_tempo_point(state: &mut EditorState, tick: usize) {
     if tick < TEMPO_POINT_SNAP_TICKS {
         return;

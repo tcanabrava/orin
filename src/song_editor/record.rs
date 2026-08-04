@@ -4,43 +4,39 @@
 //! grid — the Song Editor's live counterpart to `midi_import`, sharing that
 //! module's pitch resolution instead of reading MIDI file bytes. The
 //! microphone/pitch-detection pipeline (`main.rs`'s `process_audio`) already
-//! runs continuously in the background regardless of `AppState` — the same
-//! [`PitchEvent`] stream the Song Editor's own Practice mode already
-//! consumes (`practice::practice_tick`) — so recording needs no capture
-//! lifecycle of its own, just a per-pitch onset/release diff against
-//! successive events.
+//! runs continuously regardless of `AppState` — the same [`PitchEvent`]
+//! stream Practice mode consumes (`practice::practice_tick`) — so recording
+//! needs no capture lifecycle of its own, just a per-pitch onset/release
+//! diff against successive events.
 //!
 //! A note is pushed onto the grid the instant its onset is detected (at
-//! minimum length) rather than only once it's released, and its length is
-//! grown every frame while it's held — so the player watches the note
-//! appear and extend in real time, the same way any other DAW's live
-//! recording works, instead of a note only appearing once they stop
-//! playing it.
+//! minimum length) rather than only once released, and its length grows
+//! every frame while held — the player watches the note appear and extend
+//! in real time, like any other DAW's live recording.
 //!
-//! Unlike gameplay scoring — which tolerates raw detector noise because it
-//! only compares detections against the chart's expected notes — recording
-//! has no chart to lean on, so it defends itself three ways, all set up
-//! once at [`start_record`] rather than per event:
-//! - [`PitchRange`] is narrowed to the selected harp's own range (the same
-//!   thing gameplay does from a loaded chart), so the detector never even
-//!   searches where this harp can't sound;
+//! Unlike gameplay scoring, which tolerates raw detector noise by only
+//! comparing detections against the chart's expected notes, recording has
+//! no chart to lean on, so it defends itself three ways, all set up once
+//! at [`start_record`] rather than per event:
+//! - [`PitchRange`] is narrowed to the selected harp's own range (same as
+//!   gameplay does from a loaded chart), so the detector never searches
+//!   where this harp can't sound;
 //! - a precomputed 128-entry MIDI→(hole, dir, pitch) table
 //!   ([`build_pitch_table`], backed by `map_pitch_playable`) resolves each
 //!   detection, *discarding* pitches the harp can't produce instead of
 //!   letting MIDI import's nearest-note fallback disguise noise as a
 //!   plausible hole;
 //! - onsets are provisional until seen in [`CONFIRM_EVENTS`] consecutive
-//!   pitch events (a one-chunk blip is deleted again, so the live-growing
-//!   UX costs nothing), and releases get [`RELEASE_GRACE_EVENTS`] events of
-//!   grace (a one-chunk dropout doesn't split a held note in two).
+//!   pitch events (a one-chunk blip is deleted again), and releases get
+//!   [`RELEASE_GRACE_EVENTS`] events of grace (a one-chunk dropout doesn't
+//!   split a held note in two).
 //!
 //! Recording also *punches in*: a note you play replaces whatever the grid
 //! already had at that time — any note overlapping a newly recorded note's
 //! span is removed, unless it was itself created during the current take
-//! ([`RecordState::take_ids`] — a chord's simultaneous notes are all part
-//! of the take and must coexist). So re-recording over a finished take (or
-//! over hand-placed/imported notes) replaces them instead of layering
-//! impossible blow-and-draw-at-once combinations on top.
+//! ([`RecordState::take_ids`] — a chord's simultaneous notes must coexist).
+//! Re-recording over a finished take (or hand-placed/imported notes)
+//! replaces them instead of layering impossible blow-and-draw-at-once combos.
 
 use std::collections::{HashMap, HashSet};
 
@@ -79,9 +75,8 @@ const RELEASE_GRACE_EVENTS: u8 = 2;
 
 /// One note currently sounding: the id of the (already-pushed, still
 /// growing) [`GridNote`] it became at onset, the elapsed time its onset was
-/// detected — needed every frame to recompute the note's length as it
-/// grows — and the confirm/release-debounce counters (see [`CONFIRM_EVENTS`]
-/// / [`RELEASE_GRACE_EVENTS`]).
+/// detected (needed every frame to recompute length as it grows), and the
+/// confirm/release-debounce counters (see [`CONFIRM_EVENTS`]/[`RELEASE_GRACE_EVENTS`]).
 struct OpenNote {
     id: u32,
     start_secs: f32,
@@ -95,11 +90,10 @@ struct OpenNote {
 #[derive(Resource, Default)]
 pub(super) struct RecordState {
     pub(super) active: bool,
-    /// Notes started so far this take — shown in the status bar so
-    /// there's some live feedback that something is actually being
-    /// captured. Counted at onset, not release, so it climbs the instant a
-    /// note starts rather than lagging a beat behind what's visibly on the
-    /// grid (and drops back down if an unconfirmed blip gets deleted).
+    /// Notes started so far this take — shown in the status bar as live
+    /// feedback that something is being captured. Counted at onset, not
+    /// release, so it climbs immediately (and drops back if an unconfirmed
+    /// blip gets deleted).
     pub(super) note_count: u32,
     /// MIDI pitches currently sounding, keyed by pitch.
     open: HashMap<u8, OpenNote>,
@@ -111,14 +105,14 @@ pub(super) struct RecordState {
     table: Vec<Option<(u8, Dir, Pitch)>>,
     /// Ids of every note created during the current take — the notes a
     /// punch-in must *not* remove (see the module docs). Kept for the whole
-    /// take (not just while a note is open) so a chord or an earlier phrase
-    /// of the same take can't be eaten by a later overlapping note.
+    /// take so a chord or earlier phrase of the same take can't be eaten by
+    /// a later overlapping note.
     take_ids: HashSet<u32>,
-    /// Seconds the detection pipeline lags behind the sound itself — half
-    /// the analysis window plus the player's calibrated input latency —
-    /// subtracted from the clock when placing onsets so recorded notes
-    /// don't land systematically late. Cached here (refreshed each
-    /// `record_tick`) so `stop_record`'s final grow uses the same offset.
+    /// Seconds the detection pipeline lags behind the sound itself (half
+    /// the analysis window plus calibrated input latency), subtracted from
+    /// the clock when placing onsets so recorded notes don't land late.
+    /// Cached here (refreshed each `record_tick`) so `stop_record`'s final
+    /// grow uses the same offset.
     detect_delay: f32,
 }
 
@@ -135,15 +129,13 @@ impl RecordState {
 /// or wherever a Record-mode timeline click parked it. Resets any prior
 /// take's state, precomputes the harp-derived pitch table and narrows
 /// [`PitchRange`] to the harp (see the module docs), and (re)starts the
-/// shared [`Playhead`] clock with an effectively unbounded `total` —
-/// unlike Play/Practice, which stop once the chart's own notes run out, a
-/// recording take has no natural end until the player stops it. Reusing
-/// `Playhead` this way also means `PlayheadLine`'s existing moving cursor
-/// gives live visual feedback of where new notes are landing, with no new
-/// plumbing. Also plays the chart's background music, if any, exactly as
-/// Play and Practice do — sought to the same start position (via
-/// [`PendingMusicSeek`]) so a mid-song take records against the right
-/// part of the song.
+/// shared [`Playhead`] clock with an effectively unbounded `total` — unlike
+/// Play/Practice, which stop once the chart's notes run out, a take has no
+/// natural end until the player stops it (this also gives
+/// `PlayheadLine`'s moving cursor as live feedback, with no new plumbing).
+/// Also plays the chart's background music, if any, sought to the same
+/// start position (via [`PendingMusicSeek`]) so a mid-song take records
+/// against the right part of the song.
 pub(super) fn start_record(
     state: &EditorState,
     sources: &mut Assets<AudioSource>,
@@ -186,12 +178,11 @@ pub(super) fn start_record(
 }
 
 /// Pauses an in-flight take: closes out every currently-sounding note at
-/// the pause instant (the same close-out a release or Stop performs — a
-/// held note shouldn't stay open across a pause and absorb it), then
-/// freezes the shared clock and the music via the same
-/// [`toggle_pause`] Play mode uses. Resuming is just `toggle_pause` again
-/// (the Play/Pause buttons handle that side); the take stays active
-/// throughout, so `record_tick` merely idles while paused.
+/// the pause instant (same close-out a release or Stop performs — a held
+/// note shouldn't stay open across a pause and absorb it), then freezes the
+/// shared clock and music via the same [`toggle_pause`] Play mode uses.
+/// Resuming is just `toggle_pause` again; the take stays active throughout,
+/// so `record_tick` merely idles while paused.
 pub(super) fn pause_record(
     state: &mut EditorState,
     record: &mut RecordState,
@@ -207,17 +198,15 @@ pub(super) fn pause_record(
 }
 
 /// Stops recording: closes out every still-sounding note at the exact
-/// moment Stop was clicked — growing confirmed ones one last time (a held
-/// note shouldn't freeze one frame short of wherever the player actually
-/// released it) and deleting unconfirmed blips, same as a mid-take release
-/// would — then halts the shared clock and restores the default
-/// [`PitchRange`]. Also cancels a pending count-in (see `metronome::
-/// CountIn`'s doc comment) — nothing has actually started recording yet at
-/// that point, but leaving it ticking would silently start a take moments
-/// after the player asked to stop. A no-op (beyond the harmless despawn/
-/// halt/cancel) when nothing was actually recording or counting in, so
-/// callers (the Stop button, switching out of Perform mode) can call it
-/// unconditionally alongside `stop_practice`.
+/// moment Stop was clicked — growing confirmed ones one last time and
+/// deleting unconfirmed blips, same as a mid-take release — then halts the
+/// shared clock and restores the default [`PitchRange`]. Also cancels a
+/// pending count-in (see `metronome::CountIn`'s doc comment): nothing has
+/// started recording yet at that point, but leaving it ticking would
+/// silently start a take moments after the player asked to stop. A no-op
+/// (beyond the harmless despawn/halt/cancel) when nothing was actually
+/// recording or counting in, so callers can call it unconditionally
+/// alongside `stop_practice`.
 pub(super) fn stop_record(
     state: &mut EditorState,
     playing: &Query<Entity, With<EditorAudio>>,
@@ -245,10 +234,8 @@ pub(super) fn stop_record(
 
 /// Diffs each newly-arrived [`PitchEvent`] against the currently-open
 /// notes to find onsets/releases (with the confirm/grace debouncing the
-/// module docs describe), then — every frame, regardless of whether a new
-/// pitch chunk arrived — grows every still-sounding note to the current
-/// elapsed time, so the player watches each note extend in real time while
-/// held rather than only seeing it appear once they release it.
+/// module docs describe), then every frame grows every still-sounding note
+/// to the current elapsed time, so it extends in real time while held.
 pub(super) fn record_tick(
     playhead: Res<Playhead>,
     capture: Option<Res<AudioCapture>>,
@@ -264,12 +251,11 @@ pub(super) fn record_tick(
         return;
     }
 
-    // A detection describes audio from a ~93 ms window that *ended* some
+    // A detection describes audio from a ~93 ms window that ended some
     // queueing delay ago — on average the sound happened about half a
-    // window before now — plus whatever input latency the player has
-    // calibrated (the same `input_latency_ms` gameplay's judge subtracts
-    // from its clock). Without this, every recorded note lands
-    // systematically late on the grid.
+    // window before now — plus the player's calibrated input latency (same
+    // `input_latency_ms` gameplay's judge subtracts). Without this, every
+    // recorded note lands systematically late.
     let half_window = capture
         .map(|c| CHUNK_SIZE as f32 * 0.5 / c.sample_rate.max(1) as f32)
         .unwrap_or(0.0);
@@ -435,12 +421,11 @@ fn spawn_open_note(
 }
 
 /// Extends every currently-sounding note's length to reflect `t` — called
-/// every frame while notes are held (so they visibly grow in real time).
-/// A note inside its release-grace window (missing from the latest
-/// detection but not yet closed) is left frozen instead: if the pitch
-/// comes back the next growth absorbs the gap seamlessly, and if it
-/// doesn't, the note keeps the length it had when it actually stopped
-/// sounding rather than the grace window's extra chunks.
+/// every frame while notes are held. A note inside its release-grace
+/// window (missing from the latest detection but not yet closed) is left
+/// frozen instead: if the pitch comes back the next growth absorbs the gap
+/// seamlessly; if not, the note keeps the length it had when it actually
+/// stopped sounding, not the grace window's extra chunks.
 fn grow_open_notes(
     notes: &mut Vec<GridNote>,
     open: &HashMap<u8, OpenNote>,

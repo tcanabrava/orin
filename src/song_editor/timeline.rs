@@ -17,18 +17,16 @@
 //! it (`panel_widgets::timeline_tool_button`), each opening the confirm
 //! dialog via [`request_confirm`].
 //!
-//! Both paths are driven entirely by `Pointer<DragStart>`/`Drag`/`DragEnd`
-//! — deliberately *not* `Pointer<Click>` at all, even for the "plain click"
-//! case: `bevy_picking` fires `DragStart` on any nonzero pixel motion while
-//! pressed, so ordinary mouse jitter during an intended click routinely
-//! produces a same-tick drag anyway, and a `Click` event fires *alongside*
-//! `DragEnd` on the same release whenever the pointer is still over the
-//! surface at release (true for most drags — only a large enough motion
-//! carries it off the ruler's thin `HEADER_H`-tall strip), with `Click`
-//! firing first. Routing every decision through the one `Drag*` chain
-//! avoids that race outright instead of coordinating two competing
-//! handlers; [`on_timeline_drag_end`] tells a real drag apart from a
-//! same-tick click by whether the span actually moved.
+//! Both paths are driven entirely by `Pointer<DragStart>`/`Drag`/`DragEnd`,
+//! deliberately not `Pointer<Click>` even for the "plain click" case:
+//! `bevy_picking` fires `DragStart` on any nonzero pixel motion while
+//! pressed, so mouse jitter during an intended click routinely produces a
+//! same-tick drag anyway, and `Click` fires *alongside* `DragEnd` on the
+//! same release (`Click` first) whenever the pointer is still over the
+//! surface. Routing every decision through the one `Drag*` chain avoids
+//! that race instead of coordinating two competing handlers;
+//! [`on_timeline_drag_end`] tells a real drag apart from a same-tick click
+//! by whether the span actually moved.
 //!
 //! Either way nothing is deleted until the confirm dialog
 //! (`dialogs::confirm_dialog`) comes back `confirmed: true` — see
@@ -59,8 +57,8 @@ pub(super) const TIMELINE_CONFIRM_PURPOSE: DialogId = DialogId("song_editor_2_ti
 /// The invisible, header-strip-sized click/drag catcher. Spawned *once* in
 /// `ui::setup` (like `MoveGhost`/`PlayheadLine`) rather than respawned by
 /// `grid::rebuild_grid`: a rebuild mid-gesture would despawn the entity
-/// `bevy_picking` has captured the drag on, killing its `Drag`/`DragEnd`
-/// delivery — and rebuilds *do* now happen mid-gesture, since a wheel pan
+/// `bevy_picking` has captured the drag on, killing `Drag`/`DragEnd`
+/// delivery — and rebuilds *do* happen mid-gesture, since a wheel pan
 /// during a Select drag must spawn the notes it scrolls into view.
 /// [`sync_timeline_surface`] keeps it glued to the visible viewport.
 #[derive(Component)]
@@ -248,20 +246,17 @@ pub(super) fn on_timeline_drag_start(
     });
 }
 
-/// The current end tick of a span drag: `distance_x` raw window pixels of
-/// pointer motion from the press — the same quantity/correction note-move
-/// dragging already uses in `grid.rs` (`ev.distance` divided by `UiScale`,
-/// the arrow-key UI zoom), deliberately reused here rather than re-deriving
-/// the current tick from `RelativeCursorPosition`: a drag routinely carries
-/// the pointer well outside the ruler's own thin `HEADER_H`-tall box (down
-/// over the note grid, since that's a natural drag motion), and `distance`
-/// keeps tracking correctly regardless of where the pointer physically ends
-/// up — plus `scroll_delta_px`, how far the grid has scrolled *under* the
-/// pointer since the press (in the same logical px `Scroll` uses, so not
-/// scale-divided): a mid-drag wheel pan moves the content, not the pointer,
-/// and without this term the span end would stay pinned to wherever the
-/// content sat at press time instead of following what's now under the
-/// pointer.
+/// The current end tick of a span drag: `distance_x` is raw window pixels
+/// of pointer motion from the press, divided by `UiScale` — same
+/// quantity/correction note-move dragging uses in `grid.rs`. Deliberately
+/// reused rather than re-deriving the tick from `RelativeCursorPosition`: a
+/// drag routinely carries the pointer well outside the ruler's thin
+/// `HEADER_H`-tall box (down over the note grid), and `distance` keeps
+/// tracking correctly regardless. `scroll_delta_px` is how far the grid has
+/// scrolled *under* the pointer since the press (same logical px `Scroll`
+/// uses, not scale-divided) — without it, a mid-drag wheel pan would leave
+/// the span end pinned to the press-time content instead of following
+/// what's now under the pointer.
 pub(super) fn drag_end_tick(
     start: usize,
     distance_x: f32,
@@ -301,11 +296,9 @@ pub(super) fn on_timeline_drag(
 
 /// Re-derives an in-progress drag's `end` whenever the grid scrolls —
 /// `Pointer<Drag>` only fires on pointer *motion*, so a wheel pan under a
-/// stationary held pointer (the natural "scroll to reach more of the song
-/// mid-selection" gesture) would otherwise leave the span's end stale until
-/// the mouse happens to move again — including at release, silently
-/// dropping the scrolled-to extent from the selection. Same math as
-/// [`on_timeline_drag`], fed the stored [`TimelineDrag::pointer_px`]
+/// stationary held pointer would otherwise leave the span's end stale
+/// (including at release, silently dropping the scrolled-to extent). Same
+/// math as [`on_timeline_drag`], fed the stored [`TimelineDrag::pointer_px`]
 /// (already scale-corrected, hence the `1.0`) instead of a fresh event.
 pub(super) fn sync_selection_with_scroll(scroll: Res<Scroll>, mut sel: ResMut<TimelineSelection>) {
     if !scroll.is_changed() {
@@ -342,10 +335,9 @@ pub(super) fn on_timeline_drag_end(
     let (s, e) = normalize_range(drag.start, drag.end);
     if e > s {
         // A real drag: an explicit span, superseding any stale split point
-        // from an earlier, abandoned click sequence. It stays in
+        // from an earlier abandoned click sequence. Stays in
         // `TimelineSelection` as the persisted selection, but frozen —
-        // released spans must not keep tracking the grid scrolling under
-        // them.
+        // released spans must not keep tracking scroll.
         sel.drag = Some(TimelineDrag {
             live: false,
             ..drag

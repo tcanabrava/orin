@@ -4,22 +4,19 @@
 //! active) and `lesson.json` save/load — the `ContentKind::Lesson` sibling
 //! of `harpchart.rs`'s plain-song save/load. A lesson's chart, if it has
 //! one, is an ordinary `.harpchart` written alongside the manifest at
-//! `song/chart.harpchart` (relative to it) via the exact same
-//! `harpchart::serialize_harpchart`/`load_harpchart` a plain song uses —
-//! nothing about note editing, playback, or practice differs between the
-//! two `ContentKind`s.
+//! `song/chart.harpchart` via the same `harpchart::
+//! serialize_harpchart`/`load_harpchart` a plain song uses — nothing about
+//! note editing, playback, or practice differs between the two `ContentKind`s.
 //!
 //! **Scope boundary**: `lesson.json` only stores Fluent *keys*
-//! (`title_key`/`body_key`), never display text — this codebase's
-//! localization convention (`CLAUDE.md`). This module can't write real
-//! translations (it doesn't know pt-BR/es-ES text for whatever the author
-//! typed), so it derives the keys from `Field::LessonId` and prints the
-//! key/text pairs the author still needs to add to the locale files by
-//! hand — the same manual step authoring any bundled lesson already
-//! requires. A MIDI-imported backing track isn't carried over to a lesson
-//! save either (`harpchart::handle_save_chosen`'s `save_midi_backing` step
-//! only runs for `ContentKind::Song`) — author the chart as a song first if
-//! it needs one, then switch to Lesson mode to add the curriculum fields.
+//! (`title_key`/`body_key`), never display text (this codebase's
+//! localization convention, `CLAUDE.md`). This module can't write real
+//! translations, so it derives the keys from `Field::LessonId` and prints
+//! the key/text pairs the author still needs to add to the locale files by
+//! hand. A MIDI-imported backing track isn't carried over to a lesson save
+//! either (`harpchart::handle_save_chosen`'s `save_midi_backing` step only
+//! runs for `ContentKind::Song`) — author the chart as a song first if it
+//! needs one, then switch to Lesson mode to add the curriculum fields.
 
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Pointer};
@@ -69,13 +66,11 @@ pub(super) struct LessonConditionalRow(Field);
 /// The lesson-only fields panel: a click-to-fold header (collapsed by
 /// default — see [`spawn_lesson_details_header`]) above a two-column body,
 /// the same left/right split `meta_form::spawn_meta_form` uses for the song
-/// fields (halving 8 rows' worth of height). [`LESSON_FIELDS`]'s own order
-/// puts the split to good use: the first half is curriculum identity
-/// (id/unit/explanation/prerequisites), the second is the pass-criteria
-/// cluster (kind/threshold/technique/progression) — so the two columns read
-/// as two related groups, not an arbitrary halving. `LessonThreshold`/
-/// `LessonTechnique` are further hidden unless the current
-/// `lesson_pass_criteria` actually needs them — see
+/// fields. [`LESSON_FIELDS`]'s own order makes the split meaningful: the
+/// first half is curriculum identity (id/unit/explanation/prerequisites),
+/// the second is the pass-criteria cluster (kind/threshold/technique/
+/// progression). `LessonThreshold`/`LessonTechnique` are further hidden
+/// unless `lesson_pass_criteria` actually needs them — see
 /// [`update_lesson_conditional_rows`]. Hidden entirely by default;
 /// [`update_lesson_form_visibility`] shows it once `ContentKind::Lesson` is
 /// active.
@@ -255,15 +250,13 @@ pub(super) fn update_lesson_conditional_rows(
 
 /// Builds a `lesson.json` document from the lesson fields — schema-shaped
 /// per `assets/lesson_schema.dtd.json`, validated against it (via
-/// [`parse_lesson`]) before being handed back, and paired with any
-/// validation warnings (empty id/unit, or the manifest not actually
-/// passing its own schema) rather than writing an invalid manifest
-/// silently — the caller (`save_lesson`) folds these into the save's own
+/// [`parse_lesson`]), and paired with any validation warnings (empty
+/// id/unit, or failing its own schema) rather than writing an invalid
+/// manifest silently — `save_lesson` folds these into the save's own
 /// status-bar/log outcome. Also prints the Fluent key/text pairs
 /// (`title_key`/`body_key`) the author needs to add to the locale files —
-/// see this module's doc comment for why that can't be automated; this one
-/// stays console-only, since it's a multi-line reference block meant to be
-/// copy-pasted into a file, not a one-line status.
+/// stays console-only since it's a multi-line block meant to be
+/// copy-pasted, not a one-line status.
 pub(super) fn serialize_lesson(state: &EditorState) -> (String, Vec<String>) {
     use serde_json::json;
 
