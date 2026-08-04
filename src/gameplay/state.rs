@@ -110,18 +110,15 @@ pub struct SongStats {
     pub wah: TechniqueStats,
     /// Onset hits where [`is_clean_attack`](crate::scoring::is_clean_attack)
     /// confirmed no *other* harp-producible pitch sounded alongside the
-    /// expected one — separate from the technique buckets above (which are
-    /// keyed by chart modifier, not attack cleanliness) and tallied for every
-    /// hit regardless of its modifiers, or lack of them. Never tallied for a
-    /// chord/octave-split note (non-empty `ScheduledNote::chord_pitches`) —
-    /// "only one pitch sounding" is the wrong question for a note that's
-    /// supposed to have company. Chords don't get their own bucket the way
-    /// clean-attack does: `judge::score_notes` already refuses to mark a
-    /// chord note `Hit` unless its siblings sound together (see
-    /// `chord_is_sounding`), so an out-of-sync chord already shows up as an
-    /// ordinary miss in plain accuracy — unlike a breathy leak, which plain
-    /// accuracy can't see at all (that blind spot is what `clean_attack`
-    /// exists to cover).
+    /// expected one — separate from the technique buckets above (keyed by
+    /// chart modifier, not attack cleanliness) and tallied for every hit
+    /// regardless of modifiers. Never tallied for a chord/octave-split note
+    /// (non-empty `ScheduledNote::chord_pitches`): "only one pitch sounding"
+    /// is the wrong question for a note that's supposed to have company —
+    /// `judge::score_notes` already refuses to mark a chord `Hit` unless its
+    /// siblings sound together, so an out-of-sync chord already reads as a
+    /// plain miss. `clean_attack` exists for the blind spot plain accuracy
+    /// can't see: a breathy leak alongside the correct note.
     pub clean_attack: TechniqueStats,
 }
 
@@ -179,14 +176,12 @@ pub struct HitFeedback {
 pub struct ActiveTargets(pub Vec<(u8, bool)>);
 
 /// Emitted by [`judge::score_notes`](super::judge::score_notes) whenever
-/// `Score` moves (a fresh hit, a note's sustain bonus landing, a miss
-/// resetting the combo, or the combo decaying from inactivity) —
-/// `hud::update_score_display` reads this instead of re-`format!`ing the
-/// score/combo `Text` every frame regardless of whether either number
-/// actually changed. `quality` is only `Some` for a fresh hit, which is what
-/// tells `update_score_display` to set the "PERFECT!"/"GOOD" feedback label
-/// *once* rather than every frame of its fade — the alpha fade itself stays a
-/// per-frame animation, driven by `HitFeedback` directly, not this message.
+/// `Score` moves (a fresh hit, a sustain bonus, a miss resetting the combo,
+/// or combo decay) — `hud::update_score_display` reads this instead of
+/// re-`format!`ing the score/combo `Text` every frame. `quality` is only
+/// `Some` for a fresh hit, telling `update_score_display` to set the
+/// "PERFECT!"/"GOOD" label once rather than every frame of its fade; the
+/// fade itself stays driven by `HitFeedback` directly, not this message.
 #[derive(Message)]
 pub struct NoteScored {
     pub quality: Option<HitQuality>,
@@ -216,14 +211,12 @@ pub struct Paused(pub bool);
 pub struct MusicPlayer;
 
 /// Tags a MIDI-backed Jam Session's per-track `AudioPlayer`/`AudioSink`
-/// with which of `SongManifest::midi_tracks` it is — lives here rather
-/// than in `jam::midi_tracks` (which reads it) because `countdown_overlay`
-/// (which spawns it) already can't depend on `jam` without a layering
-/// inversion, the same reasoning `MusicPlayer` above already follows.
-/// Always spawned alongside `MusicPlayer`, so pause and the global
-/// music-volume slider apply to every track's sink for free; `jam::
-/// midi_tracks::apply_midi_track_mute` only ever narrows a track's volume
-/// further, on top of that.
+/// with which of `SongManifest::midi_tracks` it is — lives here rather than
+/// in `jam::midi_tracks` (which reads it) since `countdown_overlay` (which
+/// spawns it) can't depend on `jam` without a layering inversion, same as
+/// `MusicPlayer` above. Always spawned alongside `MusicPlayer`, so pause
+/// and the global music-volume slider apply to every track's sink for free;
+/// `jam::midi_tracks::apply_midi_track_mute` only narrows further on top.
 #[derive(Component)]
 pub struct MidiTrackPlayer(pub usize);
 
