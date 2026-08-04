@@ -5,17 +5,16 @@
 //! (`MetronomeSounds`), and the same `MetronomeTempo`/`MetronomeFeel`/
 //! `MetronomeMuted` globals gameplay and the Bending Trainer already use —
 //! so a player's mute preference carries over into the editor instead of
-//! silently resetting — rather than gameplay's own click-driving systems,
-//! which are tied to `GameplayClock`. The editor has its own clock
-//! (`playback::Playhead`), so [`click_metronome`] reads from that instead,
+//! resetting. Not gameplay's own click-driving systems though, which are
+//! tied to `GameplayClock`: the editor has its own clock
+//! (`playback::Playhead`), so [`click_metronome`] reads from that,
 //! sharing only the pure click-selection logic
 //! (`metronome_overlay::play_click_if_due`).
 //!
 //! Also owns the Record transport's count-in: pressing Play to start a
 //! *fresh* take (not resuming a paused one) doesn't start capturing
 //! immediately — [`CountIn`] ticks off one bar of clicks first, then
-//! [`finish_count_in`] hands off to `record::start_record` for real. A
-//! real take (and its clock) doesn't start until the count-in finishes, so
+//! [`finish_count_in`] hands off to `record::start_record` for real, so
 //! nothing is lost or misjudged by counting in first.
 
 use bevy::audio::AudioSource;
@@ -42,10 +41,9 @@ pub(super) struct EditorLastClickedTick(Option<i64>);
 
 /// A pending count-in before a fresh Record take actually starts
 /// capturing — one bar of metronome clicks, giving the player a beat to
-/// prepare, the same reason any DAW's count-in exists. Counts down in
-/// real (wall-clock) time via `Time::delta`, not `Playhead::elapsed` —
-/// the take and its clock haven't started yet, so there's nothing for
-/// `Playhead` to be counting during a count-in.
+/// prepare, same as any DAW's count-in. Counts down in real (wall-clock)
+/// time via `Time::delta`, not `Playhead::elapsed`: the take and its
+/// clock haven't started yet, so there's nothing for `Playhead` to count.
 #[derive(Resource, Default)]
 pub(super) struct CountIn {
     total_secs: f32,
@@ -104,23 +102,22 @@ pub(super) fn begin_count_in(state: &EditorState, count_in: &mut CountIn) {
 }
 
 /// Keeps `MetronomeTempo` in step with the chart currently being edited —
-/// the editor's own counterpart to `metronome_overlay::set_tempo_from_song`,
-/// just re-run continuously (rather than once `OnEnter`) since the tempo
-/// field is itself live-editable here. Only one of gameplay/the Bending
-/// Trainer/the editor is ever active at a time (they're different
-/// `AppState`s), so this can't fight either of those over the same shared
-/// resource — whichever context is entered next reseeds it for itself.
+/// the editor's own counterpart to
+/// `metronome_overlay::set_tempo_from_song`, run continuously (rather than
+/// once `OnEnter`) since the tempo field is itself live-editable. Only one
+/// of gameplay/the Bending Trainer/the editor is ever active at a time
+/// (different `AppState`s), so this can't fight the others over the same
+/// shared resource — whichever context is entered next reseeds it.
 pub(super) fn sync_tempo(state: Res<EditorState>, mut tempo: ResMut<MetronomeTempo>) {
     tempo.bpm = tempo_bpm(&state);
     tempo.beats_per_bar = BEATS_PER_BAR;
 }
 
-/// Plays the metronome clicks for the editor's own clock (`Playhead`),
+/// Plays the metronome clicks for the editor's own clock (`Playhead`)
 /// while it's actually running — Record, Play, and Practice all drive the
-/// same `Playhead`, so gating on it covers whichever of the three is
-/// active without needing to know which. Silent during a count-in (
-/// [`tick_count_in`] clicks instead, against its own separate clock) and
-/// while nothing is playing at all.
+/// same `Playhead`, so gating on it covers whichever is active without
+/// needing to know which. Silent during a count-in ([`tick_count_in`]
+/// clicks instead, against its own clock) and while nothing is playing.
 pub(super) fn click_metronome(
     playhead: Res<Playhead>,
     count_in: Res<CountIn>,
@@ -151,8 +148,8 @@ pub(super) fn click_metronome(
 /// clock (separate from `Playhead`, which isn't running yet — see
 /// [`CountIn`]'s doc comment) and counts `remaining_secs` down by the
 /// frame delta. Split from [`finish_count_in`] (which reacts once it
-/// actually reaches zero) purely to stay under the parameter limit a
-/// single Bevy system can take — the two always run back to back.
+/// reaches zero) purely to stay under a single Bevy system's parameter
+/// limit — the two always run back to back.
 pub(super) fn tick_count_in(
     time: Res<Time>,
     mut count_in: ResMut<CountIn>,
