@@ -5,48 +5,39 @@
 //!
 //! `song_editor::debug_record` records raw mic audio plus whatever the live
 //! detector actually produced (`EditorState::notes` — mistakes, phantom
-//! notes, and all; that's expected, not a problem to avoid). This module is
-//! how you correct the record *afterward*, at your own pace: a "Draw
-//! correct notes" mode button (next to Edit/Record/Play/Lock) enters
-//! [`Mode::ExpectedNotes`], where clicking the same grid places/selects
-//! notes on a second, independent vector — [`EditorState::expected_notes`]
-//! — instead of the ordinary one. Nothing here is ever recorded from sound;
-//! it's purely hand-placed ground truth, marking down what should actually
-//! have been played. On save, `debug_record::write_debug_recording_on_save`
-//! writes both vectors out as separate charts (`recorded.harpchart` /
-//! `expected.harpchart`), so `note_bench` can compare a detector's output
-//! against ground truth that was never itself derived from any detector —
-//! solving the tempo-precision problem a "play along to a pre-authored
-//! chart" workflow would otherwise have (see `note_bench::
-//! DEFAULT_TIMING_TOLERANCE_SECS`'s own doc comment).
+//! notes and all; that's expected, not a problem to avoid). This module is
+//! how you correct the record *afterward*: a "Draw correct notes" mode
+//! button enters [`Mode::ExpectedNotes`], where clicking the grid
+//! places/selects notes on a second, independent vector
+//! ([`EditorState::expected_notes`]) instead of the ordinary one — purely
+//! hand-placed ground truth, never recorded from sound. On save,
+//! `debug_record::write_debug_recording_on_save` writes both vectors out as
+//! separate charts (`recorded.harpchart`/`expected.harpchart`), so
+//! `note_bench` can compare a detector's output against ground truth never
+//! itself derived from any detector — solving the tempo-precision problem a
+//! "play along to a pre-authored chart" workflow would otherwise have (see
+//! `note_bench::DEFAULT_TIMING_TOLERANCE_SECS`'s own doc comment).
 //!
 //! Deliberately simpler than ordinary Edit-mode note editing
 //! (`interaction::select_or_add`/`apply_modifier`): no collision/overlap
-//! checks at all (annotating "what should have sounded" routinely means
-//! marking it right on top of a wrong/phantom recorded note, or another
-//! expected note), no auto-length trimming against a neighboring note, no
-//! chord-direction enforcement across simultaneous notes. Just place,
-//! select, set its technique, delete. `place_or_select_expected`/
-//! `apply_expected_modifier` reuse the same `sticky_dir`/`sticky_pitch`/
-//! `sticky_expr` "currently armed technique" fields ordinary editing does —
-//! one shared "what would a newly placed note get" concept regardless of
-//! which layer you're placing into.
+//! checks (annotating routinely means marking right on top of a
+//! wrong/phantom recorded note), no auto-length trimming, no
+//! chord-direction enforcement. Just place, select, set technique, delete.
+//! `place_or_select_expected`/`apply_expected_modifier` reuse the same
+//! `sticky_dir`/`sticky_pitch`/`sticky_expr` fields ordinary editing does.
 //!
-//! Rendered as a colored, unfilled outline overlay (`rebuild_expected_notes_
-//! overlay`) on top of the ordinary grid, in every mode (so you can review
-//! your annotations while just looking at Edit mode too) — but only
-//! selectable/clickable in `Mode::ExpectedNotes` itself, via the grid's own
-//! background-cell click observer (`grid.rs`), never via the overlay
-//! visuals directly (they're `Pickable::IGNORE` unconditionally, so a click
-//! always reaches the background cell underneath, which resolves hole/tick
-//! and decides what to do with it based on the current mode — no z-order/
-//! picking-priority tie-break to get wrong between the overlay and the
-//! ordinary note visuals it's drawn over). Unwindowed (one visual per
-//! `expected_notes` note, regardless of scroll position) — a deliberate
-//! simplification appropriate for the short clips this feature targets
-//! (single notes, bends, chords, short phrases — see the roadmap's own
-//! dataset list), unlike the ordinary note grid, which does need to window
-//! for arbitrarily long real songs.
+//! Rendered as a colored, unfilled outline overlay
+//! (`rebuild_expected_notes_overlay`) on top of the ordinary grid in every
+//! mode (so you can review annotations from Edit mode too), but only
+//! selectable in `Mode::ExpectedNotes` — via the grid's own background-cell
+//! click observer (`grid.rs`), never the overlay visuals directly (always
+//! `Pickable::IGNORE`, so a click always reaches the background cell, which
+//! resolves hole/tick and dispatches by current mode — no z-order tie-break
+//! needed between the overlay and the ordinary note visuals underneath).
+//! Unwindowed (one visual per `expected_notes` note regardless of scroll
+//! position) — a deliberate simplification for the short clips this
+//! targets (single notes, bends, chords, short phrases), unlike the
+//! ordinary note grid, which must window for arbitrarily long real songs.
 
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Drag, DragEnd, DragStart, Pointer};
@@ -299,12 +290,11 @@ pub(super) fn spawn_expected_notes_mode_button(
 /// `panel_widgets::mod_button`, but wired to [`apply_expected_modifier`]
 /// instead of `interaction::apply_modifier`, and marked with
 /// [`ExpectedModButton`] instead of a bare [`ModButton`] so this row's
-/// coloring/visibility stay independent of the ordinary `EditModeGroup`
-/// row's — both `panel::update_mod_panel` and `panel::
-/// update_technique_button_visibility` query `ModButton` globally
-/// (unscoped by group), so reusing that component directly here would have
-/// them recolor/hide these buttons against `state.notes`/`state.selected`
-/// instead of `state.expected_notes`/`expected_selected`.
+/// coloring/visibility stays independent of the ordinary `EditModeGroup`
+/// row's: `panel::update_mod_panel`/`update_technique_button_visibility`
+/// query `ModButton` globally (unscoped by group), so reusing it directly
+/// here would recolor/hide these buttons against `state.notes`/
+/// `state.selected` instead of `state.expected_notes`/`expected_selected`.
 #[derive(Component, Clone, Copy)]
 struct ExpectedModButton(ModButton);
 
