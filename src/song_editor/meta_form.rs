@@ -144,12 +144,10 @@ pub(super) fn spawn_form_column(
     .id()
 }
 
-/// A labelled click-to-cycle button row: `<label>:  [ current value ]` — the
-/// shared shape [`spawn_content_kind_row`]/[`spawn_harmonica_kind_row`] both
-/// build (the Key/Position/lesson pass-criteria/technique/progression
-/// cycle fields are a separate case — they already share their scaffold via
-/// [`spawn_field_row`], just branching on which `Field` they are). `marker`
-/// tags the value text so its own `update_*_text` system can find it.
+/// A labelled click-to-cycle button row: `<label>:  [ current value ]` —
+/// the shared shape [`spawn_content_kind_row`]/[`spawn_harmonica_kind_row`]
+/// both build. `marker` tags the value text so its own `update_*_text`
+/// system can find it.
 fn spawn_cycle_row<T: Component, M: 'static>(
     col: &mut ChildSpawnerCommands,
     loc: &Localization,
@@ -498,25 +496,20 @@ fn spawn_midi_track_row(
 /// spawn-once gate (`Without<Children>`) rather than a rebuild-on-message
 /// system like [`rebuild_midi_track_combobox`](super::midi_import::
 /// rebuild_midi_track_combobox), since [`Scale::all`]'s option list never
-/// changes at runtime; there's nothing to rebuild for. Needs `EditorRoot`
-/// as the dropdown's backdrop parent (see `dialogs::combobox`'s own docs
-/// for why a combobox needs one), which doesn't exist yet the frame
-/// `ui::spawn_fixed_chrome` spawns the slot — hence deferring the actual
-/// combobox spawn to this system instead of doing it inline there.
+/// changes at runtime. Needs `EditorRoot` as the dropdown's backdrop parent,
+/// which doesn't exist yet the frame `ui::spawn_fixed_chrome` spawns the
+/// slot — hence deferring the spawn to this system instead of doing it
+/// inline there.
 ///
-/// The slot itself deliberately lives in the *fixed* chrome
-/// (`ui::spawn_fixed_chrome`), not the scrollable meta form alongside the
-/// other fields: `bevy_ui_widgets::Popover` (what makes the dropdown list
-/// float above everything, positioned relative to its toggle) requires the
-/// list to be a literal ECS child of that toggle, and Bevy's UI overflow
-/// clipping follows that same ancestry — not the popover's own computed
-/// screen position. A combobox nested inside the form's `Overflow::
-/// scroll_y()` `ScrollArea` gets its open dropdown clipped to that
-/// scrollable viewport no matter how high its `GlobalZIndex` is, which is
-/// exactly why it used to render behind the (unclipped) mod panel and eat
-/// clicks meant for it. Living in the fixed chrome instead sidesteps the
-/// clipping ancestor entirely, the only way to fix this given the widget's
-/// design.
+/// The slot deliberately lives in the *fixed* chrome
+/// (`ui::spawn_fixed_chrome`), not the scrollable meta form: `bevy_ui_
+/// widgets::Popover` requires the dropdown list to be a literal ECS child
+/// of its toggle, and Bevy's UI overflow clipping follows that same
+/// ancestry, not the popover's computed screen position — a combobox
+/// nested inside the form's `Overflow::scroll_y()` `ScrollArea` would get
+/// its open dropdown clipped to that scrollable viewport no matter how
+/// high its `GlobalZIndex` is, rendering behind the unclipped mod panel
+/// and eating its clicks.
 pub(super) fn spawn_scale_combobox(
     mut commands: Commands,
     state: Res<EditorState>,
@@ -553,11 +546,10 @@ fn on_scale_selected(ev: On<ComboboxSelect>, mut state: ResMut<EditorState>) {
 
 /// Keeps the scale combobox's displayed value in step with
 /// `EditorState::scale` after it changes from outside the widget itself —
-/// namely, Load populating a different scale than whatever was previously
-/// selected. Writing to [`ComboboxValue`] directly is the widget's own
-/// documented escape hatch for exactly this; `dialogs::combobox`'s own
-/// `sync_combobox_visuals` (always running) then updates the visible
-/// toggle label text from it, same as a user pick would.
+/// namely, Load populating a different scale. Writing to [`ComboboxValue`]
+/// directly is the widget's documented escape hatch for this; `dialogs::
+/// combobox`'s `sync_combobox_visuals` then updates the visible toggle
+/// label from it, same as a user pick would.
 pub(super) fn sync_scale_combobox_value(
     state: Res<EditorState>,
     slot: Query<&Children, With<ScaleComboboxSlot>>,
@@ -578,13 +570,10 @@ pub(super) fn sync_scale_combobox_value(
 
 /// The chart metadata form: two side-by-side field columns plus a third,
 /// [`spawn_color_legend`], explaining what every color the grid/mod-panel/
-/// scrollbar uses actually means — with 8 field rows (harmonica kind,
-/// [`FIELDS`]'s 6, and the MIDI-track row), stacking them all in one column
-/// routinely ran taller than a default-sized window. Split evenly
-/// (`FIELDS.len() / 2`, so each field column gets at least 4 rows for
-/// today's 8): harmonica kind + the first half of `FIELDS` in the left
-/// column, the second half + the MIDI-track row in the middle — halving the
-/// form's height for the same content.
+/// scrollbar means. Split evenly (`FIELDS.len() / 2`): harmonica kind +
+/// the first half of `FIELDS` in the left column, the second half + the
+/// MIDI-track row in the middle — halves the form's height versus one
+/// stacked column, which routinely ran taller than a default-sized window.
 pub(super) fn spawn_meta_form(
     root: &mut ChildSpawnerCommands,
     loc: &Localization,
@@ -728,15 +717,12 @@ fn spawn_legend_heading(col: &mut ChildSpawnerCommands, colors: SongEditorColors
     ));
 }
 
-/// Explains every color the song editor uses, grouped by where it shows up
-/// — written for exactly the confusion a first-time user hits: the grid
-/// note's *fill* color is its playing technique (blow vs. draw is instead
-/// the small ↑/↓ arrow drawn on the note, not a color at all), while the
-/// horizontal scrollbar's minimap markers use a *different* blue/orange
-/// pair that means blow/draw specifically — the same blue means two
-/// different things in two different places, which is exactly the kind of
-/// thing worth spelling out rather than leaving the player to reverse
-/// -engineer from `theme.json`.
+/// Explains every color the song editor uses, grouped by where it shows up.
+/// A grid note's *fill* color is its playing technique (blow vs. draw is
+/// the small ↑/↓ arrow, not a color), while the scrollbar minimap's
+/// blue/orange markers mean blow/draw specifically — the same blue means
+/// two different things in two different places, worth spelling out rather
+/// than making the player reverse-engineer `theme.json`.
 fn spawn_color_legend(
     col: &mut ChildSpawnerCommands,
     loc: &Localization,

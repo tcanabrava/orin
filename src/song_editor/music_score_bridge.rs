@@ -2,12 +2,11 @@
 
 //! Wires the Song Editor's own note/playhead state into the shared
 //! `music_score` overlay — the editor's sibling of `gameplay::
-//! music_score_bridge`, translating this module's own vocabulary
-//! (`EditorState::notes`, `playback::Playhead`) into the shared plugin's
-//! (`MusicScoreNotes`/`MusicScorePlayhead`) instead of gameplay's.
-//! Editor ticks are already tempo-independent multiples of a beat
-//! (`TICKS_PER_BEAT`), so — unlike gameplay's own bridge — this needs no
-//! tempo-map conversion at all, just a division.
+//! music_score_bridge`, translating `EditorState::notes`/`playback::
+//! Playhead` into `MusicScoreNotes`/`MusicScorePlayhead`. Editor ticks are
+//! already tempo-independent multiples of a beat (`TICKS_PER_BEAT`), so
+//! unlike gameplay's bridge this needs no tempo-map conversion, just a
+//! division.
 
 use bevy::prelude::*;
 
@@ -19,14 +18,11 @@ use super::state::EditorState;
 
 /// Rebuilds [`MusicScoreNotes`] from `EditorState::notes` whenever the
 /// editor state changes — same `resource_exists_and_changed::<EditorState>`
-/// gate every other EditorState-derived rebuild in `song_editor::mod`'s own
-/// system list uses. A note whose hole/technique the current harp can't
-/// resolve (e.g. an Overblow on a hole that doesn't support it) has nothing
-/// to draw and is skipped, same as gameplay's own bridge. `super::
-/// BEATS_PER_BAR` (the editor has no editable time signature of its own,
-/// see that constant's own definition) feeds `split_at_bar_lines` so a note
-/// crossing a bar line becomes several tied segments instead of one
-/// oversized notehead.
+/// gate every other EditorState-derived rebuild in `song_editor::mod` uses.
+/// A note whose hole/technique the current harp can't resolve is skipped,
+/// same as gameplay's bridge. `super::BEATS_PER_BAR` feeds
+/// `split_at_bar_lines` so a note crossing a bar line becomes tied segments
+/// instead of one oversized notehead.
 pub(super) fn sync_music_score(state: Res<EditorState>, mut notes: ResMut<MusicScoreNotes>) {
     let harp = build_harp(&state.key, state.harmonica_kind);
     notes.0 = state
@@ -46,18 +42,13 @@ pub(super) fn sync_music_score(state: Res<EditorState>, mut notes: ResMut<MusicS
 }
 
 /// Keeps [`MusicScorePlayhead`] following the same tick position
-/// `playback::update_playhead_view`'s moving line already derives from
-/// [`Playhead`] while a take is actually playing (or paused mid-take) —
-/// ordered `.after(playback::advance_playhead)` like that system, so it
-/// reads the same frame's `elapsed`, not last frame's. The rest of the
-/// time — the ordinary "just editing, nothing running" state — there's no
-/// playback position to follow, so this instead follows `EditorState::
-/// scroll_beat` (already in beat units, see `grid.rs`'s own use of it).
-/// Without this fallback the score stayed pinned wherever it was last set
-/// (beat 0 on a fresh song), so a note more than a dozen-ish beats from the
-/// very start of the song (`music_score`'s own fixed visible-window width)
-/// could never enter the panel's visible window at all, no matter how far
-/// the grid itself was scrolled to bring it into view.
+/// `playback::update_playhead_view`'s moving line derives from [`Playhead`]
+/// while a take is playing (or paused mid-take) — ordered `.after(playback
+/// ::advance_playhead)` so it reads the same frame's `elapsed`. Otherwise
+/// (just editing, nothing running) it follows `EditorState::scroll_beat`
+/// instead, so a note far from the song's start can still scroll into the
+/// panel's fixed-width visible window rather than the score staying pinned
+/// at beat 0.
 pub(super) fn sync_music_score_playhead(
     playhead: Res<Playhead>,
     state: Res<EditorState>,

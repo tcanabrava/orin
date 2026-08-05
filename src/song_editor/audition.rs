@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: MIT
 
 //! Plays a short reference tone for a note the instant it becomes the
-//! primary selection — "does this bend/overblow/overdraw actually sound
-//! like what I meant" without running Play/Practice or reaching for a real
-//! harp. Reuses `audio_system::synth`'s additive harmonica voice via
-//! `playback::note_freq`/`render_pcm` — the same synth Play/Practice/Record
-//! preview already render with — rather than a separate reference-tone
-//! generator, so the audition matches what the note actually sounds like in
-//! context (unlike the Bending Trainer's own "Listen" button, which predates
-//! this synth and still uses its own simpler sine-only tone).
+//! primary selection — confirms a bend/overblow/overdraw sounds like what
+//! was meant, without running Play/Practice or reaching for a real harp.
+//! Reuses `audio_system::synth`'s additive harmonica voice via
+//! `playback::note_freq`/`render_pcm`, the same synth Play/Practice/Record
+//! preview already use.
 //!
-//! Deliberately scoped to *selection changing to a different note* — a
-//! fresh placement (`select_or_add` selects what it just placed) or
-//! clicking an existing note both go through the same
-//! `EditorState::selected_note`, so neither call site needs touching.
-//! Re-clicking an already-selected note doesn't replay it; that's a
-//! plain "play this note again" action this doesn't attempt to be.
+//! Scoped to *selection changing to a different note*: a fresh placement or
+//! clicking an existing note both go through `EditorState::selected_note`,
+//! so neither call site needs touching. Re-clicking an already-selected
+//! note doesn't replay it.
 
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::prelude::*;
@@ -34,16 +29,14 @@ use super::state::{EditorState, GridNote};
 const AUDITION_SECS: f32 = 0.6;
 
 /// The id of whichever note was last auditioned, so [`audition_on_select`]
-/// only plays a fresh blip when the *primary* selection actually changes to
-/// a different note — not every frame it stays selected, and not on a
-/// plain deselect (nothing to play).
+/// only plays a fresh blip when the primary selection changes to a
+/// different note — not every frame it stays selected.
 #[derive(Resource, Default)]
 pub(super) struct LastAuditioned(Option<u32>);
 
 /// Renders a short blip of `note`'s resolved pitch on `harp` as WAV bytes —
 /// `None` for a hole/technique combination that can't sound at all (mirrors
-/// `playback::note_freq`'s own `None` case, e.g. Overblow requested outside
-/// holes 1–6).
+/// `playback::note_freq`'s own `None` case).
 fn audition_wav(note: &GridNote, harp: &Harmonica) -> Option<Vec<u8>> {
     let freq = note_freq(note, harp)?;
     let phrase = [PhraseNote {

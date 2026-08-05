@@ -61,11 +61,11 @@ pub(super) const OUT_OF_SCALE_TINT: Color = Color::srgb(0.95, 0.25, 0.20);
 /// reads as its own kind of thing.
 pub(super) const TEMPO_MARKER_COLOR: Color = Color::srgb(0.95, 0.55, 0.15);
 
-/// Whether `note`'s target pitch — its bent/overblown/overdrawn pitch, not
-/// just its natural one, since e.g. bending draw-3 down a step-and-a-half on a
-/// C harp is exactly how a blues player reaches the ♭7 — falls in `scale`.
-/// `None` (holes/directions the harp can't produce) counts as in-scale, so a
-/// note that can't be resolved to a pitch isn't flagged as "wrong" too.
+/// Whether `note`'s target pitch — bent/overblown/overdrawn, not just its
+/// natural one (e.g. bending draw-3 down a step-and-a-half on a C harp is
+/// how a blues player reaches the ♭7) — falls in `scale`. `None` (a
+/// hole/direction the harp can't produce) counts as in-scale, so it isn't
+/// flagged as "wrong" too.
 pub(super) fn note_in_scale(note: &GridNote, harp: &Harmonica, scale: &HashSet<String>) -> bool {
     let Some(freq) = note_freq(note, harp) else {
         return true;
@@ -502,15 +502,12 @@ fn spawn_silence_gap(
 }
 
 /// Shifts every *other* selected note (`DragState::group`) by the exact
-/// hole/tick delta the anchor moved by (`anchor_target - anchor_start`),
-/// so a multi-note drag moves the whole group as one rigid shape — used
-/// alongside `state::move_target`, which already computes the anchor's own
-/// clamped target. Each member is independently clamped to the harp's hole
-/// range and non-negative ticks, the same rule `move_target` applies to
-/// the anchor; at the extreme edges of the grid this can compress the
-/// group's shape slightly (some members clamp, others don't) rather than
-/// blocking the whole move outright — an accepted, rare edge case, same
-/// spirit as a single note's own drag clamping instead of refusing to move.
+/// hole/tick delta the anchor moved by, so a multi-note drag moves the
+/// whole group as one rigid shape — used alongside `state::move_target`,
+/// which computes the anchor's own clamped target. Each member is
+/// independently clamped the same way; at the grid's edges this can
+/// compress the group's shape slightly rather than blocking the move
+/// outright, an accepted rare edge case.
 pub(super) fn group_move_targets(
     others: &[GridNote],
     hole_delta: i32,
@@ -527,14 +524,11 @@ pub(super) fn group_move_targets(
         .collect()
 }
 
-/// Whether every note in a multi-note move — the anchor plus every other
-/// member of its group, each as `(id, hole, tick, len, pitch)` — can
-/// legally land at its computed target: its pitch technique still fits the
-/// hole it would land on (e.g. a note bent 1.5 semitones can't land on a
-/// hole whose own max bend is smaller), and it doesn't overlap any note
-/// that ISN'T part of the group (group members overlapping *each other* is
-/// fine — they keep their original relative positions, so if they didn't
-/// collide before the drag they won't after it either).
+/// Whether every note in a multi-note move can legally land at its computed
+/// target: its pitch technique still fits the hole (e.g. a note bent 1.5
+/// semitones can't land on a hole with a smaller max bend), and it doesn't
+/// overlap any note outside the group (members overlapping *each other* is
+/// fine — they keep their original relative positions).
 pub(super) fn group_move_valid(
     notes: &[GridNote],
     moving_ids: &[u32],
