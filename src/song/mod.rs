@@ -24,26 +24,22 @@ pub struct SongManifest {
     /// never needs to be optional.
     pub background: Handle<Image>,
     /// `None` when the song doesn't ship a `song/*.ogg`/`*.wav` — a
-    /// scored/jam session then simply plays no backing track (the
-    /// chart-timed clock free-runs instead of anchoring to a sink; see
-    /// `gameplay::should_anchor_to_sink`), rather than failing to load.
-    /// Also `None` (not the single mixed-down file) when the song ships a
-    /// `song/music.mid` instead — see [`midi_tracks`](Self::midi_tracks),
-    /// which is what carries that song's backing audio in that case. The
-    /// two are mutually exclusive: a chart with an ordinary `music.ogg`/
-    /// `.wav` never populates `midi_tracks`, and vice versa.
+    /// scored/jam session then plays no backing track (the chart-timed
+    /// clock free-runs instead of anchoring to a sink; see `gameplay::
+    /// should_anchor_to_sink`) rather than failing to load. Also `None`
+    /// when the song ships `song/music.mid` instead — see
+    /// [`midi_tracks`](Self::midi_tracks), which carries that song's
+    /// backing audio in that case; the two are mutually exclusive.
     pub music: Option<Handle<AudioSource>>,
     /// Present when the song ships `song/music.mid` instead of a single
     /// pre-mixed `music.ogg`/`.wav` — one already-rendered `AudioSource`
-    /// per non-empty MIDI track (via the same additive harmonica-voice
-    /// synth `song_editor::playback`/`gameplay::call_response` share,
-    /// `song::midi::render_track_pcm`), so a Jam Session can play every
-    /// track as its own simultaneous, synchronized sink and mute
-    /// individual tracks by muting their sink — no live re-mixing needed,
-    /// since each stem is already a complete, independent render. Only
-    /// Jam Session's own UI (`jam::session`) shows a mute row for these;
-    /// scored Play2D/3D would have nothing meaningful to do with a chart's
-    /// *backing* track regardless of how many stems it has.
+    /// per non-empty MIDI track (`song::midi::render_track_pcm`, the same
+    /// synth `song_editor::playback`/`gameplay::call_response` share), so a
+    /// Jam Session can play every track as its own simultaneous sink and
+    /// mute individual tracks by muting their sink — no live re-mixing
+    /// needed. Only Jam Session's UI (`jam::session`) shows a mute row;
+    /// scored Play2D/3D has nothing meaningful to do with a backing track
+    /// regardless of stem count.
     pub midi_tracks: Option<Vec<MidiTrackAudio>>,
     /// Peak-amplitude waveform of `music` (or, when [`midi_tracks`]
     /// (Self::midi_tracks) is populated instead, every track's stems
