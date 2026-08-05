@@ -8,9 +8,11 @@
 //! `BendDot`) live in `super::ui`, alongside every other song-editor
 //! component type.
 
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 
 use super::interaction::apply_modifier;
 use super::ranges::normalize_range;
@@ -57,7 +59,8 @@ fn spawn_button_shell<'a, M: 'static>(
     on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
 ) -> EntityCommands<'a> {
     let mut ec = panel.spawn((
-        Button,
+        WidgetButton,
+        TabIndex(0),
         Node {
             padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
             align_items: AlignItems::Center,
@@ -108,7 +111,8 @@ pub(super) fn timeline_tool_button(
 ) {
     panel
         .spawn((
-            Button,
+            WidgetButton,
+            TabIndex(0),
             kind,
             Node {
                 padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
@@ -171,7 +175,8 @@ pub(super) fn mod_button(
 ) {
     panel
         .spawn((
-            Button,
+            WidgetButton,
+            TabIndex(0),
             kind,
             Node {
                 padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),

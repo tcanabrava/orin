@@ -1,7 +1,9 @@
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 
 pub fn color_default() -> Color {
     Color::srgb(0.14, 0.14, 0.22)
@@ -32,7 +34,8 @@ pub fn small<M: 'static>(
     on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
 ) -> impl Scene {
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         BackgroundColor({color_default()})
         on(on_click)
         on(mouse_over)
@@ -67,7 +70,8 @@ pub fn sized<M: 'static>(
     on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
 ) -> impl Scene {
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         BackgroundColor({color_default()})
         on(on_click)
         on(mouse_over)
@@ -96,7 +100,8 @@ pub fn default<M: 'static>(
     on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
 ) -> impl Scene {
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         BackgroundColor({color_default()})
         on(on_click)
         on(mouse_over)
