@@ -281,7 +281,13 @@ fn spawn_left_column(
         })
         .collect();
 
-    spawn_harmonica_row(commands, parent, loc, &previews_harmonica, &selected_harmonica.0);
+    spawn_harmonica_row(
+        commands,
+        parent,
+        loc,
+        &previews_harmonica,
+        &selected_harmonica.0,
+    );
 
     let algo_combo = combobox::spawn_combobox(
         commands,
@@ -309,17 +315,15 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
         "Theme",
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Theme),
     );
-    commands.entity(theme_btn).insert(Tooltip(String::from(
-        loc.msg("options-theme-tooltip"),
-    )));
+    commands
+        .entity(theme_btn)
+        .insert(Tooltip(String::from(loc.msg("options-theme-tooltip"))));
 
     let calibrate_btn = spawn_button(
         commands,
         parent,
         &loc.msg("options-calibrate-input-lag"),
-        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
-            state.set(AppState::Calibration)
-        },
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| state.set(AppState::Calibration),
     );
     commands.entity(calibrate_btn).insert(Tooltip(String::from(
         loc.msg("options-calibrate-input-lag-tooltip"),
@@ -357,9 +361,9 @@ fn spawn_note_numbers_toggle(
         show_numbers,
         set_note_numbers,
     );
-    commands
-        .entity(row)
-        .insert(Tooltip(String::from(loc.msg("options-note-labels-tooltip"))));
+    commands.entity(row).insert(Tooltip(String::from(
+        loc.msg("options-note-labels-tooltip"),
+    )));
 }
 
 /// Flips the single global adaptive-difficulty setting — not per-song, see
@@ -420,9 +424,9 @@ fn spawn_fullscreen_toggle(
         enabled,
         set_fullscreen,
     );
-    commands.entity(row).insert(Tooltip(String::from(
-        loc.msg("options-fullscreen-tooltip"),
-    )));
+    commands
+        .entity(row)
+        .insert(Tooltip(String::from(loc.msg("options-fullscreen-tooltip"))));
 }
 
 /// Marks the zoom slider's own track, so its `SliderValue` can be told apart
@@ -1074,9 +1078,7 @@ fn spawn_slider_row(commands: &mut Commands, parent: Entity, label: &str, toolti
             TextColor(Color::WHITE),
         ));
     });
-    commands
-        .entity(row)
-        .insert(Tooltip(tooltip.to_string()));
+    commands.entity(row).insert(Tooltip(tooltip.to_string()));
     commands.entity(parent).add_child(row);
     row
 }
@@ -1318,5 +1320,4 @@ mod tests {
             "awaiting-permission needs its own message, not the generic failure one"
         );
     }
-
 }

@@ -205,7 +205,11 @@ struct StyleLabel;
 /// A button + live label that cycles [`SpectrogramStyle`] — the on-screen
 /// equivalent of the **V** key, same "small button + plain label" shape
 /// `jam::session`'s own Loop/Call-and-Response toggles already use.
-pub fn spawn_style_toggle(parent: &mut ChildSpawnerCommands, style: SpectrogramStyle, loc: &Localization) {
+pub fn spawn_style_toggle(
+    parent: &mut ChildSpawnerCommands,
+    style: SpectrogramStyle,
+    loc: &Localization,
+) {
     parent
         .spawn(Node {
             flex_direction: FlexDirection::Row,

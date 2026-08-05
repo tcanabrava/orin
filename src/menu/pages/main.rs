@@ -2,8 +2,8 @@
 
 //! The main menu: Play, Options, Help, Quit.
 
-use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::localization::LocalizationExt;
@@ -34,9 +34,7 @@ pub(crate) fn setup_main_menu(
         &mut commands,
         root,
         &loc.msg("menu-help"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
-            page.set(MenuPage::HelpAbout)
-        },
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::HelpAbout),
     );
     spawn_button(
         &mut commands,

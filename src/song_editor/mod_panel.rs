@@ -249,7 +249,8 @@ pub(super) fn spawn_mod_panel(
                      state: Res<EditorState>,
                      mut clipboard: ResMut<super::clipboard::NoteClipboard>| {
                         if !state.selected.is_empty() {
-                            clipboard.0 = super::clipboard::copy_selected(&state.notes, &state.selected);
+                            clipboard.0 =
+                                super::clipboard::copy_selected(&state.notes, &state.selected);
                         }
                     },
                 );
@@ -319,7 +320,9 @@ pub(super) fn spawn_mod_panel(
                 // Dev-only ("--features dev") benchmark ground-truth mode —
                 // see `expected_notes`'s own module docs.
                 #[cfg(feature = "dev")]
-                super::expected_notes::spawn_expected_notes_mode_button(transport, loc, colors, style);
+                super::expected_notes::spawn_expected_notes_mode_button(
+                    transport, loc, colors, style,
+                );
 
                 panel_separator(transport);
 

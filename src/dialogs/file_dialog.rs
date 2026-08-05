@@ -178,125 +178,125 @@ fn handle_open(
 
     commands
         .spawn_scene(bsn! {
-        Node {
-            position_type: {PositionType::Absolute},
-            left: {Val::Px(0.0)},
-            top: {Val::Px(0.0)},
-            width: {Val::Percent(100.0)},
-            height: {Val::Percent(100.0)},
-            flex_direction: {FlexDirection::Column},
-            align_items: {AlignItems::Center},
-            justify_content: {JustifyContent::Center},
-            row_gap: {Val::Px(6.0)},
-        }
-        BackgroundColor({Color::srgba(0.0, 0.0, 0.0, 0.78)})
-        GlobalZIndex(300)
-        FileDialogRoot
-        Children [
-            (
-                Text({title})
-                TextFont { font_size: {FontSize::Px(18.0)} }
-                TextColor({Color::WHITE})
-            ),
-            (
-                Text({String::new()})
-                TextFont { font_size: {FontSize::Px(15.0)} }
-                TextColor({Color::srgb(0.6, 0.6, 0.7)})
-                DialogPathText
-            ),
-            (
-                Node {
-                    flex_direction: {FlexDirection::Column},
-                    row_gap: {Val::Px(2.0)},
-                    width: {Val::Px(640.0)},
-                    max_height: {Val::Percent(64.0)},
-                    overflow: {Overflow::scroll_y()},
-                    padding: {UiRect::all(Val::Px(6.0))},
-                }
-                BackgroundColor({PANEL_BG})
-                FileDialogList
-                ScrollArea
-            ),
-            (
-                Node {
-                    display: {save_row_display},
-                    flex_direction: {FlexDirection::Row},
-                    align_items: {AlignItems::Center},
-                    column_gap: {Val::Px(8.0)},
-                }
-                Children [
-                    (
-                        Text({String::from(loc.msg("dialog-file-name"))})
-                        TextFont { font_size: {FontSize::Px(15.0)} }
-                        TextColor({Color::srgb(0.75, 0.75, 0.85)})
-                    ),
-                    (
-                        Node {
-                            width: {Val::Px(340.0)},
-                            height: {Val::Px(28.0)},
-                            align_items: {AlignItems::Center},
-                            padding: {UiRect::horizontal(Val::Px(8.0))},
-                        }
-                        BackgroundColor({Color::srgba(0.10, 0.10, 0.16, 1.0)})
-                        Children [
-                            (
-                                Text({initial_filename})
-                                TextFont { font_size: {FontSize::Px(15.0)} }
-                                TextColor({Color::WHITE})
-                                SaveFilenameText
-                            )
-                        ]
-                    ),
-                    (
-                        WidgetButton
-                        TabIndex(0)
-                        Node {
-                            padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
-                        }
-                        BackgroundColor({Color::srgb(0.18, 0.28, 0.45)})
-                        on(|_: On<Activate>,
-                           mut dialog: ResMut<FileDialog>,
-                           mut chosen: MessageWriter<FileChosen>,
-                           roots: Query<Entity, With<FileDialogRoot>>,
-                           next: ResMut<NextState<FileDialogState>>,
-                           mut commands: Commands| {
-                            confirm_save(&mut dialog, &mut chosen, &roots, next, &mut commands);
-                        })
-                        Children [
-                            (
-                                Text({"Save".to_string()})
-                                TextFont { font_size: {FontSize::Px(15.0)} }
-                                TextColor({Color::WHITE})
-                            )
-                        ]
-                    ),
-                ]
-            ),
-            (
-                WidgetButton
-                TabIndex(0)
-                Node {
-                    padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
-                    margin: {UiRect::top(Val::Px(4.0))},
-                }
-                BackgroundColor({ENTRY_BG})
-                on(|_: On<Activate>,
-                   mut dialog: ResMut<FileDialog>,
-                   roots: Query<Entity, With<FileDialogRoot>>,
-                   next: ResMut<NextState<FileDialogState>>,
-                   mut commands: Commands| {
-                    close(&mut dialog, &roots, next, &mut commands);
-                })
-                Children [
-                    (
-                        Text({String::from(loc.msg("dialog-cancel-esc"))})
-                        TextFont { font_size: {FontSize::Px(15.0)} }
-                        TextColor({Color::srgb(0.85, 0.7, 0.7)})
-                    )
-                ]
-            ),
-        ]
-    })
+            Node {
+                position_type: {PositionType::Absolute},
+                left: {Val::Px(0.0)},
+                top: {Val::Px(0.0)},
+                width: {Val::Percent(100.0)},
+                height: {Val::Percent(100.0)},
+                flex_direction: {FlexDirection::Column},
+                align_items: {AlignItems::Center},
+                justify_content: {JustifyContent::Center},
+                row_gap: {Val::Px(6.0)},
+            }
+            BackgroundColor({Color::srgba(0.0, 0.0, 0.0, 0.78)})
+            GlobalZIndex(300)
+            FileDialogRoot
+            Children [
+                (
+                    Text({title})
+                    TextFont { font_size: {FontSize::Px(18.0)} }
+                    TextColor({Color::WHITE})
+                ),
+                (
+                    Text({String::new()})
+                    TextFont { font_size: {FontSize::Px(15.0)} }
+                    TextColor({Color::srgb(0.6, 0.6, 0.7)})
+                    DialogPathText
+                ),
+                (
+                    Node {
+                        flex_direction: {FlexDirection::Column},
+                        row_gap: {Val::Px(2.0)},
+                        width: {Val::Px(640.0)},
+                        max_height: {Val::Percent(64.0)},
+                        overflow: {Overflow::scroll_y()},
+                        padding: {UiRect::all(Val::Px(6.0))},
+                    }
+                    BackgroundColor({PANEL_BG})
+                    FileDialogList
+                    ScrollArea
+                ),
+                (
+                    Node {
+                        display: {save_row_display},
+                        flex_direction: {FlexDirection::Row},
+                        align_items: {AlignItems::Center},
+                        column_gap: {Val::Px(8.0)},
+                    }
+                    Children [
+                        (
+                            Text({String::from(loc.msg("dialog-file-name"))})
+                            TextFont { font_size: {FontSize::Px(15.0)} }
+                            TextColor({Color::srgb(0.75, 0.75, 0.85)})
+                        ),
+                        (
+                            Node {
+                                width: {Val::Px(340.0)},
+                                height: {Val::Px(28.0)},
+                                align_items: {AlignItems::Center},
+                                padding: {UiRect::horizontal(Val::Px(8.0))},
+                            }
+                            BackgroundColor({Color::srgba(0.10, 0.10, 0.16, 1.0)})
+                            Children [
+                                (
+                                    Text({initial_filename})
+                                    TextFont { font_size: {FontSize::Px(15.0)} }
+                                    TextColor({Color::WHITE})
+                                    SaveFilenameText
+                                )
+                            ]
+                        ),
+                        (
+                            WidgetButton
+                            TabIndex(0)
+                            Node {
+                                padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
+                            }
+                            BackgroundColor({Color::srgb(0.18, 0.28, 0.45)})
+                            on(|_: On<Activate>,
+                               mut dialog: ResMut<FileDialog>,
+                               mut chosen: MessageWriter<FileChosen>,
+                               roots: Query<Entity, With<FileDialogRoot>>,
+                               next: ResMut<NextState<FileDialogState>>,
+                               mut commands: Commands| {
+                                confirm_save(&mut dialog, &mut chosen, &roots, next, &mut commands);
+                            })
+                            Children [
+                                (
+                                    Text({"Save".to_string()})
+                                    TextFont { font_size: {FontSize::Px(15.0)} }
+                                    TextColor({Color::WHITE})
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+                (
+                    WidgetButton
+                    TabIndex(0)
+                    Node {
+                        padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
+                        margin: {UiRect::top(Val::Px(4.0))},
+                    }
+                    BackgroundColor({ENTRY_BG})
+                    on(|_: On<Activate>,
+                       mut dialog: ResMut<FileDialog>,
+                       roots: Query<Entity, With<FileDialogRoot>>,
+                       next: ResMut<NextState<FileDialogState>>,
+                       mut commands: Commands| {
+                        close(&mut dialog, &roots, next, &mut commands);
+                    })
+                    Children [
+                        (
+                            Text({String::from(loc.msg("dialog-cancel-esc"))})
+                            TextFont { font_size: {FontSize::Px(15.0)} }
+                            TextColor({Color::srgb(0.85, 0.7, 0.7)})
+                        )
+                    ]
+                ),
+            ]
+        })
         // Modal: Tab/Shift+Tab cycles within the dialog without leaking to
         // the page behind it.
         .insert(TabGroup::modal());

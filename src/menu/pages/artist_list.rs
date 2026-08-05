@@ -4,8 +4,8 @@
 //! Jam Session's "Pick a Song" (see `GameplayMode` disambiguating the Back
 //! button's target).
 
-use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::{GameplayMode, SelectedArtist};

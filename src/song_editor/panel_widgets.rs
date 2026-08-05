@@ -189,11 +189,9 @@ pub(super) fn mod_button(
             BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
             Tooltip(String::from(tooltip)),
         ))
-        .observe(
-            move |_: On<Activate>, mut state: ResMut<EditorState>| {
-                apply_modifier(&mut state, kind);
-            },
-        )
+        .observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
+            apply_modifier(&mut state, kind);
+        })
         .with_children(|b| {
             let base = button_content_text(style, icon, &label);
             let mut text = b.spawn((

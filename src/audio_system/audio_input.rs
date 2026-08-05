@@ -47,8 +47,12 @@ pub struct AudioCapture {
 /// warning instead of the game silently running "deaf" — see TODO.md.
 #[derive(Resource, Clone, PartialEq, Debug)]
 pub enum MicStatus {
-    Connected { device_name: String },
-    Failed { reason: String },
+    Connected {
+        device_name: String,
+    },
+    Failed {
+        reason: String,
+    },
     /// Android's `RECORD_AUDIO` and iOS's `NSMicrophoneUsageDescription`
     /// both require an explicit runtime permission prompt before capture
     /// can succeed — this is somewhere for that state to land distinct

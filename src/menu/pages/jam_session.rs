@@ -3,8 +3,8 @@
 //! The "Jam Session" choice: pick a real song (`ArtistList`) or synthesize
 //! one (`JamGenerate` — see `pages::jam_generate`).
 
-use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::{GameplayMode, JamProgression};
@@ -49,9 +49,7 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("jam-generate"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
-            page.set(MenuPage::JamGenerate)
-        },
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::JamGenerate),
     );
     spawn_button(
         &mut commands,

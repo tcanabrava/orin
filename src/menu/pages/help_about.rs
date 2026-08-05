@@ -3,8 +3,8 @@
 //! Documentation link, About, Tutorial, and Credits, plus the static
 //! "what is this app" About page reached from here.
 
-use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
@@ -105,9 +105,7 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("menu-credits"),
-        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
-            state.set(AppState::Credits)
-        },
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| state.set(AppState::Credits),
     );
     let status = commands
         .spawn((
@@ -174,8 +172,6 @@ pub(crate) fn setup_about_page(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
-            page.set(MenuPage::HelpAbout)
-        },
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::HelpAbout),
     );
 }

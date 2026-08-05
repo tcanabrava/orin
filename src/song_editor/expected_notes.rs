@@ -326,11 +326,9 @@ fn spawn_expected_mod_button(
             BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
             Tooltip(String::from(tooltip)),
         ))
-        .observe(
-            move |_: On<Activate>, mut state: ResMut<EditorState>| {
-                apply_expected_modifier(&mut state, kind);
-            },
-        )
+        .observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
+            apply_expected_modifier(&mut state, kind);
+        })
         .with_children(|b| {
             b.spawn((
                 Text::new(super::panel_widgets::button_content_text(
@@ -549,11 +547,9 @@ fn rebuild_expected_notes_overlay(
                 BorderColor::all(color),
                 pick,
             ));
-            ec.observe(
-                move |_: On<Activate>, mut state: ResMut<EditorState>| {
-                    state.expected_selected = Some(id);
-                },
-            )
+            ec.observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
+                state.expected_selected = Some(id);
+            })
             .observe(
                 move |_: On<Pointer<DragStart>>, mut state: ResMut<EditorState>| {
                     if state.expected_dragging.is_some() {

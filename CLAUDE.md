@@ -1236,6 +1236,45 @@ Manual testing needs a mic, audio out, and a display.
   message-based, `DialogId`-scoped shape as `dialogs::file_dialog`) rather
   than firing immediately or hand-rolling another modal; the Song Editor's
   Erase/Remove timeline tool (`song_editor::timeline`) is its first user.
+- **Keyboard navigation:** every interactive element must use a real
+  `bevy_ui_widgets` widget (explicit `use bevy::ui_widgets::Button as
+  WidgetButton` — plain `bevy::prelude::*` resolves the bare `Button` name
+  to `bevy_ui`'s *legacy*, pre-headless-widgets marker instead, which has
+  no keyboard support at all) with `TabIndex(0)` attached, never a
+  hand-rolled `Pointer<Click>` observer on a plain `Node`. Every screen's
+  root needs a `TabGroup` (`bevy::input_focus::tab_navigation`) for
+  Tab/Shift+Tab to scope to; a modal (a confirm/file dialog, an open
+  combobox dropdown) needs `TabGroup::modal()` or its items' `TabIndex`
+  flipped negative while closed (see `dialogs::combobox::
+  set_combobox_open`) so Tab can't reach something invisible — bevy's own
+  tab-gathering walks the ECS tree by `TabIndex`/`Children` alone, with no
+  `Display`/`Visibility` check. `dialogs::keyboard_nav::KeyboardNavPlugin`
+  registers `TabNavigationPlugin` (not in `DefaultPlugins`, unlike
+  `InputFocusPlugin`) and paints the focus ring; it does **not** bridge
+  `Activate` to `Pointer<Click>` — every click handler on a real
+  `WidgetButton` is written directly as `On<Activate>` (`Activate` is what
+  `bevy_ui_widgets::Button` fires for both a real click and a focused
+  Enter/Space, so one handler covers both). An earlier version routed
+  `Activate` through a synthetic re-triggered `Pointer<Click>` so ~130
+  existing handlers wouldn't need retyping — that bridge could recurse
+  into `bevy_ui_widgets`' own `button_on_pointer_click` (which reacts to
+  the synthetic click and, seeing the real click's still-`Pressed`
+  component, re-emits `Activate`) and overflow the stack on an ordinary
+  mouse click. A new button-shaped click handler must therefore take
+  `On<Activate>`, not `On<Pointer<Click>>` — and only ever on an entity
+  that actually carries a real `WidgetButton`; retyping a handler on a
+  legacy `bevy_ui::widget::Button` (or on a plain `Node` with no Button at
+  all, e.g. the Song Editor's note-grid drag surfaces or harmonica-diagram
+  cells) to `On<Activate>` doesn't fail to compile — it just silently
+  never fires, since neither ever emits `Activate`. Multi-option pickers
+  (radio-shaped, not "click to advance") should use `RadioGroup`/
+  `RadioButton` (see `dialogs::tab_bar`) rather than a hand-rolled
+  mutually-exclusive button row — only the group itself gets `TabIndex`,
+  per WAI-ARIA convention (individual radio buttons aren't Tab stops; the
+  group's own arrow-key handling reaches them). `Checkbox` needs no
+  `Button` alongside it — it already has independent Enter/Space and
+  click handling that doesn't go through `Activate`, and adding `Button`
+  risks a double-toggle (see `dialogs::checkbox.rs`).
 - **Bevy 0.19 scene spawning:** use `WorldAssetRoot(handle)` for GLB/scene
   assets, not `SceneRoot`.
 - **Localization is enforced:** user-visible strings must come from

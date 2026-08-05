@@ -3,8 +3,8 @@
 //! The Play menu: choose Play Song, Create Song, Jam Session, Bending
 //! Trainer, or Lessons.
 
-use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
@@ -25,25 +25,19 @@ pub(crate) fn setup_play_menu(
         &mut commands,
         root,
         &loc.msg("play-song"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
-            page.set(MenuPage::ModeSelect)
-        },
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::ModeSelect),
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("menu-create-song"),
-        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
-            state.set(AppState::SongEditor2)
-        },
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| state.set(AppState::SongEditor2),
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("jam-session"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
-            page.set(MenuPage::JamSessionMenu)
-        },
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::JamSessionMenu),
     );
     spawn_button(
         &mut commands,

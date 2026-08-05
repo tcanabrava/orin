@@ -361,11 +361,9 @@ pub(super) fn spawn_field_row(
             });
         } else {
             btn.insert(Tooltip(String::from(loc.msg("editor-field-text-tooltip"))))
-                .observe(
-                    move |_: On<Activate>, mut state: ResMut<EditorState>| {
-                        state.focus = Some(field);
-                    },
-                );
+                .observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
+                    state.focus = Some(field);
+                });
         }
 
         btn.with_children(|b| {
@@ -465,9 +463,7 @@ fn spawn_midi_track_row(
             Tooltip(String::from(loc.msg("editor-import-midi-tooltip"))),
         ))
         .observe(
-            |_: On<Activate>,
-             loc: Res<Localization>,
-             mut open: MessageWriter<OpenFileDialog>| {
+            |_: On<Activate>, loc: Res<Localization>, mut open: MessageWriter<OpenFileDialog>| {
                 open.write(OpenFileDialog {
                     purpose: MIDI_PURPOSE,
                     title: String::from(loc.msg("dialog-select-midi")),
