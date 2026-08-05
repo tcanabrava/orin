@@ -85,25 +85,23 @@ No open Song Editor items remain in `TODO.md` — undo/redo, the
 metronome/count-in, note audition, save/validation feedback, and the
 swing/triplet grid snap are all done (see Shipped above).
 
-3. **Repo-wide comment-shortening pass** (in progress): tightening
-   overly long `///`/`//!` doc comments throughout `src/`, keeping every
-   load-bearing fact (invariants, workaround reasons, cross-references)
-   but cutting restatement/padding/historical narration ("used to be",
-   "the old code"). `song_editor/` and `gameplay/` are now both fully
-   swept, file by file. Remaining: `menu/`, `dialogs/`, `jam/`,
-   `audio_system/`, `song/`, `lessons/`, `music_score/`, and the
-   top-level `src/*.rs` files (`main.rs`, `lib.rs`, `settings.rs`,
-   `theme.rs`, `localization.rs`, `scoring.rs`, `responsive.rs`,
-   `spectrogram.rs`, `assets_management.rs`, `app.rs`, `profile.rs`).
-   For a file over ~500 lines, find dense blocks via
-   `awk '/^\s*\/\/[\/!]/{c++;if(c==1)start=FNR} !/^\s*\/\/[\/!]/{if(c>=5)
-   print start"-"FNR-1; c=0}' <file>` (use `FNR`, not `NR`, when scanning
-   several files in one invocation — `NR` is cumulative across files and
-   produces wrong line numbers for anything after the first). Parallel
-   subagents repeatedly hit the session's usage limit mid-run with most
-   work lost (uncommitted edits don't survive a killed agent, tried
-   twice); doing this file-by-file directly instead, comment-only edits
-   committed without a build/test/clippy cycle per file.
+3. **Repo-wide comment-shortening pass — done.** Every directory under
+   `src/` (`song_editor/`, `gameplay/`, `menu/`, `dialogs/`, `jam/`,
+   `audio_system/`, `song/`, `lessons/`, `music_score/`,
+   `assets_management/`, `bin/`, `spectrogram/`, and the top-level
+   `src/*.rs` files) has been swept file by file for overly long
+   `///`/`//!` doc comments, tightening restatement/padding and cutting
+   historical narration ("used to be", "the old code") while keeping
+   every load-bearing fact (invariants, workaround reasons, cross-
+   references). A final full-repo scan turned up nothing left worth
+   trimming — remaining dense blocks are genuinely load-bearing technical
+   rationale (SMuFL glyph geometry in `music_score/`, psychoacoustic bass
+   in `jam/backing.rs`, etc.), not padding. Parallel subagents repeatedly
+   hit the session's usage limit mid-run with most work lost (uncommitted
+   edits don't survive a killed agent, tried twice); doing this file-by-
+   file directly worked reliably. Comment-only edits were committed
+   without a build/test/clippy cycle per file, per explicit instruction —
+   a final sanity build was still run at the end of the whole pass.
 
 ## Working practices
 
