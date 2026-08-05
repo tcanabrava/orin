@@ -642,9 +642,8 @@ impl Scale {
 
     /// The note classes (no octave) of this scale, rooted relative to
     /// `harp_key` — what the Song Editor's grid colors notes against
-    /// (`song_editor::grid::note_in_scale`), replacing what used to be an
-    /// unconditional [`blues_scale_classes`] call with an explicit,
-    /// chart-author-selectable scale.
+    /// (`song_editor::grid::note_in_scale`), an explicit, chart-author-
+    /// selectable alternative to a fixed [`blues_scale_classes`] call.
     pub fn classes(self, harp_key: &str) -> HashSet<String> {
         let root = semitone(harp_key, self.root_offset_semitones());
         self.degree_intervals()
