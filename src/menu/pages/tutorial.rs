@@ -2,16 +2,16 @@
 
 //! A guided auto-tour of Harmonicon's top-level screens: starting it drives
 //! `NextState<MenuPage>`/`NextState<AppState>` through a fixed sequence on a
-//! timer, with a click-blocking overlay on top naming the current screen and
-//! briefly explaining what it's for, then returns to whichever page the tour
-//! was started from. Alongside the no-selection-required menu pages, a few
-//! steps actually enter live gameplay for a look — [`TourTarget::Playing`]
-//! (2D and Jam Session, both against the bundled `DEMO_SONG_PATH`),
-//! [`TourTarget::BendingTrainer`], and [`TourTarget::SongEditor`] — using
-//! the exact same `AppState` transitions their normal entry points do, so
-//! nothing about the tour needs those screens' own systems to know a tour
-//! is even happening. Not covered: `ArtistList`/`SongList`/`LessonReader`,
-//! which need an artist/song/lesson already picked.
+//! timer, with a click-blocking overlay naming the current screen and
+//! briefly explaining it, then returns to whichever page the tour started
+//! from. Alongside the no-selection-required menu pages, a few steps enter
+//! live gameplay for a look — [`TourTarget::Playing`] (2D and Jam Session,
+//! both against the bundled `DEMO_SONG_PATH`), [`TourTarget::
+//! BendingTrainer`], and [`TourTarget::SongEditor`] — using the exact same
+//! `AppState` transitions their normal entry points do, so those screens'
+//! own systems never need to know a tour is happening. Not covered:
+//! `ArtistList`/`SongList`/`LessonReader`, which need something picked
+//! first.
 
 use bevy::asset::AssetServer;
 use bevy::picking::events::{Click, Pointer};
@@ -196,9 +196,9 @@ pub(crate) fn tour_finished(tour: &TutorialTour) -> bool {
 }
 
 /// The "Tutorial" button on the Main menu: starts the tour from whatever
-/// page is active when it's clicked (always `Main` today, but this doesn't
-/// assume that). Always starts on a `Page` step, and we're already in
-/// `AppState::Menu` to click it from, so this can set `NextState<MenuPage>`
+/// page is active when clicked (always `Main` today, but this doesn't
+/// assume that). Always starts on a `Page` step, and the click already
+/// happens in `AppState::Menu`, so this can set `NextState<MenuPage>`
 /// directly rather than going through `route_menu_entry` — see
 /// [`enter_tour_target`]'s doc comment for why later steps can't.
 pub(crate) fn start_tutorial_tour(
@@ -223,15 +223,14 @@ fn step_seconds(step: usize) -> f32 {
 
 /// Applies `target`: for a `Page`, just queues `AppState::Menu` —
 /// `route_menu_entry` (via [`tour_menu_landing`]) is what actually picks
-/// the right page, because directly setting `NextState<MenuPage>` in the
+/// the right page, since directly setting `NextState<MenuPage>` in the
 /// same tick as `NextState<AppState>` isn't reliable once `AppState` is
 /// actually changing (the substate machinery resets it to its own default
 /// first) — the same reason `ReturnToSongList`/`GeneratedJamSession`/
-/// `LessonContext` all exist as flags `route_menu_entry` reads instead of
-/// setting `NextState<MenuPage>` directly from wherever they're raised.
-/// For the live-screen targets, this is exactly what each screen's own
-/// normal entry point does (loading `DEMO_SONG_PATH` the same way picking
-/// a song from the song list does, for `Playing`).
+/// `LessonContext` exist as flags `route_menu_entry` reads instead. For the
+/// live-screen targets, this is exactly what each screen's own normal
+/// entry point does (loading `DEMO_SONG_PATH` for `Playing`, the same way
+/// picking a song from the song list does).
 fn enter_tour_target(
     target: &TourTarget,
     commands: &mut Commands,
