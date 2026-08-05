@@ -61,14 +61,12 @@ impl Default for SongRecord {
     }
 }
 
-/// Reads `phrase_learned` as the current name-keyed map, or — from a
-/// `profile.json` written before this scheme existed — as the old
-/// ordinal-indexed `Vec<f32>`, which is discarded rather than guessed at
-/// (there's no way to recover section names from bare array positions).
-/// Falling back to `HashMap`'s own `Deserialize` on a type mismatch (instead
-/// of erroring) is what keeps loading an old profile from wiping out the
-/// rest of it (every other song's best score, lesson progress, ...) just
-/// because of this one field.
+/// Reads `phrase_learned` as the current name-keyed map, or — from an older
+/// `profile.json` — the ordinal-indexed `Vec<f32>` it used to be, which is
+/// discarded rather than guessed at (no way to recover section names from
+/// bare array positions). Falling back instead of erroring on a type
+/// mismatch keeps loading an old profile from wiping out the rest of it
+/// (every other song's best score, lesson progress, ...) over this one field.
 fn deserialize_phrase_learned<'de, D>(deserializer: D) -> Result<HashMap<String, f32>, D::Error>
 where
     D: Deserializer<'de>,
