@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 
 //! Displays the chart's referenced music file (`EditorState::music`) as a
-//! peak-amplitude waveform in the grid header — a visual placement aid for
-//! aligning notes and tempo to the actual audio, the foundation
-//! `ROADMAP.md`'s "tempo-map editing against an imported audio track" 0.5
-//! item builds on. Reuses `audio_system::waveform`'s existing decoders (the
-//! same ones a shipped song's own music gets analyzed with at asset-load
-//! time) rather than duplicating any audio-decoding logic.
+//! peak-amplitude waveform in the grid header, aiding alignment of notes
+//! and tempo to the actual audio. Reuses `audio_system::waveform`'s
+//! existing decoders — the same ones a shipped song's music is analyzed
+//! with at asset-load time — rather than duplicating decode logic.
 //!
-//! Placed against `EditorState`'s own variable tempo map (`state::
-//! build_tempo_map`), via `song::chart::seconds_to_tick`/`tick_to_seconds` —
-//! so a tempo-change point shifts the waveform's alignment under it
-//! correctly, the same as it shifts note ticks on save/load.
+//! Placed against `EditorState`'s variable tempo map (`state::
+//! build_tempo_map`) via `song::chart::seconds_to_tick`/`tick_to_seconds`,
+//! so a tempo-change point shifts the waveform's alignment exactly like it
+//! shifts note ticks on save/load.
 
 use bevy::prelude::*;
 
@@ -21,11 +19,10 @@ use crate::audio_system::waveform::{WAVEFORM_BUCKETS, analyze_ogg_waveform, anal
 use crate::song::chart::{TempoPoint, seconds_to_tick, tick_to_seconds};
 
 /// The chart's music file, decoded into a peak-amplitude waveform — empty
-/// (`duration_secs == 0.0`) until a music file is set, or if decoding it
-/// failed. `path` is `MusicWaveform`'s own cache of the `EditorState::music`
-/// value it was last decoded from, so [`sync_music_waveform`] can tell
-/// whether a re-decode is needed without depending on `Changed<EditorState>`
-/// (which fires far more often than the music field actually changes).
+/// (`duration_secs == 0.0`) until a music file is set or if decoding
+/// failed. `path` caches the `EditorState::music` value last decoded, so
+/// [`sync_music_waveform`] can tell whether a re-decode is needed without
+/// depending on `Changed<EditorState>`, which fires far more often.
 #[derive(Resource, Default)]
 pub(super) struct MusicWaveform {
     path: String,
@@ -34,11 +31,10 @@ pub(super) struct MusicWaveform {
 }
 
 /// Decodes `path`'s audio into a peak-amplitude waveform, dispatching by
-/// file extension the same way `song::loader` does for a shipped song's own
-/// music. Degrades to an all-zero, zero-duration waveform (never errors)
-/// for an unreadable file or an extension neither decoder handles — the
-/// same "never fails the caller" convention `analyze_ogg_waveform`/
-/// `analyze_wav_waveform` themselves already follow.
+/// extension the same way `song::loader` does for a shipped song. Degrades
+/// to an all-zero, zero-duration waveform (never errors) for an unreadable
+/// file or unsupported extension, same convention as `analyze_ogg_
+/// waveform`/`analyze_wav_waveform` themselves.
 fn decode_music_waveform(path: &std::path::Path) -> (Vec<f32>, f64) {
     let Ok(bytes) = std::fs::read(path) else {
         return (vec![0.0; WAVEFORM_BUCKETS], 0.0);
@@ -76,11 +72,11 @@ pub(super) fn sync_music_waveform(state: Res<EditorState>, mut waveform: ResMut<
 }
 
 /// The grid-space pixel x/width for waveform bucket `i` of `bucket_count`
-/// (evenly spanning `duration_secs`), against `tempo_map` — pure so the
-/// mapping from "waveform time" to "grid pixel space" is directly testable
-/// without a loaded chart. Each bucket's start/end time is placed via
-/// `song::chart::seconds_to_tick`, so a tempo-change point shifts the
-/// waveform's alignment under it exactly like it shifts note ticks.
+/// (evenly spanning `duration_secs`), against `tempo_map` — pure so
+/// "waveform time" to "grid pixel space" is directly testable without a
+/// loaded chart. Each bucket's start/end time is placed via `song::chart::
+/// seconds_to_tick`, so a tempo-change point shifts alignment exactly
+/// like it shifts note ticks.
 pub(super) fn waveform_bar_geometry(
     i: usize,
     bucket_count: usize,

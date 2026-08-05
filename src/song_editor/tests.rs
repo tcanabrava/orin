@@ -1252,12 +1252,10 @@ fn serialize_harpchart_writes_audio_file_once_music_is_picked() {
 }
 
 /// A chart the Song Editor writes must pass the exact schema
-/// `song::loader::SongChartLoader` validates against at load time — a
-/// field the editor writes but the schema doesn't declare (with
-/// `additionalProperties: false` at every level, an *undeclared* field
-/// fails validation outright, not just gets ignored) makes every song
-/// saved by the editor unplayable. Caught `metadata.audio_file` missing
-/// from the schema this way.
+/// `song::loader::SongChartLoader` validates against at load time — with
+/// `additionalProperties: false` at every level, a field the editor writes
+/// but the schema doesn't declare fails validation outright, making every
+/// song saved by the editor unplayable.
 #[test]
 fn serialize_harpchart_validates_against_the_song_schema() {
     let mut s = EditorState {
