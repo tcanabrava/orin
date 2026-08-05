@@ -10,8 +10,8 @@
 
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 use super::interaction::apply_modifier;
@@ -56,7 +56,7 @@ fn spawn_button_shell<'a, M: 'static>(
     tooltip: LocalizedStr,
     icon: &str,
     style: ActionButtonStyle,
-    on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
+    on_click: impl bevy::ecs::system::IntoObserverSystem<Activate, (), M>,
 ) -> EntityCommands<'a> {
     let mut ec = panel.spawn((
         WidgetButton,
@@ -94,7 +94,7 @@ pub(super) fn mode_button<M: 'static>(
     icon: &str,
     style: ActionButtonStyle,
     colors: SongEditorColors,
-    on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
+    on_click: impl bevy::ecs::system::IntoObserverSystem<Activate, (), M>,
 ) {
     spawn_button_shell(panel, colors.btn_bg, label, tooltip, icon, style, on_click).insert(kind);
 }
@@ -126,7 +126,7 @@ pub(super) fn timeline_tool_button(
             Tooltip(String::from(tooltip)),
         ))
         .observe(
-            move |_: On<Pointer<Click>>,
+            move |_: On<Activate>,
                   loc: Res<Localization>,
                   mut state: ResMut<EditorState>,
                   mut sel: ResMut<TimelineSelection>,
@@ -190,7 +190,7 @@ pub(super) fn mod_button(
             Tooltip(String::from(tooltip)),
         ))
         .observe(
-            move |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            move |_: On<Activate>, mut state: ResMut<EditorState>| {
                 apply_modifier(&mut state, kind);
             },
         )
@@ -249,7 +249,7 @@ pub(super) fn transport_button<'a, M: 'static>(
     icon: &str,
     style: ActionButtonStyle,
     bg: Color,
-    on_click: impl bevy::ecs::system::IntoObserverSystem<Pointer<Click>, (), M>,
+    on_click: impl bevy::ecs::system::IntoObserverSystem<Activate, (), M>,
 ) -> EntityCommands<'a> {
     spawn_button_shell(panel, bg, label, tooltip, icon, style, on_click)
 }

@@ -23,8 +23,8 @@
 use bevy::{
     audio::{AudioSource, Volume},
     ecs::system::IntoObserverSystem,
-    picking::events::{Click, Pointer},
     prelude::*,
+    ui_widgets::Activate,
 };
 use bevy_fluent::Localization;
 
@@ -491,14 +491,14 @@ fn sync_phase_visibility(
 // ── Dedicated button callbacks ────────────────────────────────────────────────
 
 /// Start / Try Again: reset and begin a fresh recording pass.
-fn begin_recording(_: On<Pointer<Click>>, mut cal: ResMut<CalState>) {
+fn begin_recording(_: On<Activate>, mut cal: ResMut<CalState>) {
     cal.reset();
     cal.phase = CalPhase::Recording;
 }
 
 /// Apply: fold the measured offset into the input-latency setting, then leave.
 fn apply_calibration(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     cal: Res<CalState>,
     mut audio: ResMut<AudioSettings>,
     mut next_state: ResMut<NextState<AppState>>,
@@ -513,7 +513,7 @@ fn apply_calibration(
 
 /// Cancel: leave without changing the latency setting.
 fn cancel_calibration(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut next_state: ResMut<NextState<AppState>>,
     mut return_to_options: ResMut<ReturnToOptions>,
 ) {
@@ -856,7 +856,7 @@ fn spawn_timing_zones(bar: &mut ChildSpawnerCommands) {
 fn spawn_cal_button<M: 'static>(
     parent: &mut ChildSpawnerCommands,
     label: &str,
-    on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
 ) {
     parent
         .spawn_empty()

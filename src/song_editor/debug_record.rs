@@ -33,9 +33,9 @@
 use bevy::ecs::query::Has;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 use bevy::ui::Checked;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::{Checkbox, checkbox_self_update};
 
 use crate::app::AppState;
@@ -185,7 +185,7 @@ pub(super) fn spawn_debug_recording_controls(
     ));
 }
 
-fn erase_debug_recording(_: On<Pointer<Click>>, mut raw: ResMut<RawCaptureBuffer>) {
+fn erase_debug_recording(_: On<Activate>, mut raw: ResMut<RawCaptureBuffer>) {
     raw.samples.clear();
     raw.detected_notes.clear();
 }

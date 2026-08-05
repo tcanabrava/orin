@@ -20,8 +20,8 @@
 
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 use super::state::{ContentKind, EditorState, Field, LESSON_FIELDS, Scroll};
@@ -170,7 +170,7 @@ fn spawn_lesson_details_header(
             loc.msg("editor-lesson-details-toggle-tooltip"),
         )),
     ))
-    .observe(|_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+    .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
         state.lesson_details_expanded = !state.lesson_details_expanded;
     })
     .with_children(|b| {

@@ -3,7 +3,7 @@
 //! Documentation link, About, Tutorial, and Credits, plus the static
 //! "what is this app" About page reached from here.
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -75,7 +75,7 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("help-documentation"),
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut status: Query<&mut Text, With<DocsStatusLabel>>,
          loc: Res<Localization>| {
             let message = match locate_docs_index() {
@@ -93,7 +93,7 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("menu-about"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::About),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::About),
     );
     spawn_button(
         &mut commands,
@@ -105,7 +105,7 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("menu-credits"),
-        |_: On<Pointer<Click>>, mut state: ResMut<NextState<AppState>>| {
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
             state.set(AppState::Credits)
         },
     );
@@ -125,7 +125,7 @@ pub(crate) fn setup_help_about_menu(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
 }
 
@@ -174,7 +174,7 @@ pub(crate) fn setup_about_page(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::HelpAbout)
         },
     );

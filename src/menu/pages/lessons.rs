@@ -6,9 +6,8 @@
 //! Mark-as-Done for instructional-only ones). Discovery/unlock/pass logic
 //! lives in `crate::lessons`; this module is only the menu surface.
 
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
-use bevy::ui_widgets::ScrollArea;
+use bevy::ui_widgets::{Activate, ScrollArea};
 use bevy_fluent::Localization;
 
 use crate::dialogs::button;
@@ -316,7 +315,7 @@ fn populate_lesson_rows(
                     &label,
                     LESSON_ROW_WIDTH,
                     font_size,
-                    move |_: On<Pointer<Click>>,
+                    move |_: On<Activate>,
                           mut selected: ResMut<SelectedLesson>,
                           mut page: ResMut<NextState<MenuPage>>| {
                         selected.0 = Some(id.clone());
@@ -379,7 +378,7 @@ fn spawn_back_to_play(commands: &mut Commands, root: Entity, loc: &Localization)
         commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
 }
 
@@ -461,7 +460,7 @@ pub(crate) fn setup_lesson_reader(
                 &mut commands,
                 root,
                 &loc.msg("lesson-start"),
-                move |_: On<Pointer<Click>>,
+                move |_: On<Activate>,
                       asset_server: Res<AssetServer>,
                       mut mode: ResMut<GameplayMode>,
                       mut jam_progression: ResMut<JamProgression>,
@@ -496,7 +495,7 @@ pub(crate) fn setup_lesson_reader(
                 &mut commands,
                 root,
                 &loc.msg("lesson-mark-done"),
-                move |_: On<Pointer<Click>>,
+                move |_: On<Activate>,
                       mut profile: ResMut<PlayerProfile>,
                       mut page: ResMut<NextState<MenuPage>>| {
                     let record = profile.lessons.entry(lesson_id.clone()).or_default();
@@ -519,7 +518,7 @@ fn spawn_back_to_lessons(commands: &mut Commands, root: Entity, loc: &Localizati
         commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Lessons),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Lessons),
     );
 }
 

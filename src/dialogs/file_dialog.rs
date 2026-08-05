@@ -18,8 +18,8 @@ use std::path::PathBuf;
 use bevy::input::ButtonState;
 use bevy::input::keyboard::KeyboardInput;
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 use bevy::ui_widgets::ScrollArea;
 use bevy_fluent::Localization;
@@ -254,7 +254,7 @@ fn handle_open(
                             padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
                         }
                         BackgroundColor({Color::srgb(0.18, 0.28, 0.45)})
-                        on(|_: On<Pointer<Click>>,
+                        on(|_: On<Activate>,
                            mut dialog: ResMut<FileDialog>,
                            mut chosen: MessageWriter<FileChosen>,
                            roots: Query<Entity, With<FileDialogRoot>>,
@@ -280,7 +280,7 @@ fn handle_open(
                     margin: {UiRect::top(Val::Px(4.0))},
                 }
                 BackgroundColor({ENTRY_BG})
-                on(|_: On<Pointer<Click>>,
+                on(|_: On<Activate>,
                    mut dialog: ResMut<FileDialog>,
                    roots: Query<Entity, With<FileDialogRoot>>,
                    next: ResMut<NextState<FileDialogState>>,
@@ -347,7 +347,7 @@ fn refresh(
 fn spawn_dir_entry(parent: &mut ChildSpawnerCommands, label: String, path: PathBuf) {
     parent.spawn_empty().apply_scene(button::default(
         &label,
-        move |_: On<Pointer<Click>>,
+        move |_: On<Activate>,
               mut dialog: ResMut<FileDialog>,
               mut refresh_req: MessageWriter<RefreshFileList>| {
             dialog.dir = path.clone();
@@ -362,7 +362,7 @@ fn spawn_dir_entry(parent: &mut ChildSpawnerCommands, label: String, path: PathB
 fn spawn_file_entry(parent: &mut ChildSpawnerCommands, label: String, path: PathBuf) {
     parent.spawn_empty().apply_scene(button::default(
         &label,
-        move |_: On<Pointer<Click>>,
+        move |_: On<Activate>,
               mut dialog: ResMut<FileDialog>,
               mut chosen: MessageWriter<FileChosen>,
               roots: Query<Entity, With<FileDialogRoot>>,

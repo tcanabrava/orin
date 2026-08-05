@@ -3,7 +3,7 @@
 //! The "Jam Session" choice: pick a real song (`ArtistList`) or synthesize
 //! one (`JamGenerate` — see `pages::jam_generate`).
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -32,7 +32,7 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("jam-session-pick-song"),
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut mode: ResMut<GameplayMode>,
          mut progression: ResMut<JamProgression>,
          mut page: ResMut<NextState<MenuPage>>| {
@@ -49,7 +49,7 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("jam-generate"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::JamGenerate)
         },
     );
@@ -57,6 +57,6 @@ pub(crate) fn setup_jam_session_menu(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
 }

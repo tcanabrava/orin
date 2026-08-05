@@ -15,8 +15,9 @@
 
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Out, Over, Pointer};
+use bevy::picking::events::{Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 use bevy_fluent::Localization;
 
@@ -170,7 +171,7 @@ fn setup(
         &mut commands,
         root,
         &loc.msg("theme-back-to-options"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
     );
 }
 
@@ -196,7 +197,7 @@ fn theme_button_scene(name: String, is_selected: bool) -> impl Scene {
         }
         BackgroundColor({color})
         ThemeButton({name})
-        on(move |_: On<Pointer<Click>>, mut selected: ResMut<SelectedTheme>| {
+        on(move |_: On<Activate>, mut selected: ResMut<SelectedTheme>| {
             selected.0 = pick.clone();
         })
         on(theme_over)

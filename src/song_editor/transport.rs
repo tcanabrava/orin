@@ -7,8 +7,8 @@
 //! "button cluster" seam. Built from `panel_widgets`' shared shapes.
 
 use bevy::audio::AudioSource;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 
 use super::harpchart::safe_path_segment;
 use super::panel_widgets::transport_button;
@@ -44,7 +44,7 @@ pub(super) fn spawn_file_buttons(
         "\u{1F4BE}",
         style,
         colors.transport_save,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          state: Res<EditorState>,
          loc: Res<Localization>,
          mut open: MessageWriter<OpenFileDialog>| {
@@ -85,7 +85,7 @@ pub(super) fn spawn_file_buttons(
         "\u{1F4C2}",
         style,
         colors.transport_load,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          state: Res<EditorState>,
          loc: Res<Localization>,
          mut open: MessageWriter<OpenFileDialog>| {
@@ -124,7 +124,7 @@ pub(super) fn spawn_playback_buttons(
         "\u{25B6}",
         style,
         colors.transport_play,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          mut sources: ResMut<Assets<AudioSource>>,
          settings: Res<AudioSettings>,
@@ -172,7 +172,7 @@ pub(super) fn spawn_playback_buttons(
         "\u{23F8}",
         style,
         colors.transport_pause,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut playhead: ResMut<Playhead>,
          sinks: Query<&AudioSink, With<EditorAudio>>| {
             toggle_pause(&mut playhead, &sinks);
@@ -185,7 +185,7 @@ pub(super) fn spawn_playback_buttons(
         "\u{25A0}",
         style,
         colors.transport_stop,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          playing: Query<Entity, With<EditorAudio>>,
          mut practice: ResMut<PracticeState>,
@@ -213,7 +213,7 @@ pub(super) fn spawn_playback_buttons(
         "\u{1F3A4}",
         style,
         colors.transport_practice,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          mut sources: ResMut<Assets<AudioSource>>,
          settings: Res<AudioSettings>,
@@ -278,7 +278,7 @@ pub(super) fn spawn_record_buttons(
         "\u{25B6}",
         style,
         colors.transport_record,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          state: Res<EditorState>,
          mut practice: ResMut<PracticeState>,
          record: Res<RecordState>,
@@ -309,7 +309,7 @@ pub(super) fn spawn_record_buttons(
         "\u{23F8}",
         style,
         colors.transport_pause,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          mut record: ResMut<RecordState>,
          mut playhead: ResMut<Playhead>,
@@ -339,7 +339,7 @@ pub(super) fn spawn_record_buttons(
         "\u{25A0}",
         style,
         colors.transport_stop,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          playing: Query<Entity, With<EditorAudio>>,
          mut record: ResMut<RecordState>,
@@ -365,7 +365,7 @@ pub(super) fn spawn_record_buttons(
         "\u{23F9}",
         style,
         colors.transport_stop,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          playing: Query<Entity, With<EditorAudio>>,
          mut record: ResMut<RecordState>,

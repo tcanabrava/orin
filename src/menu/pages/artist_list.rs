@@ -4,7 +4,7 @@
 //! Jam Session's "Pick a Song" (see `GameplayMode` disambiguating the Back
 //! button's target).
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -54,7 +54,7 @@ pub(crate) fn setup_artist_list(
                 &mut commands,
                 root,
                 &label,
-                move |_: On<Pointer<Click>>,
+                move |_: On<Activate>,
                       mut selected: ResMut<SelectedArtist>,
                       mut page: ResMut<NextState<MenuPage>>| {
                     selected.0 = artist.clone();
@@ -71,7 +71,7 @@ pub(crate) fn setup_artist_list(
         // Jam Session's "Pick a Song" — that set `GameplayMode` before
         // navigating here, so it doubles as the flag for which page Back
         // should return to.
-        |_: On<Pointer<Click>>, mode: Res<GameplayMode>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mode: Res<GameplayMode>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(match *mode {
                 GameplayMode::JamSession => MenuPage::JamSessionMenu,
                 GameplayMode::Play2D | GameplayMode::Play3D => MenuPage::ModeSelect,

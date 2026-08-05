@@ -3,7 +3,7 @@
 //! The Play menu: choose Play Song, Create Song, Jam Session, Bending
 //! Trainer, or Lessons.
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -25,7 +25,7 @@ pub(crate) fn setup_play_menu(
         &mut commands,
         root,
         &loc.msg("play-song"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::ModeSelect)
         },
     );
@@ -33,7 +33,7 @@ pub(crate) fn setup_play_menu(
         &mut commands,
         root,
         &loc.msg("menu-create-song"),
-        |_: On<Pointer<Click>>, mut state: ResMut<NextState<AppState>>| {
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
             state.set(AppState::SongEditor2)
         },
     );
@@ -41,7 +41,7 @@ pub(crate) fn setup_play_menu(
         &mut commands,
         root,
         &loc.msg("jam-session"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::JamSessionMenu)
         },
     );
@@ -49,7 +49,7 @@ pub(crate) fn setup_play_menu(
         &mut commands,
         root,
         &loc.msg("bending-trainer"),
-        |_: On<Pointer<Click>>, mut state: ResMut<NextState<AppState>>| {
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
             state.set(AppState::BendingTrainer)
         },
     );
@@ -57,12 +57,12 @@ pub(crate) fn setup_play_menu(
         &mut commands,
         root,
         &loc.msg("menu-lessons"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Lessons),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Lessons),
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
 }

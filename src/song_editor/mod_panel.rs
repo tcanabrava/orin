@@ -7,8 +7,8 @@
 //! for why it's two stacked rows rather than one ever-growing row. Built
 //! from the reusable button shapes in `super::panel_widgets`.
 
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 
 use super::AppState;
 use super::panel_widgets::{
@@ -76,7 +76,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{2190}",
                     style,
                     colors.transport_back,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut next: ResMut<NextState<AppState>>,
                      mut ret_play: ResMut<crate::app::ReturnToPlay>| {
                         ret_play.0 = true;
@@ -98,7 +98,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{270E}",
                     style,
                     colors,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut state: ResMut<EditorState>,
                      playing: Query<Entity, With<EditorAudio>>,
                      mut practice: ResMut<PracticeState>,
@@ -128,7 +128,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{23FA}",
                     style,
                     colors,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut state: ResMut<EditorState>,
                      playing: Query<Entity, With<EditorAudio>>,
                      mut practice: ResMut<PracticeState>,
@@ -149,7 +149,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{1F3B5}",
                     style,
                     colors,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut state: ResMut<EditorState>,
                      playing: Query<Entity, With<EditorAudio>>,
                      mut record: ResMut<RecordState>,
@@ -177,7 +177,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{1F512}",
                     style,
                     colors,
-                    |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                    |_: On<Activate>, mut state: ResMut<EditorState>| {
                         state.user_locked = !state.user_locked;
                     },
                 );
@@ -198,7 +198,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{21B6}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut state: ResMut<EditorState>,
                      mut history: ResMut<super::undo::UndoHistory>| {
                         history.undo(&mut state);
@@ -212,7 +212,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{21B7}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut state: ResMut<EditorState>,
                      mut history: ResMut<super::undo::UndoHistory>| {
                         history.redo(&mut state);
@@ -234,7 +234,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{2717}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                    |_: On<Activate>, mut state: ResMut<EditorState>| {
                         super::interaction::delete_selected(&mut state);
                     },
                 );
@@ -245,7 +245,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{25C8}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      state: Res<EditorState>,
                      mut clipboard: ResMut<super::clipboard::NoteClipboard>| {
                         if !state.selected.is_empty() {
@@ -260,7 +260,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{21B4}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut state: ResMut<EditorState>,
                      clipboard: Res<super::clipboard::NoteClipboard>| {
                         if clipboard.0.is_empty() {
@@ -295,7 +295,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{1F514}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      mut muted: ResMut<crate::gameplay::metronome_overlay::MetronomeMuted>| {
                         muted.0 = !muted.0;
                     },
@@ -311,7 +311,7 @@ pub(super) fn spawn_mod_panel(
                     "\u{2139}",
                     style,
                     colors.btn_bg,
-                    |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                    |_: On<Activate>, mut state: ResMut<EditorState>| {
                         state.legend_visible = !state.legend_visible;
                     },
                 );

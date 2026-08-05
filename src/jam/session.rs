@@ -7,8 +7,8 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::{
@@ -182,7 +182,7 @@ pub fn setup(
                         .with_children(|row| {
                             row.spawn_empty().apply_scene(button::small(
                                 &loc.msg("jam-loop-button"),
-                                |_: On<Pointer<Click>>, mut jam_loop: ResMut<JamLoop>| {
+                                |_: On<Activate>, mut jam_loop: ResMut<JamLoop>| {
                                     jam_loop.0 = !jam_loop.0;
                                 },
                             ));
@@ -206,7 +206,7 @@ pub fn setup(
                             row.spawn_empty().apply_scene(
                                 button::small(
                                     &loc.msg("jam-call-response-button"),
-                                    |_: On<Pointer<Click>>,
+                                    |_: On<Activate>,
                                      mut enabled: ResMut<
                                         super::call_response::CallResponseEnabled,
                                     >| {

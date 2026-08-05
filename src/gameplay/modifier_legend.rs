@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 use bevy::ui_render::prelude::MaterialNode;
+use bevy::ui_widgets::Activate;
+use bevy::ui_widgets::Button as WidgetButton;
 use bevy_fluent::Localization;
 
 use super::gameplay_2d::{note_anim_mode, note_techniques};
@@ -124,7 +126,8 @@ pub fn spawn_modifier_legend(
         })
         .with_children(|col| {
             col.spawn_empty().apply_scene(bsn! {
-                Button
+                WidgetButton
+                TabIndex(0)
                 Node { padding: {UiRect::ZERO} }
                 BackgroundColor({Color::NONE})
                 on(toggle_technique_legend)
@@ -182,7 +185,7 @@ pub fn spawn_modifier_legend(
         });
 }
 
-fn toggle_technique_legend(_: On<Pointer<Click>>, mut collapsed: ResMut<TechniqueLegendCollapsed>) {
+fn toggle_technique_legend(_: On<Activate>, mut collapsed: ResMut<TechniqueLegendCollapsed>) {
     collapsed.0 = !collapsed.0;
 }
 

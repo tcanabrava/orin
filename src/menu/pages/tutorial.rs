@@ -14,8 +14,8 @@
 //! first.
 
 use bevy::asset::AssetServer;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::dialogs::button;
@@ -202,7 +202,7 @@ pub(crate) fn tour_finished(tour: &TutorialTour) -> bool {
 /// directly rather than going through `route_menu_entry` — see
 /// [`enter_tour_target`]'s doc comment for why later steps can't.
 pub(crate) fn start_tutorial_tour(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     page: Res<State<MenuPage>>,
     mut commands: Commands,
     mut next_page: ResMut<NextState<MenuPage>>,
@@ -264,7 +264,7 @@ fn end_tutorial_tour(tour: &mut TutorialTour, next_app_state: &mut NextState<App
 
 /// The overlay's own "Skip Tutorial" button.
 fn skip_tutorial_tour(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     tour: Option<ResMut<TutorialTour>>,
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {

@@ -11,12 +11,13 @@ use bevy::camera::visibility::RenderLayers;
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Out, Over, Pointer};
+use bevy::picking::events::{Out, Over, Pointer};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
 use bevy::ui_widgets::Button as WidgetButton;
 use bevy::ui_widgets::{
-    Slider, SliderRange, SliderStep, SliderValue, TrackClick, ValueChange, slider_self_update,
+    Activate, Slider, SliderRange, SliderStep, SliderValue, TrackClick, ValueChange,
+    slider_self_update,
 };
 use bevy_fluent::Localization;
 
@@ -306,7 +307,7 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
         commands,
         parent,
         "Theme",
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Theme),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Theme),
     );
     commands.entity(theme_btn).insert(Tooltip(String::from(
         loc.msg("options-theme-tooltip"),
@@ -316,7 +317,7 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
         commands,
         parent,
         &loc.msg("options-calibrate-input-lag"),
-        |_: On<Pointer<Click>>, mut state: ResMut<NextState<AppState>>| {
+        |_: On<Activate>, mut state: ResMut<NextState<AppState>>| {
             state.set(AppState::Calibration)
         },
     );
@@ -328,7 +329,7 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
         commands,
         parent,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
     commands
         .entity(back_btn)
@@ -678,7 +679,7 @@ fn harmonica_button_scene(image: Handle<Image>, name: String, is_selected: bool)
         }
         BackgroundColor({color})
         HarmonicaButton({name})
-        on(move |_: On<Pointer<Click>>, mut selected: ResMut<SelectedHarmonicaModel>| {
+        on(move |_: On<Activate>, mut selected: ResMut<SelectedHarmonicaModel>| {
             selected.0 = pick.clone();
         })
         on(harm_over)
@@ -934,7 +935,7 @@ fn mic_retry_button_scene(tooltip: String) -> impl Scene {
         Node { padding: {UiRect::axes(Val::Px(12.0), Val::Px(6.0))} }
         BackgroundColor({button::color_default()})
         Tooltip({tooltip})
-        on(|_: On<Pointer<Click>>, mut commands: Commands| {
+        on(|_: On<Activate>, mut commands: Commands| {
             commands.queue(audio_input::start_capture);
         })
         Children [

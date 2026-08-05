@@ -4,7 +4,7 @@
 //! choice is already made by the time the player reaches this page —
 //! picking a song starts the game.
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -43,7 +43,7 @@ pub(crate) fn setup_song_list(
                 &mut commands,
                 root,
                 &song.name,
-                move |_: On<Pointer<Click>>,
+                move |_: On<Activate>,
                       asset_server: Res<AssetServer>,
                       mut state: ResMut<NextState<AppState>>,
                       mut commands: Commands| {
@@ -59,7 +59,7 @@ pub(crate) fn setup_song_list(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::ArtistList)
         },
     );

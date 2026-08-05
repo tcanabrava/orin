@@ -2,9 +2,12 @@
 
 use bevy::{
     audio::{AudioSource, Volume},
+    input_focus::tab_navigation::TabIndex,
     picking::Pickable,
-    picking::events::{Click, Out, Over, Pointer},
+    picking::events::{Out, Over, Pointer},
     prelude::*,
+    ui_widgets::Activate,
+    ui_widgets::Button as WidgetButton,
 };
 use bevy_fluent::Localization;
 
@@ -178,7 +181,8 @@ pub fn spawn_metronome(
             // express BorderColor::all), and the label uses the default font.
             row.spawn_empty()
                 .apply_scene(bsn! {
-                    Button
+                    WidgetButton
+                    TabIndex(0)
                     Node {
                         padding: {UiRect::axes(Val::Px(6.0), Val::Px(2.0))},
                         border: {UiRect::all(Val::Px(1.5))},
@@ -203,7 +207,8 @@ pub fn spawn_metronome(
             // Straight ↔ shuffle feel toggle.
             row.spawn_empty()
                 .apply_scene(bsn! {
-                    Button
+                    WidgetButton
+                    TabIndex(0)
                     Node {
                         padding: {UiRect::axes(Val::Px(6.0), Val::Px(2.0))},
                         border: {UiRect::all(Val::Px(1.5))},
@@ -375,13 +380,13 @@ fn toggle_mute_key(keyboard: Res<ButtonInput<KeyCode>>, mut muted: ResMut<Metron
 }
 
 // Button behaviour, wired inline as on(...) observers at spawn.
-fn toggle_mute(_: On<Pointer<Click>>, mut muted: ResMut<MetronomeMuted>) {
+fn toggle_mute(_: On<Activate>, mut muted: ResMut<MetronomeMuted>) {
     muted.0 = !muted.0;
 }
 
 /// Flip the click subdivision between straight and shuffle. The label follows
 /// via `update_feel_label`.
-fn toggle_feel(_: On<Pointer<Click>>, mut feel: ResMut<MetronomeFeel>) {
+fn toggle_feel(_: On<Activate>, mut feel: ResMut<MetronomeFeel>) {
     *feel = match *feel {
         MetronomeFeel::Shuffle => MetronomeFeel::Straight,
         MetronomeFeel::Straight => MetronomeFeel::Shuffle,

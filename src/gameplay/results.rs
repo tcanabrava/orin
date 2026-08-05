@@ -2,8 +2,8 @@
 
 //! Post-song results screen: the hit breakdown and a letter grade.
 
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::{AppState, ReturnToSongList, SelectedSong};
@@ -293,7 +293,7 @@ pub(super) fn setup(
                     let label = loc.msg_args(key, &[("ms", new_latency.to_string())]);
                     root.spawn_empty().apply_scene(button::small(
                         &label,
-                        move |_: On<Pointer<Click>>, mut audio: ResMut<AudioSettings>| {
+                        move |_: On<Activate>, mut audio: ResMut<AudioSettings>| {
                             audio.input_latency_ms = new_latency;
                         },
                     ));
@@ -412,12 +412,12 @@ pub(super) fn cleanup(mut commands: Commands, roots: Query<Entity, With<ResultsR
 
 // Re-enter via SongLoading so the song restarts fresh (asset already loaded →
 // resumes immediately).
-fn on_retry(_: On<Pointer<Click>>, mut next_state: ResMut<NextState<AppState>>) {
+fn on_retry(_: On<Activate>, mut next_state: ResMut<NextState<AppState>>) {
     next_state.set(AppState::SongLoading);
 }
 
 fn on_continue(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut return_to_song_list: ResMut<ReturnToSongList>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {

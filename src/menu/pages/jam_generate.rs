@@ -7,7 +7,7 @@
 
 use bevy::audio::AudioSource;
 use bevy::ecs::system::IntoObserverSystem;
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -66,8 +66,8 @@ fn spawn_stepper_row<M1: 'static, M2: 'static>(
     root: &mut ChildSpawnerCommands,
     text: String,
     marker: impl Component,
-    on_prev: impl IntoObserverSystem<Pointer<Click>, (), M1> + Clone + Sync + 'static,
-    on_next: impl IntoObserverSystem<Pointer<Click>, (), M2> + Clone + Sync + 'static,
+    on_prev: impl IntoObserverSystem<Activate, (), M1> + Clone + Sync + 'static,
+    on_next: impl IntoObserverSystem<Activate, (), M2> + Clone + Sync + 'static,
 ) {
     root.spawn(Node {
         flex_direction: FlexDirection::Row,
@@ -116,10 +116,10 @@ pub(crate) fn setup_jam_generate_menu(
             root,
             String::from(loc.msg_args("jam-generate-key", &[("key", config.key.clone())])),
             KeyLabel,
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.key = prev_key(&cfg.key);
             },
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.key = next_key(&cfg.key);
             },
         );
@@ -131,10 +131,10 @@ pub(crate) fn setup_jam_generate_menu(
                 &[("bpm", format!("{:.0}", config.bpm))],
             )),
             BpmLabel,
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.bpm = (cfg.bpm - BPM_STEP).max(MIN_BPM);
             },
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.bpm = (cfg.bpm + BPM_STEP).min(MAX_BPM);
             },
         );
@@ -146,10 +146,10 @@ pub(crate) fn setup_jam_generate_menu(
                 &[("progression", config.progression.label().to_string())],
             )),
             ProgressionLabel,
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.progression = cfg.progression.prev();
             },
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.progression = cfg.progression.next();
             },
         );
@@ -161,10 +161,10 @@ pub(crate) fn setup_jam_generate_menu(
                 &[("position", config.position.label().to_string())],
             )),
             PositionLabel,
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.position = cfg.position.prev();
             },
-            |_: On<Pointer<Click>>, mut cfg: ResMut<JamGenerateConfig>| {
+            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
                 cfg.position = cfg.position.next();
             },
         );
@@ -174,7 +174,7 @@ pub(crate) fn setup_jam_generate_menu(
         &mut commands,
         root,
         &loc.msg("jam-generate-start"),
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          config: Res<JamGenerateConfig>,
          theme: Res<LoadedTheme>,
          mut manifests: ResMut<Assets<SongManifest>>,
@@ -213,7 +213,7 @@ pub(crate) fn setup_jam_generate_menu(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::JamSessionMenu)
         },
     );

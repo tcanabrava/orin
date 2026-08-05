@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Drag, DragEnd, DragStart, Pointer};
+use bevy::picking::events::{Drag, DragEnd, DragStart, Pointer};
 use bevy::prelude::*;
 use bevy::ui::RelativeCursorPosition;
 use bevy::ui_render::prelude::MaterialNode;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 use super::interaction::{ctrl_held, select_or_add, select_or_add_ctrl};
@@ -211,7 +212,7 @@ pub(super) fn rebuild_grid(
                 pickable(cell_locked),
             ));
             cell.observe(
-                move |ev: On<Pointer<Click>>,
+                move |ev: On<Activate>,
                       rel: Query<&RelativeCursorPosition>,
                       mut state: ResMut<EditorState>,
                       keyboard: Res<ButtonInput<KeyCode>>| {
@@ -601,7 +602,7 @@ pub(super) fn spawn_note(
             pick,
         ))
         .observe(
-            move |_: On<Pointer<Click>>,
+            move |_: On<Activate>,
                   mut state: ResMut<EditorState>,
                   keyboard: Res<ButtonInput<KeyCode>>| {
                 if ctrl_held(&keyboard) {

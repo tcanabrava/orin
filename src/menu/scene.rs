@@ -6,8 +6,8 @@
 
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabGroup;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 
 use crate::dialogs::button;
 use crate::dialogs::scroll_area::spawn_scroll_area;
@@ -131,7 +131,7 @@ pub(crate) fn spawn_button<M: 'static>(
     commands: &mut Commands,
     parent: Entity,
     label: &str,
-    on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
 ) -> Entity {
     let node = Node {
         min_width: Val::Px(260.0),

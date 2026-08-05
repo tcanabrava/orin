@@ -10,6 +10,7 @@
 
 use bevy::input_focus::tab_navigation::TabGroup;
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 
 use super::button;
 pub use super::file_dialog::DialogId;
@@ -109,7 +110,7 @@ fn handle_open(
                         .with_children(|row| {
                             row.spawn_empty().apply_scene(button::small(
                                 "Yes",
-                                move |_: On<Pointer<Click>>,
+                                move |_: On<Activate>,
                                       mut open: ResMut<ConfirmDialogOpen>,
                                       roots: Query<Entity, With<ConfirmDialogRoot>>,
                                       mut chosen: MessageWriter<ConfirmChosen>,
@@ -126,7 +127,7 @@ fn handle_open(
                             ));
                             row.spawn_empty().apply_scene(button::small(
                                 "No",
-                                move |_: On<Pointer<Click>>,
+                                move |_: On<Activate>,
                                       mut open: ResMut<ConfirmDialogOpen>,
                                       roots: Query<Entity, With<ConfirmDialogRoot>>,
                                       mut chosen: MessageWriter<ConfirmChosen>,

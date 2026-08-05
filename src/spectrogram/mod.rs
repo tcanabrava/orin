@@ -15,9 +15,9 @@
 mod bars;
 mod oscilloscope;
 
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 use bevy::ui_render::prelude::UiMaterialPlugin;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
@@ -159,7 +159,7 @@ fn switch_visualization_on_key(
     }
 }
 
-fn cycle_style_button(_: On<Pointer<Click>>, mut style: ResMut<SpectrogramStyle>) {
+fn cycle_style_button(_: On<Activate>, mut style: ResMut<SpectrogramStyle>) {
     *style = style.next();
 }
 

@@ -2,7 +2,7 @@
 
 //! Render-mode picker (2D/3D) shown before picking a song to play.
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -29,7 +29,7 @@ pub(crate) fn setup_mode_select(
         &mut commands,
         root,
         &loc.msg("play-2d"),
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut mode: ResMut<GameplayMode>,
          mut page: ResMut<NextState<MenuPage>>| {
             *mode = GameplayMode::Play2D;
@@ -40,7 +40,7 @@ pub(crate) fn setup_mode_select(
         &mut commands,
         root,
         &loc.msg("play-3d"),
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut mode: ResMut<GameplayMode>,
          mut page: ResMut<NextState<MenuPage>>| {
             *mode = GameplayMode::Play3D;
@@ -51,6 +51,6 @@ pub(crate) fn setup_mode_select(
         &mut commands,
         root,
         &loc.msg("back"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
 }

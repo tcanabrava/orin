@@ -17,6 +17,7 @@
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::picking::events::{Click, Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
@@ -588,7 +589,7 @@ pub fn setup(
             .with_children(|row| {
                 row.spawn_empty().apply_scene(button::small(
                     "\u{25C2}",
-                    |_: On<Pointer<Click>>, mut key: ResMut<TrainerKey>| {
+                    |_: On<Activate>, mut key: ResMut<TrainerKey>| {
                         key.0 = prev_key(&key.0);
                     },
                 ));
@@ -610,7 +611,7 @@ pub fn setup(
                 ));
                 row.spawn_empty().apply_scene(button::small(
                     "\u{25B8}",
-                    |_: On<Pointer<Click>>, mut key: ResMut<TrainerKey>| {
+                    |_: On<Activate>, mut key: ResMut<TrainerKey>| {
                         key.0 = next_key(&key.0);
                     },
                 ));
@@ -655,7 +656,7 @@ pub fn setup(
                 ));
                 row.spawn_empty().apply_scene(button::small(
                     &loc.msg("bending-listen-button"),
-                    |_: On<Pointer<Click>>,
+                    |_: On<Activate>,
                      key: Res<TrainerKey>,
                      target: Res<TrainerTarget>,
                      mut sources: ResMut<Assets<AudioSource>>,
@@ -698,7 +699,7 @@ pub fn setup(
                 row.spawn_empty()
                     .apply_scene(button::small(
                         &loc.msg("bending-drill-button"),
-                        |_: On<Pointer<Click>>,
+                        |_: On<Activate>,
                          key: Res<TrainerKey>,
                          mut target: ResMut<TrainerTarget>,
                          mut drill: ResMut<DrillState>| {
@@ -738,7 +739,7 @@ pub fn setup(
             .with_children(|row| {
                 row.spawn_empty().apply_scene(button::small(
                     "\u{2212}",
-                    |_: On<Pointer<Click>>, mut tempo: ResMut<MetronomeTempo>| {
+                    |_: On<Activate>, mut tempo: ResMut<MetronomeTempo>| {
                         tempo.bpm = (tempo.bpm - BPM_STEP).max(MIN_BPM);
                     },
                 ));
@@ -753,7 +754,7 @@ pub fn setup(
                 });
                 row.spawn_empty().apply_scene(button::small(
                     "+",
-                    |_: On<Pointer<Click>>, mut tempo: ResMut<MetronomeTempo>| {
+                    |_: On<Activate>, mut tempo: ResMut<MetronomeTempo>| {
                         tempo.bpm = (tempo.bpm + BPM_STEP).min(MAX_BPM);
                     },
                 ));
@@ -773,7 +774,7 @@ pub fn setup(
             // target matters for a future mobile build with no keyboard.
             left.spawn_empty().apply_scene(button::small(
                 &String::from(loc.msg("back")),
-                |_: On<Pointer<Click>>,
+                |_: On<Activate>,
                  mut next_state: ResMut<NextState<AppState>>,
                  mut ret_play: ResMut<crate::app::ReturnToPlay>| {
                     ret_play.0 = true;

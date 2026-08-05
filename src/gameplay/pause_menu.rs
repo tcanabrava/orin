@@ -4,9 +4,10 @@
 //! toggled with Escape. Shares the gameplay [`Paused`] flag (every gameplay
 //! chain gates on it) and pauses/resumes the song's audio sink.
 
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
-use bevy::ui_widgets::{Slider, SliderRange, SliderStep, SliderValue, TrackClick, ValueChange};
+use bevy::ui_widgets::{
+    Activate, Slider, SliderRange, SliderStep, SliderValue, TrackClick, ValueChange,
+};
 use bevy_fluent::Localization;
 
 use super::adaptive_difficulty::AdaptiveDifficulty;
@@ -37,7 +38,7 @@ pub struct WaitForNoteMode(pub bool);
 #[derive(Component, Default, Clone)]
 pub(super) struct WaitForNoteLabel;
 
-fn on_toggle_wait_mode(_: On<Pointer<Click>>, mut wait_mode: ResMut<WaitForNoteMode>) {
+fn on_toggle_wait_mode(_: On<Activate>, mut wait_mode: ResMut<WaitForNoteMode>) {
     wait_mode.0 = !wait_mode.0;
 }
 
@@ -202,7 +203,7 @@ pub(super) struct LoopRangeLabel;
 /// song-progress bar while paused (`song_progress_overlay`'s
 /// `ProgressBarMode::Edit` — see its module doc comment); this button only
 /// ever clears it.
-fn on_clear_loop(_: On<Pointer<Click>>, mut loop_cfg: ResMut<LoopConfig>) {
+fn on_clear_loop(_: On<Activate>, mut loop_cfg: ResMut<LoopConfig>) {
     *loop_cfg = LoopConfig::default();
 }
 
@@ -330,7 +331,7 @@ pub(super) fn update_adaptive_difficulty_label(
 /// `AdaptiveDifficulty::is_changed()`) and the persisted global setting —
 /// a single on/off switch shared by every song, not stored per-song.
 fn on_toggle_adaptive_difficulty(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut setting: ResMut<crate::settings::AdaptiveDifficultyEnabled>,
     mut adaptive: ResMut<AdaptiveDifficulty>,
 ) {
@@ -739,7 +740,7 @@ pub(super) fn setup_pause_menu(
 // ── Dedicated button callbacks ────────────────────────────────────────────────
 
 fn on_resume(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut paused: ResMut<Paused>,
     mut overlay: Query<&mut Visibility, With<PauseMenuRoot>>,
     sinks: Query<&AudioSink, With<MusicPlayer>>,
@@ -754,7 +755,7 @@ fn on_resume(
 }
 
 fn on_restart(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut paused: ResMut<Paused>,
     mut next_state: ResMut<NextState<AppState>>,
     generated_jam: Option<Res<backing::GeneratedJamSession>>,
@@ -776,7 +777,7 @@ fn on_restart(
 }
 
 fn on_quit(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut paused: ResMut<Paused>,
     mut next_state: ResMut<NextState<AppState>>,
     mut return_to_song_list: ResMut<ReturnToSongList>,
@@ -804,7 +805,7 @@ fn jam_fraction_for(criteria: Option<&PassCriteria>, stats: &ImprovStats) -> Opt
 /// does; `route_menu_entry` sees the still-present `LessonContext` and
 /// routes to the lesson list from there, same as any other lesson.
 fn on_finish_lesson(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     lesson: Res<LessonContext>,
     improv_stats: Res<ImprovStats>,
     mut profile: ResMut<PlayerProfile>,
@@ -888,7 +889,7 @@ pub(super) fn handle_pause_input(
 /// pause overlay is a full-screen backdrop on top of it once visible, but
 /// toggling (rather than only opening) keeps it a drop-in Escape equivalent.
 fn on_pause_button_click(
-    _: On<Pointer<Click>>,
+    _: On<Activate>,
     mut paused: ResMut<Paused>,
     mut overlay: Query<&mut Visibility, With<PauseMenuRoot>>,
     sinks: Query<&AudioSink, With<MusicPlayer>>,

@@ -41,8 +41,9 @@
 
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Drag, DragEnd, DragStart, Pointer};
+use bevy::picking::events::{Drag, DragEnd, DragStart, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 use super::TICKS_PER_BEAT;
@@ -264,7 +265,7 @@ pub(super) fn spawn_expected_notes_mode_button(
         "\u{2713}",
         style,
         colors,
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut state: ResMut<EditorState>,
          playing: Query<Entity, With<super::playback::EditorAudio>>,
          mut practice: ResMut<super::practice::PracticeState>,
@@ -326,7 +327,7 @@ fn spawn_expected_mod_button(
             Tooltip(String::from(tooltip)),
         ))
         .observe(
-            move |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            move |_: On<Activate>, mut state: ResMut<EditorState>| {
                 apply_expected_modifier(&mut state, kind);
             },
         )
@@ -549,7 +550,7 @@ fn rebuild_expected_notes_overlay(
                 pick,
             ));
             ec.observe(
-                move |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                move |_: On<Activate>, mut state: ResMut<EditorState>| {
                     state.expected_selected = Some(id);
                 },
             )

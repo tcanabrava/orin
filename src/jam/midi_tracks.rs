@@ -8,9 +8,11 @@
 //! independent render (`song::midi::render_track_pcm`).
 
 use bevy::audio::{AudioSink, Volume};
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
+use bevy::ui_widgets::Button as WidgetButton;
 use bevy_fluent::Localization;
 
 use crate::dialogs::tooltip::Tooltip;
@@ -67,7 +69,8 @@ pub fn spawn_midi_track_row(
         .with_children(|row| {
             for (index, track) in tracks.iter().enumerate() {
                 row.spawn((
-                    Button,
+                    WidgetButton,
+                    TabIndex(0),
                     TrackMuteCell(index),
                     Node {
                         align_items: AlignItems::Center,
@@ -108,7 +111,7 @@ pub fn spawn_midi_track_row(
 /// Shared across every mute button; looks up which track fired via
 /// `TrackMuteCell` on the clicked entity rather than a per-button closure.
 fn toggle_track_mute(
-    ev: On<Pointer<Click>>,
+    ev: On<Activate>,
     cells: Query<&TrackMuteCell>,
     mut mute: ResMut<JamMidiMute>,
 ) {

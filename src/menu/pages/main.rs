@@ -2,7 +2,7 @@
 
 //! The main menu: Play, Options, Help, Quit.
 
-use bevy::picking::events::{Click, Pointer};
+use bevy::ui_widgets::Activate;
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
@@ -22,19 +22,19 @@ pub(crate) fn setup_main_menu(
         &mut commands,
         root,
         &loc.msg("menu-play"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("menu-options"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
     );
     spawn_button(
         &mut commands,
         root,
         &loc.msg("menu-help"),
-        |_: On<Pointer<Click>>, mut page: ResMut<NextState<MenuPage>>| {
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| {
             page.set(MenuPage::HelpAbout)
         },
     );
@@ -42,7 +42,7 @@ pub(crate) fn setup_main_menu(
         &mut commands,
         root,
         &loc.msg("menu-quit"),
-        |_: On<Pointer<Click>>, mut exit: MessageWriter<AppExit>| {
+        |_: On<Activate>, mut exit: MessageWriter<AppExit>| {
             exit.write(AppExit::Success);
         },
     );

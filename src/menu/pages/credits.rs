@@ -6,11 +6,7 @@
 //! Entry: Main Menu → Credits button.
 //! Exit:  ESC key or the "Back to Menu" button.
 
-use bevy::{
-    camera::visibility::RenderLayers,
-    picking::events::{Click, Pointer},
-    prelude::*,
-};
+use bevy::{camera::visibility::RenderLayers, prelude::*, ui_widgets::Activate};
 use bevy_fluent::Localization;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
@@ -222,7 +218,7 @@ fn spawn_ui(commands: &mut Commands, loc: &Localization) {
     // font: bsn! can't set TextFont.font in 0.19.)
     commands.spawn_scene(button::default(
         &loc.msg("credits-back-to-menu"),
-        |_: On<Pointer<Click>>,
+        |_: On<Activate>,
          mut next_state: ResMut<NextState<AppState>>,
          mut ret_help: ResMut<crate::app::ReturnToHelpAbout>| {
             ret_help.0 = true;

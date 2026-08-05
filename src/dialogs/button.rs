@@ -1,8 +1,9 @@
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Out, Over, Pointer};
+use bevy::picking::events::{Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 pub fn color_default() -> Color {
@@ -31,7 +32,7 @@ fn mouse_out(ev: On<Pointer<Out>>, mut colors: Query<&mut BackgroundColor>) {
 /// controls. Same colours/hover as [`default`].
 pub fn small<M: 'static>(
     label: &str,
-    on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
 ) -> impl Scene {
     bsn! {
         WidgetButton
@@ -67,7 +68,7 @@ pub fn sized<M: 'static>(
     label: &str,
     width: f32,
     font_size: f32,
-    on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
 ) -> impl Scene {
     bsn! {
         WidgetButton
@@ -97,7 +98,7 @@ pub fn sized<M: 'static>(
 
 pub fn default<M: 'static>(
     label: &str,
-    on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
 ) -> impl Scene {
     bsn! {
         WidgetButton

@@ -8,8 +8,8 @@
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 use super::grid::{OUT_OF_SCALE_MIX, OUT_OF_SCALE_TINT, TEMPO_MARKER_COLOR, mix_srgba};
@@ -157,7 +157,7 @@ fn spawn_cycle_row<T: Component, M: 'static>(
     label_key: &str,
     tooltip_key: &str,
     marker: T,
-    on_click: impl IntoObserverSystem<Pointer<Click>, (), M> + Clone + Sync + 'static,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
 ) {
     col.spawn(Node {
         width: Val::Percent(100.0),
@@ -226,7 +226,7 @@ fn spawn_content_kind_row(
         "editor-field-content-kind",
         "editor-content-kind-toggle-tooltip",
         ContentKindText,
-        |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+        |_: On<Activate>, mut state: ResMut<EditorState>| {
             state.content_kind = match state.content_kind {
                 ContentKind::Song => ContentKind::Lesson,
                 ContentKind::Lesson => ContentKind::Song,
@@ -247,7 +247,7 @@ fn spawn_harmonica_kind_row(
         "editor-field-harmonica",
         "editor-harmonica-toggle-tooltip",
         HarmonicaKindText,
-        |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+        |_: On<Activate>, mut state: ResMut<EditorState>| {
             let next = match state.harmonica_kind {
                 HarmonicaKind::Diatonic => HarmonicaKind::Chromatic,
                 HarmonicaKind::Chromatic => HarmonicaKind::Diatonic,
@@ -271,7 +271,7 @@ fn spawn_snap_mode_row(
         "editor-field-snap-mode",
         "editor-snap-mode-toggle-tooltip",
         SnapModeText,
-        |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+        |_: On<Activate>, mut state: ResMut<EditorState>| {
             state.snap_mode = state.snap_mode.next();
         },
     );
@@ -327,21 +327,21 @@ pub(super) fn spawn_field_row(
 
         if field == Field::Key {
             btn.insert(Tooltip(String::from(loc.msg("editor-field-key-tooltip"))))
-                .observe(|_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
                     state.key = cycle_next(&HARP_KEYS, &state.key);
                 });
         } else if field == Field::Position {
             btn.insert(Tooltip(String::from(
                 loc.msg("editor-field-position-tooltip"),
             )))
-            .observe(|_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
                 state.position = cycle_next(&POSITIONS, &state.position);
             });
         } else if field == Field::LessonPassCriteria {
             btn.insert(Tooltip(String::from(
                 loc.msg("editor-field-lesson-pass-criteria-tooltip"),
             )))
-            .observe(|_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
                 state.lesson_pass_criteria =
                     cycle_next(&PASS_CRITERIA_KINDS, &state.lesson_pass_criteria);
             });
@@ -349,20 +349,20 @@ pub(super) fn spawn_field_row(
             btn.insert(Tooltip(String::from(
                 loc.msg("editor-field-lesson-technique-tooltip"),
             )))
-            .observe(|_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
                 state.lesson_technique = cycle_next(&TECHNIQUE_NAMES, &state.lesson_technique);
             });
         } else if field == Field::LessonProgression {
             btn.insert(Tooltip(String::from(
                 loc.msg("editor-field-lesson-progression-tooltip"),
             )))
-            .observe(|_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
                 state.lesson_progression = cycle_next(&PROGRESSIONS, &state.lesson_progression);
             });
         } else {
             btn.insert(Tooltip(String::from(loc.msg("editor-field-text-tooltip"))))
                 .observe(
-                    move |_: On<Pointer<Click>>, mut state: ResMut<EditorState>| {
+                    move |_: On<Activate>, mut state: ResMut<EditorState>| {
                         state.focus = Some(field);
                     },
                 );
@@ -397,7 +397,7 @@ pub(super) fn spawn_field_row(
                 Tooltip(String::from(loc.msg("editor-browse-tooltip"))),
             ))
             .observe(
-                |_: On<Pointer<Click>>,
+                |_: On<Activate>,
                  loc: Res<Localization>,
                  mut open: MessageWriter<OpenFileDialog>| {
                     open.write(OpenFileDialog {
@@ -465,7 +465,7 @@ fn spawn_midi_track_row(
             Tooltip(String::from(loc.msg("editor-import-midi-tooltip"))),
         ))
         .observe(
-            |_: On<Pointer<Click>>,
+            |_: On<Activate>,
              loc: Res<Localization>,
              mut open: MessageWriter<OpenFileDialog>| {
                 open.write(OpenFileDialog {
