@@ -449,12 +449,13 @@ fn zoom_fraction(scale: f32) -> f32 {
 
 /// Commits the dragged/stepped value to the real `UiScale` only once the
 /// interaction is finished (`is_final`), never on every drag frame:
-/// `UiScale` changing forces Bevy to re-rasterize every visible glyph at the
-/// new effective size, and applying that continuously mid-drag is exactly
-/// the GPU-memory-exhaustion crash `dialogs::ui_scale`'s doc comment
-/// describes fixing for the keyboard shortcut. The live drag preview comes
-/// from `SliderValue` instead (mirrored onto the fill/label by
-/// [`update_zoom_slider_visuals`]), which costs nothing to update every frame.
+/// `UiScale` changing forces Bevy to re-rasterize every visible glyph at
+/// the new effective size, and applying that continuously mid-drag risks
+/// the same GPU-memory-exhaustion crash `dialogs::ui_scale`'s doc comment
+/// describes for the keyboard shortcut. The live drag preview comes from
+/// `SliderValue` instead (mirrored onto the fill/label by
+/// [`update_zoom_slider_visuals`]), which costs nothing to update every
+/// frame.
 fn set_zoom(ev: On<ValueChange<f32>>, mut ui_scale: ResMut<UiScale>) {
     if ev.is_final {
         ui_scale.0 = ev.value;
@@ -1038,10 +1039,6 @@ fn set_input_latency(ev: On<ValueChange<f32>>, mut settings: ResMut<AudioSetting
 
 // ── Volume sliders ──────────────────────────────────────────────────────────
 
-/// One labelled volume row: `<name>  [====    ]  NN%`. The track is authored as
-/// a `bsn!` `Slider` whose value change is handled by the given dedicated `on`
-/// callback; the label/readout stay imperative (they carry the custom font,
-/// which `bsn!` can't set in 0.19).
 /// The shared row shell every Options slider builds on: a 420px row with a
 /// 110px label carrying `tooltip`, already attached to `parent` —
 /// `spawn_volume_slider`/`spawn_latency_slider`/`spawn_zoom_slider` differ
