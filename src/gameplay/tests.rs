@@ -131,13 +131,12 @@ fn secs_per_bar_60bpm_4beats() {
 
 // ── handle_loop_boundary ─────────────────────────────────────────────────
 
-/// No `AudioSink`/`MusicPlayer` entity is spawned in these tests — the
-/// seek-on-wrap fix (see the doc comment on `handle_loop_boundary`)
-/// degrades gracefully to a no-op when no sink exists (as it does for a
-/// real chart before the music sink spawns, or if audio init failed), so
-/// the clock/note-reset behaviour is testable headlessly without a real
-/// audio backend; the actual seek call needs a live sink and is a manual
-/// check (see `docs/gameplay_validation.md`).
+/// No `AudioSink`/`MusicPlayer` entity is spawned in these tests —
+/// `handle_loop_boundary`'s seek-on-wrap degrades gracefully to a no-op
+/// when no sink exists (as before the music sink spawns, or if audio init
+/// failed), so clock/note-reset behaviour is testable headlessly; the
+/// actual seek call needs a live sink and is a manual check (see
+/// `docs/gameplay_validation.md`).
 fn loop_test_note(time: f64) -> ScheduledNote {
     ScheduledNote {
         time,

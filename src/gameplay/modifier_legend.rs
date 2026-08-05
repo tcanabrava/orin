@@ -25,11 +25,11 @@ struct TechniqueLegendBody;
 #[derive(Component, Default, Clone)]
 struct TechniqueLegendToggleLabel;
 
-/// The six techniques shown in the legend, paired with the label to display. The
-/// example modifiers carry representative intensities so each preview animates
-/// clearly; the actual params/animation come from the same `note_techniques` /
-/// `note_anim_mode` / `tail_params` the falling notes use, so the legend
-/// can never drift from what the notes do.
+/// The techniques shown in the legend, paired with their label. Example
+/// modifiers carry representative intensities so each preview animates
+/// clearly; actual params/animation come from the same `note_techniques`/
+/// `note_anim_mode`/`tail_params` the falling notes use, so the legend
+/// can't drift from what the notes do.
 fn legend_techniques() -> [(Modifier, &'static str); 5] {
     use crate::song::chart::Modifier::*;
     [

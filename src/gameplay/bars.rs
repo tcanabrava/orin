@@ -38,11 +38,11 @@ pub fn current_bar_index(clock: f64, secs_per_bar: f64) -> usize {
 }
 
 /// The bar `track_current_bar` last computed — shared so
-/// `twelve_bar_blues_overlay::update_bar` and `jam::session::update_hole_map`
-/// don't each recompute it (previously from two different beats-per-bar
-/// sources that could disagree: `ScoringConfig::beats_per_bar`, which honors
-/// a chart's `time_signature_map` override, vs `JamHoleGuide`'s own copy,
-/// which didn't).
+/// `twelve_bar_blues_overlay::update_bar` and `jam::session::
+/// update_hole_map` don't each recompute it from two different
+/// beats-per-bar sources that could disagree (`ScoringConfig::
+/// beats_per_bar`, which honors a chart's `time_signature_map` override,
+/// vs `JamHoleGuide`'s own copy).
 #[derive(Resource, Default)]
 pub struct CurrentBar(pub usize);
 
@@ -55,20 +55,18 @@ pub struct AbsoluteBar(pub usize);
 
 /// Emitted by [`track_current_bar`] whenever the current bar changes,
 /// forward or (on a loop rewind) backward — lets `update_bar` recolor the
-/// 12-bar grid only on an actual bar change instead of writing
-/// `BackgroundColor` on all 12 cells every frame forever. `update_hole_map`
-/// doesn't need this: it repaints every frame anyway for live mic feedback,
-/// so it just reads `CurrentBar` directly.
+/// 12-bar grid only on an actual change instead of writing `BackgroundColor`
+/// on all 12 cells every frame. `update_hole_map` doesn't need this: it
+/// repaints every frame anyway for live mic feedback.
 #[derive(Message)]
 pub struct BarChanged(pub usize);
 
-/// Computes the current bar once per frame (see `GameplayLogic` — must run
-/// after `clock::handle_loop_boundary` so a loop rewind is reflected the
-/// same frame) and emits [`BarChanged`] on a change, detected by recomputing
-/// from the clock each frame rather than advancing an incrementing counter
-/// — the same trick `phrase_overlay::watch_phrase_boundaries` uses so a
-/// backward jump is picked up for free instead of needing special-case
-/// handling.
+/// Computes the current bar once per frame (must run after `clock::
+/// handle_loop_boundary` so a loop rewind is reflected the same frame) and
+/// emits [`BarChanged`] on a change, detected by recomputing from the clock
+/// each frame rather than an incrementing counter — the same trick
+/// `phrase_overlay::watch_phrase_boundaries` uses so a backward jump needs
+/// no special-case handling.
 pub(crate) fn track_current_bar(
     clock: Res<GameplayClock>,
     selected: Res<SelectedSong>,

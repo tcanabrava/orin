@@ -31,8 +31,8 @@ fn feedback_style(quality: HitQuality) -> (&'static str, f32, f32, f32) {
 /// The score/combo digits only get re-`format!`ed when [`NoteScored`] says
 /// `Score` actually moved. The feedback label ("PERFECT!"/"GOOD") is set
 /// once, on the frame a fresh hit's message carries a `quality` — not every
-/// frame of its fade, which stays a per-frame animation (color/alpha only)
-/// driven straight off `HitFeedback`, same as before.
+/// frame of its fade, which stays a per-frame color/alpha animation driven
+/// off `HitFeedback`.
 pub(crate) fn update_score_display(
     mut scored: MessageReader<NoteScored>,
     score: Res<Score>,

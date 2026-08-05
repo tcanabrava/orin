@@ -52,15 +52,13 @@ impl GridConfig {
 }
 
 /// Background for `bar` (0-indexed) under `key`/`progression`, colored by
-/// chord function (I / IV / V) using `colors` — pulled from the active theme
-/// via [`LoadedTheme::twelve_bar_colors`] so this stays consistent everywhere
-/// the 12-bar-blues progression is drawn (Jam Session grid, song editor
-/// grid). `progression` is almost always [`Progression::Standard`] — only
-/// Jam Session's own grid/hole-map ever use a different one (see
-/// `jam::session`); passing it explicitly here (rather than this
-/// function assuming Standard internally, the way it used to) is what keeps
-/// the color coding from disagreeing with a grid that's showing a different
-/// progression's chord names.
+/// chord function (I / IV / V) using `colors` — pulled from the active
+/// theme via [`LoadedTheme::twelve_bar_colors`] so this stays consistent
+/// everywhere the 12-bar-blues progression is drawn (Jam Session grid,
+/// song editor grid). `progression` is almost always [`Progression::
+/// Standard`] — only Jam Session's grid/hole-map ever use a different one
+/// (see `jam::session`); taking it explicitly keeps the color coding from
+/// disagreeing with a grid showing a different progression's chord names.
 pub fn bar_bg(bar: usize, key: &str, progression: Progression, colors: TwelveBarColors) -> Color {
     let iv = semitone(key, 5);
     let v = semitone(key, 7);
