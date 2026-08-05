@@ -86,7 +86,7 @@ pub struct NotationNote {
 /// at bar lines, not at every beat — this module's engraving is
 /// deliberately coarse (see the module doc comment), so a note that starts
 /// off the beat within a single bar still draws as one slightly-
-/// mispositioned notehead, same as before this function existed.
+/// mispositioned notehead.
 pub fn split_at_bar_lines(note: NotationNote, beats_per_bar: f64) -> Vec<NotationNote> {
     if beats_per_bar <= 0.0 || note.duration_beats <= 0.0 {
         return vec![note];
@@ -259,17 +259,14 @@ const GLYPH_FONT_PX: f32 = STAFF_LINE_SPACING * 4.0;
 
 /// Bevy positions a `Text` node's bounding-box top-left at the `Node`'s own
 /// `top`/`left` — not the font's internal glyph baseline/origin
-/// `bravura_metadata.json`'s own coordinates are expressed relative to.
-/// There's no published mapping from one to the other short of measuring
-/// Bravura's actual OpenType vertical metrics against Bevy's own text
-/// shaper (cosmic-text) at a specific font size. This constant is the
-/// correction for that gap — **it was estimated, not measured** (this
-/// development environment has no display to render against and compare),
-/// so it's the first thing to adjust by eye if noteheads/the clef don't
-/// look vertically centered on their intended staff line/space once this
-/// is actually visible on screen. Every glyph in this module applies it
-/// uniformly, so recalibrating is a one-constant fix, not a hunt through
-/// per-glyph offsets.
+/// `bravura_metadata.json`'s coordinates are expressed relative to. There's
+/// no published mapping between the two short of measuring Bravura's
+/// OpenType vertical metrics against Bevy's text shaper (cosmic-text) at a
+/// specific font size, so this constant is the correction — **estimated,
+/// not measured** (no display to render against in this dev environment).
+/// First thing to adjust by eye if glyphs don't look vertically centered
+/// once actually visible; applied uniformly, so recalibrating is a
+/// one-constant fix, not a hunt through per-glyph offsets.
 const GLYPH_BASELINE_CORRECTION: f32 = GLYPH_FONT_PX * 0.5;
 
 /// Notehead stem attachment points, in staff spaces relative to the
@@ -294,21 +291,19 @@ const LEDGER_THICKNESS_SP: f32 = 0.16;
 /// A tied-note connector: a real curved arc, drawn via
 /// [`tie_material::TieMaterial`] (a `UiMaterial` fragment shader) rather
 /// than a `bevy_ui` `Node`/`BackgroundColor` rectangle, which can only ever
-/// be flat — SMuFL has no single tie codepoint either (a real tie is a
-/// drawn bezier arc, not a glyph). Not derived from `bravura_metadata.json`
-/// (there's nothing to derive — SMuFL doesn't specify tie geometry).
-/// [`TIE_GAP_SP`] is deliberately *not* a multiple of 0.5 — staff lines and
-/// spaces sit at every 0.5 staff-space step, so a half-integer gap would
-/// occasionally start the arc's bounding box flush against a staff line,
-/// visually merging with it. The arc's *width* isn't one of these
-/// constants — [`spawn_note_glyphs`] derives it per tie from the real pixel
-/// gap between the two tied noteheads' own onset positions, so it actually
-/// spans from one notehead to the next rather than sitting at a fixed size
-/// next to whichever note happens to be the tied-to one.
-/// [`TIE_END_MARGIN_SP`] pulls each end in from the notehead it's closest
-/// to, clearing the glyph itself (a `Filled`/`Half` notehead is
-/// [`NoteheadKind::width_sp`] wide; this splits the difference against a
-/// wider `Whole` notehead rather than tracking each end's own kind).
+/// be flat — SMuFL has no single tie codepoint (a real tie is a drawn
+/// bezier arc, not a glyph, so there's nothing in `bravura_metadata.json`
+/// to derive this from). [`TIE_GAP_SP`] is deliberately *not* a multiple
+/// of 0.5 — staff lines/spaces sit at every 0.5 staff-space step, so a
+/// half-integer gap would occasionally start the arc flush against a
+/// staff line, visually merging with it. The arc's *width* isn't one of
+/// these constants — [`spawn_note_glyphs`] derives it per tie from the
+/// real pixel gap between the two tied noteheads' onset positions, so it
+/// spans from one notehead to the next rather than a fixed size.
+/// [`TIE_END_MARGIN_SP`] pulls each end in from its closest notehead,
+/// clearing the glyph itself (splits the difference between `Filled`/
+/// `Half`'s width and a wider `Whole`, rather than tracking each end's
+/// own kind).
 const TIE_END_MARGIN_SP: f32 = 1.3;
 const TIE_GAP_SP: f32 = 0.15;
 const TIE_ARC_HEIGHT_SP: f32 = 0.7;
