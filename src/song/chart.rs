@@ -164,17 +164,15 @@ pub enum BendingProfile {
 /// Which scale the Song Editor colors notes against (`song_editor::grid::
 /// note_in_scale`) — an explicit, chart-author-selectable choice instead of
 /// always assuming blues. `FirstPosition`/`SecondPosition`/`ThirdPosition`
-/// keep the blues-scale *shape* the game colors against everywhere else
-/// (Jam Session's hole map, `song::harmonica::blues_scale_classes`) but
-/// root it away from the harp's own key by the same semitone offsets
-/// `Position::harp_key` uses (0/7/2) — just applied in the opposite
-/// direction (up from the harp key, not down from a separate jam key,
-/// since a chart has no jam key distinct from its harp). `Major`/
-/// `MinorPentatonic`/`Country` are alternative *shapes* instead, always
-/// rooted on the harp's own key — for melodies that aren't blues-vocabulary
-/// at all. The interval math (`classes`/`label`/`from_label`) lives in an
-/// `impl Scale` block over in `song::harmonica`, alongside `Position` and
-/// `blues_scale_classes`, which it reuses.
+/// keep the blues-scale *shape* used everywhere else (Jam Session's hole
+/// map, `song::harmonica::blues_scale_classes`) but root it away from the
+/// harp's own key by the same semitone offsets `Position::harp_key` uses
+/// (0/7/2), applied upward from the harp key instead of downward from a
+/// separate jam key. `Major`/`MinorPentatonic`/`Country` are alternative
+/// *shapes*, always rooted on the harp's own key, for melodies that aren't
+/// blues-vocabulary at all. The interval math (`classes`/`label`/
+/// `from_label`) lives in an `impl Scale` block in `song::harmonica`,
+/// alongside `Position` and `blues_scale_classes`, which it reuses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Scale {
