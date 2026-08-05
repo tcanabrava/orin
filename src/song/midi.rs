@@ -4,10 +4,8 @@
 //! listing/pitch mapping/note import: reading track names/note counts,
 //! tempo maps, and note on/off pairs out of a parsed `midly::Smf` — no
 //! pitch-to-harp resolution or chart-building happens here, that's the
-//! caller's own concern. Lives here rather than in `song_editor` (low-level
-//! shared vocabulary, not editor-specific) — it used to also be shared with
-//! `bin/midi_to_chart`, a standalone converter since removed once the
-//! editor's own MIDI import covered the same ground in-game.
+//! caller's own concern. Lives here rather than in `song_editor` since it's
+//! low-level shared vocabulary, not editor-specific.
 
 use midly::{MetaMessage, MidiMessage, Smf, Timing, TrackEventKind};
 use std::collections::HashMap;
