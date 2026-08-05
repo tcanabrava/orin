@@ -15,32 +15,29 @@ use super::pitch_detect::PitchAlgorithm;
 use super::pitch_detect::{self, AudioFrame, PitchEvent, PitchRange};
 
 /// Dev-only ("--features dev") raw-audio tap for `song_editor`'s "Debug
-/// Recording" checkbox (`song_editor::debug_record`): accumulates the exact,
-/// non-overlapping mono audio the mic captured while `recording` is set, so
-/// a pitch-detection miss can be diagnosed against exactly what the mic
-/// heard rather than just what the detector reported for it. Lives here
-/// (not in `song_editor`) for the same reason `AudioFrame` does — a generic
-/// resource in the audio pipeline that a higher-level feature taps, rather
-/// than a second consumer of `AudioCapture::receiver` (each chunk only ever
-/// goes to *one* receiver, so a second reader would steal chunks from this
-/// one instead of seeing a copy).
+/// Recording" checkbox (`song_editor::debug_record`): accumulates the
+/// exact, non-overlapping mono audio the mic captured while `recording` is
+/// set, so a pitch-detection miss can be diagnosed against what the mic
+/// actually heard, not just what the detector reported. Lives here (not in
+/// `song_editor`), same as `AudioFrame` — a second consumer of
+/// `AudioCapture::receiver` would steal chunks from this one instead of
+/// seeing a copy, since each chunk only ever goes to one receiver.
 #[cfg(feature = "dev")]
 #[derive(Resource, Default)]
 pub struct RawCaptureBuffer {
     pub recording: bool,
     pub samples: Vec<f32>,
     pub sample_rate: u32,
-    /// Which algorithm `settings.pitch_algorithm` was set to while capturing
-    /// — refreshed every chunk like `sample_rate` above, so it reflects
-    /// whatever was active most recently if it was ever changed mid-take.
-    /// Written out alongside the WAV so a detection miss can be reproduced
-    /// against the exact algorithm that missed it, not just guessed at.
+    /// Which algorithm `settings.pitch_algorithm` was set to while
+    /// capturing — refreshed every chunk like `sample_rate`, so a
+    /// detection miss can be reproduced against the exact algorithm that
+    /// missed it, not just guessed at.
     pub algorithm: PitchAlgorithm,
-    /// The detected-pitch log for this take: (seconds since the take's first
-    /// captured sample, the same formatted note labels `log_pitches` below
-    /// prints) — one entry per *change*, not per chunk, so a multi-minute
-    /// take doesn't produce one entry per ~46ms chunk. Cleared alongside
-    /// `samples` at the start of a fresh take (see `song_editor::
+    /// The detected-pitch log for this take: (seconds since the take's
+    /// first sample, the same formatted note labels `log_pitches` prints)
+    /// — one entry per *change*, not per chunk, so a multi-minute take
+    /// doesn't produce one entry per ~46ms chunk. Cleared alongside
+    /// `samples` at the start of a fresh take (`song_editor::
     /// debug_record::sync_raw_capture`).
     pub detected_notes: Vec<(f32, Vec<String>)>,
 }

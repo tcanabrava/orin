@@ -5,8 +5,7 @@
 /// re-declaring its own copy (`note_to_midi`/`midi_to_note` below,
 /// `song::harmonica::semitone`'s transposition table, `audio_system::
 /// pitch_detect`'s detected-pitch display, and the key pickers in
-/// `gameplay::bending_trainer`/`menu::jam_generate`, all used to keep
-/// independent copies of this exact array).
+/// `gameplay::bending_trainer`/`menu::jam_generate`).
 pub const NOTE_NAMES: [&str; 12] = [
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
 ];
