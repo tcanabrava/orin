@@ -1,22 +1,33 @@
 // SPDX-License-Identifier: MIT
 
 //! Reusable tab bar: a horizontal row of mutually-exclusive tabs, one
-//! always active. Clicking an inactive tab retints the row and triggers
+//! always active. Built on `bevy_ui_widgets`' [`RadioGroup`]/[`RadioButton`]
+//! — the bar itself carries `RadioGroup` (and is the sole focusable/
+//! Tab-reachable entity per WAI-ARIA convention; individual tabs are
+//! reached via the group's own arrow-key handling, not further Tab
+//! presses), each tab a `RadioButton`. Clicking an inactive tab (or
+//! arrowing to it while the bar is focused) retints the row and triggers
 //! [`TabSelect`] on the bar's root entity; clicking the already-active tab
-//! does nothing (no event, no retint). The caller owns what "switching
-//! tabs" *means* — typically repopulating a content area from the selected
+//! is a no-op at the widget level (`RadioButton`'s own click handler skips
+//! an already-checked button). The caller owns what "switching tabs"
+//! *means* — typically repopulating a content area from the selected
 //! index — the widget only owns the selection state and its visuals.
 //!
-//! Built the same way as `dialogs::combobox`: spawned with a plain helper,
-//! caller reacts via an [`EntityEvent`] observer, visuals re-sync through a
-//! `Changed<TabBarSelected>`-gated system registered once by
-//! [`TabBarPlugin`] — so external code may also *write* `TabBarSelected`
-//! directly to switch tabs programmatically and the row keeps up.
+//! [`TabBarSelected`] mirrors the current index for read access (e.g. the
+//! Lessons unit-tab caller doesn't otherwise track it); unlike before this
+//! module rode on `RadioGroup`, it's no longer meant to be written
+//! directly to switch tabs from outside — nothing needs that today, and
+//! `RadioGroup`'s own external-state-management model (see its doc
+//! comment) doesn't naturally support both directions without real
+//! complexity, so it isn't attempted.
 
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Click, Out, Over, Pointer};
+use bevy::picking::events::{Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui::Checked;
+use bevy::ui_widgets::{RadioButton, RadioGroup, ValueChange, radio_self_update};
 
 use super::button;
 
@@ -31,9 +42,9 @@ pub struct TabSelect {
     pub index: usize,
 }
 
-/// The active tab's index, on the bar's root entity. The widget updates it
-/// on click; write to it directly to switch tabs from code (the visuals
-/// follow either way).
+/// The active tab's index, on the bar's root entity — kept in sync by
+/// [`on_radio_group_value_change`] for read access; see the module doc
+/// comment for why writing it directly no longer switches tabs.
 #[derive(Component, Clone, Debug, Default)]
 pub struct TabBarSelected(pub usize);
 
@@ -71,6 +82,8 @@ pub fn spawn_tab_bar<M: 'static>(
                 column_gap: Val::Px(4.0),
                 ..default()
             },
+            RadioGroup,
+            TabIndex(0),
             TabBarSelected(selected),
         ))
         .id();
@@ -85,6 +98,9 @@ pub fn spawn_tab_bar<M: 'static>(
             .apply_scene(tab_scene(label.clone(), index == selected))
             .insert(TabButton { bar, index })
             .id();
+        if index == selected {
+            commands.entity(tab).insert(Checked);
+        }
         commands.entity(bar).add_child(tab);
     }
 
@@ -92,16 +108,17 @@ pub fn spawn_tab_bar<M: 'static>(
     bar
 }
 
-/// One tab: a button whose colour marks the active state (kept in sync by
-/// [`sync_tab_visuals`] after spawn).
+/// One tab: a radio button whose colour marks the active state (kept in
+/// sync by [`on_radio_group_value_change`] after spawn). No `TabIndex` —
+/// per `RadioButton`'s own doc comment, individual radio buttons aren't
+/// Tab stops; the enclosing `RadioGroup` is.
 fn tab_scene(label: String, active: bool) -> impl Scene {
     bsn! {
-        Button
+        RadioButton
         Node {
             padding: {UiRect::axes(Val::Px(18.0), Val::Px(8.0))},
         }
         BackgroundColor({tab_color(active)})
-        on(tab_click)
         on(tab_over)
         on(tab_out)
         Children [
@@ -113,28 +130,6 @@ fn tab_scene(label: String, active: bool) -> impl Scene {
             )
         ]
     }
-}
-
-fn tab_click(
-    ev: On<Pointer<Click>>,
-    tabs: Query<&TabButton>,
-    mut bars: Query<&mut TabBarSelected>,
-    mut commands: Commands,
-) {
-    let Ok(tab) = tabs.get(ev.entity) else {
-        return;
-    };
-    let Ok(mut selected) = bars.get_mut(tab.bar) else {
-        return;
-    };
-    if selected.0 == tab.index {
-        return; // already active — not a switch
-    }
-    selected.0 = tab.index;
-    commands.trigger(TabSelect {
-        tab_bar: tab.bar,
-        index: tab.index,
-    });
 }
 
 fn tab_over(
@@ -167,28 +162,51 @@ fn tab_out(
     }
 }
 
-/// Retint a bar's tabs whenever its `TabBarSelected` changes — from a click
-/// or from external code writing the component directly.
-fn sync_tab_visuals(
-    changed: Query<(Entity, &TabBarSelected), Changed<TabBarSelected>>,
-    mut tabs: Query<(&TabButton, &mut BackgroundColor)>,
+/// Reacts to `RadioGroup`'s own [`ValueChange<Entity>`] (fired by
+/// `RadioButton`'s click/keyboard handling — see `bevy_ui_widgets::radio`
+/// — only on a genuine change, since the widget itself already skips an
+/// already-checked button): updates [`TabBarSelected`], retints every tab
+/// of that bar, and fires [`TabSelect`]. Guards on `ev.source` actually
+/// carrying `TabBarSelected` so this can't misfire for some unrelated
+/// `RadioGroup` elsewhere in the app. Deliberately keys the retint off
+/// `TabButton::index == clicked_tab.index`, not `Checked` — the latter is
+/// updated by [`radio_self_update`] via a *separate* observer on the same
+/// event, whose ordering relative to this one isn't guaranteed.
+fn on_radio_group_value_change(
+    ev: On<ValueChange<Entity>>,
+    tabs: Query<&TabButton>,
+    mut bars: Query<&mut TabBarSelected>,
+    mut colors: Query<&mut BackgroundColor>,
+    children: Query<&Children>,
+    mut commands: Commands,
 ) {
-    for (bar, selected) in &changed {
-        for (tab, mut bg) in &mut tabs {
-            if tab.bar != bar {
-                continue;
+    let Ok(mut selected) = bars.get_mut(ev.source) else {
+        return;
+    };
+    let Ok(clicked_tab) = tabs.get(ev.value) else {
+        return;
+    };
+    selected.0 = clicked_tab.index;
+    if let Ok(kids) = children.get(ev.source) {
+        for &child in kids {
+            if let (Ok(tab), Ok(mut bg)) = (tabs.get(child), colors.get_mut(child)) {
+                bg.0 = tab_color(tab.index == clicked_tab.index);
             }
-            bg.0 = tab_color(tab.index == selected.0);
         }
     }
+    commands.trigger(TabSelect {
+        tab_bar: ev.source,
+        index: clicked_tab.index,
+    });
 }
 
-/// Registers the visual-sync system every tab bar needs. Add once per app.
+/// Registers the observers every tab bar needs. Add once per app.
 pub struct TabBarPlugin;
 
 impl Plugin for TabBarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, sync_tab_visuals);
+        app.add_observer(radio_self_update)
+            .add_observer(on_radio_group_value_change);
     }
 }
 
@@ -204,7 +222,7 @@ mod tests {
 
     fn bar_with_tabs(app: &mut App, selected: usize, count: usize) -> (Entity, Vec<Entity>) {
         let bar = app.world_mut().spawn(TabBarSelected(selected)).id();
-        let tabs = (0..count)
+        let tabs: Vec<Entity> = (0..count)
             .map(|index| {
                 app.world_mut()
                     .spawn((
@@ -214,18 +232,31 @@ mod tests {
                     .id()
             })
             .collect();
+        app.world_mut().entity_mut(bar).add_children(&tabs);
         (bar, tabs)
     }
 
+    /// Simulates what `RadioButton`'s own click handling would trigger on
+    /// the group once a real click resolves — the actual entry point
+    /// `on_radio_group_value_change` reacts to.
+    fn click_tab(app: &mut App, bar: Entity, tab: Entity) {
+        app.world_mut().trigger(ValueChange::<Entity> {
+            source: bar,
+            value: tab,
+            is_final: true,
+        });
+    }
+
     #[test]
-    fn writing_selected_retints_every_tab_of_that_bar() {
+    fn clicking_a_tab_retints_every_tab_of_that_bar_and_updates_selected() {
         let mut app = app();
         let (bar, tabs) = bar_with_tabs(&mut app, 0, 3);
         app.update();
 
-        app.world_mut().get_mut::<TabBarSelected>(bar).unwrap().0 = 2;
+        click_tab(&mut app, bar, tabs[2]);
         app.update();
 
+        assert_eq!(app.world().get::<TabBarSelected>(bar).unwrap().0, 2);
         let color_of = |app: &App, e: Entity| app.world().get::<BackgroundColor>(e).unwrap().0;
         assert_eq!(color_of(&app, tabs[0]), tab_color(false));
         assert_eq!(color_of(&app, tabs[1]), tab_color(false));
@@ -233,24 +264,67 @@ mod tests {
     }
 
     #[test]
+    fn clicking_a_tab_fires_tab_select_with_its_index() {
+        let mut app = app();
+        let (bar, tabs) = bar_with_tabs(&mut app, 0, 3);
+        app.update();
+
+        #[derive(Resource, Default)]
+        struct LastSelect(Option<usize>);
+        app.init_resource::<LastSelect>();
+        app.world_mut().entity_mut(bar).observe(
+            |ev: On<TabSelect>, mut last: ResMut<LastSelect>| {
+                last.0 = Some(ev.index);
+            },
+        );
+
+        click_tab(&mut app, bar, tabs[1]);
+        app.update();
+
+        assert_eq!(app.world().resource::<LastSelect>().0, Some(1));
+    }
+
+    #[test]
     fn other_bars_tabs_are_left_alone() {
         let mut app = app();
-        let (bar_a, _tabs_a) = bar_with_tabs(&mut app, 0, 2);
+        let (bar_a, tabs_a) = bar_with_tabs(&mut app, 0, 2);
         let (_bar_b, tabs_b) = bar_with_tabs(&mut app, 0, 2);
         app.update();
 
-        // Deliberately wrong tint on the other bar's tab: the sync for
-        // bar_a must not "fix" it (it only walks its own bar's tabs).
+        // Deliberately wrong tint on the other bar's tab: switching bar_a
+        // must not "fix" it (it only walks its own bar's tabs).
         app.world_mut()
             .get_mut::<BackgroundColor>(tabs_b[1])
             .unwrap()
             .0 = Color::srgb(1.0, 0.0, 0.0);
-        app.world_mut().get_mut::<TabBarSelected>(bar_a).unwrap().0 = 1;
+
+        click_tab(&mut app, bar_a, tabs_a[1]);
         app.update();
 
         assert_eq!(
             app.world().get::<BackgroundColor>(tabs_b[1]).unwrap().0,
             Color::srgb(1.0, 0.0, 0.0),
+        );
+    }
+
+    #[test]
+    fn a_value_change_from_an_unrelated_radio_group_is_ignored() {
+        let mut app = app();
+        let (_bar, tabs) = bar_with_tabs(&mut app, 0, 2);
+        app.update();
+
+        let stray_group = app.world_mut().spawn_empty().id();
+        // No `TabBarSelected` on `stray_group` — must not panic or repaint.
+        app.world_mut().trigger(ValueChange::<Entity> {
+            source: stray_group,
+            value: tabs[1],
+            is_final: true,
+        });
+        app.update();
+
+        assert_eq!(
+            app.world().get::<BackgroundColor>(tabs[0]).unwrap().0,
+            tab_color(true)
         );
     }
 }
