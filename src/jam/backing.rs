@@ -29,12 +29,11 @@ use crate::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
 /// Present while a generated-backing jam is in flight (from the "Start Jam"
 /// button through `Playing`, including any Restart). Its presence — checked
 /// by both `menu::route_menu_entry` and `gameplay::pause_menu::on_restart`
-/// — is what tells those two call sites this `SelectedSong` was built by
+/// — tells those call sites this `SelectedSong` was built by
 /// [`build_generated_manifest`] via `Assets::add` rather than loaded through
-/// the `AssetServer`, so it has no tracked `LoadState` for `check_loading`'s
-/// `is_loaded_with_dependencies` to ever find: both routes skip
+/// the `AssetServer`, so it has no tracked `LoadState`: both routes skip
 /// `AppState::SongLoading` and go straight to `Playing`. Removed on
-/// returning to the menu, the same end-of-life point `LessonContext` uses.
+/// returning to the menu, same end-of-life point `LessonContext` uses.
 #[derive(Resource)]
 pub struct GeneratedJamSession;
 
@@ -53,31 +52,27 @@ const RELEASE_SECS: f32 = 0.05;
 const NOTE_GAP_FRAC: f32 = 0.08;
 
 /// Semitone offsets of the classic 12-bar "blues box" bass shape, relative
-/// to whatever chord root is currently sounding: root, root, 5th, 5th,
-/// flat-7th, flat-7th, 5th, flat-7th — 8 notes per bar, swung (see
-/// [`SWING_LONG_FRAC`]) rather than played as even eighths. Quality-agnostic
-/// like [`bar_beat_freqs`] itself: root/5th/flat-7th are all shared between
-/// a dominant-7th and a minor-7th chord (`song::harmonica::chord_intervals`)
-/// — only the 3rd differs, and this pattern never plays one.
+/// to whatever chord root is sounding: root, root, 5th, 5th, flat-7th,
+/// flat-7th, 5th, flat-7th — 8 notes per bar, swung (see
+/// [`SWING_LONG_FRAC`]) rather than even eighths. Quality-agnostic like
+/// [`bar_beat_freqs`]: root/5th/flat-7th are shared between a dominant-7th
+/// and minor-7th chord (`song::harmonica::chord_intervals`) — only the 3rd
+/// differs, and this pattern never plays one.
 const BLUES_BOX_PATTERN: [i32; 8] = [0, 0, 7, 7, 10, 10, 7, 10];
 
 /// The long eighth of a swung pair takes this fraction of the beat (the
 /// short one takes the rest) — the same 2:1 "triplet swing" ratio
-/// `metronome_overlay`'s `MetronomeFeel::Shuffle` clicks to (a beat as three
-/// triplet-eighths, accenting sub 0 and sub 2), so a generated jam's bass
-/// swings in step with the shuffle-feel metronome a player would tap along
-/// to over it.
+/// `metronome_overlay`'s `MetronomeFeel::Shuffle` clicks to, so a generated
+/// jam's bass swings in step with the shuffle-feel metronome.
 const SWING_LONG_FRAC: f32 = 2.0 / 3.0;
 
 /// One simple bass tone: a sine fundamental plus a second and third harmonic
 /// for warmth, and a short attack/release envelope. The harmonics matter for
-/// more than tone color here — octave 2's fundamentals (see
-/// [`bar_beat_freqs`]) sit around 65–110 Hz, below what small/laptop
-/// speakers can reproduce at all, so the *speaker-audible* part of this
-/// tone is disproportionately the 2nd/3rd harmonics (130–330 Hz). Without
-/// them, the bass line is technically playing (real, non-silent PCM) but
-/// genuinely inaudible on that class of hardware — the classic "psychoacoustic
-/// bass" problem, not a playback bug.
+/// more than tone color: octave 2's fundamentals (see [`bar_beat_freqs`])
+/// sit around 65–110 Hz, below what small/laptop speakers can reproduce, so
+/// the *speaker-audible* part of this tone is disproportionately the
+/// 2nd/3rd harmonics (130–330 Hz) — the classic "psychoacoustic bass"
+/// problem, not a playback bug.
 fn bass_tone(freq_hz: f32, duration_secs: f32) -> Vec<f32> {
     let n = (duration_secs * SAMPLE_RATE as f32).max(1.0) as usize;
     let attack = (SAMPLE_RATE as f32 * ATTACK_SECS) as usize;
@@ -106,12 +101,11 @@ fn bass_tone(freq_hz: f32, duration_secs: f32) -> Vec<f32> {
 
 /// The 8 note frequencies (Hz) of one bar's swung "blues box" pattern (see
 /// [`BLUES_BOX_PATTERN`]), in the bass register (octave 3 — one octave
-/// higher than a real bass guitar would sit, deliberately: this is a single
-/// sine-ish voice with no amp/cabinet coloring, and octave 2's ~65–110 Hz
-/// fundamentals are below what small/laptop speakers reproduce at all, see
-/// [`bass_tone`]). `None` for a note whose resolved name doesn't parse —
-/// shouldn't happen for the roots `progression_bars` produces, but stays
-/// honest about the possibility rather than panicking.
+/// higher than a real bass guitar, deliberately: a single sine-ish voice
+/// with no amp/cabinet coloring, and octave 2's ~65–110 Hz fundamentals are
+/// below what small/laptop speakers reproduce, see [`bass_tone`]). `None`
+/// for a note whose resolved name doesn't parse — shouldn't happen for the
+/// roots `progression_bars` produces.
 fn bar_beat_freqs(root: &str) -> [Option<f32>; 8] {
     BLUES_BOX_PATTERN.map(|semitones| {
         let note_class = semitone(root, semitones);

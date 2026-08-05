@@ -3,23 +3,20 @@
 //! Freeform call-and-response within an open Jam Session: an off-by-default
 //! toggle ([`CallResponseEnabled`], mirroring `session::JamLoop`) that has
 //! the game play a short synthesized lick drawn from the chord tones of
-//! whichever bar is currently sounding, then gives the player a couple of
-//! bars to echo it by ear. Deliberately *not scored* — this is
-//! call-and-response practice, not a lesson pass/fail criterion (see
-//! `lessons::PassCriteria` for the scored jam-based criteria); the only
-//! feedback is a turn-taking banner ("Listen…" / "Your turn") and a ghost
-//! highlight of the call's holes on the existing live hole map
-//! (`session::update_hole_map`), so the player has a visual memory aid, not
-//! a graded outcome.
+//! whichever bar is sounding, then gives the player a couple bars to echo
+//! it by ear. Deliberately *not scored* (see `lessons::PassCriteria` for
+//! the scored jam-based criteria) — the only feedback is a turn-taking
+//! banner ("Listen…" / "Your turn") and a ghost highlight of the call's
+//! holes on the live hole map (`session::update_hole_map`), a visual
+//! memory aid rather than a graded outcome.
 //!
-//! Paced entirely off `AbsoluteBar` (not a separate timer) — the same
-//! open-ended repeating-bar-pattern building block `improv::in_rest_window`
-//! uses — so the cycle always lines up with the 12-bar chart and metronome
-//! the player is already watching. Reuses the harmonica-timbre additive
-//! synth (`audio_system::synth`) `gameplay::call_response` and the song
-//! editor already share, and fires its audio the same fire-and-forget way
-//! (a plain `AudioPlayer::DESPAWN` spawn — never touches `GameplayClock` or
-//! the music sink, so it can't run afoul of the sink-anchoring invariant).
+//! Paced entirely off `AbsoluteBar`, the same open-ended repeating-bar-
+//! pattern building block `improv::in_rest_window` uses, so the cycle
+//! always lines up with the 12-bar chart and metronome. Reuses the
+//! harmonica-timbre additive synth (`audio_system::synth`) `gameplay::
+//! call_response` and the Song Editor share, firing its audio the same
+//! fire-and-forget way (a plain `AudioPlayer::DESPAWN` spawn — never
+//! touches `GameplayClock` or the music sink).
 
 use std::collections::{HashMap, HashSet};
 
