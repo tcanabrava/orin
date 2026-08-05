@@ -6,9 +6,11 @@
 //! panels, unlike the interactive note grid or mod panel).
 
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 
 use super::grid::{OUT_OF_SCALE_MIX, OUT_OF_SCALE_TINT, TEMPO_MARKER_COLOR, mix_srgba};
 use super::interaction::{SCROLLBAR_BLOW_COLOR, SCROLLBAR_DRAW_COLOR};
@@ -178,7 +180,8 @@ fn spawn_cycle_row<T: Component, M: 'static>(
             TextColor(colors.label),
         ));
         line.spawn((
-            Button,
+            WidgetButton,
+            TabIndex(0),
             Node {
                 width: Val::Px(240.0),
                 height: Val::Px(26.0),
@@ -307,7 +310,8 @@ pub(super) fn spawn_field_row(
         ));
 
         let mut btn = line.spawn((
-            Button,
+            WidgetButton,
+            TabIndex(0),
             MetaFieldBox(field),
             Node {
                 width: Val::Px(240.0),
@@ -379,7 +383,8 @@ pub(super) fn spawn_field_row(
 
         if field == Field::Music {
             line.spawn((
-                Button,
+                WidgetButton,
+                TabIndex(0),
                 Node {
                     height: Val::Px(26.0),
                     align_items: AlignItems::Center,
@@ -446,7 +451,8 @@ fn spawn_midi_track_row(
             TextColor(colors.label),
         ));
         line.spawn((
-            Button,
+            WidgetButton,
+            TabIndex(0),
             Node {
                 height: Val::Px(26.0),
                 align_items: AlignItems::Center,
