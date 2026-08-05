@@ -22,13 +22,11 @@ pub(super) fn normalize_range(a: usize, b: usize) -> (usize, usize) {
     if a <= b { (a, b) } else { (b, a) }
 }
 
-/// The tick ranges strictly *between* two sounding notes — merging every
+/// The tick ranges strictly *between* two sounding notes — merges every
 /// note's `[tick, tick+len)` interval across all holes first, since silence
-/// means nothing at all is sounding, not just one particular hole (two holes
-/// overlapping as a chord, or one note's tail overlapping the next note's
-/// onset, must not read as a gap). Leading silence (before the first note)
-/// and trailing silence (after the last) are deliberately excluded — the
-/// silence track shows the space *between* notes, not lead-in/lead-out.
+/// means nothing at all is sounding (a chord, or one note's tail overlapping
+/// the next note's onset, must not read as a gap). Leading/trailing silence
+/// is excluded — the silence track shows space *between* notes only.
 pub(super) fn silence_gaps(notes: &[GridNote]) -> Vec<(usize, usize)> {
     let mut intervals: Vec<(usize, usize)> =
         notes.iter().map(|n| (n.tick, n.tick + n.len)).collect();

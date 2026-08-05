@@ -12,16 +12,14 @@ use super::state::{Dir, HARP_KEYS, HarmonicaKind, Pitch, max_bend, pitch_compati
 use crate::song::chart::Action;
 use crate::song::harmonica::Harmonica;
 
-/// Resolves `target` (a MIDI note number) onto `harp` only if the harp can
-/// genuinely produce it: an exact blow/draw match if one exists; otherwise,
-/// for a diatonic harp, a bend reachable within [`max_bend`]'s per-hole cap
-/// (draw bend on holes 1..=6, blow bend on 7..=hole_count — mirroring real
-/// harmonica bend physics), or, for a chromatic harp, a slide (which raises
-/// a hole's natural note by a semitone, so a target one semitone above some
-/// hole's natural note is reachable that way). `None` for a pitch outside
-/// all of those — what lets live recording *discard* a detection the harp
-/// can't have made instead of disguising it as the nearest playable note
-/// (see [`map_pitch`] for the always-resolves variant MIDI import wants).
+/// Resolves `target` (a MIDI note number) onto `harp` only if it can
+/// genuinely produce it: an exact blow/draw match; otherwise, for a
+/// diatonic harp, a bend within [`max_bend`]'s per-hole cap (draw bend on
+/// holes 1..=6, blow bend on 7..=hole_count); or, for a chromatic harp, a
+/// slide (raises a hole's natural note by a semitone). `None` otherwise —
+/// lets live recording *discard* a detection the harp can't have made,
+/// rather than disguising it as the nearest playable note (see
+/// [`map_pitch`] for the always-resolves variant MIDI import wants).
 pub(super) fn map_pitch_playable(
     target: u8,
     harp: &Harmonica,
@@ -112,12 +110,11 @@ pub(super) fn map_pitch(target: u8, harp: &Harmonica, kind: HarmonicaKind) -> (u
         .unwrap_or((1, Dir::Blow, Pitch::Normal))
 }
 
-/// Fraction of `midi_keys` that land on `key`/`kind`'s harp via an *exact*
-/// natural blow/draw match (no bend/slide/nearest-note fallback needed) —
-/// the fitness measure [`suggest_key`] maximizes. `midi_keys` empty scores
-/// `0.0` rather than dividing by zero (never actually reached in practice:
-/// `import_track_notes` already rejects an empty track before this would
-/// run on one).
+/// Fraction of `midi_keys` landing on `key`/`kind`'s harp via an *exact*
+/// natural blow/draw match — the fitness measure [`suggest_key`]
+/// maximizes. Empty `midi_keys` scores `0.0` rather than dividing by zero
+/// (never actually reached: `import_track_notes` already rejects an empty
+/// track first).
 fn key_fit_score(midi_keys: &[u8], key: &str, kind: HarmonicaKind) -> f32 {
     if midi_keys.is_empty() {
         return 0.0;
@@ -135,15 +132,11 @@ fn key_fit_score(midi_keys: &[u8], key: &str, kind: HarmonicaKind) -> f32 {
     exact as f32 / midi_keys.len() as f32
 }
 
-/// The [`HARP_KEYS`] entry that best fits `midi_keys` for `kind` — the one
-/// needing the fewest bends/slides/nearest-note fallbacks to play (highest
-/// [`key_fit_score`]). Ties keep whichever key sorts earlier in
-/// `HARP_KEYS`, so the result is deterministic regardless of float
-/// rounding. Lets MIDI import pick a sensible key on its own — the same
-/// "always resolves to something reasonable" spirit as [`map_pitch`]'s own
-/// bend/slide/nearest-note fallback chain, rather than requiring the user
-/// to already have the right key selected (or to discover a bad fit only
-/// after seeing how many notes needed a fallback).
+/// The [`HARP_KEYS`] entry that best fits `midi_keys` for `kind` — highest
+/// [`key_fit_score`], needing the fewest bend/slide/nearest-note
+/// fallbacks. Ties keep whichever key sorts earlier in `HARP_KEYS` for
+/// deterministic results. Lets MIDI import pick a sensible key on its own,
+/// rather than requiring the user to already have the right key selected.
 pub(super) fn suggest_key(midi_keys: &[u8], kind: HarmonicaKind) -> &'static str {
     let mut best_key = HARP_KEYS[0];
     let mut best_score = -1.0;

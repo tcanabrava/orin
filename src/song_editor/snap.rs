@@ -71,15 +71,13 @@ pub(super) fn snap_tick_in_beat(frac: f32, mode: SnapMode) -> usize {
         .unwrap_or(0)
 }
 
-/// Snaps an *absolute* tick position (as opposed to [`snap_tick_in_beat`]'s
+/// Snaps an *absolute* tick position (unlike [`snap_tick_in_beat`]'s
 /// fractional position within a single beat) to the nearest tick `mode`
 /// allows, across beat boundaries — used by drag-to-move/-resize so an
-/// existing note can be nudged onto a shuffle/triplet position the same
-/// way placing a new one already can. `grid_points()` always includes 0,
-/// so the current beat's own points plus the *next* beat's tick 0 (the
-/// only point in the beat behind that could ever be closer than one of the
-/// current beat's own — see the doc test below) are the only candidates
-/// that matter.
+/// existing note snaps onto a shuffle/triplet position the same way a new
+/// one can. `grid_points()` always includes 0, so the current beat's own
+/// points plus the *next* beat's tick 0 are the only candidates that
+/// matter.
 pub(super) fn snap_absolute_tick(tick: usize, mode: SnapMode) -> usize {
     let beat = tick / TICKS_PER_BEAT;
     let mut best = beat * TICKS_PER_BEAT;

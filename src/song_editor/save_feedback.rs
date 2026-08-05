@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-//! Surfaces the outcome of a Save/Load in the status bar — `harpchart.rs`/
-//! `lesson_form.rs` used to report every outcome with a bare `println!`,
-//! invisible in a normal, non-terminal launch of a packaged build. Same
-//! "one more priority tier" shape `panel::update_status_bar` already uses
-//! for the drag/record/practice messages. Every outcome is still logged via
-//! `info!`/`warn!` too (structured, filterable, and still visible to a
-//! developer running from a terminal), just no longer *only* that.
+//! Surfaces the outcome of a Save/Load (`harpchart.rs`/`lesson_form.rs`) in
+//! the status bar, visible in a non-terminal launch of a packaged build —
+//! the same "one more priority tier" shape `panel::update_status_bar`
+//! already uses for drag/record/practice messages. Every outcome is also
+//! still logged via `info!`/`warn!`, structured and filterable for a
+//! developer running from a terminal.
 
 use bevy::prelude::*;
 
@@ -18,11 +17,11 @@ use crate::localization::LocalizedStr;
 /// unrelated later status messages.
 const DISPLAY_SECS: f32 = 4.0;
 
-/// The most recent save/load outcome, if it's still within its display
-/// window. `set` (called from `harpchart`/`lesson_form`'s Save/Load
-/// systems) always (re)starts the countdown, so a second save shortly
-/// after the first keeps its own message visible for the full window
-/// rather than inheriting whatever was left of the first one's.
+/// The most recent save/load outcome, if still within its display window.
+/// `set` (called from `harpchart`/`lesson_form`'s Save/Load systems)
+/// always (re)starts the countdown, so a second save shortly after the
+/// first gets its own full display window instead of inheriting the
+/// first's leftover time.
 #[derive(Resource, Default)]
 pub(super) struct SaveFeedback {
     message: Option<LocalizedStr>,

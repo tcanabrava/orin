@@ -4,13 +4,10 @@
 //! lesson form, and the status bar — everything *below* the fixed grid/mod-
 //! panel chrome `ui::setup` spawns directly. Wrapped in a
 //! [`bevy::ui_widgets::ScrollArea`] with a real, visible [`Scrollbar`]/
-//! [`ScrollbarThumb`] pair beside it (see [`spawn_editor_scrollbar`]), since
-//! without one there's no hint that the lesson-details panel runs below the
-//! window. Deliberately scoped to just the form fields, not the whole
-//! editor: the grid already has its own horizontal scroll, and an earlier
-//! version of this that wrapped the grid too meant scrolling either one
-//! moved both at once. Split out of `ui.rs` once adding this pushed that
-//! file over the physical-design line budget.
+//! [`ScrollbarThumb`] pair (see [`spawn_editor_scrollbar`]), so there's a
+//! hint the lesson-details panel runs below the window. Deliberately
+//! scoped to just the form fields, not the grid — which has its own
+//! independent horizontal scroll.
 
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
@@ -42,11 +39,9 @@ pub(super) fn update_editor_scrollbar_visibility(
 }
 
 /// A visible vertical scrollbar for `target` (the editor's [`ScrollArea`]),
-/// via `bevy_ui_widgets`' headless [`Scrollbar`]/[`ScrollbarThumb`] widgets
-/// (drag/click-to-page already wired by `UiWidgetsPlugins`, no hand-rolled
-/// interaction needed — unlike the grid's own horizontal scrollbar, which
-/// predates this and tracks a plain `f32` instead of a real
-/// `ScrollPosition`). Hidden entirely once everything fits — see
+/// via `bevy_ui_widgets`'s headless [`Scrollbar`]/[`ScrollbarThumb`]
+/// widgets — drag/click-to-page already wired by `UiWidgetsPlugins`, no
+/// hand-rolled interaction needed. Hidden once everything fits — see
 /// [`update_editor_scrollbar_visibility`].
 pub(super) fn spawn_editor_scrollbar(
     outer: &mut ChildSpawnerCommands,
