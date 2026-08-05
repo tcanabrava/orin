@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use bevy::input_focus::tab_navigation::TabGroup;
 use bevy::picking::Pickable;
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
@@ -339,6 +340,7 @@ pub(super) fn setup(
     let hole_count = state.hole_count();
     let mut root_ec = commands.spawn((
         EditorRoot,
+        TabGroup::default(),
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),

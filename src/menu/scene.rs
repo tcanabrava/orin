@@ -5,6 +5,7 @@
 //! widget, and the `MenuRoot` marker `cleanup_menu` despawns on page exit.
 
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabGroup;
 use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 
@@ -115,6 +116,9 @@ pub(crate) fn spawn_menu_root(
     commands.entity(root).with_children(|children| {
         content = spawn_scroll_area(children, SCROLLBAR_THUMB_COLOR, SCROLLBAR_TRACK_COLOR);
     });
+    // Scopes Tab/Shift+Tab cycling to this page's own buttons/fields —
+    // every caller spawns its content as children of `content`.
+    commands.entity(content).insert(TabGroup::default());
     content
 }
 

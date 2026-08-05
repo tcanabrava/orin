@@ -8,6 +8,7 @@
 //! a time (a second [`OpenConfirmDialog`] while one is already open replaces
 //! it, same as `FileDialog`'s own single-dialog assumption).
 
+use bevy::input_focus::tab_navigation::TabGroup;
 use bevy::prelude::*;
 
 use super::button;
@@ -54,6 +55,9 @@ fn handle_open(
     commands
         .spawn((
             ConfirmDialogRoot,
+            // Modal: Tab/Shift+Tab cycles the Yes/No buttons without
+            // leaking to whatever page opened this dialog.
+            TabGroup::modal(),
             Node {
                 position_type: PositionType::Absolute,
                 left: Val::Px(0.0),

@@ -17,8 +17,10 @@ use std::path::PathBuf;
 
 use bevy::input::ButtonState;
 use bevy::input::keyboard::KeyboardInput;
+use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 use bevy::ui_widgets::ScrollArea;
 use bevy_fluent::Localization;
 
@@ -174,7 +176,8 @@ fn handle_open(
     };
     let initial_filename = dialog.save_filename.clone();
 
-    commands.spawn_scene(bsn! {
+    commands
+        .spawn_scene(bsn! {
         Node {
             position_type: {PositionType::Absolute},
             left: {Val::Px(0.0)},
@@ -245,7 +248,8 @@ fn handle_open(
                         ]
                     ),
                     (
-                        Button
+                        WidgetButton
+                        TabIndex(0)
                         Node {
                             padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
                         }
@@ -269,7 +273,8 @@ fn handle_open(
                 ]
             ),
             (
-                Button
+                WidgetButton
+                TabIndex(0)
                 Node {
                     padding: {UiRect::axes(Val::Px(14.0), Val::Px(5.0))},
                     margin: {UiRect::top(Val::Px(4.0))},
@@ -291,7 +296,10 @@ fn handle_open(
                 ]
             ),
         ]
-    });
+    })
+        // Modal: Tab/Shift+Tab cycles within the dialog without leaking to
+        // the page behind it.
+        .insert(TabGroup::modal());
     next_state.set(FileDialogState::Open);
     refresh_req.write(RefreshFileList);
 }
