@@ -366,21 +366,16 @@ fn should_restart_jam_music(loop_on: bool, music_started: bool, music_player_ali
 
 /// Restarts the jam's background music once the current playthrough has
 /// *finished on its own* — the `MusicPlayer` entity despawns itself via
-/// `PlaybackSettings::DESPAWN` (`countdown_overlay::update_countdown` spawns
-/// it that way for Jam Session) — and Loop is on at that moment. Toggling
-/// Loop itself does nothing here beyond flipping the resource
-/// (`update_jam_loop_label` is the only other reader); this system never
-/// touches a live sink, only ever spawning a *new* entity after the old one
-/// is already gone — seeking or restarting a still-playing sink is
-/// unreliable in `bevy_audio` (see `TODO.md`), so this sidesteps that
-/// entirely rather than working around it.
+/// `PlaybackSettings::DESPAWN` — and Loop is on at that moment. This system
+/// never touches a live sink, only ever spawning a *new* entity after the
+/// old one is gone — seeking or restarting a still-playing sink is
+/// unreliable in `bevy_audio` (see `TODO.md`).
 ///
 /// Also resets `GameplayClock` back to 0 — Jam Session's clock free-runs on
 /// frame deltas rather than anchoring to the sink (see `should_anchor_to_
-/// sink`), so nothing else would ever bring it back down once it ran past
-/// the song's length; left alone, the song-progress playhead would stay
-/// pinned at the right edge forever even though the music genuinely
-/// restarted.
+/// sink`), so nothing else would bring it back down once it ran past the
+/// song's length; otherwise the song-progress playhead would stay pinned
+/// at the right edge even though the music genuinely restarted.
 pub fn restart_finished_jam_music(
     jam_loop: Res<JamLoop>,
     music_started: Res<MusicStarted>,
@@ -429,15 +424,15 @@ pub fn restart_finished_jam_music(
 
 // ── Live harmonica hole map ─────────────────────────────────────────────────────
 
-/// Lookup driving the live hole feedback, rebuilt for each jam: which holes can
-/// sound a given `note+octave`; which note classes are in the song's blues
-/// scale generally; and, per bar of the 12-bar cycle, which note classes are
-/// tones of *that bar's* chord (I, IV, or V) — chord-tone awareness is a
-/// distinct, more advanced skill than just staying in the scale.
+/// Lookup driving the live hole feedback, rebuilt for each jam: which holes
+/// can sound a given `note+octave`; which note classes are in the song's
+/// blues scale generally; and, per bar of the 12-bar cycle, which note
+/// classes are tones of *that bar's* chord (I, IV, or V) — chord-tone
+/// awareness is a distinct, more advanced skill than just staying in scale.
 ///
-/// Fields are `pub(crate)`, not private: `jam::improv::accumulate_improv_
-/// stats` reads them directly, the same lookup `update_hole_map`'s tint
-/// uses, so the two can't disagree.
+/// Fields are `pub(crate)`: `jam::improv::accumulate_improv_stats` reads
+/// them directly, the same lookup `update_hole_map`'s tint uses, so the
+/// two can't disagree.
 #[derive(Resource)]
 pub struct JamHoleGuide {
     /// MIDI note number → the holes that can sound it (may be more than one
