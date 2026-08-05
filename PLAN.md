@@ -88,22 +88,22 @@ swing/triplet grid snap are all done (see Shipped above).
 3. **Repo-wide comment-shortening pass** (in progress): tightening
    overly long `///`/`//!` doc comments throughout `src/`, keeping every
    load-bearing fact (invariants, workaround reasons, cross-references)
-   but cutting restatement/padding/historical narration. Done so far:
-   `song_editor/{lesson_form,record,state,timeline}.rs`,
-   `gameplay/{song_progress_overlay,notes,clock,adaptive_difficulty,
-   state,harmonica_overlay,gameplay_2d,gameplay_3d}.rs` (12 files, 8
-   commits). For a file over ~500 lines, found dense blocks via
-   `awk '/^\s*\/\/[\/!]/{c++;if(c==1)start=NR} !/^\s*\/\/[\/!]/{if(c>=6)
-   print start"-"NR-1; c=0}' <file>` (6+ consecutive comment lines)
-   rather than reading the whole file — much cheaper and still catches
-   the worst offenders.
-   Comment-line counts by directory at the start of this pass (for
-   picking up where it left off): `song_editor/` 1923 (29 files left),
-   `gameplay/` 1627 (21 files left), `menu/`+`dialogs/`+`jam/` 1150 (39
-   files), `audio_system/`+`song/`+`lessons/`+`music_score/`+top-level
-   1600 (32 files). Parallel subagents repeatedly hit the session's
-   usage limit mid-run with most work lost (uncommitted edits don't
-   survive a killed agent) — doing this file-by-file directly instead.
+   but cutting restatement/padding/historical narration ("used to be",
+   "the old code"). `song_editor/` and `gameplay/` are now both fully
+   swept, file by file. Remaining: `menu/`, `dialogs/`, `jam/`,
+   `audio_system/`, `song/`, `lessons/`, `music_score/`, and the
+   top-level `src/*.rs` files (`main.rs`, `lib.rs`, `settings.rs`,
+   `theme.rs`, `localization.rs`, `scoring.rs`, `responsive.rs`,
+   `spectrogram.rs`, `assets_management.rs`, `app.rs`, `profile.rs`).
+   For a file over ~500 lines, find dense blocks via
+   `awk '/^\s*\/\/[\/!]/{c++;if(c==1)start=FNR} !/^\s*\/\/[\/!]/{if(c>=5)
+   print start"-"FNR-1; c=0}' <file>` (use `FNR`, not `NR`, when scanning
+   several files in one invocation — `NR` is cumulative across files and
+   produces wrong line numbers for anything after the first). Parallel
+   subagents repeatedly hit the session's usage limit mid-run with most
+   work lost (uncommitted edits don't survive a killed agent, tried
+   twice); doing this file-by-file directly instead, comment-only edits
+   committed without a build/test/clippy cycle per file.
 
 ## Working practices
 
