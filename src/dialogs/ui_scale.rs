@@ -9,8 +9,8 @@ const SCALE_STEP: f32 = 1.2;
 
 /// One step up/down, clamped to `[MIN_SCALE, MAX_SCALE]` — shared by the
 /// arrow-key handler below and the Options page's on-screen +/- buttons
-/// (`menu::pages::options`), since Arrow Up/Down used to be the *only* way
-/// to change `UiScale` — unusable on a touch-only device with no keyboard.
+/// (`menu::pages::options`), needed since a keyboard-only control would be
+/// unusable on a touch-only device.
 pub fn scale_up(current: f32) -> f32 {
     (current * SCALE_STEP).min(MAX_SCALE)
 }

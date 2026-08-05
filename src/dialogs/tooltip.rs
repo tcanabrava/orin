@@ -99,15 +99,11 @@ fn on_hover_end(ev: On<Pointer<Out>>, mut hovered: ResMut<HoveredTooltip>) {
 /// a panel sized `(panel_w, panel_h)`, and a window sized `(window_w,
 /// window_h)` — all in the same length unit (the caller's job to convert;
 /// see `update_tooltip`). Offsets from the cursor by [`CURSOR_OFFSET`] on
-/// each axis, but never past the point where the panel's far edge would
-/// leave the window: past that point the axis holds at the window edge
-/// instead, so the cursor ends up somewhere inside the panel rather than
-/// always at its top-left corner. Deliberately not "flip to the cursor's
-/// other side": that can overflow just as easily near a corner (both the
-/// offset *and* the flipped position push the same edge past the window),
-/// where holding at the window edge always keeps the whole panel on-screen.
-/// Never returns a negative coordinate, even if the panel itself is larger
-/// than the window.
+/// each axis, but holds at the window edge instead once the panel's far
+/// edge would leave the window, so the cursor ends up somewhere inside the
+/// panel rather than always at its top-left corner. Deliberately not "flip
+/// to the cursor's other side" — that overflows just as easily near a
+/// corner. Never returns a negative coordinate.
 fn clamp_popup_position(
     cursor_x: f32,
     cursor_y: f32,
@@ -123,10 +119,9 @@ fn clamp_popup_position(
 
 /// Keeps the tooltip panel's visibility, text, and position in step with
 /// [`HoveredTooltip`] — written every frame while visible so it tracks the
-/// cursor, not just once on hover start. Positioned by [`clamp_popup_position`]
-/// so a widget near the right/bottom edge (the song editor's mod-panel
-/// buttons sit right up against it) can't push the panel partly or fully
-/// off-screen.
+/// cursor. Positioned by [`clamp_popup_position`] so a widget near the
+/// right/bottom edge (the Song Editor's mod-panel buttons sit right up
+/// against it) can't push the panel off-screen.
 fn update_tooltip(
     hovered: Res<HoveredTooltip>,
     tooltips: Query<&Tooltip>,
