@@ -27,9 +27,11 @@
 //! includes with the `bevy_ui_widgets` Cargo feature on.
 
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 
 use super::button;
@@ -75,9 +77,11 @@ pub(crate) struct ComboboxLinks {
 #[derive(Component, Clone, Copy)]
 struct ComboboxRoot(Entity);
 
-/// One item in a combobox's list.
+/// One item in a combobox's list. `pub(crate)` only because it appears in
+/// `close_open_comboboxes_on_escape`'s signature (see [`ComboboxLinks`] for
+/// the same reasoning) — nothing outside this module otherwise touches it.
 #[derive(Component, Clone)]
-struct ComboboxItemButton {
+pub(crate) struct ComboboxItemButton {
     root: Entity,
     value: String,
 }
@@ -266,7 +270,8 @@ pub fn spawn_combobox<M: 'static>(
 /// comment at its only call site.
 fn toggle_scene() -> impl Scene {
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         Node {
             padding: {UiRect::axes(Val::Px(14.0), Val::Px(8.0))},
             min_width: {Val::Px(TOGGLE_MIN_WIDTH)},
@@ -285,7 +290,10 @@ fn item_scene(value: String, is_selected: bool) -> impl Scene {
         button::color_default()
     };
     bsn! {
-        Button
+        WidgetButton
+        // Starts unreachable via Tab (negative index) since the dropdown
+        // starts closed — set_combobox_open flips this to 0 while open.
+        TabIndex(-1)
         Node { padding: {UiRect::axes(Val::Px(14.0), Val::Px(8.0))} }
         BackgroundColor({color})
         on(item_click)
@@ -302,11 +310,19 @@ fn item_scene(value: String, is_selected: bool) -> impl Scene {
     }
 }
 
+/// Opens/closes the dropdown, and — since `TabNavigation::gather_focusable`
+/// walks the ECS tree by `TabIndex`/`Children` alone, with no visibility
+/// check at all — also flips each item's own `TabIndex` sign in step with
+/// `Display`, so Tab can't land on a closed dropdown's invisible options
+/// (a negative index means "not reachable via sequential navigation", per
+/// `bevy_input_focus::tab_navigation`'s own doc comment).
 fn set_combobox_open(
     root: Entity,
     open: bool,
     links: &Query<&ComboboxLinks>,
     nodes: &mut Query<&mut Node>,
+    list_children: &Query<&Children>,
+    item_tab_indices: &mut Query<&mut TabIndex, With<ComboboxItemButton>>,
 ) {
     let Ok(links) = links.get(root) else { return };
     if let Ok(mut node) = nodes.get_mut(links.list) {
@@ -314,6 +330,13 @@ fn set_combobox_open(
     }
     if let Ok(mut node) = nodes.get_mut(links.backdrop) {
         node.display = if open { Display::Flex } else { Display::None };
+    }
+    if let Ok(children) = list_children.get(links.list) {
+        for &child in children {
+            if let Ok(mut tab_index) = item_tab_indices.get_mut(child) {
+                tab_index.0 = if open { 0 } else { -1 };
+            }
+        }
     }
 }
 
@@ -330,6 +353,8 @@ fn toggle_click(
     toggles: Query<&ComboboxRoot>,
     links: Query<&ComboboxLinks>,
     mut nodes: Query<&mut Node>,
+    list_children: Query<&Children>,
+    mut item_tab_indices: Query<&mut TabIndex, With<ComboboxItemButton>>,
 ) {
     // `Pointer<Click>` auto-propagates up the entity hierarchy (every
     // `bevy_picking` pointer event does) — without this, a click on this
@@ -341,7 +366,14 @@ fn toggle_click(
         return;
     };
     let opening = !is_combobox_open(root, &links, &nodes);
-    set_combobox_open(root, opening, &links, &mut nodes);
+    set_combobox_open(
+        root,
+        opening,
+        &links,
+        &mut nodes,
+        &list_children,
+        &mut item_tab_indices,
+    );
 }
 
 /// Clicking the backdrop means clicking outside the dropdown — close it
@@ -351,20 +383,32 @@ fn backdrop_click(
     backdrops: Query<&ComboboxRoot>,
     links: Query<&ComboboxLinks>,
     mut nodes: Query<&mut Node>,
+    list_children: Query<&Children>,
+    mut item_tab_indices: Query<&mut TabIndex, With<ComboboxItemButton>>,
 ) {
     ev.propagate(false);
     let Ok(&ComboboxRoot(root)) = backdrops.get(ev.entity) else {
         return;
     };
-    set_combobox_open(root, false, &links, &mut nodes);
+    set_combobox_open(
+        root,
+        false,
+        &links,
+        &mut nodes,
+        &list_children,
+        &mut item_tab_indices,
+    );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn item_click(
     mut ev: On<Pointer<Click>>,
     items: Query<&ComboboxItemButton>,
     links: Query<&ComboboxLinks>,
     mut nodes: Query<&mut Node>,
     mut values: Query<&mut ComboboxValue>,
+    list_children: Query<&Children>,
+    mut item_tab_indices: Query<&mut TabIndex, With<ComboboxItemButton>>,
     mut commands: Commands,
 ) {
     // Without this, the click bubbles from this item up to the toggle
@@ -379,7 +423,14 @@ fn item_click(
     if let Ok(mut v) = values.get_mut(root) {
         v.0 = value.clone();
     }
-    set_combobox_open(root, false, &links, &mut nodes);
+    set_combobox_open(
+        root,
+        false,
+        &links,
+        &mut nodes,
+        &list_children,
+        &mut item_tab_indices,
+    );
     commands.trigger(ComboboxSelect {
         combobox: root,
         value,
@@ -454,6 +505,8 @@ pub(crate) fn close_open_comboboxes_on_escape(
     mut keyboard: ResMut<ButtonInput<KeyCode>>,
     all_links: Query<&ComboboxLinks>,
     mut nodes: Query<&mut Node>,
+    list_children: Query<&Children>,
+    mut item_tab_indices: Query<&mut TabIndex, With<ComboboxItemButton>>,
 ) {
     if !keyboard.just_pressed(KeyCode::Escape) {
         return;
@@ -472,6 +525,13 @@ pub(crate) fn close_open_comboboxes_on_escape(
         }
         if let Ok(mut node) = nodes.get_mut(links.backdrop) {
             node.display = Display::None;
+        }
+        if let Ok(children) = list_children.get(links.list) {
+            for &child in children {
+                if let Ok(mut tab_index) = item_tab_indices.get_mut(child) {
+                    tab_index.0 = -1;
+                }
+            }
         }
     }
     keyboard.clear_just_pressed(KeyCode::Escape);

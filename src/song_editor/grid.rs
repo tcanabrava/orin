@@ -5,6 +5,7 @@ use bevy::picking::events::{Click, Drag, DragEnd, DragStart, Pointer};
 use bevy::prelude::*;
 use bevy::ui::RelativeCursorPosition;
 use bevy::ui_render::prelude::MaterialNode;
+use bevy::ui_widgets::Button as WidgetButton;
 
 use super::interaction::{ctrl_held, select_or_add, select_or_add_ctrl};
 use super::material::EditorNoteMaterial;
@@ -196,7 +197,7 @@ pub(super) fn rebuild_grid(
             let lane = mix_srgba(lane, bar_tint, BAR_TINT_MIX);
             let mut cell = commands.spawn((
                 GridItem,
-                Button,
+                WidgetButton,
                 RelativeCursorPosition::default(),
                 Node {
                     position_type: PositionType::Absolute,
@@ -582,7 +583,7 @@ pub(super) fn spawn_note(
         .spawn((
             GridItem,
             NoteView(id),
-            Button,
+            WidgetButton,
             ZIndex(1),
             Node {
                 position_type: PositionType::Absolute,

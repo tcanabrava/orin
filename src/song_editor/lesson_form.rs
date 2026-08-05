@@ -18,9 +18,11 @@
 //! runs for `ContentKind::Song`) — author the chart as a song first if it
 //! needs one, then switch to Lesson mode to add the curriculum fields.
 
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 
 use super::state::{ContentKind, EditorState, Field, LESSON_FIELDS, Scroll};
 use super::{LOAD_PURPOSE, SAVE_PURPOSE};
@@ -156,7 +158,8 @@ fn spawn_lesson_details_header(
     let expanded = format!("\u{25BE} {title}");
 
     col.spawn((
-        Button,
+        WidgetButton,
+        TabIndex(0),
         Node {
             width: Val::Percent(100.0),
             align_items: AlignItems::Center,

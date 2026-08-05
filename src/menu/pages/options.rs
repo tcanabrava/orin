@@ -9,10 +9,12 @@ use bevy::asset::RenderAssetUsages;
 use bevy::camera::RenderTarget;
 use bevy::camera::visibility::RenderLayers;
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Out, Over, Pointer};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
+use bevy::ui_widgets::Button as WidgetButton;
 use bevy::ui_widgets::{
     Slider, SliderRange, SliderStep, SliderValue, TrackClick, ValueChange, slider_self_update,
 };
@@ -486,6 +488,7 @@ fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &
 fn zoom_slider_scene(value: f32, frac: f32) -> impl Scene {
     bsn! {
         Slider { track_click: {TrackClick::Snap} }
+        TabIndex(0)
         SliderValue({value})
         Node { width: {Val::Px(220.0)}, height: {Val::Px(14.0)} }
         BackgroundColor({TRACK_BG})
@@ -665,7 +668,8 @@ fn harmonica_button_scene(image: Handle<Image>, name: String, is_selected: bool)
     let label = name.clone();
     let pick = name.clone();
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         Node {
             flex_direction: {FlexDirection::Column},
             align_items: {AlignItems::Center},
@@ -925,7 +929,8 @@ fn mic_banner_text(status: &MicStatus) -> String {
 
 fn mic_retry_button_scene(tooltip: String) -> impl Scene {
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         Node { padding: {UiRect::axes(Val::Px(12.0), Val::Px(6.0))} }
         BackgroundColor({button::color_default()})
         Tooltip({tooltip})
@@ -1138,6 +1143,7 @@ fn volume_slider_scene<M: 'static>(
 ) -> impl Scene {
     bsn! {
         Slider { track_click: {TrackClick::Snap} }
+        TabIndex(0)
         SliderValue({value})
         Node { width: {Val::Px(220.0)}, height: {Val::Px(14.0)} }
         BackgroundColor({TRACK_BG})
@@ -1187,6 +1193,7 @@ fn spawn_latency_slider(
 fn latency_slider_scene(value: f32, frac: f32) -> impl Scene {
     bsn! {
         Slider { track_click: {TrackClick::Snap} }
+        TabIndex(0)
         SliderValue({value})
         Node { width: {Val::Px(220.0)}, height: {Val::Px(14.0)} }
         BackgroundColor({TRACK_BG})

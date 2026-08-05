@@ -13,6 +13,7 @@
 //! Register [`CheckboxPlugin`] once per app.
 
 use bevy::ecs::system::IntoObserverSystem;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::prelude::*;
 use bevy::ui::Checked;
 use bevy::ui_widgets::{Checkbox, ValueChange, checkbox_self_update};
@@ -51,6 +52,7 @@ pub fn spawn_checkbox<M: 'static>(
     commands.entity(row).with_children(|r| {
         let mut box_ec = r.spawn((
             Checkbox,
+            TabIndex(0),
             Node {
                 width: Val::Px(BOX_SIZE),
                 height: Val::Px(BOX_SIZE),

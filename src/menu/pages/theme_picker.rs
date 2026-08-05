@@ -13,9 +13,11 @@
 //!   │                      ← Back to Options                   │
 //!   └─────────────────────────────────────────────────────────┘
 
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 use bevy_fluent::Localization;
 
 use crate::assets_management::{AvailableThemes, SelectedTheme, ThemesRescanned};
@@ -185,7 +187,8 @@ fn theme_button_scene(name: String, is_selected: bool) -> impl Scene {
     let label = name.clone();
     let pick = name.clone();
     bsn! {
-        Button
+        WidgetButton
+        TabIndex(0)
         Node {
             width: {Val::Percent(100.0)},
             padding: {UiRect::axes(Val::Px(16.0), Val::Px(10.0))},

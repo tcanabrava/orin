@@ -39,9 +39,11 @@
 //! targets (single notes, bends, chords, short phrases), unlike the
 //! ordinary note grid, which must window for arbitrarily long real songs.
 
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Drag, DragEnd, DragStart, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::Button as WidgetButton;
 
 use super::TICKS_PER_BEAT;
 use super::panel::mod_button_active;
@@ -309,7 +311,8 @@ fn spawn_expected_mod_button(
 ) {
     panel
         .spawn((
-            Button,
+            WidgetButton,
+            TabIndex(0),
             ExpectedModButton(kind),
             Node {
                 padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
@@ -528,7 +531,7 @@ fn rebuild_expected_notes_overlay(
             let id = note.id;
             let mut ec = c.spawn((
                 ExpectedNoteVisual(id),
-                Button,
+                WidgetButton,
                 ZIndex(4),
                 Node {
                     position_type: PositionType::Absolute,

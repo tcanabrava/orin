@@ -31,6 +31,7 @@
 //! *what* to do with what it collected.
 
 use bevy::ecs::query::Has;
+use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
@@ -123,8 +124,8 @@ pub(super) fn spawn_debug_recording_controls(
         })
         .with_children(|row| {
             row.spawn((
-                Button,
                 Checkbox,
+                TabIndex(0),
                 DebugRecordCheckbox,
                 Node {
                     width: Val::Px(18.0),
