@@ -2,33 +2,29 @@
 
 //! Reusable combobox: a labelled toggle button showing the current
 //! selection, which opens an overlay list of choices above the rest of the
-//! page (instead of pushing it down) when clicked. Dismissed by clicking
-//! outside, pressing Escape, or picking an item — only picking an item
-//! changes the selection. Extracted from the Options page's microphone
-//! device picker so future pickers don't have to reinvent it.
+//! page when clicked. Dismissed by clicking outside, pressing Escape, or
+//! picking an item — only picking an item changes the selection.
 //!
 //! `spawn_combobox`'s `backdrop_parent` must be a full-screen-sized
 //! container (e.g. the page root from `menu::spawn_menu_root`) — the
 //! click-catching backdrop sizes itself to 100% of `backdrop_parent`, and is
-//! despawned whenever `backdrop_parent` is (recursive despawn), so the
-//! widget needs no lifecycle hooks of its own. `trigger_parent` is where the
-//! visible label+toggle actually lives in-flow — usually the same entity as
-//! `backdrop_parent` (a single-column page), but a page with its own nested
-//! columns (see `gameplay::bending_trainer::setup`) can pass a narrower
-//! column here while keeping the backdrop sized to the whole page, so a
-//! click anywhere still dismisses the dropdown.
+//! despawned whenever `backdrop_parent` is, so the widget needs no
+//! lifecycle hooks of its own. `trigger_parent` is where the visible
+//! label+toggle lives in-flow — usually the same entity as
+//! `backdrop_parent`, but a page with its own nested columns (see
+//! `gameplay::bending_trainer::setup`) can pass a narrower column here
+//! while keeping the backdrop sized to the whole page.
 //!
 //! Register [`ComboboxPlugin`] once per app. If some other Escape handler
-//! (e.g. "go back a menu page") should only fire when no dropdown was open
-//! to close, order it `.after(close_open_comboboxes_on_escape)`.
+//! should only fire when no dropdown was open to close, order it
+//! `.after(close_open_comboboxes_on_escape)`.
 //!
 //! The dropdown list's on-screen position is managed by `bevy::ui_widgets`'
 //! [`Popover`] component, not a fixed `top`/`left` — it opens below the
-//! toggle normally, above it instead if that would run past the bottom of
-//! the window, and is clamped so it can't render off-screen either way.
-//! `PopoverPlugin` runs this: it's part of `bevy_ui_widgets::UiWidgetsPlugins`,
-//! which `DefaultPlugins` already includes whenever the `bevy_ui_widgets`
-//! Cargo feature is on (as it is here) — nothing to register separately.
+//! toggle normally, above it if that would run past the window's bottom
+//! edge, and is clamped either way. `PopoverPlugin` runs this: it's part of
+//! `bevy_ui_widgets::UiWidgetsPlugins`, which `DefaultPlugins` already
+//! includes with the `bevy_ui_widgets` Cargo feature on.
 
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::picking::Pickable;
@@ -64,11 +60,11 @@ pub struct ComboboxSelect {
 pub struct ComboboxValue(pub String);
 
 /// Links a combobox root to its overlay list and backdrop, so the toggle/
-/// backdrop/item observers (which only know their own entity) can find the
-/// rest of their own widget instance instead of relying on a global
-/// singleton query — the reason multiple comboboxes can coexist on one page.
-/// `pub(crate)` only because it appears in `close_open_comboboxes_on_escape`'s
-/// signature, which other modules need to name for `.after(...)` ordering.
+/// backdrop/item observers can find the rest of their own widget instance
+/// instead of relying on a global singleton query — why multiple comboboxes
+/// can coexist on one page. `pub(crate)` only because it appears in
+/// `close_open_comboboxes_on_escape`'s signature, needed for `.after(...)`
+/// ordering elsewhere.
 #[derive(Component, Clone, Copy)]
 pub(crate) struct ComboboxLinks {
     list: Entity,
@@ -101,9 +97,8 @@ fn toggle_label(current: &str) -> String {
 /// showing `current`, opening an overlay list of `options` below it when
 /// clicked. Returns the combobox's root entity, which carries
 /// [`ComboboxValue`] and is where [`ComboboxSelect`] is triggered — pass
-/// `on_select` as an observer system reacting to it, the same way
-/// `spawn_volume_slider` elsewhere takes an `on_change` observer for
-/// `ValueChange<f32>`.
+/// `on_select` as an observer system reacting to it, same as
+/// `spawn_volume_slider`'s `on_change` for `ValueChange<f32>`.
 pub fn spawn_combobox<M: 'static>(
     commands: &mut Commands,
     trigger_parent: Entity,
