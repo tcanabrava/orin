@@ -105,6 +105,7 @@ fn main() {
         harmonicon::dialogs::confirm_dialog::ConfirmDialogPlugin,
         harmonicon::dialogs::file_dialog::FileDialogsPlugin,
         harmonicon::dialogs::font_fallback::FontFallbackPlugin,
+        harmonicon::dialogs::keyboard_nav::KeyboardNavPlugin,
         harmonicon::dialogs::scroll_area::ScrollAreaPlugin,
         harmonicon::dialogs::tab_bar::TabBarPlugin,
         harmonicon::dialogs::tooltip::TooltipPlugin,
