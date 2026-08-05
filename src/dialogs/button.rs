@@ -54,14 +54,12 @@ pub fn small<M: 'static>(
 }
 
 /// A button with an exact (not minimum) width and caller-chosen font size —
-/// for lists where every row must come out the same size regardless of how
-/// long its label is (e.g. the Lessons list: title lengths vary a lot, and
-/// `default`'s `min_width`-only sizing let long titles grow wider than
-/// short ones instead of lining every row up). Text wraps within `width` by
-/// bevy_ui's own default text layout if the caller's `font_size` doesn't
-/// keep the label to one line — pick `font_size` (see
-/// `menu::lessons::lesson_button_font_size` for the pattern) so that
-/// shouldn't happen in practice.
+/// for lists where every row must come out the same size regardless of
+/// label length (e.g. the Lessons list, where `default`'s `min_width`-only
+/// sizing would let long titles grow wider than short ones). Text wraps
+/// within `width` by bevy_ui's default text layout if `font_size` doesn't
+/// keep the label to one line — pick `font_size` (see `menu::lessons::
+/// lesson_button_font_size`) to avoid that.
 pub fn sized<M: 'static>(
     label: &str,
     width: f32,
