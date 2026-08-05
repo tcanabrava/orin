@@ -1,23 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-//! Import a MIDI file's track into the note grid, generalized to whatever
-//! harmonica key the editor session is currently set to (not a fixed C
-//! diatonic), producing [`GridNote`]s in memory rather than writing a chart
-//! file, since here the destination is [`EditorState`], not disk. The *key*
-//! isn't actually fixed to whatever was already selected, though: picking
-//! a track ([`on_midi_track_selected`]) auto-picks whichever [`HARP_KEYS`]
-//! entry needs the fewest bend/slide/nearest-note fallbacks to play the
-//! track ([`suggest_key`]), the same "always resolve to something
-//! reasonable, don't make the user discover a bad fit the hard way"
-//! spirit as [`map_pitch`]'s own fallback chain — the harmonica *kind*
-//! (diatonic vs. chromatic) is left alone, since switching that is a much
-//! bigger, more disruptive change than a key (one more click to undo).
+//! Imports a MIDI file's track into the note grid as [`GridNote`]s in
+//! memory (destination is [`EditorState`], not disk), generalized to
+//! whatever harmonica key the session is set to. Picking a track
+//! ([`on_midi_track_selected`]) auto-picks whichever [`HARP_KEYS`] entry
+//! needs the fewest bend/slide/nearest-note fallbacks ([`suggest_key`]);
+//! harmonica *kind* is left alone, since switching that is far more
+//! disruptive than a key.
 //!
-//! The MIDI-file *parsing* itself (tempo map, note extraction, track
-//! names) is shared, low-level code living in `crate::song::midi`; this
-//! module builds on it with the editor-specific pieces: pitch-to-harp
-//! resolution ([`map_pitch`]), key suggestion ([`suggest_key`]), and
-//! converting a MIDI tempo map into the editor's own tick/BPM units
+//! MIDI *parsing* (tempo map, note extraction, track names) is shared,
+//! low-level code in `crate::song::midi`; this module adds the
+//! editor-specific pieces: pitch-to-harp resolution ([`map_pitch`]), key
+//! suggestion ([`suggest_key`]), and tempo-map conversion
 //! ([`editor_tempo_map`]).
 
 use bevy::prelude::*;
@@ -109,12 +103,11 @@ pub(super) fn list_midi_tracks(bytes: &[u8]) -> Result<Vec<MidiTrackInfo>, Strin
 }
 
 /// Converts a MIDI tempo map (`(tick, microseconds_per_quarter)`, file `tpq`
-/// units) into the editor's own tempo map (`TICKS_PER_BEAT` ticks, `bpm`).
-/// Each point is placed by its *real time* position (`tick_to_seconds`/
-/// `seconds_to_tick` against the already-converted prefix), not its raw
-/// tick, since a MIDI file's `tpq` has no fixed ratio to the editor's
-/// resolution the way two `resolution: TICKS_PER_BEAT` charts do (see
-/// `harpchart::load_harpchart`'s simpler constant-ratio rescaling there).
+/// units) into the editor's own (`TICKS_PER_BEAT` ticks, `bpm`) map. Each
+/// point is placed by real-time position (`tick_to_seconds`/
+/// `seconds_to_tick`), since a MIDI file's `tpq` has no fixed ratio to the
+/// editor's resolution the way two `resolution: TICKS_PER_BEAT` charts do
+/// (contrast `harpchart::load_harpchart`'s simpler constant-ratio rescale).
 fn editor_tempo_map(midi_tempo: &[(u64, u32)], tpq: u32) -> Vec<TempoPoint> {
     let mut editor_map: Vec<TempoPoint> = Vec::with_capacity(midi_tempo.len());
     for &(tick, us) in midi_tempo {

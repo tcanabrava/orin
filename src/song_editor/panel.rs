@@ -194,13 +194,10 @@ pub(super) fn update_metronome_toggle_button(
     }
 }
 
-/// Shows exactly the current mode's button cluster — note editing in
-/// [`Mode::Edit`], the recording transport in [`Mode::Record`], the
-/// playback/practice transport in [`Mode::Play`] — never more than one.
-/// Toggles `Node::display`, not `Visibility`: `Visibility::Hidden` only
-/// skips rendering and still reserves the hidden group's full layout width,
-/// which would push the visible group off to the side instead of freeing
-/// its place.
+/// Shows exactly the current mode's button cluster — never more than one.
+/// Toggles `Node::display`, not `Visibility`: `Visibility::Hidden` still
+/// reserves the hidden group's layout space, which would push the visible
+/// group aside instead of freeing its place.
 pub(super) fn update_mode_visibility(
     state: Res<EditorState>,
     mut edit_group: Query<

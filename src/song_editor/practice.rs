@@ -29,12 +29,10 @@ const GOOD_WINDOW: f64 = 0.130;
 /// After 200 ms past the onset the note is marked Missed.
 const MISS_WINDOW: f64 = 0.200;
 
-/// How long a hit/miss result stays on screen before anything else (a
-/// "waiting for the next note" prompt, or the *next* note's own result) is
-/// allowed to replace it — long enough to actually read "Perfect G4 +100",
-/// not just register that something flashed. Without this, the tick right
-/// after a hit immediately re-evaluates the next (already-`Waiting`) note
-/// and overwrites the result before it's readable — see `practice_tick`.
+/// How long a hit/miss result stays on screen before anything else may
+/// replace it — long enough to actually read "Perfect G4 +100". Without
+/// this, the next tick immediately re-evaluates the following note and
+/// overwrites the result before it's readable — see `practice_tick`.
 const MSG_HOLD_SECS: f32 = 1.0;
 
 /// 2^(0.5/12) — frequency ratio spanning ±50 cents.
@@ -389,12 +387,10 @@ enum MsgAction {
 }
 
 /// Decides message precedence for one `practice_tick` pass: a result
-/// always wins eventually (immediately if nothing's being held, queued
-/// otherwise — never dropped); a "waiting for the next note" prompt only
-/// wins once both the hold *and* any queued result are out of the way.
-/// Without this, the tick right after a hit immediately overwrites the
-/// result with the next note's prompt (or, just as bad, the *next* note's
-/// own result) before the first one is readable.
+/// always wins eventually (immediately, or queued if one's already being
+/// held — never dropped); a "waiting" prompt only wins once both the hold
+/// and any queued result are out of the way, so a fresh hit can't get
+/// overwritten before it's readable.
 fn decide_msg_action(is_result_msg: bool, hold_active: bool, has_pending: bool) -> MsgAction {
     if is_result_msg {
         if hold_active {

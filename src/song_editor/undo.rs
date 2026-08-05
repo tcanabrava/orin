@@ -1,28 +1,20 @@
 // SPDX-License-Identifier: MIT
 
 //! Undo/redo for the note grid — `Ctrl+Z`/`Ctrl+Y` (see
-//! `interaction::handle_undo_redo`) step back/forward through a history of
-//! the editor's *content*: [`EditorState::notes`]/[`EditorState::
-//! tempo_changes`], the two places a mistake is destructive and not
-//! trivially undone by clicking again, unlike a click-to-cycle meta field
-//! (Key, Position, Scale, ...) or a plain toggle. Every other
-//! `EditorState` field (`selected`, `scroll_beat`, `dragging`,
-//! `timeline_tool`, meta text fields, ...) is deliberately excluded from
-//! the snapshot — undoing a note edit shouldn't also rewind an unrelated
-//! scroll position or half-typed field.
+//! `interaction::handle_undo_redo`) step through a history of the editor's
+//! *content*: [`EditorState::notes`]/[`EditorState::tempo_changes`], the
+//! two places a mistake is destructive rather than trivially undone by
+//! clicking again (unlike a click-to-cycle meta field or a plain toggle).
+//! Every other `EditorState` field is deliberately excluded — undoing a
+//! note edit shouldn't rewind an unrelated scroll position or field.
 //!
 //! Snapshot-based, not command-based: [`track_changes`] runs every frame
-//! `EditorState` changes and compares the current content against the
-//! last-seen snapshot, pushing the *previous* one onto the undo stack only
-//! when they actually differ. This needs no instrumentation at every
-//! note-mutating call site (a grid click, a drag release, Delete, paste,
-//! Erase/Remove, MIDI import, ...) — whichever of them just ran, the diff
-//! catches it on the very next check. The one deliberate exception is live
-//! recording (`record::RecordState::active`): notes grow every single
-//! frame while a take is running, so diffing continuously would flood the
-//! history with one entry per frame — [`track_changes`] simply skips while
-//! a take is active, so the *entire* take (onset through Stop/Finish)
-//! becomes one undo step instead of hundreds.
+//! `EditorState` changes and diffs against the last-seen snapshot, pushing
+//! the *previous* one onto the undo stack only when content actually
+//! differs — no instrumentation needed at each note-mutating call site.
+//! The one exception is live recording (`record::RecordState::active`):
+//! notes grow every frame during a take, so [`track_changes`] skips while
+//! one is active, collapsing the whole take into one undo step.
 
 use bevy::prelude::*;
 
@@ -95,12 +87,9 @@ impl UndoHistory {
         prev.restore(state);
     }
 
-    /// Steps `state` forward to the next snapshot, if any, pushing the
-    /// current one back onto the undo stack. A no-op if there's nothing to
-    /// redo, and always a no-op after any fresh edit — [`Self::
-    /// record_if_changed`] clears `future` the moment content actually
-    /// changes, the same "a new edit invalidates redo" rule every editor
-    /// with undo follows.
+    /// Steps `state` forward to the next snapshot, pushing the current one
+    /// back onto the undo stack. No-op if there's nothing to redo, or after
+    /// any fresh edit — a new edit invalidates redo, same as any editor.
     pub(super) fn redo(&mut self, state: &mut EditorState) {
         let Some(next) = self.future.pop() else {
             return;

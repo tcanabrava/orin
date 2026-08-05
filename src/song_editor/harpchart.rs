@@ -18,14 +18,12 @@ use bevy_fluent::prelude::Localization;
 // ── Serialisation ────────────────────────────────────────────────────────────
 
 /// Resolves `n`'s note name for the chart's `events[].note` field — the
-/// actual sounded pitch (bend/overblow/overdraw/slide already applied), not
-/// just the natural blow/draw note. Shares its derivation with the editor's
-/// own preview/practice synthesis (`playback::note_freq`) via
-/// `crate::song::harmonica`, so an exported chart's note always matches what
-/// the editor actually plays for it — in particular, overblow/overdraw are
-/// resolved via [`hole_notes`] rather than a flat "+1 semitone from whichever
-/// direction the note is tagged with", which got the wrong reed for holes
-/// 1/4/5/6 (overblow sits above the *draw* reed, not the blow reed).
+/// actual sounded pitch (bend/overblow/overdraw/slide applied), not just
+/// the natural blow/draw note. Shares its derivation with the editor's own
+/// preview/practice synthesis (`playback::note_freq`) via
+/// `crate::song::harmonica`, so an exported chart always matches what the
+/// editor actually plays; overblow/overdraw resolve via [`hole_notes`],
+/// which knows overblow sits above the *draw* reed on holes 1/4/5/6.
 fn note_name_for(n: &GridNote, harp: &Harmonica) -> String {
     let action = match n.dir {
         Dir::Blow => Action::Blow,
@@ -500,11 +498,9 @@ pub(super) fn handle_music_chosen(
 
 /// The `ContentKind::Song` half of saving — its `ContentKind::Lesson`
 /// sibling is `lesson_form::handle_save_lesson_chosen`; each skips the
-/// other's `ContentKind`, so exactly one acts on a given `FileChosen {
-/// purpose: SAVE_PURPOSE }` message. MIDI backing generation
-/// (`save_midi_backing`) is a `ContentKind::Song`-only convenience — see
-/// `lesson_form`'s module doc comment for why a lesson save doesn't do this
-/// too.
+/// other's `ContentKind`. MIDI backing generation (`save_midi_backing`) is
+/// a `ContentKind::Song`-only convenience — see `lesson_form`'s module doc
+/// for why a lesson save skips it.
 pub(super) fn handle_save_chosen(
     mut chosen: MessageReader<FileChosen>,
     mut state: ResMut<EditorState>,
@@ -557,15 +553,12 @@ pub(super) fn handle_save_chosen(
 }
 
 /// Writes the two extra files a MIDI-backed save produces alongside the
-/// chart itself: a "processed" copy of the original MIDI with the imported
-/// track removed (the original the user picked is never modified), and a
-/// synthesized WAV
-/// mixdown of every *other* track as the song's backing audio. The engine
-/// can't play a raw `.mid` file, so this is what "use the MIDI file as the
-/// background song" resolves to — see `song::loader`'s `song/music.wav`
-/// fallback. Sets `EditorState::music` to the new WAV's path on success, so
-/// the chart being saved right after this records it, and the editor's own
-/// Play preview picks it up too.
+/// chart: a "processed" copy of the original MIDI with the imported track
+/// removed, and a synthesized WAV mixdown of every *other* track as the
+/// song's backing audio — the engine can't play a raw `.mid` file (see
+/// `song::loader`'s `song/music.wav` fallback). Sets `EditorState::music`
+/// to the new WAV's path on success, so the save right after this records
+/// it and the editor's own Play preview picks it up.
 fn save_midi_backing(
     dir: &std::path::Path,
     midi: &super::midi_import::MidiImport,
