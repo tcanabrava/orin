@@ -31,16 +31,13 @@ pub fn is_unlocked(manifest: &LessonManifest, passed_ids: &[&str]) -> bool {
 
 /// Judges a finished lesson run. `accuracy` is the overall weighted accuracy
 /// (`results::accuracy`); `technique_accuracy` pairs technique bucket names
-/// with their per-run accuracy — the same slice `results` already builds for
-/// `profile::record_play`; `jam_fraction` is whichever single 0..1 fraction
-/// a jam-based criterion (`ScaleAdherence`/`ChordToneAdherence`/
-/// `PhraseDiscipline`) reads — the caller picks the right one off
-/// `jam::improv::ImprovStats` for whichever criterion is actually active
-/// (see `gameplay::pause_menu::jam_fraction_for`); `None` for any
-/// chart-backed run (which never accumulates it) and always `Some` by the
-/// time a jam-based lesson's "Finish Lesson" button calls this. A
-/// criteria-less lesson passes by finishing; a `Technique`/jam criterion the
-/// run never exercised fails (an empty run can't demonstrate anything).
+/// with their per-run accuracy, same slice `results` builds for `profile::
+/// record_play`; `jam_fraction` is whichever single 0..1 fraction a
+/// jam-based criterion (`ScaleAdherence`/`ChordToneAdherence`/
+/// `PhraseDiscipline`) reads — the caller picks the right one off `jam::
+/// improv::ImprovStats` (see `gameplay::pause_menu::jam_fraction_for`);
+/// `None` for a chart-backed run. A criteria-less lesson passes by
+/// finishing; a `Technique`/jam criterion the run never exercised fails.
 pub fn lesson_passed(
     criteria: Option<&PassCriteria>,
     accuracy: f32,
