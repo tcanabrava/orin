@@ -27,11 +27,8 @@ fn menu_bg() -> Color {
     Color::srgb(0.05, 0.05, 0.08)
 }
 
-/// Spawn a full-screen centred column with a title and optional subtitle.
-/// Returns the entity so the caller can add button children afterwards.
-/// `menu_id` is matched against the theme's `menus` keys (e.g. "Main", "Play")
-/// to look up the per-menu background image.
-/// The menu root container as a `bsn!` [`Scene`]: a full-screen centred column.
+/// The menu root container as a `bsn!` [`Scene`]: a full-screen centred
+/// column.
 fn menu_root_scene() -> impl Scene {
     bsn! {
         Node {
@@ -59,15 +56,12 @@ fn heading_scene(text: String, size: f32, color: Color) -> impl Scene {
 /// content area beneath them — returning *that content area's* entity, not
 /// the outer root, so every caller's buttons/rows automatically scroll
 /// (with a real visible scrollbar, `dialogs::scroll_area::
-/// spawn_scroll_area`) instead of silently overflowing the screen once a
-/// page's content (a long artist/song/lesson/theme list, say) no longer
-/// fits — a page that previously just grew past the top/bottom edges with
-/// no way to reach the rest. The title/subtitle themselves stay outside
-/// the scrollable area, always visible. Short content (most menus) still
-/// looks exactly as before — vertically centered as a whole, since the
-/// content area sizes to its own content and only gets force-shrunk into
-/// scrolling once it doesn't fit (see `spawn_scroll_area`'s own comment on
-/// the `min_height: Val::Px(0.0)` flexbox trick this relies on).
+/// spawn_scroll_area`) instead of overflowing once a page's content (a
+/// long artist/song/lesson/theme list) no longer fits. The title/subtitle
+/// stay outside the scrollable area, always visible. Short content stays
+/// vertically centered as a whole, since the content area sizes to its
+/// content and only force-shrinks into scrolling once it doesn't fit (see
+/// `spawn_scroll_area`'s `min_height: Val::Px(0.0)` flexbox trick).
 pub(crate) fn spawn_menu_root(
     commands: &mut Commands,
     title: &str,
@@ -125,13 +119,9 @@ pub(crate) fn spawn_menu_root(
 }
 
 /// Spawn a single button as a child of `parent`, in the normal flex flow —
-/// themes control appearance (background/effects) only, never layout, so
-/// there's no per-button positioning to resolve here.
-///
-/// When the theme has shaders the button also gets a smoke background layer,
-/// an optional icon, and audio on hover/click.
-///
-/// `on_click` is the button's own dedicated click behaviour, wired inline as the
+/// themes control appearance only, never layout. When the theme has
+/// shaders the button also gets a smoke background layer, an optional
+/// icon, and audio on hover/click. `on_click` is wired inline as the
 /// `on(...)` callback (plain buttons) or via `observe` (themed buttons).
 pub(crate) fn spawn_button<M: 'static>(
     commands: &mut Commands,
