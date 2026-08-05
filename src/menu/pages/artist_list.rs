@@ -86,13 +86,11 @@ pub(crate) fn setup_artist_list(
 /// when that happens, force a rebuild the same way any other same-page
 /// transition does — `NextState::set` re-fires `OnExit`/`OnEnter` even for a
 /// same-state transition (see `CLAUDE.md`) — so a song dropped in while this
-/// page is on screen appears without the player needing to back out and back
-/// in. Driven by `SongsRescanned`, not `AvailableSongs::is_changed()`: this
-/// system only runs while the page is open, so its own change-detection tick
-/// goes stale every time the page is closed, and would otherwise read as
-/// "changed" the moment the page re-opens even when nothing outside this
-/// system's own dormant window actually happened — a message fired only from
-/// the watcher's own rescan call site has no such staleness problem.
+/// page is open appears without backing out and back in. Driven by
+/// `SongsRescanned`, not `AvailableSongs::is_changed()`: this system only
+/// runs while the page is open, so its own change-detection tick would
+/// otherwise read stale-as-changed on every re-entry; a message fired only
+/// from the watcher's own rescan call site has no such problem.
 pub(crate) fn rebuild_on_songs_rescanned(
     mut rescanned: MessageReader<SongsRescanned>,
     mut page: ResMut<NextState<MenuPage>>,

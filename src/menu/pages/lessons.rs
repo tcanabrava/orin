@@ -42,13 +42,13 @@ pub(crate) struct SelectedUnitIx(pub usize);
 /// Fired by the tab bar's `on_select` observer when the user actually
 /// switches units — [`repopulate_lesson_list`] reacts to this instead of
 /// `resource_changed::<SelectedUnitIx>`, which fires spuriously on the
-/// list page's very first frame (the resource's initial value looks
-/// "changed" to a run condition that has never evaluated it before) and
-/// would otherwise re-populate the scrollbox in the same frame
-/// `setup_lessons_menu` already did — despawning rows whose freshly
-/// inserted `Text` `dialogs::font_fallback::apply_font_fallback` may not
-/// have finished processing yet, which panics ("Entity despawned") when
-/// its deferred command applies against the now-recycled entity index.
+/// list page's very first frame (an initial value looks "changed" to a
+/// run condition that's never evaluated it before) and would otherwise
+/// re-populate the scrollbox the same frame `setup_lessons_menu` already
+/// did — despawning rows whose freshly inserted `Text` `dialogs::
+/// font_fallback::apply_font_fallback` may not have finished processing,
+/// which panics when its deferred command applies against the now-
+/// recycled entity index.
 #[derive(Message)]
 pub(crate) struct LessonUnitChanged;
 
