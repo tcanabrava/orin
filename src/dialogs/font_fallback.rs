@@ -2,12 +2,11 @@
 
 //! Glyph fallback for the small set of symbols the bundled `FreeSans.otf`
 //! doesn't cover (emoji-range icons and a couple of dingbats used as button
-//! icons). We can't rely on the OS/fontconfig to fill these in — inside the
-//! Flatpak sandbox there's no guarantee a matching system font is even
-//! visible — so instead a few tiny subsetted fonts are bundled and an
-//! automatic system splits any offending [`Text`] into runs, rendering the
-//! known-missing characters from the matching fallback font via [`TextSpan`]
-//! children.
+//! icons). The OS/fontconfig can't fill these in — inside the Flatpak
+//! sandbox there's no guarantee a matching system font is even visible —
+//! so a few tiny subsetted fonts are bundled instead, and an automatic
+//! system splits any offending [`Text`] into runs, rendering known-missing
+//! characters from the matching fallback font via [`TextSpan`] children.
 
 use bevy::prelude::*;
 
@@ -114,16 +113,14 @@ fn load_fallback_fonts(mut fonts: ResMut<Assets<Font>>, mut commands: Commands) 
 struct GeneratedSpan;
 
 /// Opts a `Text` entity out of this whole system. `apply_font_fallback`
-/// otherwise runs on *every* `Text` in the game and — since its job is to
-/// patch specific known gaps in `FreeSans.otf` — treats any character it
-/// doesn't recognize as "must be the default font," unconditionally
-/// resetting `TextFont.font` back to [`FontSource::default()`] the moment
-/// `Text` changes (including on spawn). That's correct for this module's
-/// own reactive icon+label text, but wrong for anything spawning `Text`
-/// with a deliberately different font for its own reasons entirely
-/// unrelated to this module — e.g. `music_score`'s Bravura/SMuFL glyphs,
-/// which this system would otherwise clobber back to `FreeSans` (which has
-/// no glyph at those Private-Use-Area codepoints) on the very next pass.
+/// otherwise runs on *every* `Text` in the game and, since its job is to
+/// patch known gaps in `FreeSans.otf`, treats any character it doesn't
+/// recognize as "must be the default font," unconditionally resetting
+/// `TextFont.font` back to [`FontSource::default()`] whenever `Text`
+/// changes. That's wrong for anything spawning `Text` with a deliberately
+/// different font unrelated to this module — e.g. `music_score`'s
+/// Bravura/SMuFL glyphs, which have no `FreeSans` glyph at their
+/// Private-Use-Area codepoints.
 #[derive(Component)]
 pub struct SkipFontFallback;
 

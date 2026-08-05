@@ -5,17 +5,11 @@
 //! drag scrolling, but with nothing painted on screen there's no hint that
 //! a page has more content than fits; pairing it with a
 //! [`Scrollbar`]/[`ScrollbarThumb`] (drag/click-to-page already wired by
-//! `UiWidgetsPlugins`, no hand-rolled interaction needed) is what makes
-//! that visible. The scrollbar hides itself entirely once its content
-//! already fits without scrolling — see [`update_scrollbar_visibility`].
-//!
-//! Originally the Song Editor's own `song_editor::scroll::
-//! spawn_editor_scrollbar`; pulled out here, generic and theme-agnostic,
-//! once `menu::scene::spawn_menu_root` needed the exact same thing for
-//! every menu page — any page whose content can outgrow the screen (a long
-//! artist/song/lesson/theme list) used to just silently overflow past the
-//! edges with no way to reach the rest, since `spawn_menu_root`'s content
-//! column had no `overflow`/size constraint of its own.
+//! `UiWidgetsPlugins`) is what makes that visible. The scrollbar hides
+//! itself entirely once its content already fits — see
+//! [`update_scrollbar_visibility`]. Generic and theme-agnostic, shared by
+//! `menu::scene::spawn_menu_root` (any page whose content can outgrow the
+//! screen — a long artist/song/lesson/theme list) and the Song Editor.
 
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
@@ -38,13 +32,12 @@ pub fn spawn_scroll_area(
         .spawn(Node {
             flex_direction: FlexDirection::Row,
             align_items: AlignItems::Stretch,
-            // Same "min-height: auto" flexbox gotcha as the `ScrollArea`
-            // column below, one level up: this row is itself a flex item of
-            // the menu's top-level column, and without this it refuses to
-            // shrink below its own content's natural height when the window
-            // gets smaller — so the `ScrollArea` inside it never actually
-            // receives less room than its content needs, and the overflow
-            // check in `update_scrollbar_visibility` never trips on resize.
+            // The "min-height: auto" flexbox gotcha, one level up from the
+            // `ScrollArea` column below: without this, this row (itself a
+            // flex item of the menu's top-level column) refuses to shrink
+            // below its content's natural height on resize, so the
+            // `ScrollArea` inside never receives less room than it needs
+            // and `update_scrollbar_visibility`'s overflow check never trips.
             min_height: Val::Px(0.0),
             ..default()
         })
@@ -55,17 +48,11 @@ pub fn spawn_scroll_area(
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         row_gap: Val::Px(16.0),
-                        // The flexbox "min-height: auto" gotcha: by default
-                        // a flex item won't shrink below its own content's
-                        // natural size, so a tall page would just overflow
-                        // the screen instead of activating `overflow`
-                        // below. Explicitly zeroing it is what lets this
-                        // column get force-shrunk to whatever room is left
+                        // Same "min-height: auto" gotcha: zeroing it lets
+                        // this column force-shrink to whatever room is left
                         // under the title once content no longer fits,
-                        // handing the rest off to scrolling instead of
-                        // silently running past the edges — the same fix
-                        // `song_editor::ui::setup` already applies for its
-                        // own scrollable form area.
+                        // handing the rest to scrolling via `overflow`
+                        // below instead of running past the edges.
                         min_height: Val::Px(0.0),
                         overflow: Overflow::scroll_y(),
                         ..default()
@@ -82,15 +69,11 @@ pub fn spawn_scroll_area(
                         margin: UiRect::left(Val::Px(8.0)),
                         // Starts collapsed — avoids a one-frame flash of a
                         // full-height thumb before `update_scrollbar_
-                        // visibility`'s first run corrects it; also the
-                        // right state for the common case of content that
-                        // fits without scrolling. `Display::None`, not
-                        // just `Visibility::Hidden`: many menu pages rely
-                        // on their content being perfectly horizontally
-                        // centered, and a merely-invisible-but-still-
-                        // laid-out scrollbar track would reserve its own
-                        // width, nudging that content slightly off-center
-                        // even when there's nothing to scroll to.
+                        // visibility`'s first run corrects it. `Display::
+                        // None`, not just `Visibility::Hidden`: many menu
+                        // pages rely on perfectly horizontal centering, and
+                        // a merely-invisible-but-still-laid-out track would
+                        // reserve its width, nudging content off-center.
                         display: Display::None,
                         ..default()
                     },
@@ -113,14 +96,10 @@ pub fn spawn_scroll_area(
 /// Hides a scrollbar entirely once its paired [`ScrollArea`]'s content
 /// already fits without scrolling — same "don't show a scrollbar with
 /// nothing to scroll to" convention `song_editor::interaction::
-/// update_grid_scrollbar` uses for its own (differently-implemented,
-/// predating this widget) horizontal one. Matches each [`Scrollbar`] to
-/// its own `ScrollArea` via [`Scrollbar::target`], so this is registered
-/// once for the whole app (see [`ScrollAreaPlugin`]) rather than per
-/// caller, even though several unrelated scroll areas exist across
-/// different screens (never literally at the same time today — only one
-/// menu page or the Song Editor is ever on screen — but nothing here
-/// assumes that).
+/// update_grid_scrollbar` uses for its own horizontal one. Matches each
+/// [`Scrollbar`] to its own `ScrollArea` via [`Scrollbar::target`], so this
+/// is registered once for the whole app (see [`ScrollAreaPlugin`]) rather
+/// than per caller.
 pub fn update_scrollbar_visibility(
     mut bars: Query<(&Scrollbar, &mut Visibility, &mut Node)>,
     areas: Query<&ComputedNode, With<ScrollArea>>,
