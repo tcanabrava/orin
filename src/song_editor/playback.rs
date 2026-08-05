@@ -25,11 +25,11 @@ pub(super) struct PlayheadLine;
 pub(super) struct EditorProgressFill;
 
 /// A one-shot seek to apply to the *next* editor audio sink that appears.
-/// `spawn_background_music` can only spawn an `AudioPlayer`; the `AudioSink`
-/// it needs to seek is inserted later by Bevy's audio systems, so a
-/// mid-song start (recording from a clicked/paused position) parks the
-/// offset here and [`apply_pending_music_seek`] delivers it once the sink
-/// exists.
+/// `spawn_background_music` can only spawn an `AudioPlayer`; the
+/// `AudioSink` it needs to seek is inserted later by Bevy's audio systems,
+/// so a mid-song start (recording from a clicked/paused position) parks
+/// the offset here and [`apply_pending_music_seek`] delivers it once the
+/// sink exists.
 #[derive(Resource, Default)]
 pub(super) struct PendingMusicSeek(pub(super) Option<f32>);
 
@@ -67,11 +67,11 @@ pub(super) struct Playhead {
 // ── Pure functions ────────────────────────────────────────────────────────────
 
 /// Builds the synthetic [`Harmonica`] the editor's own `GridNote`s (not a
-/// loaded chart's authored layout) are resolved against — a Richter diatonic
-/// or 12-hole chromatic, transposed to `key`. Shared with the Bending
-/// Trainer via `crate::song::harmonica::{richter_harp, chromatic_harp}`, so
-/// both agree on note names, key transposition, and (via [`hole_notes`])
-/// which reed an overblow/overdraw actually sounds above.
+/// loaded chart's authored layout) are resolved against — a Richter
+/// diatonic or 12-hole chromatic, transposed to `key`. Shared with the
+/// Bending Trainer via `crate::song::harmonica::{richter_harp,
+/// chromatic_harp}`, so both agree on note names, key transposition, and
+/// (via [`hole_notes`]) which reed an overblow/overdraw sounds above.
 pub(super) fn build_harp(key: &str, kind: HarmonicaKind) -> Harmonica {
     match kind {
         HarmonicaKind::Diatonic => richter_harp(key),
@@ -80,12 +80,11 @@ pub(super) fn build_harp(key: &str, kind: HarmonicaKind) -> Harmonica {
 }
 
 /// `note`'s resolved frequency (Hz) on `harp`, or `None` for a hole/technique
-/// combination the harp can't produce (e.g. Overblow requested on a hole
-/// outside 1–6). Bend depth is applied as a fractional semitone offset on the
-/// natural blow/draw pitch; overblow/overdraw are resolved via
-/// [`hole_notes`], which — unlike a flat "+1 semitone from whichever
-/// direction the note is tagged with" — knows Overblow sits above the *draw*
-/// reed on holes 1/4/5/6 and Overdraw above the *blow* reed on holes 7–10.
+/// combination the harp can't produce (e.g. Overblow outside holes 1–6).
+/// Bend depth applies as a fractional semitone offset on the natural
+/// blow/draw pitch; overblow/overdraw resolve via [`hole_notes`], which
+/// knows Overblow sits above the *draw* reed on holes 1/4/5/6 and Overdraw
+/// above the *blow* reed on holes 7–10.
 pub(super) fn note_freq(note: &GridNote, harp: &Harmonica) -> Option<f32> {
     let action = match note.dir {
         Dir::Blow => crate::song::chart::Action::Blow,
@@ -104,12 +103,10 @@ pub(super) fn note_freq(note: &GridNote, harp: &Harmonica) -> Option<f32> {
     Some(midi_to_freq_hz(note_to_midi(&label)? as f32))
 }
 
-/// `note`'s resolved MIDI pitch on `harp` — the same resolution [`note_freq`]
-/// performs, but returning the identity `u8` the shared `music_score`
-/// overlay keys notation on rather than a frequency (bends rounded to the
-/// nearest semitone, same as gameplay's own `gameplay::notes::
-/// target_pitch`). `None` for a hole/technique the harp can't produce, same
-/// as `note_freq`.
+/// `note`'s resolved MIDI pitch on `harp` — same resolution as [`note_freq`],
+/// but the identity `u8` the shared `music_score` overlay keys notation on
+/// (bends rounded to the nearest semitone, like `gameplay::notes::
+/// target_pitch`). `None` under the same conditions as `note_freq`.
 pub(super) fn note_midi(note: &GridNote, harp: &Harmonica) -> Option<u8> {
     let action = match note.dir {
         Dir::Blow => crate::song::chart::Action::Blow,
@@ -129,11 +126,10 @@ pub(super) fn note_midi(note: &GridNote, harp: &Harmonica) -> Option<u8> {
 }
 
 /// Ticks-to-seconds for `state.tempo` — the flat nominal-BPM conversion
-/// every Play/Practice/Record start function needs before it can turn tick
-/// positions into real time. Deliberately not the real, possibly
-/// multi-point tempo map (`state::EditorState::tempo_map`/`song::chart::
-/// tick_to_seconds`) — audio synthesis stays on one constant tempo, the
-/// documented scope boundary of the tempo-map feature (see `CLAUDE.md`).
+/// Play/Practice/Record all need before turning tick positions into real
+/// time. Deliberately not the real multi-point tempo map (`state::
+/// EditorState::tempo_map`/`song::chart::tick_to_seconds`) — audio synthesis
+/// stays on one constant tempo (see `CLAUDE.md`).
 pub(super) fn secs_per_tick(state: &super::state::EditorState) -> f32 {
     let bpm = state.tempo.trim().parse::<f32>().unwrap_or(120.0).max(1.0);
     60.0 / bpm / TICKS_PER_BEAT as f32
@@ -155,14 +151,12 @@ pub(super) fn playhead_for(total_ticks: usize, secs_per_tick: f32) -> Playhead {
 }
 
 /// Spawns `state.music` (if set) as a fire-and-forget background-music
-/// player at the configured music volume — the shared "play the chart's
-/// backing track" step Play/Practice/Record each need. Reads straight from
-/// disk rather than through the asset server, since the chart being edited
-/// may not be registered as an asset at all. Returns whether a player was
-/// actually spawned, so a caller needing an "nothing is playing" fallback
-/// (Practice's "no background music" hint) knows when to show one — true
-/// for an empty path *and* a read failure (already `warn!`-logged either
-/// way), since both leave nothing audible playing.
+/// player at the configured volume — the shared "play the chart's backing
+/// track" step Play/Practice/Record each need. Reads straight from disk
+/// rather than the asset server, since the chart being edited may not be
+/// registered as an asset. Returns whether a player was actually spawned —
+/// `false` for both an empty path and a read failure (`warn!`-logged) so a
+/// caller can show a "no background music" fallback either way.
 pub(super) fn spawn_background_music(
     state: &super::state::EditorState,
     sources: &mut Assets<AudioSource>,
