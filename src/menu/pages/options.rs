@@ -152,7 +152,8 @@ fn setup_options_menu(
     action_button_style: Res<crate::settings::ActionButtonStyle>,
     ui_scale: Res<UiScale>,
 ) {
-    let (root, header) = spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
+    let (root, header, page_root) =
+        spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
 
     spawn_back_button(
         &mut commands,
@@ -204,6 +205,7 @@ fn setup_options_menu(
     spawn_left_column(
         &mut commands,
         left_layout,
+        page_root,
         mic_status,
         settings,
         harmonicas,
@@ -224,6 +226,7 @@ fn setup_options_menu(
 fn spawn_left_column(
     commands: &mut Commands,
     parent: Entity,
+    page_root: Entity,
     mic_status: Res<MicStatus>,
     settings: Res<AudioSettings>,
     harmonicas: Res<AvailableHarmonicas>,
@@ -261,6 +264,7 @@ fn spawn_left_column(
     spawn_mic_combobox(
         commands,
         parent,
+        page_root,
         loc,
         &audio_input::input_device_names(),
         connected_device_name(&mic_status),
@@ -297,7 +301,7 @@ fn spawn_left_column(
     let algo_combo = combobox::spawn_combobox(
         commands,
         parent,
-        parent,
+        page_root,
         &loc.msg("options-pitch-detect"),
         &algo_labels(),
         settings.pitch_algorithm.label(),
@@ -310,7 +314,7 @@ fn spawn_left_column(
     spawn_fullscreen_toggle(commands, parent, fullscreen.0, loc);
     spawn_colorblind_palette_toggle(commands, parent, colorblind_palette.0, loc);
     spawn_zoom_slider(commands, parent, ui_scale, loc);
-    spawn_action_button_style_combobox(commands, parent, loc, action_button_style);
+    spawn_action_button_style_combobox(commands, parent, page_root, loc, action_button_style);
 }
 
 fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localization) {
@@ -531,6 +535,7 @@ fn update_zoom_slider_visuals(
 fn spawn_action_button_style_combobox(
     commands: &mut Commands,
     parent: Entity,
+    page_root: Entity,
     loc: &Localization,
     current: crate::settings::ActionButtonStyle,
 ) {
@@ -541,7 +546,7 @@ fn spawn_action_button_style_combobox(
     let combo = combobox::spawn_combobox(
         commands,
         parent,
-        parent,
+        page_root,
         &loc.msg("options-button-style"),
         &options,
         &loc.msg(current.loc_key()),
@@ -985,6 +990,7 @@ struct MicCombobox;
 fn spawn_mic_combobox(
     commands: &mut Commands,
     parent: Entity,
+    page_root: Entity,
     loc: &Localization,
     devices: &[String],
     connected: Option<&str>,
@@ -992,7 +998,7 @@ fn spawn_mic_combobox(
     let root = combobox::spawn_combobox(
         commands,
         parent,
-        parent,
+        page_root,
         &loc.msg("options-microphone"),
         devices,
         connected.unwrap_or("None"),

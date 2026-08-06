@@ -64,7 +64,7 @@ pub(crate) fn setup_help_about_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header) = spawn_menu_root(
+    let (root, header, _page_root) = spawn_menu_root(
         &mut commands,
         &loc.msg("help-about-title"),
         None,
@@ -132,7 +132,7 @@ pub(crate) fn setup_about_page(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header) = spawn_menu_root(
+    let (root, header, _page_root) = spawn_menu_root(
         &mut commands,
         &loc.msg("about-title"),
         None,

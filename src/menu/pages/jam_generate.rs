@@ -103,7 +103,7 @@ pub(crate) fn setup_jam_generate_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header) = spawn_menu_root(
+    let (root, header, _page_root) = spawn_menu_root(
         &mut commands,
         &loc.msg("jam-generate-title"),
         None,

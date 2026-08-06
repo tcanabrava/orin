@@ -14,8 +14,16 @@
 //!     scrollable content area — every page's own buttons/rows go here
 //! ```
 //! [`spawn_menu_root`] builds `header`/`body` and returns `(content,
-//! header)` — `content` is the scrollable area inside `body`, `header` is
-//! where [`spawn_back_button`] attaches a page's own Back control.
+//! header, page_root)` — `content` is the scrollable area inside `body`,
+//! `header` is where [`spawn_back_button`] attaches a page's own Back
+//! control, and `page_root` is the true full-screen (`100% x 100%`) outer
+//! entity: pass *that*, not `content`, as `combobox::spawn_combobox`'s
+//! `backdrop_parent` for any combobox a page nests inside its own narrower
+//! sub-layout (see `menu::pages::options`) — `content`/`body` size to their
+//! own content and get centered, so they're usually narrower than the
+//! screen, which is exactly the bug `spawn_combobox`'s own doc comment
+//! warns a too-small `backdrop_parent` causes (a click-outside-to-close
+//! that only works along one axis).
 
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabGroup;
@@ -132,18 +140,20 @@ fn body_scene() -> impl Scene {
 
 /// Spawns the full-screen root, its header (title/subtitle, plus whatever
 /// back button a caller adds via [`spawn_back_button`]), and a scrollable
-/// body content area — returning `(content, header)`, not the root:
+/// body content area — returning `(content, header, page_root)`:
 /// `content` is where every caller's buttons/rows go (auto-scrolling, with
 /// a real visible scrollbar — `dialogs::scroll_area::spawn_scroll_area` —
 /// once a page's content, e.g. a long artist/song/lesson/theme list, no
-/// longer fits); `header` is where a page attaches its own Back control.
+/// longer fits); `header` is where a page attaches its own Back control;
+/// `page_root` is the true `100% x 100%` outer container (see this
+/// module's own doc comment for why a caller would need it over `content`).
 pub(crate) fn spawn_menu_root(
     commands: &mut Commands,
     title: &str,
     subtitle: Option<&str>,
     theme: &LoadedTheme,
     menu_id: &str,
-) -> (Entity, Entity) {
+) -> (Entity, Entity, Entity) {
     let root = commands.spawn_scene(menu_root_scene()).id();
 
     let title_column = if let Some(sub) = subtitle {
@@ -193,7 +203,7 @@ pub(crate) fn spawn_menu_root(
     // back button lives in a sibling of `content` now.
     commands.entity(root).insert(TabGroup::default());
 
-    (content, header)
+    (content, header, root)
 }
 
 /// Spawn a single button as a child of `parent`, in the normal flex flow —

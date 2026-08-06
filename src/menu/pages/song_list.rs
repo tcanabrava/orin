@@ -25,7 +25,7 @@ pub(crate) fn setup_song_list(
     loc: Res<Localization>,
 ) {
     let subtitle = format!("by {}", selected_artist.0);
-    let (root, header) = spawn_menu_root(
+    let (root, header, _page_root) = spawn_menu_root(
         &mut commands,
         &loc.msg("select-song"),
         Some(&subtitle),

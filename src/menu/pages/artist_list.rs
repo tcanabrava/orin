@@ -23,7 +23,7 @@ pub(crate) fn setup_artist_list(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header) = spawn_menu_root(
+    let (root, header, _page_root) = spawn_menu_root(
         &mut commands,
         &loc.msg("select-artist"),
         None,
