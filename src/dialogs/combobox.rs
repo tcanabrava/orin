@@ -31,9 +31,10 @@ use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Click, Out, Over, Pointer};
 use bevy::prelude::*;
+use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
 use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
-use bevy::ui_widgets::popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide};
+use bevy::ui_widgets::{ControlOrientation, ScrollArea, Scrollbar, ScrollbarThumb};
 
 use super::button;
 
@@ -42,6 +43,23 @@ const PANEL_BORDER: Color = Color::srgb(0.30, 0.30, 0.40);
 const TOGGLE_MIN_WIDTH: f32 = 220.0;
 const LABEL_WIDTH: f32 = 110.0;
 const LABEL_GAP: f32 = 14.0;
+
+// The dropdown list caps itself to `MAX_VISIBLE_ITEMS` rows and scrolls
+// past that (see the `list`/`items_area` split in `spawn_combobox`) instead
+// of growing to fit however many options were passed in — an unbounded
+// panel can overflow whatever dialog/page it's opened from. The pixel
+// height is derived from `item_scene`'s own padding/font metrics rather
+// than a guessed constant, so it stays right if those change.
+const MAX_VISIBLE_ITEMS: f32 = 5.0;
+const ITEM_ROW_GAP: f32 = 4.0;
+const ITEM_VERTICAL_PADDING: f32 = 8.0;
+const ITEM_FONT_SIZE: f32 = 16.0;
+const ITEM_LINE_HEIGHT_FACTOR: f32 = 1.25;
+const ITEM_HEIGHT_PX: f32 = ITEM_VERTICAL_PADDING * 2.0 + ITEM_FONT_SIZE * ITEM_LINE_HEIGHT_FACTOR;
+const LIST_MAX_HEIGHT_PX: f32 =
+    ITEM_HEIGHT_PX * MAX_VISIBLE_ITEMS + ITEM_ROW_GAP * (MAX_VISIBLE_ITEMS - 1.0);
+const LIST_SCROLLBAR_THUMB: Color = Color::srgba(1.0, 1.0, 1.0, 0.35);
+const LIST_SCROLLBAR_TRACK: Color = Color::srgba(0.0, 0.0, 0.0, 0.35);
 
 /// Triggered on a combobox's root entity (the `Entity` returned by
 /// [`spawn_combobox`]) when the user picks an item from the list. The widget
@@ -68,9 +86,15 @@ pub struct ComboboxValue(pub String);
 /// can coexist on one page. `pub(crate)` only because it appears in
 /// `close_open_comboboxes_on_escape`'s signature, needed for `.after(...)`
 /// ordering elsewhere.
+///
+/// `list` is the whole bordered popover panel (what gets shown/hidden);
+/// `items_area` is the scrollable column inside it that actually parents the
+/// `ComboboxItemButton`s — the two used to be the same entity, before the
+/// panel gained a scrollbar sibling next to the items (see `spawn_combobox`).
 #[derive(Component, Clone, Copy)]
 pub(crate) struct ComboboxLinks {
     list: Entity,
+    items_area: Entity,
     backdrop: Entity,
 }
 
@@ -191,12 +215,26 @@ pub fn spawn_combobox<M: 'static>(
     // edge — instead of a fixed `top: 100%` that has no idea where the
     // window's edges are. `GlobalZIndex` puts it above both normal page
     // content and the backdrop below.
+    //
+    // `list` itself is just the bordered frame — a `Row` holding the real
+    // scrollable content (`items_area`, capped to `LIST_MAX_HEIGHT_PX` via
+    // `bevy_ui_widgets::ScrollArea`, same widget `dialogs::scroll_area` pairs
+    // with a visible `Scrollbar` elsewhere) beside its own scrollbar, rather
+    // than a plain `Column` that grows to fit however many `options` there
+    // are. Marking `items_area` a `ScrollArea` also gives the dropdown its
+    // "acts as its own modal panel" behaviour for wheel input: `bevy_
+    // ui_widgets`' `Pointer<Scroll>` observer calls `propagate(false)` the
+    // moment it reaches a `ScrollArea` ancestor of the hovered item, so a
+    // wheel scroll over the open dropdown is consumed there and never
+    // reaches whatever page-level `ScrollArea` the combobox happens to be
+    // nested inside (see `dialogs::scroll_area`/`menu::scene::
+    // spawn_menu_root`) — only one of the two scrolls, ever.
     let list = commands
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(4.0),
+                flex_direction: FlexDirection::Row,
+                align_items: AlignItems::Stretch,
                 padding: UiRect::all(Val::Px(6.0)),
                 border: UiRect::all(Val::Px(1.0)),
                 display: Display::None,
@@ -222,7 +260,52 @@ pub fn spawn_combobox<M: 'static>(
             },
         ))
         .id();
+    let mut items_area = Entity::PLACEHOLDER;
     commands.entity(list).with_children(|l| {
+        items_area = l
+            .spawn((
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(ITEM_ROW_GAP),
+                    max_height: Val::Px(LIST_MAX_HEIGHT_PX),
+                    min_height: Val::Px(0.0),
+                    overflow: Overflow::scroll_y(),
+                    ..default()
+                },
+                ScrollArea,
+            ))
+            .id();
+        l.spawn((
+            Scrollbar::new(items_area, ControlOrientation::Vertical, 24.0),
+            Node {
+                width: Val::Px(8.0),
+                flex_shrink: 0.0,
+                margin: UiRect::left(Val::Px(6.0)),
+                // Same "starts collapsed" reasoning as `dialogs::
+                // scroll_area::spawn_scroll_area`'s own track — avoids a
+                // one-frame flash of a full-height thumb before
+                // `update_scrollbar_visibility` (registered app-wide by
+                // `dialogs::scroll_area::ScrollAreaPlugin`, which matches any
+                // `Scrollbar`/`ScrollArea` pair, not just its own callers'
+                // markup) first corrects it, and collapses again for any
+                // dropdown short enough not to need it.
+                display: Display::None,
+                ..default()
+            },
+            BackgroundColor(LIST_SCROLLBAR_TRACK),
+            Visibility::Hidden,
+        ))
+        .with_children(|track| {
+            track.spawn((
+                ScrollbarThumb {
+                    border_radius: BorderRadius::all(Val::Px(4.0)),
+                    border: UiRect::ZERO,
+                },
+                BackgroundColor(LIST_SCROLLBAR_THUMB),
+            ));
+        });
+    });
+    commands.entity(items_area).with_children(|l| {
         for value in options {
             let is_selected = value == current;
             l.spawn_empty()
@@ -257,9 +340,11 @@ pub fn spawn_combobox<M: 'static>(
         .id();
     commands.entity(backdrop_parent).add_child(backdrop);
 
-    commands
-        .entity(root)
-        .insert(ComboboxLinks { list, backdrop });
+    commands.entity(root).insert(ComboboxLinks {
+        list,
+        items_area,
+        backdrop,
+    });
     commands.entity(trigger_parent).add_child(root);
     root
 }
@@ -332,7 +417,7 @@ fn set_combobox_open(
     if let Ok(mut node) = nodes.get_mut(links.backdrop) {
         node.display = if open { Display::Flex } else { Display::None };
     }
-    if let Ok(children) = list_children.get(links.list) {
+    if let Ok(children) = list_children.get(links.items_area) {
         for &child in children {
             if let Ok(mut tab_index) = item_tab_indices.get_mut(child) {
                 tab_index.0 = if open { 0 } else { -1 };
@@ -516,7 +601,7 @@ pub(crate) fn close_open_comboboxes_on_escape(
         if let Ok(mut node) = nodes.get_mut(links.backdrop) {
             node.display = Display::None;
         }
-        if let Ok(children) = list_children.get(links.list) {
+        if let Ok(children) = list_children.get(links.items_area) {
             for &child in children {
                 if let Ok(mut tab_index) = item_tab_indices.get_mut(child) {
                     tab_index.0 = -1;

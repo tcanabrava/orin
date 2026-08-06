@@ -44,7 +44,7 @@ impl Plugin for MenuPlugin {
             .add_plugins(pages::theme_picker::ThemePickerPlugin)
             .add_systems(OnEnter(AppState::Menu), routing::route_menu_entry)
             // Each page manages its own lifetime.
-            .add_systems(OnEnter(MenuPage::Main), pages::main::setup_main_menu)
+            .add_systems(OnEnter(MenuPage::Main), pages::main_menu::setup_main_menu)
             .add_systems(OnExit(MenuPage::Main), scene::cleanup_menu)
             .add_systems(OnEnter(MenuPage::Play), pages::play::setup_play_menu)
             .add_systems(OnExit(MenuPage::Play), scene::cleanup_menu)

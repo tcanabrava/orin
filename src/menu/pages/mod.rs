@@ -12,7 +12,7 @@ pub(crate) mod help_about;
 pub(crate) mod jam_generate;
 pub(crate) mod jam_session;
 pub(crate) mod lessons;
-pub(crate) mod main;
+pub(crate) mod main_menu;
 pub(crate) mod mode_select;
 pub(crate) mod options;
 pub(crate) mod play;

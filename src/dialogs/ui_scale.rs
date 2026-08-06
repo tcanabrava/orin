@@ -1,5 +1,3 @@
-use bevy::prelude::*;
-
 /// UI scale never goes below the natural size, and caps out well before it
 /// gets impractical. `pub` so the Options page's zoom slider
 /// (`menu::pages::options`) can share the exact same bounds.
@@ -17,25 +15,6 @@ pub fn scale_up(current: f32) -> f32 {
 
 pub fn scale_down(current: f32) -> f32 {
     (current / SCALE_STEP).max(MIN_SCALE)
-}
-
-/// Arrow-key UI scaling. Snaps `UiScale` straight to the new value rather
-/// than tweening toward it: Bevy's font atlas caches a rasterized glyph per
-/// *exact* effective size (font_size × scale), so smoothly animating the
-/// scale over many frames requested a fresh atlas texture on almost every
-/// frame of the transition — with a song's HUD on screen (a dozen-plus
-/// distinct font sizes), that was enough GPU texture churn during active
-/// gameplay to exhaust GPU memory and crash. One request per key press
-/// instead of dozens avoids that entirely.
-pub fn change_scaling(input: Res<ButtonInput<KeyCode>>, mut ui_scale: ResMut<UiScale>) {
-    if input.just_pressed(KeyCode::ArrowUp) {
-        ui_scale.0 = scale_up(ui_scale.0);
-        info!("Scaling up! Scale: {}", ui_scale.0);
-    }
-    if input.just_pressed(KeyCode::ArrowDown) {
-        ui_scale.0 = scale_down(ui_scale.0);
-        info!("Scaling down! Scale: {}", ui_scale.0);
-    }
 }
 
 #[cfg(test)]

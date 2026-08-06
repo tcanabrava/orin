@@ -13,7 +13,6 @@ use harmonicon::app::AppState;
 use harmonicon::assets_management::AssetsManagementPlugin;
 use harmonicon::audio_system::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
 use harmonicon::audio_system::{audio_input, pipeline};
-use harmonicon::dialogs::ui_scale::change_scaling;
 use harmonicon::gameplay::GameplayPlugin;
 use harmonicon::lessons::LessonsPlugin;
 use harmonicon::localization::LocalizationPlugin;
@@ -137,7 +136,6 @@ fn main() {
             Update,
             pipeline::log_pitches.run_if(in_state(AppState::Playing)),
         )
-        .add_systems(Update, change_scaling)
         .run();
 }
 
