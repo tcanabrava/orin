@@ -400,7 +400,8 @@ pub(crate) fn setup_lesson_reader(
     let title = entry
         .map(|e| String::from(loc.msg(&e.manifest.title_key)))
         .unwrap_or_default();
-    let (root, header, _page_root) = spawn_menu_root(&mut commands, &title, None, &theme, "Lessons");
+    let (root, header, _page_root) =
+        spawn_menu_root(&mut commands, &title, None, &theme, "Lessons");
 
     let Some(entry) = entry else {
         spawn_back_to_lessons(&mut commands, header, &loc);

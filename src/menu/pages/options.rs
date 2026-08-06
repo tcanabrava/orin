@@ -32,7 +32,9 @@ use crate::theme::LoadedTheme;
 
 use crate::app::AppState;
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_back_button, spawn_button, spawn_menu_root};
+use crate::menu::scene::{
+    MenuRoot, cleanup_menu, spawn_back_button, spawn_button, spawn_menu_root,
+};
 
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;

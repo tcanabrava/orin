@@ -19,7 +19,8 @@ pub(crate) fn setup_play_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header, _page_root) = spawn_menu_root(&mut commands, &loc.msg("menu-play"), None, &theme, "Play");
+    let (root, header, _page_root) =
+        spawn_menu_root(&mut commands, &loc.msg("menu-play"), None, &theme, "Play");
     // The render mode is chosen up front, before picking a song.
     spawn_button(
         &mut commands,
