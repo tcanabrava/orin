@@ -15,7 +15,7 @@ use crate::song::SongManifest;
 use crate::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 pub(crate) fn setup_song_list(
     mut commands: Commands,
@@ -25,7 +25,7 @@ pub(crate) fn setup_song_list(
     loc: Res<Localization>,
 ) {
     let subtitle = format!("by {}", selected_artist.0);
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("select-song"),
         Some(&subtitle),
@@ -55,9 +55,9 @@ pub(crate) fn setup_song_list(
             );
         }
     }
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::ArtistList),
     );

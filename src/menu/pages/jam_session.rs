@@ -13,7 +13,7 @@ use crate::song::harmonica::Progression;
 use crate::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 pub(crate) fn setup_jam_session_menu(
     mut commands: Commands,
@@ -21,7 +21,7 @@ pub(crate) fn setup_jam_session_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("jam-session"),
         None,
@@ -51,9 +51,9 @@ pub(crate) fn setup_jam_session_menu(
         &loc.msg("jam-generate"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::JamGenerate),
     );
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );

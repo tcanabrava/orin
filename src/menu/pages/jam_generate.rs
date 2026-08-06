@@ -21,7 +21,7 @@ use crate::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 const MIN_BPM: f32 = 60.0;
 const MAX_BPM: f32 = 160.0;
@@ -103,7 +103,7 @@ pub(crate) fn setup_jam_generate_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("jam-generate-title"),
         None,
@@ -209,9 +209,9 @@ pub(crate) fn setup_jam_generate_menu(
         },
     );
 
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::JamSessionMenu),
     );

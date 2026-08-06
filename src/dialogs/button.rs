@@ -96,6 +96,39 @@ pub fn sized<M: 'static>(
     }
 }
 
+/// A compact square icon-only button — a fixed glyph (e.g. a header's "←"
+/// Back control), no caller-provided label. Same colours/hover as
+/// [`default`]; pair with a `Tooltip` at the call site since there's no
+/// visible text to explain the glyph.
+pub fn icon<M: 'static>(
+    glyph: &str,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
+) -> impl Scene {
+    bsn! {
+        WidgetButton
+        TabIndex(0)
+        BackgroundColor({color_default()})
+        on(on_click)
+        on(mouse_over)
+        on(mouse_out)
+        Node {
+            width: {Val::Px(40.0)},
+            height: {Val::Px(40.0)},
+            justify_content: {JustifyContent::Center},
+            align_items: {AlignItems::Center},
+            flex_shrink: {0.0_f32},
+        }
+        Children [
+            (
+                Text({glyph.to_string()})
+                TextFont { font_size: {FontSize::Px(20.0)} }
+                TextColor({Color::WHITE})
+                Pickable { should_block_lower: {false}, is_hoverable: {false} }
+            )
+        ]
+    }
+}
+
 pub fn default<M: 'static>(
     label: &str,
     on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,

@@ -11,14 +11,14 @@ use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 pub(crate) fn setup_mode_select(
     mut commands: Commands,
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("select-mode"),
         None,
@@ -43,9 +43,9 @@ pub(crate) fn setup_mode_select(
             page.set(MenuPage::ArtistList);
         },
     );
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Play),
     );

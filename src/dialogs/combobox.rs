@@ -216,25 +216,32 @@ pub fn spawn_combobox<M: 'static>(
     // window's edges are. `GlobalZIndex` puts it above both normal page
     // content and the backdrop below.
     //
-    // `list` itself is just the bordered frame — a `Row` holding the real
-    // scrollable content (`items_area`, capped to `LIST_MAX_HEIGHT_PX` via
-    // `bevy_ui_widgets::ScrollArea`, same widget `dialogs::scroll_area` pairs
-    // with a visible `Scrollbar` elsewhere) beside its own scrollbar, rather
-    // than a plain `Column` that grows to fit however many `options` there
-    // are. Marking `items_area` a `ScrollArea` also gives the dropdown its
-    // "acts as its own modal panel" behaviour for wheel input: `bevy_
-    // ui_widgets`' `Pointer<Scroll>` observer calls `propagate(false)` the
-    // moment it reaches a `ScrollArea` ancestor of the hovered item, so a
-    // wheel scroll over the open dropdown is consumed there and never
-    // reaches whatever page-level `ScrollArea` the combobox happens to be
-    // nested inside (see `dialogs::scroll_area`/`menu::scene::
-    // spawn_menu_root`) — only one of the two scrolls, ever.
+    // `list` itself stays the same plain absolutely-positioned frame Popover
+    // has always measured/positioned — the new scroll-capped content lives
+    // one level deeper, in a nested in-flow `inner_row` (a `Row` holding
+    // `items_area` beside its own `Scrollbar`, the exact same composition
+    // `dialogs::scroll_area::spawn_scroll_area` already uses elsewhere,
+    // just inlined here so `items_area` can additionally cap itself to
+    // `LIST_MAX_HEIGHT_PX`) instead of growing to fit however many
+    // `options` there are. Keeping `list` itself a bare `Column` (no
+    // `Row`/`Stretch` of its own) means `Popover`'s own sizing/positioning
+    // pass — which needs `list`'s `ComputedNode` — only ever has to resolve
+    // one ordinary in-flow child, not reason about stretch-vs-max-height on
+    // the absolutely-positioned node itself.
+    //
+    // Marking `items_area` a `ScrollArea` also gives the dropdown its "acts
+    // as its own modal panel" behaviour for wheel input: `bevy_ui_widgets`'
+    // `Pointer<Scroll>` observer calls `propagate(false)` the moment it
+    // reaches a `ScrollArea` ancestor of the hovered item, so a wheel
+    // scroll over the open dropdown is consumed there and never reaches
+    // whatever page-level `ScrollArea` the combobox happens to be nested
+    // inside (see `dialogs::scroll_area`/`menu::scene::spawn_menu_root`) —
+    // only one of the two scrolls, ever.
     let list = commands
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Stretch,
+                flex_direction: FlexDirection::Column,
                 padding: UiRect::all(Val::Px(6.0)),
                 border: UiRect::all(Val::Px(1.0)),
                 display: Display::None,
@@ -262,47 +269,54 @@ pub fn spawn_combobox<M: 'static>(
         .id();
     let mut items_area = Entity::PLACEHOLDER;
     commands.entity(list).with_children(|l| {
-        items_area = l
-            .spawn((
+        l.spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Stretch,
+            ..default()
+        })
+        .with_children(|row| {
+            items_area = row
+                .spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(ITEM_ROW_GAP),
+                        max_height: Val::Px(LIST_MAX_HEIGHT_PX),
+                        min_height: Val::Px(0.0),
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    ScrollArea,
+                ))
+                .id();
+            row.spawn((
+                Scrollbar::new(items_area, ControlOrientation::Vertical, 24.0),
                 Node {
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(ITEM_ROW_GAP),
-                    max_height: Val::Px(LIST_MAX_HEIGHT_PX),
-                    min_height: Val::Px(0.0),
-                    overflow: Overflow::scroll_y(),
+                    width: Val::Px(8.0),
+                    flex_shrink: 0.0,
+                    margin: UiRect::left(Val::Px(6.0)),
+                    // Same "starts collapsed" reasoning as `dialogs::
+                    // scroll_area::spawn_scroll_area`'s own track — avoids a
+                    // one-frame flash of a full-height thumb before
+                    // `update_scrollbar_visibility` (registered app-wide by
+                    // `dialogs::scroll_area::ScrollAreaPlugin`, which matches
+                    // any `Scrollbar`/`ScrollArea` pair, not just its own
+                    // callers' markup) first corrects it, and collapses
+                    // again for any dropdown short enough not to need it.
+                    display: Display::None,
                     ..default()
                 },
-                ScrollArea,
+                BackgroundColor(LIST_SCROLLBAR_TRACK),
+                Visibility::Hidden,
             ))
-            .id();
-        l.spawn((
-            Scrollbar::new(items_area, ControlOrientation::Vertical, 24.0),
-            Node {
-                width: Val::Px(8.0),
-                flex_shrink: 0.0,
-                margin: UiRect::left(Val::Px(6.0)),
-                // Same "starts collapsed" reasoning as `dialogs::
-                // scroll_area::spawn_scroll_area`'s own track — avoids a
-                // one-frame flash of a full-height thumb before
-                // `update_scrollbar_visibility` (registered app-wide by
-                // `dialogs::scroll_area::ScrollAreaPlugin`, which matches any
-                // `Scrollbar`/`ScrollArea` pair, not just its own callers'
-                // markup) first corrects it, and collapses again for any
-                // dropdown short enough not to need it.
-                display: Display::None,
-                ..default()
-            },
-            BackgroundColor(LIST_SCROLLBAR_TRACK),
-            Visibility::Hidden,
-        ))
-        .with_children(|track| {
-            track.spawn((
-                ScrollbarThumb {
-                    border_radius: BorderRadius::all(Val::Px(4.0)),
-                    border: UiRect::ZERO,
-                },
-                BackgroundColor(LIST_SCROLLBAR_THUMB),
-            ));
+            .with_children(|track| {
+                track.spawn((
+                    ScrollbarThumb {
+                        border_radius: BorderRadius::all(Val::Px(4.0)),
+                        border: UiRect::ZERO,
+                    },
+                    BackgroundColor(LIST_SCROLLBAR_THUMB),
+                ));
+            });
         });
     });
     commands.entity(items_area).with_children(|l| {

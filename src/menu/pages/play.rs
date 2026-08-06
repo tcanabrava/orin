@@ -12,14 +12,14 @@ use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 pub(crate) fn setup_play_menu(
     mut commands: Commands,
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(&mut commands, &loc.msg("menu-play"), None, &theme, "Play");
+    let (root, header) = spawn_menu_root(&mut commands, &loc.msg("menu-play"), None, &theme, "Play");
     // The render mode is chosen up front, before picking a song.
     spawn_button(
         &mut commands,
@@ -53,9 +53,9 @@ pub(crate) fn setup_play_menu(
         &loc.msg("menu-lessons"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Lessons),
     );
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );

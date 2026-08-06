@@ -14,7 +14,7 @@ use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 pub(crate) fn setup_artist_list(
     mut commands: Commands,
@@ -23,7 +23,7 @@ pub(crate) fn setup_artist_list(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("select-artist"),
         None,
@@ -63,9 +63,9 @@ pub(crate) fn setup_artist_list(
             );
         }
     }
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         // ArtistList is shared by two flows — Play Song (via ModeSelect) and
         // Jam Session's "Pick a Song" — that set `GameplayMode` before

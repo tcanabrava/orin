@@ -32,7 +32,7 @@ use crate::theme::LoadedTheme;
 
 use crate::app::AppState;
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button, spawn_menu_root};
+use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_back_button, spawn_button, spawn_menu_root};
 
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
@@ -152,16 +152,28 @@ fn setup_options_menu(
     action_button_style: Res<crate::settings::ActionButtonStyle>,
     ui_scale: Res<UiScale>,
 ) {
-    let root = spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
+    let (root, header) = spawn_menu_root(&mut commands, "Options", Some("Audio"), &theme, "Options");
 
-    // Parent container spanning the whole screen
+    spawn_back_button(
+        &mut commands,
+        header,
+        &loc.msg("options-back-tooltip"),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
+    );
+
+    // Two columns, sized to their own content (like every other menu page's
+    // body) rather than a fixed screen percentage — `root` here is the
+    // shared scrollable body area (`menu::scene::spawn_menu_root`), which
+    // itself sizes to *its* content and gets centered as a whole, so a
+    // percentage width/height on `main_layout` would resolve against that
+    // auto-sized ancestor instead of the actual screen, producing an
+    // arbitrary, off-center result. Left undefined, `main_layout` and its
+    // two columns naturally size to their own content and are centered by
+    // `root`'s own centering — same mechanism every single-column page
+    // already relies on.
     let main_layout = commands
         .spawn(Node {
-            width: Val::Percent(80.0),
-            height: Val::Percent(100.0),
-            // Align children horizontally as columns
             flex_direction: FlexDirection::Row,
-            // Optional spacing between the two columns
             column_gap: Val::Px(20.0),
             ..default()
         })
@@ -169,24 +181,17 @@ fn setup_options_menu(
 
     let left_layout = commands
         .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            // Align children horizontally as columns
             flex_direction: FlexDirection::Column,
-            // Optional spacing between the two columns
-            column_gap: Val::Px(20.0),
+            // `row_gap`, not `column_gap` — this stacks rows vertically, so
+            // the gap that matters is between rows, along the main axis.
+            row_gap: Val::Px(20.0),
             ..default()
         })
         .id();
 
     let right_layout = commands
         .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            // Align children horizontally as columns
             flex_direction: FlexDirection::Column,
-            // Optional spacing between the two columns
-            column_gap: Val::Px(20.0),
             row_gap: Val::Px(20.0),
             ..default()
         })
@@ -328,16 +333,6 @@ fn spawn_right_column(commands: &mut Commands, parent: Entity, loc: &Localizatio
     commands.entity(calibrate_btn).insert(Tooltip(String::from(
         loc.msg("options-calibrate-input-lag-tooltip"),
     )));
-
-    let back_btn = spawn_button(
-        commands,
-        parent,
-        &loc.msg("back"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
-    );
-    commands
-        .entity(back_btn)
-        .insert(Tooltip(String::from(loc.msg("options-back-tooltip"))));
 }
 
 /// Flips whether falling notes show their hole number instead of the
@@ -469,9 +464,9 @@ fn set_zoom(ev: On<ValueChange<f32>>, mut ui_scale: ResMut<UiScale>) {
     }
 }
 
-/// A labelled zoom slider — the on-screen equivalent of
-/// `dialogs::ui_scale::change_scaling`'s Arrow Up/Down handling, which
-/// alone is unusable on a touch-only device with no keyboard.
+/// A labelled zoom slider — the only way to change `UiScale`; an earlier
+/// Arrow Up/Down keyboard shortcut was removed because it conflicted with
+/// Tab/arrow-key UI navigation.
 fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &Localization) {
     use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
 

@@ -3,6 +3,19 @@
 //! Shared menu scene helpers: the full-screen root container every page
 //! spawns into (with its background image), the themed/plain button
 //! widget, and the `MenuRoot` marker `cleanup_menu` despawns on page exit.
+//!
+//! Every page follows the same top-level shape:
+//! ```text
+//! Root (Column, 100% x 100%)
+//!   header (Row, width 100%, fixed height)
+//!     title/subtitle column (flex_grow: 1.0)
+//!     back button (icon-only, omitted on pages with no back target)
+//!   body (Column, flex_grow: 1.0, fills the rest of the screen)
+//!     scrollable content area — every page's own buttons/rows go here
+//! ```
+//! [`spawn_menu_root`] builds `header`/`body` and returns `(content,
+//! header)` — `content` is the scrollable area inside `body`, `header` is
+//! where [`spawn_back_button`] attaches a page's own Back control.
 
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabGroup;
@@ -11,6 +24,7 @@ use bevy::ui_widgets::Activate;
 
 use crate::dialogs::button;
 use crate::dialogs::scroll_area::spawn_scroll_area;
+use crate::dialogs::tooltip::Tooltip;
 use crate::theme::LoadedTheme;
 
 /// Scrollbar track/thumb colors for every menu page's content area — plain
@@ -28,17 +42,15 @@ fn menu_bg() -> Color {
     Color::srgb(0.05, 0.05, 0.08)
 }
 
-/// The menu root container as a `bsn!` [`Scene`]: a full-screen centred
-/// column.
+/// The menu root container as a `bsn!` [`Scene`]: a plain full-screen
+/// column — `header`/`body` (see [`spawn_menu_root`]) own their own
+/// alignment, so the root itself doesn't need to center anything.
 fn menu_root_scene() -> impl Scene {
     bsn! {
         Node {
             width: {Val::Percent(100.0)},
             height: {Val::Percent(100.0)},
             flex_direction: {FlexDirection::Column},
-            align_items: {AlignItems::Center},
-            justify_content: {JustifyContent::Center},
-            row_gap: {Val::Px(16.0)},
         }
         BackgroundColor({menu_bg()})
         MenuRoot
@@ -53,45 +65,105 @@ fn heading_scene(text: String, size: f32, color: Color) -> impl Scene {
     }
 }
 
-/// Spawns the full-screen root, its title/subtitle, and a scrollable
-/// content area beneath them — returning *that content area's* entity, not
-/// the outer root, so every caller's buttons/rows automatically scroll
-/// (with a real visible scrollbar, `dialogs::scroll_area::
-/// spawn_scroll_area`) instead of overflowing once a page's content (a
-/// long artist/song/lesson/theme list) no longer fits. The title/subtitle
-/// stay outside the scrollable area, always visible. Short content stays
-/// vertically centered as a whole, since the content area sizes to its
-/// content and only force-shrinks into scrolling once it doesn't fit (see
-/// `spawn_scroll_area`'s `min_height: Val::Px(0.0)` flexbox trick).
+/// The header row: a full-width `Row` holding the title/subtitle column
+/// (`flex_grow: 1.0` — the "horizontal-stretch" that pushes a trailing
+/// [`spawn_back_button`] to the row's far edge) plus whatever a page adds
+/// via that function. `flex_shrink: 0.0` keeps it at its natural height
+/// even if `body`'s content overflows.
+fn header_scene() -> impl Scene {
+    bsn! {
+        Node {
+            width: {Val::Percent(100.0)},
+            flex_direction: {FlexDirection::Row},
+            align_items: {AlignItems::Center},
+            column_gap: {Val::Px(16.0)},
+            padding: {UiRect::axes(Val::Px(32.0), Val::Px(20.0))},
+            flex_shrink: {0.0_f32},
+        }
+    }
+}
+
+fn title_column_scene(title: String) -> impl Scene {
+    bsn! {
+        Node {
+            flex_direction: {FlexDirection::Column},
+            flex_grow: {1.0_f32},
+            row_gap: {Val::Px(6.0)},
+        }
+        Children [ heading_scene(title, 52.0, Color::WHITE) ]
+    }
+}
+
+fn title_column_with_subtitle_scene(title: String, subtitle: String) -> impl Scene {
+    bsn! {
+        Node {
+            flex_direction: {FlexDirection::Column},
+            flex_grow: {1.0_f32},
+            row_gap: {Val::Px(6.0)},
+        }
+        Children [
+            heading_scene(title, 52.0, Color::WHITE),
+            heading_scene(subtitle, 20.0, Color::srgb(0.6, 0.6, 0.7)),
+        ]
+    }
+}
+
+/// The body column: fills whatever height `header` leaves behind
+/// (`flex_grow: 1.0`), spans the full width, and centers its content as a
+/// whole — same "short content stays centered, long content scrolls"
+/// behaviour the root used to provide directly. `min_height: Val::Px(0.0)`
+/// is the flexbox "min-height:auto" shrink trick (see `dialogs::
+/// scroll_area::spawn_scroll_area`'s own use of it one level down) that
+/// lets this force-shrink below its content's natural height once the
+/// window is short, instead of pushing past the screen's bottom edge.
+fn body_scene() -> impl Scene {
+    bsn! {
+        Node {
+            width: {Val::Percent(100.0)},
+            flex_direction: {FlexDirection::Column},
+            align_items: {AlignItems::Center},
+            justify_content: {JustifyContent::Center},
+            flex_grow: {1.0_f32},
+            min_height: {Val::Px(0.0)},
+            row_gap: {Val::Px(16.0)},
+        }
+    }
+}
+
+/// Spawns the full-screen root, its header (title/subtitle, plus whatever
+/// back button a caller adds via [`spawn_back_button`]), and a scrollable
+/// body content area — returning `(content, header)`, not the root:
+/// `content` is where every caller's buttons/rows go (auto-scrolling, with
+/// a real visible scrollbar — `dialogs::scroll_area::spawn_scroll_area` —
+/// once a page's content, e.g. a long artist/song/lesson/theme list, no
+/// longer fits); `header` is where a page attaches its own Back control.
 pub(crate) fn spawn_menu_root(
     commands: &mut Commands,
     title: &str,
     subtitle: Option<&str>,
     theme: &LoadedTheme,
     menu_id: &str,
-) -> Entity {
-    // Root container + title (+ optional subtitle) as one composed scene. The
-    // subtitle is conditional, so the two `Children [...]` shapes are spawned in
-    // separate branches (each `bsn!` is a distinct concrete `Scene` type).
-    let title = title.to_string();
-    let root = if let Some(sub) = subtitle {
+) -> (Entity, Entity) {
+    let root = commands.spawn_scene(menu_root_scene()).id();
+
+    let title_column = if let Some(sub) = subtitle {
         commands
-            .spawn_scene(bsn! {
-                menu_root_scene()
-                Children [
-                    heading_scene(title, 52.0, Color::WHITE),
-                    heading_scene(sub.to_string(), 20.0, Color::srgb(0.6, 0.6, 0.7)),
-                ]
-            })
+            .spawn_scene(title_column_with_subtitle_scene(
+                title.to_string(),
+                sub.to_string(),
+            ))
             .id()
     } else {
         commands
-            .spawn_scene(bsn! {
-                menu_root_scene()
-                Children [ heading_scene(title, 52.0, Color::WHITE) ]
-            })
+            .spawn_scene(title_column_scene(title.to_string()))
             .id()
     };
+    let header = commands.spawn_scene(header_scene()).id();
+    commands.entity(header).add_child(title_column);
+    commands.entity(root).add_child(header);
+
+    let body = commands.spawn_scene(body_scene()).id();
+    commands.entity(root).add_child(body);
 
     // Background image behind all other content. Inserted at index 0 so it stays
     // the lowest layer regardless of when this command is applied.
@@ -113,13 +185,15 @@ pub(crate) fn spawn_menu_root(
     }
 
     let mut content = Entity::PLACEHOLDER;
-    commands.entity(root).with_children(|children| {
+    commands.entity(body).with_children(|children| {
         content = spawn_scroll_area(children, SCROLLBAR_THUMB_COLOR, SCROLLBAR_TRACK_COLOR);
     });
-    // Scopes Tab/Shift+Tab cycling to this page's own buttons/fields —
-    // every caller spawns its content as children of `content`.
-    commands.entity(content).insert(TabGroup::default());
-    content
+    // Scopes Tab/Shift+Tab cycling to this page's header (its Back button)
+    // and body content together — on `root`, not just `content`, since the
+    // back button lives in a sibling of `content` now.
+    commands.entity(root).insert(TabGroup::default());
+
+    (content, header)
 }
 
 /// Spawn a single button as a child of `parent`, in the normal flex flow —
@@ -148,6 +222,26 @@ pub(crate) fn spawn_button<M: 'static>(
         .insert(node)
         .id();
     commands.entity(parent).add_child(e);
+    e
+}
+
+/// Spawn a page's Back control in its `header` (the second value returned
+/// by [`spawn_menu_root`]) — an icon-only button (`dialogs::button::icon`)
+/// with `tooltip` attached as a [`Tooltip`], since there's no visible label
+/// to explain the glyph. Sitting after the header's `flex_grow: 1.0` title
+/// column, it lands at the row's trailing edge for free. A page with no
+/// back target (Main Menu) simply never calls this.
+pub(crate) fn spawn_back_button<M: 'static>(
+    commands: &mut Commands,
+    header: Entity,
+    tooltip: &str,
+    on_click: impl IntoObserverSystem<Activate, (), M> + Clone + Sync + 'static,
+) -> Entity {
+    let e = commands
+        .spawn_scene(button::icon("\u{2190}", on_click))
+        .insert(Tooltip(tooltip.to_string()))
+        .id();
+    commands.entity(header).add_child(e);
     e
 }
 

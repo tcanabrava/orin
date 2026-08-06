@@ -2,15 +2,14 @@
 
 //! Theme picker screen.
 //!
-//! Layout:
+//! Layout (via the shared `menu::scene::spawn_menu_root` header/body split):
 //!
-//!   ┌─ THEME ─────────────────────────────────────────────────┐
+//!   ┌─ THEME ──────────────────────────────────────────── ← ┐
 //!   │ ┌─ theme list ──┐  ┌─ preview ───────────────────────┐ │
 //!   │ │ default  ●    │  │                                  │ │
 //!   │ │ dark          │  │   [themes/<name>/preview.png]    │ │
 //!   │ │ light         │  │                                  │ │
 //!   │ └───────────────┘  └──────────────────────────────────┘ │
-//!   │                      ← Back to Options                   │
 //!   └─────────────────────────────────────────────────────────┘
 
 use bevy::input_focus::tab_navigation::TabIndex;
@@ -24,10 +23,10 @@ use bevy_fluent::Localization;
 use crate::assets_management::{AvailableThemes, SelectedTheme, ThemesRescanned};
 use crate::dialogs::button;
 use crate::localization::LocalizationExt;
-use crate::theme::theme_source_prefix;
+use crate::theme::{LoadedTheme, theme_source_prefix};
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{MenuRoot, cleanup_menu, spawn_button};
+use crate::menu::scene::{cleanup_menu, spawn_back_button, spawn_menu_root};
 
 const THEME_SELECTED: Color = Color::srgb(0.25, 0.45, 0.30);
 const THEME_HOVER: Color = Color::srgb(0.20, 0.20, 0.32);
@@ -69,37 +68,17 @@ fn setup(
     themes: Res<AvailableThemes>,
     selected: Res<SelectedTheme>,
     asset_server: Res<AssetServer>,
+    theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    // ── Root: full-screen column ───────────────────────────────────────────────
-    let root = commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                padding: UiRect::all(Val::Px(24.0)),
-                row_gap: Val::Px(20.0),
-                ..default()
-            },
-            BackgroundColor(Color::srgb(0.05, 0.05, 0.08)),
-            MenuRoot,
-        ))
-        .id();
+    let (root, header) = spawn_menu_root(&mut commands, "Theme", None, &theme, "Theme");
 
-    // ── Title ──────────────────────────────────────────────────────────────────
-    let title = commands
-        .spawn((
-            Text::new("Theme"),
-            TextFont {
-                font_size: FontSize::Px(48.0),
-                ..default()
-            },
-            TextColor(Color::WHITE),
-        ))
-        .id();
-    commands.entity(root).add_child(title);
+    spawn_back_button(
+        &mut commands,
+        header,
+        &loc.msg("theme-back-to-options"),
+        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
+    );
 
     // ── Content row (list | preview) ───────────────────────────────────────────
     let content = commands
@@ -165,14 +144,6 @@ fn setup(
         ))
         .id();
     commands.entity(right).add_child(preview);
-
-    // ── Back button ────────────────────────────────────────────────────────────
-    spawn_button(
-        &mut commands,
-        root,
-        &loc.msg("theme-back-to-options"),
-        |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Options),
-    );
 }
 
 // ── Update systems ─────────────────────────────────────────────────────────────

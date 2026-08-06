@@ -12,7 +12,7 @@ use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 use super::tutorial;
 
@@ -64,7 +64,7 @@ pub(crate) fn setup_help_about_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("help-about-title"),
         None,
@@ -119,9 +119,9 @@ pub(crate) fn setup_help_about_menu(
         ))
         .id();
     commands.entity(root).add_child(status);
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::Main),
     );
@@ -132,7 +132,7 @@ pub(crate) fn setup_about_page(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let root = spawn_menu_root(
+    let (root, header) = spawn_menu_root(
         &mut commands,
         &loc.msg("about-title"),
         None,
@@ -168,9 +168,9 @@ pub(crate) fn setup_about_page(
         ))
         .id();
     commands.entity(root).add_child(version);
-    spawn_button(
+    spawn_back_button(
         &mut commands,
-        root,
+        header,
         &loc.msg("back"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::HelpAbout),
     );
