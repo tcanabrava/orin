@@ -34,11 +34,15 @@ use bevy::picking::events::{Click, Drag, DragEnd, DragStart, Pointer};
 use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
 use bevy::ui::RelativeCursorPosition;
+use bevy::ui_render::prelude::MaterialNode;
 
 use crate::app::AppState;
 
 use super::adaptive_difficulty::{AdaptiveDifficulty, PhraseSection};
 use super::pause_menu::SelectedPhraseIndex;
+use super::song_waveform_material::{
+    SongWaveformMaterial, SongWaveformMaterialPlugin, pack_amplitudes,
+};
 use super::{GameplayClock, GameplayRoot, LoopConfig, Paused, SongEnd, loop_range_valid};
 
 /// Every bar keeps at least this much height (as a fraction 0..1) even during
@@ -704,7 +708,8 @@ pub struct SongProgressPlugin;
 
 impl Plugin for SongProgressPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<AudioDuration>()
+        app.add_plugins(SongWaveformMaterialPlugin)
+            .init_resource::<AudioDuration>()
             .init_resource::<ProgressBarMode>()
             .init_resource::<LoopDrag>()
             .add_message::<RequestLoopRange>()

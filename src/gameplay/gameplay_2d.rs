@@ -416,6 +416,15 @@ pub fn setup(
 /// down from the top) — shared by both `gameplay_2d::setup` and
 /// `gameplay_3d::setup`, the same "helper lives in `gameplay_2d`, `gameplay_3d`
 /// reuses it" precedent as `note_anim_mode`/`note_techniques`.
+///
+/// A sibling top-level entity, not a child of the background-image root each
+/// gameplay mode paints at `GlobalZIndex(1)` (see that root's own comment),
+/// so it needs its own `GlobalZIndex` to render above it — same "strictly
+/// between the background layer and the pause overlay's `GlobalZIndex(200)`"
+/// reasoning `pause_menu`'s always-visible pause button already documents,
+/// reusing the identical `GlobalZIndex(100)` so pausing still covers it too.
+/// Without this it defaulted to `GlobalZIndex(0)`, below the background's
+/// `1`, and the background image painted over the whole panel.
 pub(super) fn spawn_gameplay_music_score(commands: &mut Commands, bravura: &BravuraFont) {
     commands
         .spawn((
@@ -427,6 +436,7 @@ pub(super) fn spawn_gameplay_music_score(commands: &mut Commands, bravura: &Brav
                 height: Val::Px(music_score::PANEL_HEIGHT),
                 ..default()
             },
+            GlobalZIndex(100),
             GameplayRoot,
         ))
         .with_children(|panel| {

@@ -11,10 +11,10 @@ use bevy_fluent::Localization;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 use crate::assets_management::SelectedHarmonicaModel;
-use crate::dialogs::button;
 use crate::localization::LocalizationExt;
 
 use crate::app::AppState;
+use crate::menu::scene::spawn_back_button;
 
 // The credits 3D scene lives on its own render layer so it never touches the
 // gameplay or options-preview layers.
@@ -213,10 +213,28 @@ fn spawn_ui(commands: &mut Commands, loc: &Localization) {
         }
     });
 
-    // "Back to Menu" button — fixed at the bottom-right of the overlay. Its
-    // click/hover behaviour rides along as inline on(...) observers. (Default
-    // font: bsn! can't set TextFont.font in 0.19.)
-    commands.spawn_scene(button::default(
+    // Back button — the same icon-only header control every menu page uses
+    // (`menu::scene::spawn_back_button`), anchored to the true screen corner
+    // (not nested inside `overlay`, which only spans the middle 70% of the
+    // width) with its own `GlobalZIndex` above `overlay`'s so it stays
+    // clickable. Tagged `CreditsRoot` itself — the previous version spawned
+    // a bare, untagged button here, which `cleanup` (only sweeping
+    // `CreditsRoot`) never despawned, leaking it across screens.
+    let back_anchor = commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(20.0),
+                right: Val::Px(20.0),
+                ..default()
+            },
+            GlobalZIndex(20),
+            CreditsRoot,
+        ))
+        .id();
+    spawn_back_button(
+        commands,
+        back_anchor,
         &loc.msg("credits-back-to-menu"),
         |_: On<Activate>,
          mut next_state: ResMut<NextState<AppState>>,
@@ -224,7 +242,7 @@ fn spawn_ui(commands: &mut Commands, loc: &Localization) {
             ret_help.0 = true;
             next_state.set(AppState::Menu);
         },
-    ));
+    );
 }
 
 // ── Credit line definitions ───────────────────────────────────────────────────

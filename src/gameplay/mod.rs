@@ -31,6 +31,7 @@ mod phrase_overlay;
 mod plugin;
 mod results;
 pub mod song_progress_overlay;
+mod song_waveform_material;
 mod state;
 pub mod twelve_bar_blues_overlay;
 mod wait_freeze_overlay;
