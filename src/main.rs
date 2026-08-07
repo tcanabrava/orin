@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use bevy::asset::io::{AssetSource, AssetSourceBuilder};
+use bevy::asset::{
+    AssetPlugin,
+    io::{AssetSource, AssetSourceBuilder},
+};
 use bevy::image::ImageSamplerDescriptor;
 use bevy::prelude::*;
 
@@ -25,6 +28,44 @@ use harmonicon::song::SongPlugin;
 use harmonicon::spectrogram::SpectrogramPlugin;
 use harmonicon::theme::ThemePlugin;
 
+/// A raw debug binary lives under `target/debug`, while the assets remain in
+/// the checkout root. Cargo supplies `CARGO_MANIFEST_DIR` to `cargo run`, but
+/// it is absent when that binary is launched directly, so Bevy otherwise
+/// falls back to looking beside the executable (`target/debug/assets`).
+///
+/// The packaged macOS app does not need this: its launcher changes into the
+/// bundle directory and the bundle contains an adjacent `assets` directory.
+#[cfg(all(target_os = "macos", debug_assertions))]
+fn configured_asset_plugin() -> AssetPlugin {
+    let root = std::env::var_os("BEVY_ASSET_ROOT")
+        .or_else(|| std::env::var_os("CARGO_MANIFEST_DIR"))
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+    let root = root.canonicalize().unwrap_or_else(|err| {
+        panic!(
+            "could not resolve macOS debug asset root '{}': {err}",
+            root.display()
+        )
+    });
+
+    std::env::set_current_dir(&root).unwrap_or_else(|err| {
+        panic!(
+            "could not switch to macOS debug asset root '{}': {err}",
+            root.display()
+        )
+    });
+
+    AssetPlugin {
+        file_path: root.join("assets").to_string_lossy().into_owned(),
+        ..default()
+    }
+}
+
+#[cfg(not(all(target_os = "macos", debug_assertions)))]
+fn configured_asset_plugin() -> AssetPlugin {
+    AssetPlugin::default()
+}
+
 fn main() {
     let mut app = App::new();
 
@@ -45,6 +86,7 @@ fn main() {
 
     app.add_plugins(
         DefaultPlugins
+            .set(configured_asset_plugin())
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "Harmonicon".into(),
