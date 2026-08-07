@@ -438,9 +438,20 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
             width: Val::Percent(100.0),
             height: Val::Px(PANEL_HEIGHT),
             overflow: Overflow::clip_x(),
+            // A top border rather than a separate divider node — this
+            // panel is its own top-level entity (see `gameplay_2d::
+            // spawn_gameplay_music_score`), not a sibling row inside the
+            // song-progress bar it sits directly below, so there's no
+            // shared parent to slot a divider `Node` into between the two.
+            border: UiRect::top(Val::Px(1.0)),
             ..default()
         },
-        BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85)),
+        // Shared with `gameplay::song_progress_overlay::spawn_song_
+        // progress`'s own bar background — the two used to be two
+        // independently-tuned near-blacks, which read as separate widgets
+        // rather than one panel.
+        BackgroundColor(crate::theme::HUD_PANEL_BG),
+        BorderColor::all(crate::theme::HUD_DIVIDER_COLOR),
         MusicScorePanel,
     ));
     let root_id = root.id();

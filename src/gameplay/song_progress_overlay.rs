@@ -52,6 +52,12 @@ const WAVEFORM_FLOOR: f32 = 0.04;
 /// Height (px) of the waveform section.
 const WAVEFORM_HEIGHT: f32 = 26.0;
 
+/// Waveform fill color — a desaturated, receding gray-blue, deliberately
+/// *not* the same hue as a note marker's blow color one row down. The two
+/// used to share almost the same light blue, which made "there's sound
+/// here" and "this is a blow note" read as the same signal in one panel.
+const WAVEFORM_COLOR: Color = Color::srgba(0.55, 0.62, 0.72, 0.55);
+
 /// Height (px) of the note-lanes strip below the waveform — tall enough
 /// that even a 12-hole chromatic's lanes stay individually legible (5px
 /// each; a 10-hole diatonic gets 6px). See [`note_lane_geometry`].
@@ -66,18 +72,48 @@ const PHRASE_RECT_BORDER: f32 = 1.5;
 /// `pub` so gameplay HUDs can reserve this much space instead of placing
 /// content under it, where the bar (painted above them — see
 /// [`BAR_Z_INDEX`]) would cover it.
-pub const BAR_HEIGHT: f32 = WAVEFORM_HEIGHT + NOTE_LANES_HEIGHT;
+pub const BAR_HEIGHT: f32 = WAVEFORM_HEIGHT + HUD_DIVIDER_HEIGHT + NOTE_LANES_HEIGHT;
 
 /// Narrowest a note's marker is ever drawn (fraction 0..1 of the bar),
 /// regardless of how short the note actually is — a proportionally-accurate
 /// but sub-pixel-wide marker would be invisible. See [`note_marker_geometry`].
 const MIN_NOTE_MARKER_FRAC: f32 = 0.003;
 
-/// Blow/draw note-marker tints — the same hues the Song Editor's scrollbar
-/// minimap uses (`song_editor::interaction::SCROLLBAR_BLOW_COLOR`/
-/// `SCROLLBAR_DRAW_COLOR`), for the same "note as a colored rect" language.
-const NOTE_MARKER_BLOW_COLOR: Color = Color::srgba(0.50, 0.75, 1.00, 0.9);
-const NOTE_MARKER_DRAW_COLOR: Color = Color::srgba(1.00, 0.62, 0.35, 0.9);
+/// A freshly-spawned note-marker rect's fill, before [`sync_note_marker_colors`]
+/// corrects it to the actual active theme/colorblind colors — used only so
+/// a marker isn't fully invisible for the one frame between spawning and
+/// that system's first run (see its own doc comment for why spawn time
+/// itself can't just resolve the real color directly). Same hues the Song
+/// Editor's scrollbar minimap uses by default
+/// (`song_editor::interaction::SCROLLBAR_BLOW_COLOR`/`SCROLLBAR_DRAW_COLOR`),
+/// for the same "note as a colored rect" language.
+const NOTE_MARKER_BLOW_FALLBACK: Color = Color::srgba(0.50, 0.75, 1.00, 0.9);
+const NOTE_MARKER_DRAW_FALLBACK: Color = Color::srgba(1.00, 0.62, 0.35, 0.9);
+
+/// Alpha applied to whichever blow/draw [`crate::theme::NoteColors`] a note
+/// marker resolves to (the theme colors themselves carry no alpha of their
+/// own) — matches the old hardcoded markers' opacity.
+const NOTE_MARKER_ALPHA: f32 = 0.9;
+
+/// Alpha for a phrase-section's full-height fill — low, so it reads as a
+/// soft background tint behind the note markers rather than a block of
+/// color competing with them for attention. See [`PHRASE_ACCENT_ALPHA`]
+/// for the readable "how learned is this" signal.
+const PHRASE_FILL_ALPHA: f32 = 0.20;
+
+/// Alpha for a phrase-section's accent stripe ([`PhraseAccentStripe`]) —
+/// high enough that the mastery gradient stays glanceable from a slim strip
+/// instead of needing the whole lane height saturated to be legible.
+const PHRASE_ACCENT_ALPHA: f32 = 0.85;
+
+/// Height (px) of a phrase-section's accent stripe, along its top edge.
+const PHRASE_ACCENT_HEIGHT: f32 = 6.0;
+
+/// Height (px) of the seam drawn between the waveform and note-lanes rows —
+/// `crate::theme::HUD_DIVIDER_COLOR` reused for every seam in the song-
+/// timeline HUD, including `music_score::spawn_music_score`'s own border to
+/// the note-lanes row above it.
+const HUD_DIVIDER_HEIGHT: f32 = 1.0;
 
 /// Above the pause overlay's own backdrop (`pause_menu::setup_pause_menu`,
 /// `GlobalZIndex(200)`) so the bar renders on top of — and, since bevy_ui's
@@ -106,6 +142,25 @@ pub struct LoopRangeMarker;
 /// edit).
 #[derive(Component, Clone, Copy)]
 struct PhraseSectionRect(usize);
+
+/// The compact, higher-opacity accent stripe along a phrase-section rect's
+/// top edge — same section index as its parent [`PhraseSectionRect`], kept
+/// as its own component (rather than reading it back off the parent) so
+/// [`update_phrase_section_colors`] can re-tint it with one more disjoint
+/// query instead of walking the hierarchy.
+#[derive(Component, Clone, Copy)]
+struct PhraseAccentStripe(usize);
+
+/// Marks a note-marker rectangle with which direction it is, so
+/// [`sync_note_marker_colors`] can tint it from the active theme/colorblind
+/// setting without `spawn_song_progress` (called from `gameplay_2d`/
+/// `gameplay_3d`/`jam::session`'s own already near Bevy's system-param-limit
+/// setup systems) needing `LoadedTheme`/`ColorblindPalette` threaded in as
+/// extra params just to resolve a color.
+#[derive(Component, Clone, Copy)]
+struct NoteMarkerRect {
+    is_blow: bool,
+}
 
 /// The single entity that accepts click-and-drag input for setting a loop
 /// range — the bar's own root. Every visual child (waveform bars, note
@@ -204,7 +259,7 @@ pub fn spawn_song_progress(
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
+            BackgroundColor(crate::theme::HUD_PANEL_BG),
             GlobalZIndex(BAR_Z_INDEX),
             GameplayRoot,
             Button,
@@ -215,32 +270,48 @@ pub fn spawn_song_progress(
         .observe(on_drag)
         .observe(on_drag_end)
         .with_children(|bar| {
+            // A single shader-drawn node (`SongWaveformMaterial`/
+            // `assets/shaders/song_waveform.wgsl`) instead of one `Node`
+            // per bucket — the shader interpolates between buckets and
+            // mirrors the fill around the vertical center, so this reads
+            // as a smooth audio-waveform silhouette rather than a row of
+            // isolated bar-chart spikes. The material asset itself can't
+            // be created here (`spawn_song_progress` only has `Commands`,
+            // not `Assets<SongWaveformMaterial>`, and every caller's own
+            // setup system is already near Bevy's system-param limit) —
+            // deferred via `commands.queue` instead, same "no extra system
+            // param needed" trick `audio_input::start_capture` uses.
+            let waveform_node = bar
+                .spawn((
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Px(WAVEFORM_HEIGHT),
+                        ..default()
+                    },
+                    Pickable::IGNORE,
+                ))
+                .id();
+            let waveform_amplitudes = pack_amplitudes(waveform, WAVEFORM_FLOOR);
+            bar.commands().queue(move |world: &mut World| {
+                let mut materials = world.resource_mut::<Assets<SongWaveformMaterial>>();
+                let handle = materials.add(SongWaveformMaterial {
+                    color: WAVEFORM_COLOR.into(),
+                    amplitudes: waveform_amplitudes,
+                });
+                world.entity_mut(waveform_node).insert(MaterialNode(handle));
+            });
+
+            // Seam between the waveform and note-lanes rows — otherwise
+            // flush with no visual boundary at all.
             bar.spawn((
                 Node {
                     width: Val::Percent(100.0),
-                    height: Val::Px(WAVEFORM_HEIGHT),
-                    flex_direction: FlexDirection::Row,
-                    align_items: AlignItems::Center,
+                    height: Val::Px(HUD_DIVIDER_HEIGHT),
                     ..default()
                 },
+                BackgroundColor(crate::theme::HUD_DIVIDER_COLOR),
                 Pickable::IGNORE,
-            ))
-            .with_children(|row| {
-                for &amplitude in waveform {
-                    row.spawn((
-                        Node {
-                            flex_grow: 1.0,
-                            flex_basis: Val::Px(0.0),
-                            height: Val::Percent(
-                                amplitude.clamp(0.0, 1.0).max(WAVEFORM_FLOOR) * 100.0,
-                            ),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgba(0.35, 0.75, 1.0, 0.65)),
-                        Pickable::IGNORE,
-                    ));
-                }
-            });
+            ));
 
             bar.spawn((
                 Node {
@@ -286,11 +357,35 @@ pub fn spawn_song_progress(
                                     border: UiRect::all(Val::Px(PHRASE_RECT_BORDER)),
                                     ..default()
                                 },
-                                BackgroundColor(phrase_fill_color(learned_frac)),
+                                // `colorblind: false` here — this is only
+                                // the spawn-time value; `update_phrase_
+                                // section_colors` (which does have
+                                // `ColorblindPalette`) corrects it the same
+                                // frame or the next.
+                                BackgroundColor(phrase_fill_color(learned_frac, false)),
                                 BorderColor::all(PHRASE_RECT_BORDER_COLOR),
                                 PhraseSectionRect(i),
                             ))
-                            .observe(on_phrase_rect_click);
+                            .observe(on_phrase_rect_click)
+                            .with_children(|rect| {
+                                // Compact, higher-opacity readout of the
+                                // same gradient — see PHRASE_ACCENT_ALPHA's
+                                // doc comment for why this exists alongside
+                                // the full-height fill above.
+                                rect.spawn((
+                                    Node {
+                                        position_type: PositionType::Absolute,
+                                        left: Val::Px(0.0),
+                                        top: Val::Px(0.0),
+                                        width: Val::Percent(100.0),
+                                        height: Val::Px(PHRASE_ACCENT_HEIGHT),
+                                        ..default()
+                                    },
+                                    BackgroundColor(phrase_accent_color(learned_frac, false)),
+                                    PhraseAccentStripe(i),
+                                    Pickable::IGNORE,
+                                ));
+                            });
                     }
                 }
 
@@ -303,10 +398,10 @@ pub fn spawn_song_progress(
                     let Some((top, height)) = note_lane_geometry(note.hole, hole_count) else {
                         continue;
                     };
-                    let color = if note.is_blow {
-                        NOTE_MARKER_BLOW_COLOR
+                    let fallback = if note.is_blow {
+                        NOTE_MARKER_BLOW_FALLBACK
                     } else {
-                        NOTE_MARKER_DRAW_COLOR
+                        NOTE_MARKER_DRAW_FALLBACK
                     };
                     strip.spawn((
                         Node {
@@ -317,7 +412,10 @@ pub fn spawn_song_progress(
                             height: Val::Percent(height * 100.0),
                             ..default()
                         },
-                        BackgroundColor(color),
+                        BackgroundColor(fallback),
+                        NoteMarkerRect {
+                            is_blow: note.is_blow,
+                        },
                         Pickable::IGNORE,
                     ));
                 }
@@ -479,19 +577,19 @@ fn phrase_rect_geometry(start_time: f64, end_time: f64, duration_secs: f64) -> O
     Some((left, (right - left).max(0.0)))
 }
 
-/// Semi-transparent fill for a phrase-section rectangle: dim gray
-/// (unlearned) to green (fully learned), linearly interpolated by `learned`
-/// (clamped to 0..=1). Low alpha so it reads as a tint over the bar rather
-/// than a solid block — [`PHRASE_RECT_BORDER_COLOR`] is fully opaque so
-/// sections stay visually distinct regardless of how close two fills land.
-fn phrase_fill_color(learned: f32) -> Color {
-    let t = learned.clamp(0.0, 1.0);
-    Color::srgba(
-        0.35 + (0.20 - 0.35) * t,
-        0.35 + (0.85 - 0.35) * t,
-        0.40 + (0.35 - 0.40) * t,
-        0.45,
-    )
+/// Low-alpha fill for a phrase-section rectangle — see [`PHRASE_FILL_ALPHA`]
+/// for why it's deliberately faint. Color itself comes from
+/// `crate::theme::phrase_learned_color`, shared with [`phrase_accent_color`]
+/// so the fill and the accent stripe always agree on the same gradient.
+fn phrase_fill_color(learned: f32, colorblind: bool) -> Color {
+    crate::theme::phrase_learned_color(learned, colorblind).with_alpha(PHRASE_FILL_ALPHA)
+}
+
+/// The same gradient as [`phrase_fill_color`], at [`PHRASE_ACCENT_ALPHA`]
+/// instead — the compact, legible "how learned is this" readout drawn along
+/// a phrase-section rect's top edge (see [`PhraseAccentStripe`]).
+fn phrase_accent_color(learned: f32, colorblind: bool) -> Color {
+    crate::theme::phrase_learned_color(learned, colorblind).with_alpha(PHRASE_ACCENT_ALPHA)
 }
 
 /// Fully opaque border color for every phrase-section rectangle — constant
@@ -643,21 +741,55 @@ fn update_loop_marker(
     }
 }
 
-/// Re-tints each phrase-section rectangle when `AdaptiveDifficulty` changes
-/// (a manual pause-menu edit, or a fresh song's initial load) without
-/// respawning — the rectangles themselves are only ever (re)created in
-/// [`spawn_song_progress`], since their count/geometry only changes when the
-/// song itself does.
+/// Re-tints each phrase-section rectangle (fill and accent stripe alike)
+/// when `AdaptiveDifficulty` or `ColorblindPalette` changes (a manual
+/// pause-menu edit, a fresh song's initial load, or flipping the colorblind
+/// setting mid-song) without respawning — the rectangles themselves are
+/// only ever (re)created in [`spawn_song_progress`], since their
+/// count/geometry only changes when the song itself does.
 fn update_phrase_section_colors(
     adaptive: Res<AdaptiveDifficulty>,
-    mut rects: Query<(&PhraseSectionRect, &mut BackgroundColor)>,
+    colorblind: Res<crate::settings::ColorblindPalette>,
+    mut rects: Query<(&PhraseSectionRect, &mut BackgroundColor), Without<PhraseAccentStripe>>,
+    mut stripes: Query<(&PhraseAccentStripe, &mut BackgroundColor), Without<PhraseSectionRect>>,
 ) {
-    if !adaptive.is_changed() {
+    if !adaptive.is_changed() && !colorblind.is_changed() {
         return;
     }
     for (rect, mut color) in &mut rects {
         let learned = adaptive.learned.get(rect.0).copied().unwrap_or(0.0);
-        *color = BackgroundColor(phrase_fill_color(learned));
+        *color = BackgroundColor(phrase_fill_color(learned, colorblind.0));
+    }
+    for (stripe, mut color) in &mut stripes {
+        let learned = adaptive.learned.get(stripe.0).copied().unwrap_or(0.0);
+        *color = BackgroundColor(phrase_accent_color(learned, colorblind.0));
+    }
+}
+
+/// Keeps every note-marker rect's color matching whatever the active theme
+/// (or, with `ColorblindPalette` on, the fixed colorblind pair) currently
+/// uses for blow/draw — the same source `gameplay_2d::spawn_visible_notes`
+/// tints the falling notes from, via the same `crate::theme::
+/// effective_note_colors`, so the bar's markers never drift from what the
+/// rest of the screen shows. Runs unconditionally each frame (cheap — a
+/// song has at most a few dozen markers visible at once) rather than
+/// gating on a change check, the same "just re-sync every currently-
+/// spawned one" approach `gameplay_2d`'s own `update_note_visuals*`
+/// systems use, which sidesteps needing an `Added`-vs-`Changed` split to
+/// catch both a fresh song's new markers and a live theme/setting change.
+fn sync_note_marker_colors(
+    theme: Res<crate::theme::LoadedTheme>,
+    colorblind: Res<crate::settings::ColorblindPalette>,
+    mut markers: Query<(&NoteMarkerRect, &mut BackgroundColor)>,
+) {
+    let colors = crate::theme::effective_note_colors(theme.note_colors(), colorblind.0);
+    for (marker, mut color) in &mut markers {
+        let base = if marker.is_blow {
+            colors.blow
+        } else {
+            colors.draw
+        };
+        *color = BackgroundColor(base.with_alpha(NOTE_MARKER_ALPHA));
     }
 }
 
@@ -729,7 +861,11 @@ impl Plugin for SongProgressPlugin {
             )
             .add_systems(
                 Update,
-                (update_phrase_section_colors, update_selected_phrase_border)
+                (
+                    update_phrase_section_colors,
+                    update_selected_phrase_border,
+                    sync_note_marker_colors,
+                )
                     .run_if(in_state(AppState::Playing)),
             );
     }
@@ -887,27 +1023,36 @@ mod tests {
     }
 
     #[test]
-    fn phrase_fill_color_is_dim_gray_when_unlearned() {
-        let Color::Srgba(c) = phrase_fill_color(0.0) else {
-            panic!("expected Srgba");
-        };
-        assert!((c.red - 0.35).abs() < 1e-6);
-        assert!((c.green - 0.35).abs() < 1e-6);
-    }
-
-    #[test]
-    fn phrase_fill_color_is_green_when_fully_learned() {
-        let Color::Srgba(c) = phrase_fill_color(1.0) else {
-            panic!("expected Srgba");
-        };
-        assert!((c.red - 0.20).abs() < 1e-6);
-        assert!((c.green - 0.85).abs() < 1e-6);
+    fn phrase_fill_color_matches_the_theme_gradient_at_the_given_alpha() {
+        // The gradient itself (endpoints, colorblind swap, clamping) is
+        // `theme::phrase_learned_color`'s own responsibility and already
+        // covered by its unit tests — this just confirms the fill/accent
+        // wrappers apply the right alpha on top of whatever that returns.
+        for (learned, colorblind) in [(0.0, false), (1.0, false), (0.4, true)] {
+            let expected_hue = crate::theme::phrase_learned_color(learned, colorblind);
+            let Color::Srgba(fill) = phrase_fill_color(learned, colorblind) else {
+                panic!("expected Srgba");
+            };
+            let Color::Srgba(accent) = phrase_accent_color(learned, colorblind) else {
+                panic!("expected Srgba");
+            };
+            let Color::Srgba(expected) = expected_hue else {
+                panic!("expected Srgba");
+            };
+            assert!((fill.red - expected.red).abs() < 1e-6);
+            assert!((fill.alpha - PHRASE_FILL_ALPHA).abs() < 1e-6);
+            assert!((accent.red - expected.red).abs() < 1e-6);
+            assert!((accent.alpha - PHRASE_ACCENT_ALPHA).abs() < 1e-6);
+        }
     }
 
     #[test]
     fn phrase_fill_color_clamps_out_of_range_input() {
-        assert_eq!(phrase_fill_color(-1.0), phrase_fill_color(0.0));
-        assert_eq!(phrase_fill_color(2.0), phrase_fill_color(1.0));
+        assert_eq!(
+            phrase_fill_color(-1.0, false),
+            phrase_fill_color(0.0, false)
+        );
+        assert_eq!(phrase_fill_color(2.0, false), phrase_fill_color(1.0, false));
     }
 
     // ── loop_marker_geometry (committed LoopConfig) ───────────────────────────
