@@ -188,46 +188,6 @@ pub fn effective_note_colors(theme_colors: NoteColors, colorblind: bool) -> Note
     }
 }
 
-/// Endpoints for the song-progress bar's per-phrase "how well you've
-/// learned this" gradient (`gameplay::song_progress_overlay::
-/// phrase_fill_color`) — a real hue shift, not just a lightness ramp, so
-/// two phrases at different learned fractions are easy to tell apart at a
-/// glance rather than leaning on subtle shade differences within one hue.
-/// Amber→green regardless of [`crate::settings::ColorblindPalette`] would
-/// collide with red-green colorblindness (the exact confusion pair this
-/// setting exists to avoid), and blue↔yellow would collide with
-/// [`COLORBLIND_NOTE_COLORS`] one row below it in the same panel — so the
-/// colorblind pair instead leans on lightness alone, on a violet hue that's
-/// neither blue nor yellow nor red/green.
-const PHRASE_LEARNED_LOW: Color = Color::srgb(0.70, 0.40, 0.22);
-const PHRASE_LEARNED_HIGH: Color = Color::srgb(0.25, 0.80, 0.35);
-const PHRASE_LEARNED_LOW_COLORBLIND: Color = Color::srgb(0.30, 0.22, 0.38);
-const PHRASE_LEARNED_HIGH_COLORBLIND: Color = Color::srgb(0.90, 0.75, 0.95);
-
-/// Linearly interpolated (opaque — callers apply their own alpha) color for
-/// `learned` (clamped 0..1): [`PHRASE_LEARNED_LOW`]/`_HIGH`, or the
-/// colorblind-safe pair when `colorblind` is set. Pure so it's directly
-/// unit-testable and so `song_progress_overlay` can call it once per
-/// section per frame without re-deriving the branch itself.
-pub fn phrase_learned_color(learned: f32, colorblind: bool) -> Color {
-    let t = learned.clamp(0.0, 1.0);
-    let (low, high) = if colorblind {
-        (
-            PHRASE_LEARNED_LOW_COLORBLIND,
-            PHRASE_LEARNED_HIGH_COLORBLIND,
-        )
-    } else {
-        (PHRASE_LEARNED_LOW, PHRASE_LEARNED_HIGH)
-    };
-    let low = low.to_srgba();
-    let high = high.to_srgba();
-    Color::srgb(
-        low.red + (high.red - low.red) * t,
-        low.green + (high.green - low.green) * t,
-        low.blue + (high.blue - low.blue) * t,
-    )
-}
-
 /// Shared background for the gameplay song-timeline HUD's panels —
 /// `gameplay::song_progress_overlay::spawn_song_progress`'s bar and
 /// `music_score::spawn_music_score`'s staff panel used to each carry their
@@ -642,38 +602,6 @@ mod tests {
         let theme = NoteColors::default();
         assert_eq!(effective_note_colors(theme, true), COLORBLIND_NOTE_COLORS);
         assert_ne!(COLORBLIND_NOTE_COLORS, theme);
-    }
-
-    #[test]
-    fn phrase_learned_color_matches_the_low_endpoint_at_zero() {
-        assert_eq!(phrase_learned_color(0.0, false), PHRASE_LEARNED_LOW);
-        assert_eq!(
-            phrase_learned_color(0.0, true),
-            PHRASE_LEARNED_LOW_COLORBLIND
-        );
-    }
-
-    #[test]
-    fn phrase_learned_color_matches_the_high_endpoint_at_one() {
-        assert_eq!(phrase_learned_color(1.0, false), PHRASE_LEARNED_HIGH);
-        assert_eq!(
-            phrase_learned_color(1.0, true),
-            PHRASE_LEARNED_HIGH_COLORBLIND
-        );
-    }
-
-    #[test]
-    fn phrase_learned_color_clamps_out_of_range_input() {
-        assert_eq!(phrase_learned_color(-5.0, false), PHRASE_LEARNED_LOW);
-        assert_eq!(phrase_learned_color(5.0, false), PHRASE_LEARNED_HIGH);
-    }
-
-    #[test]
-    fn phrase_learned_color_is_distinct_from_the_colorblind_note_colors() {
-        // The mastery gradient and the colorblind note pair share a panel —
-        // they must not converge on the same hue at either endpoint.
-        assert_ne!(phrase_learned_color(0.0, true), COLORBLIND_NOTE_COLORS.blow);
-        assert_ne!(phrase_learned_color(1.0, true), COLORBLIND_NOTE_COLORS.draw);
     }
 
     #[test]

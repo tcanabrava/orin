@@ -12,10 +12,20 @@
 //! Editor's own scrollbar minimap, which the "note as a proportional rect"
 //! language is otherwise modeled on: `song_editor::interaction::
 //! scrollbar_marker`). Each note is a rectangle in its hole's lane, sized to
-//! its real duration and tinted by blow/draw. The per-phrase
-//! adaptive-difficulty rectangles (dim-gray to green by learned fraction)
-//! paint as a translucent overlay on that same strip — spawned before the
-//! note markers so the notes stay legible on top.
+//! its real duration and tinted by blow/draw.
+//!
+//! The per-phrase adaptive-difficulty info is a separate overlay, shown
+//! only while paused (see [`PhraseOverlay`]/[`sync_phrase_overlay_visibility`])
+//! — Rocksmith's Dynamic Difficulty/Riff Repeater keeps exactly this split:
+//! a live note highway never gets cluttered with mastery info, which only
+//! earns real screen space in a paused/practice-picking context, where it's
+//! actually actionable. Each phrase renders as one column spanning the
+//! *whole* bar height (covering the waveform, which isn't useful reference
+//! while paused anyway), with a single bar growing up from the bottom —
+//! height, not color, encodes the learned fraction (see
+//! [`phrase_bar_height_px`]) — instead of the old continuous color
+//! gradient, which two adjacent phrases at close-but-different fractions
+//! made hard to tell apart at a glance.
 //!
 //! A song with no background music (`SongManifest::music: None`) has no
 //! waveform and a `music_duration_secs` of `0.0`, but the chart itself
@@ -63,9 +73,10 @@ const WAVEFORM_COLOR: Color = Color::srgba(0.55, 0.62, 0.72, 0.55);
 /// each; a 10-hole diatonic gets 6px). See [`note_lane_geometry`].
 const NOTE_LANES_HEIGHT: f32 = 60.0;
 
-/// Border width for a phrase-section rectangle (semi-transparent fill, fully
-/// opaque border — see [`phrase_fill_color`]) so adjacent sections stay
-/// visually distinct even when their fill colors are close.
+/// Border width for a phrase-section column — a fully opaque outline is all
+/// that marks its (mostly transparent) extent now that learned fraction is
+/// a bar height, not a fill color, so adjacent columns still read as
+/// distinct slots even where their bar heights are close.
 const PHRASE_RECT_BORDER: f32 = 1.5;
 
 /// Total height (px) of the bar, pinned at the very top of the screen.
@@ -95,19 +106,23 @@ const NOTE_MARKER_DRAW_FALLBACK: Color = Color::srgba(1.00, 0.62, 0.35, 0.9);
 /// own) — matches the old hardcoded markers' opacity.
 const NOTE_MARKER_ALPHA: f32 = 0.9;
 
-/// Alpha for a phrase-section's full-height fill — low, so it reads as a
-/// soft background tint behind the note markers rather than a block of
-/// color competing with them for attention. See [`PHRASE_ACCENT_ALPHA`]
-/// for the readable "how learned is this" signal.
-const PHRASE_FILL_ALPHA: f32 = 0.20;
+/// Single fixed color for every [`PhraseMasteryBar`] — learned fraction is
+/// now encoded by the bar's *height* (see [`phrase_bar_height_px`]), not by
+/// color, so unlike the old gradient this never changes with `learned`. A
+/// warm gold, distinct from blow (blue-ish)/draw (orange-ish) note colors
+/// and the waveform's own gray-blue, and echoing
+/// [`SELECTED_PHRASE_RECT_BORDER_COLOR`]'s gold for a cohesive "meter" look.
+/// Translucent rather than solid — it still visibly covers the waveform
+/// behind it (the whole point of this overlay), just as a tint over it
+/// rather than fully replacing it.
+const PHRASE_BAR_COLOR: Color = Color::srgba(0.85, 0.75, 0.35, 0.45);
 
-/// Alpha for a phrase-section's accent stripe ([`PhraseAccentStripe`]) —
-/// high enough that the mastery gradient stays glanceable from a slim strip
-/// instead of needing the whole lane height saturated to be legible.
-const PHRASE_ACCENT_ALPHA: f32 = 0.85;
-
-/// Height (px) of a phrase-section's accent stripe, along its top edge.
-const PHRASE_ACCENT_HEIGHT: f32 = 6.0;
+/// A phrase's mastery bar is never shorter than this (px), even at a
+/// learned fraction near zero — same "never fully disappear" reasoning as
+/// [`WAVEFORM_FLOOR`], just an absolute pixel floor instead of a fractional
+/// one, since this bar's height is computed directly in pixels against
+/// [`BAR_HEIGHT`] rather than as a percentage of a fixed-height row.
+const PHRASE_BAR_MIN_HEIGHT_PX: f32 = 2.0;
 
 /// Height (px) of the seam drawn between the waveform and note-lanes rows —
 /// `crate::theme::HUD_DIVIDER_COLOR` reused for every seam in the song-
@@ -134,22 +149,28 @@ pub struct ProgressPlayhead;
 #[derive(Component, Default, Clone)]
 pub struct LoopRangeMarker;
 
-/// One rectangle in the per-phrase adaptive-difficulty strip, spanning its
-/// `PhraseSection`'s time range. `usize` is the section's ordinal index
-/// (into `AdaptiveDifficulty::sections`/`learned`), used by
-/// [`update_phrase_section_colors`] to re-tint it without respawning
-/// whenever a phrase's learned fraction changes (e.g. a manual pause-menu
-/// edit).
+/// The container holding every [`PhraseSectionRect`] column — a single
+/// full-bar-height overlay (covering the waveform too), shown only while
+/// paused. See [`sync_phrase_overlay_visibility`].
+#[derive(Component, Clone, Copy)]
+struct PhraseOverlay;
+
+/// One column in the (pause-only) per-phrase adaptive-difficulty overlay,
+/// spanning its `PhraseSection`'s time range and the *whole* bar height.
+/// `usize` is the section's ordinal index (into `AdaptiveDifficulty::
+/// sections`/`learned`), used by [`update_phrase_mastery_bars`] to resize
+/// its [`PhraseMasteryBar`] child without respawning whenever a phrase's
+/// learned fraction changes (e.g. a manual pause-menu edit).
 #[derive(Component, Clone, Copy)]
 struct PhraseSectionRect(usize);
 
-/// The compact, higher-opacity accent stripe along a phrase-section rect's
-/// top edge — same section index as its parent [`PhraseSectionRect`], kept
-/// as its own component (rather than reading it back off the parent) so
-/// [`update_phrase_section_colors`] can re-tint it with one more disjoint
-/// query instead of walking the hierarchy.
+/// The bar that actually grows upward from a phrase column's bottom edge —
+/// same section index as its parent [`PhraseSectionRect`], kept as its own
+/// component (rather than reading it back off the parent) so
+/// [`update_phrase_mastery_bars`] can resize it with one more disjoint query
+/// instead of walking the hierarchy. See [`phrase_bar_height_px`].
 #[derive(Component, Clone, Copy)]
-struct PhraseAccentStripe(usize);
+struct PhraseMasteryBar(usize);
 
 /// Marks a note-marker rectangle with which direction it is, so
 /// [`sync_note_marker_colors`] can tint it from the active theme/colorblind
@@ -313,21 +334,31 @@ pub fn spawn_song_progress(
                 Pickable::IGNORE,
             ));
 
-            bar.spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Px(NOTE_LANES_HEIGHT),
-                    position_type: PositionType::Relative,
-                    ..default()
-                },
-                Pickable::IGNORE,
-            ))
-            .with_children(|strip| {
-                // Phrase-section overlay first, so the note markers below
-                // paint over it and stay legible rather than getting
-                // tinted by whatever learned-fraction color the section
-                // underneath happens to be.
-                if duration_secs > 0.0 {
+            // The per-phrase mastery overlay — a sibling of `strip`, not
+            // nested inside it, since it needs to span the *whole* bar
+            // height (covering the waveform above), not just the note-lanes
+            // portion. Spawned before `strip` so its bars paint above the
+            // waveform but *under* the note markers `strip` adds next,
+            // keeping notes legible on top of it exactly like before.
+            // Starts hidden (`Display::None`) — matches the default
+            // unpaused state a song always starts in, so no 1-frame flash;
+            // `sync_phrase_overlay_visibility` shows it once actually
+            // paused.
+            if duration_secs > 0.0 {
+                bar.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        top: Val::Px(0.0),
+                        left: Val::Px(0.0),
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        display: Display::None,
+                        ..default()
+                    },
+                    PhraseOverlay,
+                    Pickable::IGNORE,
+                ))
+                .with_children(|overlay| {
                     for (i, section) in sections.iter().enumerate() {
                         let Some((left, width)) = phrase_rect_geometry(
                             section.start_time,
@@ -340,13 +371,15 @@ pub fn spawn_song_progress(
                         // Deliberately pickable (unlike everything else in
                         // this bar) — see `on_phrase_rect_click`. Its
                         // default `should_block_lower: true` means a drag
-                        // starting over a phrase rect no longer reaches
+                        // starting over a phrase column no longer reaches
                         // `ProgressBarDragSurface`, so a loop-range drag has
                         // to start in the waveform band instead — an
-                        // accepted trade for making sections clickable.
-                        // Note markers spawned after this are
-                        // `Pickable::IGNORE` so they don't also shadow it.
-                        strip
+                        // accepted trade for making sections clickable. Not
+                        // that it matters while this overlay is visible at
+                        // all: it's pause-only, and dragging a loop range is
+                        // also pause-only, so the two features already can't
+                        // conflict in practice.
+                        overlay
                             .spawn((
                                 Node {
                                     position_type: PositionType::Absolute,
@@ -357,38 +390,39 @@ pub fn spawn_song_progress(
                                     border: UiRect::all(Val::Px(PHRASE_RECT_BORDER)),
                                     ..default()
                                 },
-                                // `colorblind: false` here — this is only
-                                // the spawn-time value; `update_phrase_
-                                // section_colors` (which does have
-                                // `ColorblindPalette`) corrects it the same
-                                // frame or the next.
-                                BackgroundColor(phrase_fill_color(learned_frac, false)),
                                 BorderColor::all(PHRASE_RECT_BORDER_COLOR),
                                 PhraseSectionRect(i),
                             ))
                             .observe(on_phrase_rect_click)
-                            .with_children(|rect| {
-                                // Compact, higher-opacity readout of the
-                                // same gradient — see PHRASE_ACCENT_ALPHA's
-                                // doc comment for why this exists alongside
-                                // the full-height fill above.
-                                rect.spawn((
+                            .with_children(|column| {
+                                column.spawn((
                                     Node {
                                         position_type: PositionType::Absolute,
                                         left: Val::Px(0.0),
-                                        top: Val::Px(0.0),
+                                        bottom: Val::Px(0.0),
                                         width: Val::Percent(100.0),
-                                        height: Val::Px(PHRASE_ACCENT_HEIGHT),
+                                        height: Val::Px(phrase_bar_height_px(learned_frac)),
                                         ..default()
                                     },
-                                    BackgroundColor(phrase_accent_color(learned_frac, false)),
-                                    PhraseAccentStripe(i),
+                                    BackgroundColor(PHRASE_BAR_COLOR),
+                                    PhraseMasteryBar(i),
                                     Pickable::IGNORE,
                                 ));
                             });
                     }
-                }
+                });
+            }
 
+            bar.spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Px(NOTE_LANES_HEIGHT),
+                    position_type: PositionType::Relative,
+                    ..default()
+                },
+                Pickable::IGNORE,
+            ))
+            .with_children(|strip| {
                 for note in notes {
                     let Some((left, width)) =
                         note_marker_geometry(note.time, note.duration, duration_secs)
@@ -577,19 +611,13 @@ fn phrase_rect_geometry(start_time: f64, end_time: f64, duration_secs: f64) -> O
     Some((left, (right - left).max(0.0)))
 }
 
-/// Low-alpha fill for a phrase-section rectangle — see [`PHRASE_FILL_ALPHA`]
-/// for why it's deliberately faint. Color itself comes from
-/// `crate::theme::phrase_learned_color`, shared with [`phrase_accent_color`]
-/// so the fill and the accent stripe always agree on the same gradient.
-fn phrase_fill_color(learned: f32, colorblind: bool) -> Color {
-    crate::theme::phrase_learned_color(learned, colorblind).with_alpha(PHRASE_FILL_ALPHA)
-}
-
-/// The same gradient as [`phrase_fill_color`], at [`PHRASE_ACCENT_ALPHA`]
-/// instead — the compact, legible "how learned is this" readout drawn along
-/// a phrase-section rect's top edge (see [`PhraseAccentStripe`]).
-fn phrase_accent_color(learned: f32, colorblind: bool) -> Color {
-    crate::theme::phrase_learned_color(learned, colorblind).with_alpha(PHRASE_ACCENT_ALPHA)
+/// Height (px) of a phrase's [`PhraseMasteryBar`] for a given learned
+/// fraction (clamped 0..1): linear against [`BAR_HEIGHT`] — 100% learned
+/// fills the whole column (covering the waveform behind it), a fresh
+/// phrase near 0% still shows [`PHRASE_BAR_MIN_HEIGHT_PX`] as a thin line
+/// rather than vanishing outright.
+fn phrase_bar_height_px(learned: f32) -> f32 {
+    (learned.clamp(0.0, 1.0) * BAR_HEIGHT).max(PHRASE_BAR_MIN_HEIGHT_PX)
 }
 
 /// Fully opaque border color for every phrase-section rectangle — constant
@@ -741,28 +769,46 @@ fn update_loop_marker(
     }
 }
 
-/// Re-tints each phrase-section rectangle (fill and accent stripe alike)
-/// when `AdaptiveDifficulty` or `ColorblindPalette` changes (a manual
-/// pause-menu edit, a fresh song's initial load, or flipping the colorblind
-/// setting mid-song) without respawning — the rectangles themselves are
-/// only ever (re)created in [`spawn_song_progress`], since their
-/// count/geometry only changes when the song itself does.
-fn update_phrase_section_colors(
+/// Resizes each [`PhraseMasteryBar`] when `AdaptiveDifficulty` changes (a
+/// manual pause-menu edit, or a fresh song's initial load) without
+/// respawning — the bars themselves are only ever (re)created in
+/// [`spawn_song_progress`], since their count/geometry only changes when
+/// the song itself does. Color is now fixed ([`PHRASE_BAR_COLOR`]), so
+/// unlike the old fill/accent-stripe version this no longer needs
+/// `ColorblindPalette` at all.
+fn update_phrase_mastery_bars(
     adaptive: Res<AdaptiveDifficulty>,
-    colorblind: Res<crate::settings::ColorblindPalette>,
-    mut rects: Query<(&PhraseSectionRect, &mut BackgroundColor), Without<PhraseAccentStripe>>,
-    mut stripes: Query<(&PhraseAccentStripe, &mut BackgroundColor), Without<PhraseSectionRect>>,
+    mut bars: Query<(&PhraseMasteryBar, &mut Node)>,
 ) {
-    if !adaptive.is_changed() && !colorblind.is_changed() {
+    if !adaptive.is_changed() {
         return;
     }
-    for (rect, mut color) in &mut rects {
-        let learned = adaptive.learned.get(rect.0).copied().unwrap_or(0.0);
-        *color = BackgroundColor(phrase_fill_color(learned, colorblind.0));
+    for (bar, mut node) in &mut bars {
+        let learned = adaptive.learned.get(bar.0).copied().unwrap_or(0.0);
+        node.height = Val::Px(phrase_bar_height_px(learned));
     }
-    for (stripe, mut color) in &mut stripes {
-        let learned = adaptive.learned.get(stripe.0).copied().unwrap_or(0.0);
-        *color = BackgroundColor(phrase_accent_color(learned, colorblind.0));
+}
+
+/// Shows the per-phrase mastery overlay only while actually paused — see
+/// the module doc comment for why (Rocksmith keeps mastery/difficulty
+/// info out of the live note highway entirely, only surfacing it somewhere
+/// you're actually choosing what to practice). A freshly-spawned overlay
+/// already starts `Display::None` (a song always starts unpaused, so
+/// there's nothing to correct on the first frame) — this only needs to
+/// react to `Paused` actually changing thereafter.
+fn sync_phrase_overlay_visibility(
+    paused: Res<Paused>,
+    mut overlays: Query<&mut Node, With<PhraseOverlay>>,
+) {
+    if !paused.is_changed() {
+        return;
+    }
+    for mut node in &mut overlays {
+        node.display = if paused.0 {
+            Display::Flex
+        } else {
+            Display::None
+        };
     }
 }
 
@@ -862,9 +908,10 @@ impl Plugin for SongProgressPlugin {
             .add_systems(
                 Update,
                 (
-                    update_phrase_section_colors,
+                    update_phrase_mastery_bars,
                     update_selected_phrase_border,
                     sync_note_marker_colors,
+                    sync_phrase_overlay_visibility,
                 )
                     .run_if(in_state(AppState::Playing)),
             );
@@ -1008,7 +1055,7 @@ mod tests {
         assert_eq!(effective_duration(0.0, &[], &[]), 0.0);
     }
 
-    // ── phrase_rect_geometry / phrase_fill_color ──────────────────────────────
+    // ── phrase_rect_geometry / phrase_bar_height_px ───────────────────────────
 
     #[test]
     fn phrase_rect_hidden_without_a_known_audio_duration() {
@@ -1023,36 +1070,25 @@ mod tests {
     }
 
     #[test]
-    fn phrase_fill_color_matches_the_theme_gradient_at_the_given_alpha() {
-        // The gradient itself (endpoints, colorblind swap, clamping) is
-        // `theme::phrase_learned_color`'s own responsibility and already
-        // covered by its unit tests — this just confirms the fill/accent
-        // wrappers apply the right alpha on top of whatever that returns.
-        for (learned, colorblind) in [(0.0, false), (1.0, false), (0.4, true)] {
-            let expected_hue = crate::theme::phrase_learned_color(learned, colorblind);
-            let Color::Srgba(fill) = phrase_fill_color(learned, colorblind) else {
-                panic!("expected Srgba");
-            };
-            let Color::Srgba(accent) = phrase_accent_color(learned, colorblind) else {
-                panic!("expected Srgba");
-            };
-            let Color::Srgba(expected) = expected_hue else {
-                panic!("expected Srgba");
-            };
-            assert!((fill.red - expected.red).abs() < 1e-6);
-            assert!((fill.alpha - PHRASE_FILL_ALPHA).abs() < 1e-6);
-            assert!((accent.red - expected.red).abs() < 1e-6);
-            assert!((accent.alpha - PHRASE_ACCENT_ALPHA).abs() < 1e-6);
-        }
+    fn phrase_bar_height_is_zero_learned_floors_to_the_minimum() {
+        assert_eq!(phrase_bar_height_px(0.0), PHRASE_BAR_MIN_HEIGHT_PX);
     }
 
     #[test]
-    fn phrase_fill_color_clamps_out_of_range_input() {
-        assert_eq!(
-            phrase_fill_color(-1.0, false),
-            phrase_fill_color(0.0, false)
-        );
-        assert_eq!(phrase_fill_color(2.0, false), phrase_fill_color(1.0, false));
+    fn phrase_bar_height_is_full_bar_height_when_fully_learned() {
+        assert!((phrase_bar_height_px(1.0) - BAR_HEIGHT).abs() < 1e-6);
+    }
+
+    #[test]
+    fn phrase_bar_height_is_linear_in_between() {
+        let half = phrase_bar_height_px(0.5);
+        assert!((half - BAR_HEIGHT * 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn phrase_bar_height_clamps_out_of_range_input() {
+        assert_eq!(phrase_bar_height_px(-1.0), phrase_bar_height_px(0.0));
+        assert_eq!(phrase_bar_height_px(2.0), phrase_bar_height_px(1.0));
     }
 
     // ── loop_marker_geometry (committed LoopConfig) ───────────────────────────
