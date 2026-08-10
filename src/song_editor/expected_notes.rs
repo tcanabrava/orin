@@ -310,38 +310,37 @@ fn spawn_expected_mod_button(
     style: ActionButtonStyle,
     colors: SongEditorColors,
 ) {
-    panel
-        .spawn((
-            WidgetButton,
-            TabIndex(0),
-            ExpectedModButton(kind),
-            Node {
-                padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                border: UiRect::all(Val::Px(1.0)),
+    let mut ec = panel.spawn((
+        WidgetButton,
+        TabIndex(0),
+        ExpectedModButton(kind),
+        Node {
+            padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            border: UiRect::all(Val::Px(1.0)),
+            ..default()
+        },
+        BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
+        Tooltip(String::from(tooltip)),
+    ));
+    crate::dialogs::button::make_interactive(&mut ec, colors.btn_bg);
+    ec.observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
+        apply_expected_modifier(&mut state, kind);
+    })
+    .with_children(|b| {
+        b.spawn((
+            Text::new(super::panel_widgets::button_content_text(
+                style, icon, &label,
+            )),
+            TextFont {
+                font_size: FontSize::Px(14.0),
                 ..default()
             },
-            BackgroundColor(colors.btn_bg),
-            BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
-            Tooltip(String::from(tooltip)),
-        ))
-        .observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
-            apply_expected_modifier(&mut state, kind);
-        })
-        .with_children(|b| {
-            b.spawn((
-                Text::new(super::panel_widgets::button_content_text(
-                    style, icon, &label,
-                )),
-                TextFont {
-                    font_size: FontSize::Px(14.0),
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-                Pickable::IGNORE,
-            ));
-        });
+            TextColor(Color::WHITE),
+            Pickable::IGNORE,
+        ));
+    });
 }
 
 /// Spawned once into the mod panel (`mod_panel.rs`), as its own

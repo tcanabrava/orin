@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 
 //! A song-progress bar pinned to the top of the screen, shared by the 2D and
-//! 3D gameplay views. It shows the song's whole waveform (pre-analyzed at
-//! asset-load time — see `audio_system::waveform`/`SongManifest::waveform`)
-//! so a player picking a loop range can see where in the song they're
-//! aiming, with a thin red playhead line (styled like the Song Editor's
-//! `PlayheadLine`) marking the current position.
-//!
-//! Below the waveform, a note-lanes strip spans the harmonica's full hole
+//! 3D gameplay views. A note-lanes strip spans the harmonica's full hole
 //! range — highest hole at top, lowest at bottom (opposite the Song
 //! Editor's own scrollbar minimap, which the "note as a proportional rect"
 //! language is otherwise modeled on: `song_editor::interaction::
 //! scrollbar_marker`). Each note is a rectangle in its hole's lane, sized to
-//! its real duration and tinted by blow/draw.
+//! its real duration and tinted by blow/draw, drawn *over* the song's whole
+//! waveform (pre-analyzed at asset-load time — see `audio_system::
+//! waveform`/`SongManifest::waveform`), which renders as this same strip's
+//! own translucent background rather than a separate row — a player can see
+//! where in the song they're aiming (for picking a loop range) and how a
+//! note lines up against the backing track's own energy at that instant, in
+//! one glance instead of two. A thin red playhead line (styled like the
+//! Song Editor's `PlayheadLine`) marks the current position.
 //!
 //! The per-phrase adaptive-difficulty info is a separate overlay, shown
 //! only while paused (see [`PhraseOverlay`]/[`sync_phrase_overlay_visibility`])
@@ -31,8 +32,8 @@
 //! waveform and a `music_duration_secs` of `0.0`, but the chart itself
 //! still has real length — [`spawn_song_progress`] falls back to the
 //! notes'/phrase-sections' own extent as the bar's timescale instead of
-//! reading as empty (see its own doc comment). Only the waveform row stays
-//! empty in that case.
+//! reading as empty (see its own doc comment). Only the waveform background
+//! stays empty in that case — the note-lanes strip itself is unaffected.
 //!
 //! The bar has two [`ProgressBarMode`]s: pure visualization while playing,
 //! or — while paused — editable, click-and-drag anywhere to sweep out a new
@@ -59,18 +60,20 @@ use super::{GameplayClock, GameplayRoot, LoopConfig, Paused, SongEnd, loop_range
 /// silence, so the waveform reads as a continuous shape rather than gaps.
 const WAVEFORM_FLOOR: f32 = 0.04;
 
-/// Height (px) of the waveform section.
-const WAVEFORM_HEIGHT: f32 = 26.0;
+/// Waveform fill color — a desaturated, receding, dark gray-blue,
+/// deliberately *not* the same hue as a note marker's blow color drawn over
+/// it. The two used to share almost the same light blue, which made
+/// "there's sound here" and "this is a blow note" read as the same signal
+/// in one panel. Kept translucent (alpha 0.55) now that it sits directly
+/// behind the note markers rather than in its own row — see
+/// [`spawn_song_progress`].
+const WAVEFORM_COLOR: Color = Color::srgba(0.32, 0.37, 0.45, 0.55);
 
-/// Waveform fill color — a desaturated, receding gray-blue, deliberately
-/// *not* the same hue as a note marker's blow color one row down. The two
-/// used to share almost the same light blue, which made "there's sound
-/// here" and "this is a blow note" read as the same signal in one panel.
-const WAVEFORM_COLOR: Color = Color::srgba(0.55, 0.62, 0.72, 0.55);
-
-/// Height (px) of the note-lanes strip below the waveform — tall enough
-/// that even a 12-hole chromatic's lanes stay individually legible (5px
-/// each; a 10-hole diatonic gets 6px). See [`note_lane_geometry`].
+/// Height (px) of the note-lanes strip — tall enough that even a 12-hole
+/// chromatic's lanes stay individually legible (5px each; a 10-hole
+/// diatonic gets 6px). See [`note_lane_geometry`]. Also the waveform's own
+/// height now, since it renders as this strip's background rather than a
+/// separate row above it.
 const NOTE_LANES_HEIGHT: f32 = 60.0;
 
 /// Border width for a phrase-section column — a fully opaque outline is all
@@ -82,8 +85,9 @@ const PHRASE_RECT_BORDER: f32 = 1.5;
 /// Total height (px) of the bar, pinned at the very top of the screen.
 /// `pub` so gameplay HUDs can reserve this much space instead of placing
 /// content under it, where the bar (painted above them — see
-/// [`BAR_Z_INDEX`]) would cover it.
-pub const BAR_HEIGHT: f32 = WAVEFORM_HEIGHT + HUD_DIVIDER_HEIGHT + NOTE_LANES_HEIGHT;
+/// [`BAR_Z_INDEX`]) would cover it. Just the note-lanes strip's own height
+/// now — the waveform no longer has a separate row (see [`NOTE_LANES_HEIGHT`]).
+pub const BAR_HEIGHT: f32 = NOTE_LANES_HEIGHT;
 
 /// Narrowest a note's marker is ever drawn (fraction 0..1 of the bar),
 /// regardless of how short the note actually is — a proportionally-accurate
@@ -123,12 +127,6 @@ const PHRASE_BAR_COLOR: Color = Color::srgba(0.85, 0.75, 0.35, 0.45);
 /// one, since this bar's height is computed directly in pixels against
 /// [`BAR_HEIGHT`] rather than as a percentage of a fixed-height row.
 const PHRASE_BAR_MIN_HEIGHT_PX: f32 = 2.0;
-
-/// Height (px) of the seam drawn between the waveform and note-lanes rows —
-/// `crate::theme::HUD_DIVIDER_COLOR` reused for every seam in the song-
-/// timeline HUD, including `music_score::spawn_music_score`'s own border to
-/// the note-lanes row above it.
-const HUD_DIVIDER_HEIGHT: f32 = 1.0;
 
 /// Above the pause overlay's own backdrop (`pause_menu::setup_pause_menu`,
 /// `GlobalZIndex(200)`) so the bar renders on top of — and, since bevy_ui's
@@ -250,14 +248,15 @@ pub struct NoteMarker {
 
 /// Spawns the full-width progress bar at the top of the screen: the
 /// waveform (from `waveform`, one entry per bar in 0..1, see
-/// `SongManifest::waveform`), then the note-lanes strip (`hole_count`
-/// lanes, highest hole at top) with the phrase-section overlay painted over
-/// it, then the loop marker and playhead on top of everything. Tagged
-/// `GameplayRoot` so it's torn down with the scene. `duration_secs` is the
-/// audio's real length if there is one (see [`AudioDuration`]); a song with
-/// no background music falls back to the furthest extent of
-/// `notes`/`sections` instead (see [`effective_duration`]) so the bar still
-/// has a real timescale — only the waveform row stays empty in that case.
+/// `SongManifest::waveform`) as a background layer, then the (pause-only)
+/// phrase-mastery overlay above it, then the note-lanes strip (`hole_count`
+/// lanes, highest hole at top) on top of both, then the loop marker and
+/// playhead on top of everything. Tagged `GameplayRoot` so it's torn down
+/// with the scene. `duration_secs` is the audio's real length if there is
+/// one (see [`AudioDuration`]); a song with no background music falls back
+/// to the furthest extent of `notes`/`sections` instead (see
+/// [`effective_duration`]) so the bar still has a real timescale — only the
+/// waveform background stays empty in that case.
 pub fn spawn_song_progress(
     commands: &mut Commands,
     waveform: &[f32],
@@ -291,22 +290,32 @@ pub fn spawn_song_progress(
         .observe(on_drag)
         .observe(on_drag_end)
         .with_children(|bar| {
-            // A single shader-drawn node (`SongWaveformMaterial`/
-            // `assets/shaders/song_waveform.wgsl`) instead of one `Node`
-            // per bucket — the shader interpolates between buckets and
-            // mirrors the fill around the vertical center, so this reads
-            // as a smooth audio-waveform silhouette rather than a row of
-            // isolated bar-chart spikes. The material asset itself can't
-            // be created here (`spawn_song_progress` only has `Commands`,
-            // not `Assets<SongWaveformMaterial>`, and every caller's own
-            // setup system is already near Bevy's system-param limit) —
-            // deferred via `commands.queue` instead, same "no extra system
-            // param needed" trick `audio_input::start_capture` uses.
+            // The waveform as the note-lanes strip's own background — a
+            // single shader-drawn node (`SongWaveformMaterial`/`assets/
+            // shaders/song_waveform.wgsl`) instead of one `Node` per
+            // bucket. A sibling of `strip` (not nested inside it) sized and
+            // positioned to exactly overlap it, spawned *first* so it's the
+            // bottom layer of this whole `bar`: under the phrase-mastery
+            // overlay (which needs to cover it while paused) and under
+            // `strip`'s own opaque note markers (which need to stay legible
+            // regardless of what's playing underneath). Nesting it inside
+            // `strip` instead would put it *above* the mastery overlay,
+            // since paint order follows each sibling's whole subtree, not
+            // individual grandchildren interleaved across siblings. The
+            // material asset itself can't be created here (`spawn_song_
+            // progress` only has `Commands`, not `Assets<
+            // SongWaveformMaterial>`, and every caller's own setup system
+            // is already near Bevy's system-param limit) — deferred via
+            // `commands.queue` instead, same "no extra system param
+            // needed" trick `audio_input::start_capture` uses.
             let waveform_node = bar
                 .spawn((
                     Node {
+                        position_type: PositionType::Absolute,
+                        top: Val::Px(0.0),
+                        left: Val::Px(0.0),
                         width: Val::Percent(100.0),
-                        height: Val::Px(WAVEFORM_HEIGHT),
+                        height: Val::Percent(100.0),
                         ..default()
                     },
                     Pickable::IGNORE,
@@ -322,26 +331,12 @@ pub fn spawn_song_progress(
                 world.entity_mut(waveform_node).insert(MaterialNode(handle));
             });
 
-            // Seam between the waveform and note-lanes rows — otherwise
-            // flush with no visual boundary at all.
-            bar.spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Px(HUD_DIVIDER_HEIGHT),
-                    ..default()
-                },
-                BackgroundColor(crate::theme::HUD_DIVIDER_COLOR),
-                Pickable::IGNORE,
-            ));
-
-            // The per-phrase mastery overlay — a sibling of `strip`, not
-            // nested inside it, since it needs to span the *whole* bar
-            // height (covering the waveform above), not just the note-lanes
-            // portion. Spawned before `strip` so its bars paint above the
-            // waveform but *under* the note markers `strip` adds next,
-            // keeping notes legible on top of it exactly like before.
-            // Starts hidden (`Display::None`) — matches the default
-            // unpaused state a song always starts in, so no 1-frame flash;
+            // The per-phrase mastery overlay — spawned after the waveform
+            // (so it paints above/covers it) but before `strip` (so
+            // `strip`'s own opaque note markers still end up on top of it,
+            // keeping notes legible even with the overlay showing). Starts
+            // hidden (`Display::None`) — matches the default unpaused state
+            // a song always starts in, so no 1-frame flash;
             // `sync_phrase_overlay_visibility` shows it once actually
             // paused.
             if duration_secs > 0.0 {

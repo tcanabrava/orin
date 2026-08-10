@@ -1,7 +1,7 @@
 use bevy::ecs::system::IntoObserverSystem;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::picking::Pickable;
-use bevy::picking::events::{Out, Over, Pointer};
+use bevy::picking::events::{Cancel, DragEnd, Out, Over, Pointer, Press, Release};
 use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
@@ -16,16 +16,168 @@ pub const CHOICE_SELECTED: Color = Color::srgb(0.25, 0.45, 0.30);
 /// Hover background for an unselected choice button in the same group.
 pub const CHOICE_HOVER: Color = Color::srgb(0.20, 0.20, 0.32);
 
-fn mouse_over(ev: On<Pointer<Over>>, mut colors: Query<&mut BackgroundColor>) {
-    if let Ok(mut bg) = colors.get_mut(ev.entity) {
-        *bg = BackgroundColor(Color::srgb(0.20, 0.20, 0.32));
+/// A button's own resting (unhovered, unpressed) background. Several
+/// callers — the Song Editor's `update_mod_panel`/`update_mode_buttons`/
+/// etc. — already recompute a button's "logical" color every frame from
+/// selection/active/enabled state; those now write *this* instead of
+/// `BackgroundColor` directly, and [`apply_button_visuals`] is the only
+/// system that still touches `BackgroundColor` — layering the hover/press
+/// tint on top of whatever `BaseButtonColor` currently holds, each frame.
+/// Without this split, a per-frame active-state rewrite and a transient
+/// hover/press tint would each blindly overwrite `BackgroundColor` and
+/// erase the other. See [`make_interactive`] for attaching the whole thing
+/// to a button built outside a `bsn!` scene.
+#[derive(Component, Clone, Copy, Default)]
+pub struct BaseButtonColor(pub Color);
+
+/// Live hover/press state for [`apply_button_visuals`] to read — updated by
+/// this module's own observers, which touch only this, never
+/// `BackgroundColor` directly (see [`BaseButtonColor`]'s doc comment for
+/// why).
+#[derive(Component, Clone, Copy, Default)]
+struct ButtonInteractionState {
+    hovered: bool,
+    pressed: bool,
+}
+
+/// Blends `c` toward `target` by `t` (0..1) — used for both
+/// [`brighten`]/[`darken`] rather than a flat per-channel add/subtract, so
+/// the hover/press tint stays proportionally consistent regardless of how
+/// bright or dark a given button's own base color is.
+fn mix_toward(c: Color, target: Color, t: f32) -> Color {
+    let a = c.to_srgba();
+    let b = target.to_srgba();
+    Color::srgb(
+        a.red + (b.red - a.red) * t,
+        a.green + (b.green - a.green) * t,
+        a.blue + (b.blue - a.blue) * t,
+    )
+}
+
+/// Hover tint: a base color mixed toward white.
+fn brighten(base: Color) -> Color {
+    mix_toward(base, Color::WHITE, 0.18)
+}
+
+/// Pressed ("sunken") tint: a base color mixed toward black — noticeably
+/// darker than both the resting and hover colors, so a click reads as the
+/// button physically depressing rather than just re-highlighting.
+fn darken(base: Color) -> Color {
+    mix_toward(base, Color::BLACK, 0.35)
+}
+
+fn mouse_over(ev: On<Pointer<Over>>, mut states: Query<&mut ButtonInteractionState>) {
+    if let Ok(mut s) = states.get_mut(ev.entity) {
+        s.hovered = true;
     }
 }
 
-fn mouse_out(ev: On<Pointer<Out>>, mut colors: Query<&mut BackgroundColor>) {
-    if let Ok(mut bg) = colors.get_mut(ev.entity) {
-        *bg = BackgroundColor(color_default());
+fn mouse_out(ev: On<Pointer<Out>>, mut states: Query<&mut ButtonInteractionState>) {
+    if let Ok(mut s) = states.get_mut(ev.entity) {
+        s.hovered = false;
     }
+}
+
+/// Sunken while actually pressed — `bevy_ui_widgets::Button` already tracks
+/// this precisely via its own `Pressed` marker (inserted on [`Press`],
+/// removed on [`Release`]/[`DragEnd`]/[`Cancel`] — see its own observers),
+/// so this mirrors that exact same event set purely for the visual, rather
+/// than polling `Pressed` in a separate system.
+fn mouse_press(ev: On<Pointer<Press>>, mut states: Query<&mut ButtonInteractionState>) {
+    if let Ok(mut s) = states.get_mut(ev.entity) {
+        s.pressed = true;
+    }
+}
+
+fn mouse_release(ev: On<Pointer<Release>>, mut states: Query<&mut ButtonInteractionState>) {
+    if let Ok(mut s) = states.get_mut(ev.entity) {
+        s.pressed = false;
+    }
+}
+
+/// A press that ends without releasing over the button (dragged off, or
+/// picking cancelled the gesture).
+fn mouse_press_interrupted(
+    ev: On<Pointer<Cancel>>,
+    mut states: Query<&mut ButtonInteractionState>,
+) {
+    if let Ok(mut s) = states.get_mut(ev.entity) {
+        s.pressed = false;
+        s.hovered = false;
+    }
+}
+
+/// Same as [`mouse_press_interrupted`], for the other event
+/// `bevy_ui_widgets::Button` treats as ending a press without a click.
+fn mouse_drag_end(ev: On<Pointer<DragEnd>>, mut states: Query<&mut ButtonInteractionState>) {
+    if let Ok(mut s) = states.get_mut(ev.entity) {
+        s.pressed = false;
+        s.hovered = false;
+    }
+}
+
+/// Recomputes every interactive button's actual `BackgroundColor` from its
+/// `BaseButtonColor` + `ButtonInteractionState` — see `BaseButtonColor`'s
+/// doc comment for why this is the *only* system allowed to write
+/// `BackgroundColor` on an entity carrying both. Runs unconditionally each
+/// frame (cheap — at most a few dozen buttons exist at once) rather than
+/// gating on a change check, so it always reflects the current frame's
+/// `BaseButtonColor` regardless of whether a caller's own active-state
+/// system, this module's hover/press observers, or both, touched it.
+/// Registered once app-wide by [`ButtonVisualsPlugin`].
+fn apply_button_visuals(
+    mut buttons: Query<(
+        &BaseButtonColor,
+        &ButtonInteractionState,
+        &mut BackgroundColor,
+    )>,
+) {
+    for (base, interaction, mut bg) in &mut buttons {
+        let color = if interaction.pressed {
+            darken(base.0)
+        } else if interaction.hovered {
+            brighten(base.0)
+        } else {
+            base.0
+        };
+        *bg = BackgroundColor(color);
+    }
+}
+
+pub struct ButtonVisualsPlugin;
+
+impl Plugin for ButtonVisualsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, apply_button_visuals);
+    }
+}
+
+/// Attaches hover/press/release/cancel visual feedback to a button spawned
+/// imperatively (outside a `bsn!` scene, e.g. the Song Editor's own
+/// hand-rolled `WidgetButton`s) — inserts [`BaseButtonColor`] + a starting
+/// [`BackgroundColor`] + [`ButtonInteractionState`], then the same six
+/// observers [`small`]/[`sized`]/[`icon`]/[`default`] wire inline via
+/// `on(...)`. A caller that also drives its own active/selected tint (the
+/// Song Editor's `update_mod_panel` and siblings) should target
+/// `BaseButtonColor`, not `BackgroundColor`, from here on — see
+/// `BaseButtonColor`'s doc comment. Returns `ec` so it chains with the
+/// caller's own `.observe(on_click)`/`.insert(...)`/`.with_children(...)`
+/// calls.
+pub fn make_interactive<'a, 'b>(
+    ec: &'a mut EntityCommands<'b>,
+    base: Color,
+) -> &'a mut EntityCommands<'b> {
+    ec.insert((
+        BaseButtonColor(base),
+        BackgroundColor(base),
+        ButtonInteractionState::default(),
+    ))
+    .observe(mouse_over)
+    .observe(mouse_out)
+    .observe(mouse_press)
+    .observe(mouse_release)
+    .observe(mouse_press_interrupted)
+    .observe(mouse_drag_end)
 }
 
 /// A compact button (no 220px min-width, smaller padding/font) for HUD-style
@@ -38,9 +190,15 @@ pub fn small<M: 'static>(
         WidgetButton
         TabIndex(0)
         BackgroundColor({color_default()})
+        BaseButtonColor({color_default()})
+        ButtonInteractionState
         on(on_click)
         on(mouse_over)
         on(mouse_out)
+        on(mouse_press)
+        on(mouse_release)
+        on(mouse_press_interrupted)
+        on(mouse_drag_end)
         Node {
             padding: {UiRect::axes(Val::Px(12.0), Val::Px(6.0))},
             justify_content: {JustifyContent::Center},
@@ -74,9 +232,15 @@ pub fn sized<M: 'static>(
         WidgetButton
         TabIndex(0)
         BackgroundColor({color_default()})
+        BaseButtonColor({color_default()})
+        ButtonInteractionState
         on(on_click)
         on(mouse_over)
         on(mouse_out)
+        on(mouse_press)
+        on(mouse_release)
+        on(mouse_press_interrupted)
+        on(mouse_drag_end)
         Node {
             width: {Val::Px(width)},
             padding: {UiRect::axes(Val::Px(16.0), Val::Px(12.0))},
@@ -108,9 +272,15 @@ pub fn icon<M: 'static>(
         WidgetButton
         TabIndex(0)
         BackgroundColor({color_default()})
+        BaseButtonColor({color_default()})
+        ButtonInteractionState
         on(on_click)
         on(mouse_over)
         on(mouse_out)
+        on(mouse_press)
+        on(mouse_release)
+        on(mouse_press_interrupted)
+        on(mouse_drag_end)
         Node {
             width: {Val::Px(40.0)},
             height: {Val::Px(40.0)},
@@ -137,9 +307,15 @@ pub fn default<M: 'static>(
         WidgetButton
         TabIndex(0)
         BackgroundColor({color_default()})
+        BaseButtonColor({color_default()})
+        ButtonInteractionState
         on(on_click)
         on(mouse_over)
         on(mouse_out)
+        on(mouse_press)
+        on(mouse_release)
+        on(mouse_press_interrupted)
+        on(mouse_drag_end)
         Node {
             min_width: {Val::Px(220.0)},
             padding: {UiRect::axes(Val::Px(28.0), Val::Px(12.0))},

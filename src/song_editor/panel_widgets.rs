@@ -19,6 +19,7 @@ use super::ranges::normalize_range;
 use super::state::{EditorState, TimelineDrag, TimelineSelection, TimelineTool};
 use super::timeline::request_confirm;
 use super::ui::{BendDot, ModButton, ModButtonLabel, ModeButton, TimelineToolButton};
+use crate::dialogs::button::make_interactive;
 use crate::dialogs::confirm_dialog::OpenConfirmDialog;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizedStr;
@@ -68,10 +69,10 @@ fn spawn_button_shell<'a, M: 'static>(
             border: UiRect::all(Val::Px(1.0)),
             ..default()
         },
-        BackgroundColor(bg),
         BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
         Tooltip(String::from(tooltip)),
     ));
+    make_interactive(&mut ec, bg);
     ec.observe(on_click).with_children(|b| {
         b.spawn((
             Text::new(button_content_text(style, icon, &label)),
@@ -109,59 +110,58 @@ pub(super) fn timeline_tool_button(
     style: ActionButtonStyle,
     colors: SongEditorColors,
 ) {
-    panel
-        .spawn((
-            WidgetButton,
-            TabIndex(0),
-            kind,
-            Node {
-                padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                border: UiRect::all(Val::Px(1.0)),
+    let mut ec = panel.spawn((
+        WidgetButton,
+        TabIndex(0),
+        kind,
+        Node {
+            padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            border: UiRect::all(Val::Px(1.0)),
+            ..default()
+        },
+        BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
+        Tooltip(String::from(tooltip)),
+    ));
+    make_interactive(&mut ec, colors.btn_bg);
+    ec.observe(
+        move |_: On<Activate>,
+              loc: Res<Localization>,
+              mut state: ResMut<EditorState>,
+              mut sel: ResMut<TimelineSelection>,
+              mut open: MessageWriter<OpenConfirmDialog>| {
+            if let Some(TimelineDrag { start, end, .. }) = sel.drag {
+                let (s, e) = normalize_range(start, end);
+                if kind == TimelineToolButton(TimelineTool::Erase) {
+                    state.timeline_tool = TimelineTool::Erase;
+                    request_confirm(&mut state, &loc, &mut open, s, e);
+                } else if kind == TimelineToolButton(TimelineTool::Remove) {
+                    state.timeline_tool = TimelineTool::Remove;
+                    request_confirm(&mut state, &loc, &mut open, s, e);
+                }
+            };
+
+            state.timeline_tool = if state.timeline_tool == kind.0 {
+                TimelineTool::None
+            } else {
+                kind.0
+            };
+            sel.drag = None;
+            state.timeline_split = None;
+        },
+    )
+    .with_children(|b| {
+        b.spawn((
+            Text::new(button_content_text(style, icon, &label)),
+            TextFont {
+                font_size: FontSize::Px(14.0),
                 ..default()
             },
-            BackgroundColor(colors.btn_bg),
-            BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
-            Tooltip(String::from(tooltip)),
-        ))
-        .observe(
-            move |_: On<Activate>,
-                  loc: Res<Localization>,
-                  mut state: ResMut<EditorState>,
-                  mut sel: ResMut<TimelineSelection>,
-                  mut open: MessageWriter<OpenConfirmDialog>| {
-                if let Some(TimelineDrag { start, end, .. }) = sel.drag {
-                    let (s, e) = normalize_range(start, end);
-                    if kind == TimelineToolButton(TimelineTool::Erase) {
-                        state.timeline_tool = TimelineTool::Erase;
-                        request_confirm(&mut state, &loc, &mut open, s, e);
-                    } else if kind == TimelineToolButton(TimelineTool::Remove) {
-                        state.timeline_tool = TimelineTool::Remove;
-                        request_confirm(&mut state, &loc, &mut open, s, e);
-                    }
-                };
-
-                state.timeline_tool = if state.timeline_tool == kind.0 {
-                    TimelineTool::None
-                } else {
-                    kind.0
-                };
-                sel.drag = None;
-                state.timeline_split = None;
-            },
-        )
-        .with_children(|b| {
-            b.spawn((
-                Text::new(button_content_text(style, icon, &label)),
-                TextFont {
-                    font_size: FontSize::Px(14.0),
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-                Pickable::IGNORE,
-            ));
-        });
+            TextColor(Color::WHITE),
+            Pickable::IGNORE,
+        ));
+    });
 }
 
 pub(super) fn mod_button(
@@ -173,54 +173,53 @@ pub(super) fn mod_button(
     style: ActionButtonStyle,
     colors: SongEditorColors,
 ) {
-    panel
-        .spawn((
-            WidgetButton,
-            TabIndex(0),
-            kind,
-            Node {
-                padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                border: UiRect::all(Val::Px(1.0)),
+    let mut ec = panel.spawn((
+        WidgetButton,
+        TabIndex(0),
+        kind,
+        Node {
+            padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            border: UiRect::all(Val::Px(1.0)),
+            ..default()
+        },
+        BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
+        Tooltip(String::from(tooltip)),
+    ));
+    make_interactive(&mut ec, colors.btn_bg);
+    ec.observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
+        apply_modifier(&mut state, kind);
+    })
+    .with_children(|b| {
+        let base = button_content_text(style, icon, &label);
+        let mut text = b.spawn((
+            Text::new(base.clone()),
+            TextFont {
+                font_size: FontSize::Px(14.0),
                 ..default()
             },
-            BackgroundColor(colors.btn_bg),
-            BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
-            Tooltip(String::from(tooltip)),
-        ))
-        .observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
-            apply_modifier(&mut state, kind);
-        })
-        .with_children(|b| {
-            let base = button_content_text(style, icon, &label);
-            let mut text = b.spawn((
-                Text::new(base.clone()),
-                TextFont {
-                    font_size: FontSize::Px(14.0),
+            TextColor(Color::WHITE),
+            Pickable::IGNORE,
+        ));
+        if matches!(kind, ModButton::Wah | ModButton::Vibrato) {
+            text.insert(ModButtonLabel { kind, base });
+        }
+        if kind == ModButton::Bend {
+            b.spawn((
+                BendDot,
+                Node {
+                    width: Val::Px(10.0),
+                    height: Val::Px(10.0),
+                    margin: UiRect::left(Val::Px(6.0)),
                     ..default()
                 },
-                TextColor(Color::WHITE),
+                BackgroundColor(Color::srgb(0.90, 0.20, 0.20)),
+                Visibility::Hidden,
                 Pickable::IGNORE,
             ));
-            if matches!(kind, ModButton::Wah | ModButton::Vibrato) {
-                text.insert(ModButtonLabel { kind, base });
-            }
-            if kind == ModButton::Bend {
-                b.spawn((
-                    BendDot,
-                    Node {
-                        width: Val::Px(10.0),
-                        height: Val::Px(10.0),
-                        margin: UiRect::left(Val::Px(6.0)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.90, 0.20, 0.20)),
-                    Visibility::Hidden,
-                    Pickable::IGNORE,
-                ));
-            }
-        });
+        }
+    });
 }
 
 pub(super) fn panel_separator(panel: &mut ChildSpawnerCommands) {

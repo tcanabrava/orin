@@ -24,6 +24,7 @@ use super::ui::{
     MetaFieldText, MidiTrackComboboxSlot, ScaleComboboxSlot, SnapModeText,
 };
 use super::{HEADER_H, MIDI_PURPOSE, MUSIC_PURPOSE, ROW_H, SILENCE_ROW_H, grid_height};
+use crate::dialogs::button::make_interactive;
 use crate::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
 use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
 use crate::dialogs::tooltip::Tooltip;
@@ -179,7 +180,7 @@ fn spawn_cycle_row<T: Component, M: 'static>(
             },
             TextColor(colors.label),
         ));
-        line.spawn((
+        let mut btn = line.spawn((
             WidgetButton,
             TabIndex(0),
             Node {
@@ -190,12 +191,11 @@ fn spawn_cycle_row<T: Component, M: 'static>(
                 border: UiRect::all(Val::Px(1.0)),
                 ..default()
             },
-            BackgroundColor(colors.field_bg),
             BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
             Tooltip(String::from(loc.msg(tooltip_key))),
-        ))
-        .observe(on_click)
-        .with_children(|b| {
+        ));
+        make_interactive(&mut btn, colors.field_bg);
+        btn.observe(on_click).with_children(|b| {
             b.spawn((
                 marker,
                 Text::new(String::new()),
@@ -321,9 +321,9 @@ pub(super) fn spawn_field_row(
                 border: UiRect::all(Val::Px(1.0)),
                 ..default()
             },
-            BackgroundColor(colors.field_bg),
             BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
         ));
+        make_interactive(&mut btn, colors.field_bg);
 
         if field == Field::Key {
             btn.insert(Tooltip(String::from(loc.msg("editor-field-key-tooltip"))))
@@ -380,7 +380,7 @@ pub(super) fn spawn_field_row(
         });
 
         if field == Field::Music {
-            line.spawn((
+            let mut browse = line.spawn((
                 WidgetButton,
                 TabIndex(0),
                 Node {
@@ -390,34 +390,35 @@ pub(super) fn spawn_field_row(
                     border: UiRect::all(Val::Px(1.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgb(0.18, 0.24, 0.36)),
                 BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
                 Tooltip(String::from(loc.msg("editor-browse-tooltip"))),
-            ))
-            .observe(
-                |_: On<Activate>,
-                 loc: Res<Localization>,
-                 mut open: MessageWriter<OpenFileDialog>| {
-                    open.write(OpenFileDialog {
-                        purpose: MUSIC_PURPOSE,
-                        title: String::from(loc.msg("dialog-select-music")),
-                        extensions: vec!["ogg".into()],
-                        start_dir: dirs::home_dir(),
-                        mode: DialogMode::Open,
-                    });
-                },
-            )
-            .with_children(|b| {
-                b.spawn((
-                    Text::new(String::from(loc.msg("editor-browse"))),
-                    TextFont {
-                        font_size: FontSize::Px(13.0),
-                        ..default()
+            ));
+            make_interactive(&mut browse, Color::srgb(0.18, 0.24, 0.36));
+            browse
+                .observe(
+                    |_: On<Activate>,
+                     loc: Res<Localization>,
+                     mut open: MessageWriter<OpenFileDialog>| {
+                        open.write(OpenFileDialog {
+                            purpose: MUSIC_PURPOSE,
+                            title: String::from(loc.msg("dialog-select-music")),
+                            extensions: vec!["ogg".into()],
+                            start_dir: dirs::home_dir(),
+                            mode: DialogMode::Open,
+                        });
                     },
-                    TextColor(Color::WHITE),
-                    Pickable::IGNORE,
-                ));
-            });
+                )
+                .with_children(|b| {
+                    b.spawn((
+                        Text::new(String::from(loc.msg("editor-browse"))),
+                        TextFont {
+                            font_size: FontSize::Px(13.0),
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                        Pickable::IGNORE,
+                    ));
+                });
         }
     })
     .id()
@@ -448,7 +449,7 @@ fn spawn_midi_track_row(
             },
             TextColor(colors.label),
         ));
-        line.spawn((
+        let mut import_midi = line.spawn((
             WidgetButton,
             TabIndex(0),
             Node {
@@ -458,32 +459,35 @@ fn spawn_midi_track_row(
                 border: UiRect::all(Val::Px(1.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.24, 0.30, 0.20)),
             BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
             Tooltip(String::from(loc.msg("editor-import-midi-tooltip"))),
-        ))
-        .observe(
-            |_: On<Activate>, loc: Res<Localization>, mut open: MessageWriter<OpenFileDialog>| {
-                open.write(OpenFileDialog {
-                    purpose: MIDI_PURPOSE,
-                    title: String::from(loc.msg("dialog-select-midi")),
-                    extensions: vec!["mid".into(), "midi".into()],
-                    start_dir: dirs::home_dir(),
-                    mode: DialogMode::Open,
-                });
-            },
-        )
-        .with_children(|b| {
-            b.spawn((
-                Text::new(String::from(loc.msg("editor-import-midi"))),
-                TextFont {
-                    font_size: FontSize::Px(13.0),
-                    ..default()
+        ));
+        make_interactive(&mut import_midi, Color::srgb(0.24, 0.30, 0.20));
+        import_midi
+            .observe(
+                |_: On<Activate>,
+                 loc: Res<Localization>,
+                 mut open: MessageWriter<OpenFileDialog>| {
+                    open.write(OpenFileDialog {
+                        purpose: MIDI_PURPOSE,
+                        title: String::from(loc.msg("dialog-select-midi")),
+                        extensions: vec!["mid".into(), "midi".into()],
+                        start_dir: dirs::home_dir(),
+                        mode: DialogMode::Open,
+                    });
                 },
-                TextColor(Color::WHITE),
-                Pickable::IGNORE,
-            ));
-        });
+            )
+            .with_children(|b| {
+                b.spawn((
+                    Text::new(String::from(loc.msg("editor-import-midi"))),
+                    TextFont {
+                        font_size: FontSize::Px(13.0),
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                    Pickable::IGNORE,
+                ));
+            });
         line.spawn((
             MidiTrackComboboxSlot,
             Node {

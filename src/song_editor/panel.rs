@@ -11,6 +11,7 @@ use super::ui::{
     SnapModeText, StatusMsg, TimelineToolButton, UndoRedoButton,
 };
 use super::undo::UndoHistory;
+use crate::dialogs::button::BaseButtonColor;
 use crate::localization::LocalizationExt;
 use crate::theme::LoadedTheme;
 use bevy_fluent::prelude::Localization;
@@ -37,7 +38,7 @@ pub(super) fn mod_button_active(kind: ModButton, dir: Dir, pitch: Pitch, expr: E
 pub(super) fn update_mod_panel(
     state: Res<EditorState>,
     theme: Res<LoadedTheme>,
-    mut buttons: Query<(&ModButton, &mut BackgroundColor)>,
+    mut buttons: Query<(&ModButton, &mut BaseButtonColor)>,
     mut dot: Query<&mut Visibility, With<BendDot>>,
     mut labels: Query<(&ModButtonLabel, &mut Text)>,
 ) {
@@ -88,7 +89,7 @@ pub(super) fn update_meta_fields(
     state: Res<EditorState>,
     theme: Res<LoadedTheme>,
     mut texts: Query<(&MetaFieldText, &mut Text)>,
-    mut boxes: Query<(&MetaFieldBox, &mut BackgroundColor)>,
+    mut boxes: Query<(&MetaFieldBox, &mut BaseButtonColor)>,
 ) {
     let colors = theme.song_editor_colors();
     for (tag, mut text) in &mut texts {
@@ -117,7 +118,7 @@ pub(super) fn update_meta_fields(
 pub(super) fn update_mode_buttons(
     state: Res<EditorState>,
     theme: Res<LoadedTheme>,
-    mut buttons: Query<(&ModeButton, &mut BackgroundColor)>,
+    mut buttons: Query<(&ModeButton, &mut BaseButtonColor)>,
 ) {
     let colors = theme.song_editor_colors();
     for (kind, mut bg) in &mut buttons {
@@ -139,7 +140,7 @@ pub(super) fn update_mode_buttons(
 pub(super) fn update_timeline_tool_buttons(
     state: Res<EditorState>,
     theme: Res<LoadedTheme>,
-    mut buttons: Query<(&TimelineToolButton, &mut BackgroundColor)>,
+    mut buttons: Query<(&TimelineToolButton, &mut BaseButtonColor)>,
 ) {
     let colors = theme.song_editor_colors();
     for (kind, mut bg) in &mut buttons {
@@ -158,7 +159,7 @@ pub(super) fn update_timeline_tool_buttons(
 pub(super) fn update_undo_redo_buttons(
     history: Res<UndoHistory>,
     theme: Res<LoadedTheme>,
-    mut buttons: Query<(&UndoRedoButton, &mut BackgroundColor)>,
+    mut buttons: Query<(&UndoRedoButton, &mut BaseButtonColor)>,
 ) {
     let colors = theme.song_editor_colors();
     for (kind, mut bg) in &mut buttons {
@@ -181,7 +182,7 @@ pub(super) fn update_undo_redo_buttons(
 pub(super) fn update_metronome_toggle_button(
     muted: Res<crate::gameplay::metronome_overlay::MetronomeMuted>,
     theme: Res<LoadedTheme>,
-    mut buttons: Query<&mut BackgroundColor, With<super::ui::MetronomeToggleButton>>,
+    mut buttons: Query<&mut BaseButtonColor, With<super::ui::MetronomeToggleButton>>,
 ) {
     let colors = theme.song_editor_colors();
     let bg = if muted.0 {
@@ -190,7 +191,7 @@ pub(super) fn update_metronome_toggle_button(
         colors.btn_bg
     };
     for mut button_bg in &mut buttons {
-        *button_bg = BackgroundColor(bg);
+        button_bg.0 = bg;
     }
 }
 
@@ -393,10 +394,10 @@ mod tests {
         let colors = LoadedTheme::default().song_editor_colors();
 
         let blow = world
-            .spawn((ModButton::Blow, BackgroundColor(colors.btn_bg)))
+            .spawn((ModButton::Blow, BaseButtonColor(colors.btn_bg)))
             .id();
         let draw = world
-            .spawn((ModButton::Draw, BackgroundColor(colors.btn_bg)))
+            .spawn((ModButton::Draw, BaseButtonColor(colors.btn_bg)))
             .id();
         let bend_dot = world.spawn((BendDot, Visibility::Hidden)).id();
         let vibrato_label = world
@@ -423,12 +424,12 @@ mod tests {
         schedule.run(&mut world);
 
         assert_eq!(
-            world.get::<BackgroundColor>(blow).unwrap().0,
+            world.get::<BaseButtonColor>(blow).unwrap().0,
             colors.btn_active,
             "the selected note's direction button should highlight"
         );
         assert_eq!(
-            world.get::<BackgroundColor>(draw).unwrap().0,
+            world.get::<BaseButtonColor>(draw).unwrap().0,
             colors.btn_bg,
             "the other direction button should not"
         );
@@ -458,13 +459,13 @@ mod tests {
         // button stays off, since `sticky_pitch`/`sticky_expr` default to
         // their own "off" variants.
         let blow = world
-            .spawn((ModButton::Blow, BackgroundColor(colors.btn_bg)))
+            .spawn((ModButton::Blow, BaseButtonColor(colors.btn_bg)))
             .id();
         let draw = world
-            .spawn((ModButton::Draw, BackgroundColor(colors.btn_active)))
+            .spawn((ModButton::Draw, BaseButtonColor(colors.btn_active)))
             .id();
         let bend = world
-            .spawn((ModButton::Bend, BackgroundColor(colors.btn_active)))
+            .spawn((ModButton::Bend, BaseButtonColor(colors.btn_active)))
             .id();
         let bend_dot = world.spawn((BendDot, Visibility::Inherited)).id();
 
@@ -473,11 +474,11 @@ mod tests {
         schedule.run(&mut world);
 
         assert_eq!(
-            world.get::<BackgroundColor>(blow).unwrap().0,
+            world.get::<BaseButtonColor>(blow).unwrap().0,
             colors.btn_active
         );
-        assert_eq!(world.get::<BackgroundColor>(draw).unwrap().0, colors.btn_bg);
-        assert_eq!(world.get::<BackgroundColor>(bend).unwrap().0, colors.btn_bg);
+        assert_eq!(world.get::<BaseButtonColor>(draw).unwrap().0, colors.btn_bg);
+        assert_eq!(world.get::<BaseButtonColor>(bend).unwrap().0, colors.btn_bg);
         assert_eq!(
             *world.get::<Visibility>(bend_dot).unwrap(),
             Visibility::Hidden
@@ -497,13 +498,13 @@ mod tests {
         let colors = LoadedTheme::default().song_editor_colors();
 
         let draw = world
-            .spawn((ModButton::Draw, BackgroundColor(colors.btn_bg)))
+            .spawn((ModButton::Draw, BaseButtonColor(colors.btn_bg)))
             .id();
         let bend = world
-            .spawn((ModButton::Bend, BackgroundColor(colors.btn_bg)))
+            .spawn((ModButton::Bend, BaseButtonColor(colors.btn_bg)))
             .id();
         let wah = world
-            .spawn((ModButton::Wah, BackgroundColor(colors.btn_bg)))
+            .spawn((ModButton::Wah, BaseButtonColor(colors.btn_bg)))
             .id();
         let bend_dot = world.spawn((BendDot, Visibility::Hidden)).id();
         let wah_label = world
@@ -521,15 +522,15 @@ mod tests {
         schedule.run(&mut world);
 
         assert_eq!(
-            world.get::<BackgroundColor>(draw).unwrap().0,
+            world.get::<BaseButtonColor>(draw).unwrap().0,
             colors.btn_active
         );
         assert_eq!(
-            world.get::<BackgroundColor>(bend).unwrap().0,
+            world.get::<BaseButtonColor>(bend).unwrap().0,
             colors.btn_active
         );
         assert_eq!(
-            world.get::<BackgroundColor>(wah).unwrap().0,
+            world.get::<BaseButtonColor>(wah).unwrap().0,
             colors.btn_active
         );
         assert_eq!(
@@ -559,10 +560,10 @@ mod tests {
             .spawn((MetaFieldText(Field::Tempo), Text::new("")))
             .id();
         let tempo_box = world
-            .spawn((MetaFieldBox(Field::Tempo), BackgroundColor(colors.field_bg)))
+            .spawn((MetaFieldBox(Field::Tempo), BaseButtonColor(colors.field_bg)))
             .id();
         let key_box = world
-            .spawn((MetaFieldBox(Field::Key), BackgroundColor(colors.field_bg)))
+            .spawn((MetaFieldBox(Field::Key), BaseButtonColor(colors.field_bg)))
             .id();
 
         let mut schedule = Schedule::default();
@@ -579,11 +580,11 @@ mod tests {
             "the focused field gets a trailing cursor"
         );
         assert_eq!(
-            world.get::<BackgroundColor>(tempo_box).unwrap().0,
+            world.get::<BaseButtonColor>(tempo_box).unwrap().0,
             colors.field_bg_focus
         );
         assert_eq!(
-            world.get::<BackgroundColor>(key_box).unwrap().0,
+            world.get::<BaseButtonColor>(key_box).unwrap().0,
             colors.field_bg,
             "Key never highlights as focused, even if it somehow were"
         );
@@ -603,34 +604,34 @@ mod tests {
         let colors = LoadedTheme::default().song_editor_colors();
 
         let edit = world
-            .spawn((ModeButton::Edit, BackgroundColor(colors.btn_active)))
+            .spawn((ModeButton::Edit, BaseButtonColor(colors.btn_active)))
             .id();
         let record = world
-            .spawn((ModeButton::Record, BackgroundColor(colors.btn_active)))
+            .spawn((ModeButton::Record, BaseButtonColor(colors.btn_active)))
             .id();
         let play = world
-            .spawn((ModeButton::Play, BackgroundColor(colors.btn_bg)))
+            .spawn((ModeButton::Play, BaseButtonColor(colors.btn_bg)))
             .id();
         // Play mode is always locked, even without the user's own toggle.
         let lock = world
-            .spawn((ModeButton::Lock, BackgroundColor(colors.btn_bg)))
+            .spawn((ModeButton::Lock, BaseButtonColor(colors.btn_bg)))
             .id();
 
         let mut schedule = Schedule::default();
         schedule.add_systems(update_mode_buttons);
         schedule.run(&mut world);
 
-        assert_eq!(world.get::<BackgroundColor>(edit).unwrap().0, colors.btn_bg);
+        assert_eq!(world.get::<BaseButtonColor>(edit).unwrap().0, colors.btn_bg);
         assert_eq!(
-            world.get::<BackgroundColor>(record).unwrap().0,
+            world.get::<BaseButtonColor>(record).unwrap().0,
             colors.btn_bg
         );
         assert_eq!(
-            world.get::<BackgroundColor>(play).unwrap().0,
+            world.get::<BaseButtonColor>(play).unwrap().0,
             colors.btn_active
         );
         assert_eq!(
-            world.get::<BackgroundColor>(lock).unwrap().0,
+            world.get::<BaseButtonColor>(lock).unwrap().0,
             colors.btn_active,
             "Play mode forces Lock active regardless of user_locked"
         );
