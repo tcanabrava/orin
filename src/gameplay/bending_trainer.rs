@@ -23,12 +23,13 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
-use crate::audio_system::midi::{next_key, prev_key};
+use crate::audio_system::midi::NOTE_NAMES;
 use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use crate::audio_system::wav::encode_wav;
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
 use crate::dialogs::combobox;
+use crate::dialogs::combobox::ComboboxSelect;
 use crate::localization::LocalizationExt;
 use crate::profile::{DrillRecord, PlayerProfile};
 use crate::settings::AudioSettings;
@@ -57,13 +58,25 @@ impl Default for TrainerKey {
     }
 }
 
+/// The 12 chromatic keys, as combobox option labels — same order/spelling
+/// [`next_key`](crate::audio_system::midi::next_key)/[`prev_key`](crate::audio_system::midi::prev_key)
+/// used to cycle through.
+fn key_labels() -> Vec<String> {
+    NOTE_NAMES.iter().map(|s| s.to_string()).collect()
+}
+
+/// A combobox `on_select` that writes straight to [`TrainerKey`] — every
+/// system that reacts to a key change (`rebuild_overlay`,
+/// `update_pitch_range`) already keys off `TrainerKey::is_changed()`, so
+/// picking a new key from the dropdown behaves exactly like the old
+/// prev/next stepper did.
+fn on_key_selected(ev: On<ComboboxSelect>, mut key: ResMut<TrainerKey>) {
+    key.0 = ev.value.clone();
+}
+
 /// Wraps the harmonica diagram so it can be despawned + rebuilt on key change.
 #[derive(Component)]
 pub struct OverlayHost;
-
-/// The "Key: X" readout.
-#[derive(Component)]
-pub struct KeyLabel;
 
 // ── Ear-training target ─────────────────────────────────────────────────────────
 
@@ -612,43 +625,17 @@ pub fn setup(
         });
         let left_id = left_ec.id();
         left_ec.with_children(|left| {
-            // ── Key control: ◂  Key: C  ▸ ───────────────────────────────────
-            left.spawn(Node {
-                flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Center,
-                column_gap: Val::Px(10.0),
-                ..default()
-            })
-            .with_children(|row| {
-                row.spawn_empty().apply_scene(button::small(
-                    "\u{25C2}",
-                    |_: On<Activate>, mut key: ResMut<TrainerKey>| {
-                        key.0 = prev_key(&key.0);
-                    },
-                ));
-                row.spawn((
-                    Node {
-                        width: Val::Px(110.0),
-                        justify_content: JustifyContent::Center,
-                        ..default()
-                    },
-                    Text::new(String::from(
-                        loc.msg_args("bending-key-label", &[("key", key.0.clone())]),
-                    )),
-                    TextFont {
-                        font_size: FontSize::Px(20.0),
-                        ..default()
-                    },
-                    TextColor(Color::srgb(0.95, 0.80, 0.35)),
-                    KeyLabel,
-                ));
-                row.spawn_empty().apply_scene(button::small(
-                    "\u{25B8}",
-                    |_: On<Activate>, mut key: ResMut<TrainerKey>| {
-                        key.0 = next_key(&key.0);
-                    },
-                ));
-            });
+            // ── Key: combobox, same widget shape as the detect-algorithm
+            // one just below it ─────────────────────────────────────────────
+            combobox::spawn_combobox(
+                left.commands_mut(),
+                left_id,
+                root_id,
+                &loc.msg("bending-key-label"),
+                &key_labels(),
+                &key.0,
+                on_key_selected,
+            );
 
             // ── Detect algorithm: combobox (same global AudioSettings::
             // pitch_algorithm the Options page drives), tooltip explains it ──
@@ -903,22 +890,6 @@ pub fn update_pitch_range(key: Res<TrainerKey>, mut pitch_range: ResMut<PitchRan
         return;
     }
     *pitch_range = pitch_range_for_key(&key.0);
-}
-
-/// Keep the "Key: X" readout in step with the chosen key.
-pub fn update_key_label(
-    key: Res<TrainerKey>,
-    loc: Res<Localization>,
-    mut labels: Query<&mut Text, With<KeyLabel>>,
-) {
-    if !key.is_changed() {
-        return;
-    }
-    for mut text in &mut labels {
-        *text = Text::new(String::from(
-            loc.msg_args("bending-key-label", &[("key", key.0.clone())]),
-        ));
-    }
 }
 
 /// Esc returns to the menu — specifically the Play page, where "Bending

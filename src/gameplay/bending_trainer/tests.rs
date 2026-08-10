@@ -2,9 +2,6 @@
 
 use super::*;
 
-// `next_key`/`prev_key` themselves are tested once, centrally, in
-// `audio_system::midi` — see `next_key_cycles_forward_and_wraps` et al.
-
 // ── row_to_technique (diagram click → drill target) ──────────────────────
 
 #[test]
@@ -333,4 +330,16 @@ fn pick_next_target_avoids_immediate_repeat_when_alternatives_exist() {
             (avoid.hole, avoid.technique)
         );
     }
+}
+
+// ── key_labels (Key combobox options) ─────────────────────────────────────
+
+#[test]
+fn key_labels_matches_the_12_chromatic_note_names() {
+    let labels = key_labels();
+    assert_eq!(labels.len(), 12);
+    assert_eq!(
+        labels,
+        NOTE_NAMES.iter().map(|s| s.to_string()).collect::<Vec<_>>()
+    );
 }
