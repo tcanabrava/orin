@@ -278,6 +278,16 @@ pub enum Progression {
 }
 
 impl Progression {
+    /// Every variant, in the order the "Generate Jam" combobox lists them.
+    pub fn all() -> &'static [Progression] {
+        &[
+            Progression::Standard,
+            Progression::QuickChange,
+            Progression::Minor,
+            Progression::JazzBlues,
+        ]
+    }
+
     /// Display label for the picker on the "Generate Jam" config page.
     pub fn label(self) -> &'static str {
         match self {
@@ -288,26 +298,11 @@ impl Progression {
         }
     }
 
-    /// Cycles to the next variant, wrapping — same "◂ ▸ over a small enum"
-    /// pattern as `audio_system::midi::next_key`, just with 4 states instead
-    /// of 12.
-    pub fn next(self) -> Self {
-        match self {
-            Progression::Standard => Progression::QuickChange,
-            Progression::QuickChange => Progression::Minor,
-            Progression::Minor => Progression::JazzBlues,
-            Progression::JazzBlues => Progression::Standard,
-        }
-    }
-
-    /// Cycles to the previous variant, wrapping.
-    pub fn prev(self) -> Self {
-        match self {
-            Progression::Standard => Progression::JazzBlues,
-            Progression::QuickChange => Progression::Standard,
-            Progression::Minor => Progression::QuickChange,
-            Progression::JazzBlues => Progression::Minor,
-        }
+    /// Inverse of [`label`](Self::label) — same `all().find(...)` pattern as
+    /// `audio_system::pitch_detect::PitchAlgorithm::from_label`, for the
+    /// combobox's `on_select` to resolve a picked label back to a variant.
+    pub fn from_label(label: &str) -> Option<Self> {
+        Self::all().iter().copied().find(|p| p.label() == label)
     }
 }
 
@@ -331,6 +326,11 @@ pub enum Position {
 }
 
 impl Position {
+    /// Every variant, in the order the "Generate Jam" combobox lists them.
+    pub fn all() -> &'static [Position] {
+        &[Position::First, Position::Second, Position::Third]
+    }
+
     /// Display label for the picker and [`harp_banner`].
     pub fn label(self) -> &'static str {
         match self {
@@ -340,23 +340,10 @@ impl Position {
         }
     }
 
-    /// Cycles to the next variant, wrapping — same pattern as
-    /// [`Progression::next`].
-    pub fn next(self) -> Self {
-        match self {
-            Position::First => Position::Second,
-            Position::Second => Position::Third,
-            Position::Third => Position::First,
-        }
-    }
-
-    /// Cycles to the previous variant, wrapping.
-    pub fn prev(self) -> Self {
-        match self {
-            Position::First => Position::Third,
-            Position::Second => Position::First,
-            Position::Third => Position::Second,
-        }
+    /// Inverse of [`label`](Self::label) — same pattern as
+    /// [`Progression::from_label`].
+    pub fn from_label(label: &str) -> Option<Self> {
+        Self::all().iter().copied().find(|p| p.label() == label)
     }
 
     /// Semitones the harp key sits below the jam key for this position.

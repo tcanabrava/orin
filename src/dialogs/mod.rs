@@ -8,5 +8,6 @@ pub mod font_fallback;
 pub mod keyboard_nav;
 pub mod scroll_area;
 pub mod tab_bar;
+pub mod text_input;
 pub mod tooltip;
 pub mod ui_scale;

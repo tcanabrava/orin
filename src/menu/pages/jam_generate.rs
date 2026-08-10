@@ -6,13 +6,13 @@
 //! alongside the "Jam Session" button's real-song flow.
 
 use bevy::audio::AudioSource;
-use bevy::ecs::system::IntoObserverSystem;
 use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::audio_system::midi::{next_key, prev_key};
-use crate::dialogs::button;
+use crate::audio_system::midi::NOTE_NAMES;
+use crate::dialogs::combobox;
+use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
 use crate::jam::backing::{GeneratedJamSession, build_generated_manifest};
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
@@ -25,7 +25,6 @@ use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
 const MIN_BPM: f32 = 60.0;
 const MAX_BPM: f32 = 160.0;
-const BPM_STEP: f32 = 5.0;
 
 /// The key/tempo currently selected on this page. Persists across visits
 /// (like `bending_trainer::TrainerKey`/`TrainerTarget`), so re-opening the
@@ -49,52 +48,22 @@ impl Default for JamGenerateConfig {
     }
 }
 
-#[derive(Component)]
-pub(crate) struct KeyLabel;
-#[derive(Component)]
-pub(crate) struct BpmLabel;
-#[derive(Component)]
-pub(crate) struct ProgressionLabel;
-#[derive(Component)]
-pub(crate) struct PositionLabel;
+fn key_labels() -> Vec<String> {
+    NOTE_NAMES.iter().map(|s| s.to_string()).collect()
+}
 
-/// One `◂ value ▸` stepper row — the shared shape the key/tempo/
-/// progression/position rows below all use, differing only in which
-/// marker component tags the label (for `update_jam_generate_labels` to
-/// find it later) and what each arrow does to `JamGenerateConfig`.
-fn spawn_stepper_row<M1: 'static, M2: 'static>(
-    root: &mut ChildSpawnerCommands,
-    text: String,
-    marker: impl Component,
-    on_prev: impl IntoObserverSystem<Activate, (), M1> + Clone + Sync + 'static,
-    on_next: impl IntoObserverSystem<Activate, (), M2> + Clone + Sync + 'static,
-) {
-    root.spawn(Node {
-        flex_direction: FlexDirection::Row,
-        align_items: AlignItems::Center,
-        column_gap: Val::Px(10.0),
-        ..default()
-    })
-    .with_children(|row| {
-        row.spawn_empty()
-            .apply_scene(button::small("\u{25C2}", on_prev));
-        row.spawn((
-            Node {
-                width: Val::Px(150.0),
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            Text::new(text),
-            TextFont {
-                font_size: FontSize::Px(20.0),
-                ..default()
-            },
-            TextColor(Color::srgb(0.95, 0.80, 0.35)),
-            marker,
-        ));
-        row.spawn_empty()
-            .apply_scene(button::small("\u{25B8}", on_next));
-    });
+fn progression_labels() -> Vec<String> {
+    Progression::all()
+        .iter()
+        .map(|p| p.label().to_string())
+        .collect()
+}
+
+fn position_labels() -> Vec<String> {
+    Position::all()
+        .iter()
+        .map(|p| p.label().to_string())
+        .collect()
 }
 
 pub(crate) fn setup_jam_generate_menu(
@@ -103,7 +72,7 @@ pub(crate) fn setup_jam_generate_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header, _page_root) = spawn_menu_root(
+    let (root, header, page_root) = spawn_menu_root(
         &mut commands,
         &loc.msg("jam-generate-title"),
         None,
@@ -111,64 +80,79 @@ pub(crate) fn setup_jam_generate_menu(
         "JamGenerate",
     );
 
-    commands.entity(root).with_children(|root| {
-        spawn_stepper_row(
-            root,
-            String::from(loc.msg_args("jam-generate-key", &[("key", config.key.clone())])),
-            KeyLabel,
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.key = prev_key(&cfg.key);
-            },
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.key = next_key(&cfg.key);
-            },
-        );
+    combobox::spawn_combobox(
+        &mut commands,
+        root,
+        page_root,
+        &loc.msg("jam-generate-key"),
+        &key_labels(),
+        &config.key,
+        |ev: On<combobox::ComboboxSelect>, mut cfg: ResMut<JamGenerateConfig>| {
+            cfg.key = ev.value.clone();
+        },
+    );
 
-        spawn_stepper_row(
-            root,
-            String::from(loc.msg_args(
-                "jam-generate-tempo",
-                &[("bpm", format!("{:.0}", config.bpm))],
-            )),
-            BpmLabel,
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.bpm = (cfg.bpm - BPM_STEP).max(MIN_BPM);
-            },
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.bpm = (cfg.bpm + BPM_STEP).min(MAX_BPM);
-            },
-        );
+    combobox::spawn_combobox(
+        &mut commands,
+        root,
+        page_root,
+        &loc.msg("jam-generate-progression"),
+        &progression_labels(),
+        config.progression.label(),
+        |ev: On<combobox::ComboboxSelect>, mut cfg: ResMut<JamGenerateConfig>| {
+            if let Some(p) = Progression::from_label(&ev.value) {
+                cfg.progression = p;
+            }
+        },
+    );
 
-        spawn_stepper_row(
-            root,
-            String::from(loc.msg_args(
-                "jam-generate-progression",
-                &[("progression", config.progression.label().to_string())],
-            )),
-            ProgressionLabel,
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.progression = cfg.progression.prev();
-            },
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.progression = cfg.progression.next();
-            },
-        );
+    combobox::spawn_combobox(
+        &mut commands,
+        root,
+        page_root,
+        &loc.msg("jam-generate-position"),
+        &position_labels(),
+        config.position.label(),
+        |ev: On<combobox::ComboboxSelect>, mut cfg: ResMut<JamGenerateConfig>| {
+            if let Some(p) = Position::from_label(&ev.value) {
+                cfg.position = p;
+            }
+        },
+    );
 
-        spawn_stepper_row(
-            root,
-            String::from(loc.msg_args(
-                "jam-generate-position",
-                &[("position", config.position.label().to_string())],
-            )),
-            PositionLabel,
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.position = cfg.position.prev();
+    // ── Tempo: a numeric text box rather than a combobox — a free-form BPM
+    // isn't a short pick-one-of-N choice, it's a number, so it gets its own
+    // widget (`dialogs::text_input::spawn_numeric_input`) instead of forcing
+    // it into the same "pick from a list" shape as Key/Progression/Position.
+    let tempo_row = commands
+        .spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(10.0),
+            ..default()
+        })
+        .id();
+    commands.entity(root).add_child(tempo_row);
+    commands.entity(tempo_row).with_children(|row| {
+        row.spawn((
+            Text::new(String::from(loc.msg("jam-generate-tempo"))),
+            TextFont {
+                font_size: FontSize::Px(20.0),
+                ..default()
             },
-            |_: On<Activate>, mut cfg: ResMut<JamGenerateConfig>| {
-                cfg.position = cfg.position.next();
-            },
-        );
+            TextColor(Color::WHITE),
+        ));
     });
+    spawn_numeric_input(
+        &mut commands,
+        tempo_row,
+        config.bpm,
+        MIN_BPM,
+        MAX_BPM,
+        |ev: On<NumericInputCommitted>, mut cfg: ResMut<JamGenerateConfig>| {
+            cfg.bpm = ev.value;
+        },
+    );
 
     spawn_button(
         &mut commands,
@@ -216,60 +200,3 @@ pub(crate) fn setup_jam_generate_menu(
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::JamSessionMenu),
     );
 }
-
-/// Keeps the "Key: ..." / "Tempo: ..." readouts in step with
-/// [`JamGenerateConfig`], same pattern as `bending_trainer::update_key_label`.
-pub(crate) fn update_jam_generate_labels(
-    config: Res<JamGenerateConfig>,
-    loc: Res<Localization>,
-    mut keys: Query<&mut Text, (With<KeyLabel>, Without<BpmLabel>, Without<ProgressionLabel>)>,
-    mut bpms: Query<&mut Text, (With<BpmLabel>, Without<KeyLabel>, Without<ProgressionLabel>)>,
-    mut progressions: Query<
-        &mut Text,
-        (
-            With<ProgressionLabel>,
-            Without<KeyLabel>,
-            Without<BpmLabel>,
-            Without<PositionLabel>,
-        ),
-    >,
-    mut positions: Query<
-        &mut Text,
-        (
-            With<PositionLabel>,
-            Without<KeyLabel>,
-            Without<BpmLabel>,
-            Without<ProgressionLabel>,
-        ),
-    >,
-) {
-    if !config.is_changed() {
-        return;
-    }
-    for mut text in &mut keys {
-        *text = Text::new(String::from(
-            loc.msg_args("jam-generate-key", &[("key", config.key.clone())]),
-        ));
-    }
-    for mut text in &mut bpms {
-        *text = Text::new(String::from(loc.msg_args(
-            "jam-generate-tempo",
-            &[("bpm", format!("{:.0}", config.bpm))],
-        )));
-    }
-    for mut text in &mut progressions {
-        *text = Text::new(String::from(loc.msg_args(
-            "jam-generate-progression",
-            &[("progression", config.progression.label().to_string())],
-        )));
-    }
-    for mut text in &mut positions {
-        *text = Text::new(String::from(loc.msg_args(
-            "jam-generate-position",
-            &[("position", config.position.label().to_string())],
-        )));
-    }
-}
-
-// `next_key`/`prev_key` themselves are tested once, centrally, in
-// `audio_system::midi` — see `next_key_cycles_forward_and_wraps` et al.

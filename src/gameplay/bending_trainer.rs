@@ -11,10 +11,13 @@
 //! A shared header (title top-left, Back button top-right — same shape as
 //! every menu page, see `menu::scene::header_scene`/`spawn_back_button`)
 //! sits above a two-column body, the same split `jam::session` uses: left
-//! has everything but the harmonica itself (key control, detect-algorithm
-//! picker, ear-training target/Listen, tuner readout, drill toggle, tempo
-//! control, hint line); right is entirely the harmonica — the bend diagram
-//! plus its technique hint/drill explanation text.
+//! has everything but the harmonica itself, top-aligned and grouped into
+//! four labelled sections — Setup (key, detect-algorithm), Practice Target
+//! (readout/Listen/tuner, one card), Drill (toggle + its hover explanation),
+//! Tempo (metronome + BPM steppers) — instead of one flat stack, and each
+//! group's own doc comment at its `setup` call site explains why (see
+//! [`left_section`]); right is entirely the harmonica — the bend diagram
+//! plus its technique hint.
 
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::picking::events::{Click, Out, Over, Pointer};
@@ -28,8 +31,10 @@ use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange
 use crate::audio_system::wav::encode_wav;
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
+use crate::dialogs::button::BaseButtonColor;
 use crate::dialogs::combobox;
 use crate::dialogs::combobox::ComboboxSelect;
+use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
 use crate::profile::{DrillRecord, PlayerProfile};
 use crate::settings::AudioSettings;
@@ -58,9 +63,8 @@ impl Default for TrainerKey {
     }
 }
 
-/// The 12 chromatic keys, as combobox option labels — same order/spelling
-/// [`next_key`](crate::audio_system::midi::next_key)/[`prev_key`](crate::audio_system::midi::prev_key)
-/// used to cycle through.
+/// The 12 chromatic keys, as combobox option labels — `NOTE_NAMES` itself,
+/// stringified.
 fn key_labels() -> Vec<String> {
     NOTE_NAMES.iter().map(|s| s.to_string()).collect()
 }
@@ -251,6 +255,13 @@ pub struct TunerReadout;
 /// The drill's "on/off" readout, plus a running streak/weak-spot summary.
 #[derive(Component)]
 pub struct DrillLabel;
+
+/// The Drill toggle button itself — tagged so [`update_drill_button_visual`]
+/// can highlight it while the drill is running, since the adjacent
+/// [`DrillLabel`] text alone is easy to miss (a toggle should look pressed,
+/// not just say so nearby).
+#[derive(Component)]
+pub struct DrillToggleButton;
 
 /// The Drill button's hover explanation; empty while not hovering it.
 #[derive(Component)]
@@ -529,6 +540,21 @@ fn pitch_range_for_key(key: &str) -> PitchRange {
         .unwrap_or_default()
 }
 
+/// A small muted "eyebrow" label marking the start of a left-panel control
+/// group (Setup / Practice Target / Drill / Tempo) — purely a visual
+/// grouping cue, not an interactive widget, so a first glance at the panel
+/// shows four short groups instead of one flat stack of six unrelated rows.
+fn left_section(parent: &mut ChildSpawnerCommands, text: &str) {
+    parent.spawn((
+        Text::new(text.to_string()),
+        TextFont {
+            font_size: FontSize::Px(13.0),
+            ..default()
+        },
+        TextColor(Color::srgb(0.45, 0.45, 0.55)),
+    ));
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 pub fn setup(
@@ -612,21 +638,29 @@ pub fn setup(
     // The combobox's visible trigger, meanwhile, is parented to the left
     // column itself so it sits in that column's normal vertical flow.
     commands.entity(body).with_children(|root| {
-        // ── Left half: everything but the harmonica itself ───────────────
+        // ── Left half: everything but the harmonica itself, grouped into
+        // four labelled sections (Setup / Practice Target / Drill / Tempo)
+        // instead of one flat stack — see this module's own doc comment.
+        // Top-aligned (not centered): a centered column recenters its
+        // *whole* stack every time any one row's content changes height
+        // (the drill explanation appearing/disappearing, a longer/shorter
+        // tuner reading), which visibly shifts every other control:
+        // top-aligned means a height change only ever pushes content below
+        // it, never the rows above.
         let mut left_ec = root.spawn(Node {
             width: Val::Percent(50.0),
             height: Val::Percent(100.0),
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            row_gap: Val::Px(18.0),
+            justify_content: JustifyContent::FlexStart,
+            row_gap: Val::Px(22.0),
             padding: UiRect::all(Val::Px(16.0)),
             ..default()
         });
         let left_id = left_ec.id();
         left_ec.with_children(|left| {
-            // ── Key: combobox, same widget shape as the detect-algorithm
-            // one just below it ─────────────────────────────────────────────
+            // ── Setup: key + detect algorithm ───────────────────────────────
+            left_section(left, &loc.msg("bending-section-setup"));
             combobox::spawn_combobox(
                 left.commands_mut(),
                 left_id,
@@ -636,9 +670,6 @@ pub fn setup(
                 &key.0,
                 on_key_selected,
             );
-
-            // ── Detect algorithm: combobox (same global AudioSettings::
-            // pitch_algorithm the Options page drives), tooltip explains it ──
             let algo_combo = combobox::spawn_combobox(
                 left.commands_mut(),
                 left_id,
@@ -650,65 +681,86 @@ pub fn setup(
             );
             attach_algo_tooltip(left.commands_mut(), algo_combo, audio.pitch_algorithm);
 
-            // ── Ear-training target: readout (set by clicking the diagram
-            // below, not stepper buttons — see `on_diagram_cell_clicked`) +
-            // Listen ────────────────────────────────────────────────────────
-            left.spawn(Node {
-                flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Center,
-                column_gap: Val::Px(10.0),
-                ..default()
-            })
-            .with_children(|row| {
-                row.spawn((
-                    Node {
-                        width: Val::Px(220.0),
-                        justify_content: JustifyContent::Center,
-                        ..default()
-                    },
-                    Text::new(target_label_text(target.hole, target.technique)),
+            // ── Practice Target: readout, Listen, and the live tuner,
+            // grouped into one card (same background the technique-hint
+            // card in the right column uses) so the three read as a single
+            // "what am I practicing right now" unit instead of floating as
+            // bare, visually disconnected rows ──────────────────────────────
+            left_section(left, &loc.msg("bending-section-target"));
+            left.spawn((
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    width: Val::Px(320.0),
+                    row_gap: Val::Px(8.0),
+                    padding: UiRect::all(Val::Px(12.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.10, 0.10, 0.14, 0.85)),
+            ))
+            .with_children(|card| {
+                card.spawn(Node {
+                    flex_direction: FlexDirection::Row,
+                    align_items: AlignItems::Center,
+                    column_gap: Val::Px(10.0),
+                    ..default()
+                })
+                .with_children(|row| {
+                    row.spawn((
+                        Node {
+                            flex_grow: 1.0,
+                            ..default()
+                        },
+                        Text::new(target_label_text(target.hole, target.technique)),
+                        TextFont {
+                            font_size: FontSize::Px(16.0),
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.80, 0.90, 0.95)),
+                        TargetLabel,
+                    ));
+                    row.spawn_empty().apply_scene(button::small(
+                        &loc.msg("bending-listen-button"),
+                        |_: On<Activate>,
+                         key: Res<TrainerKey>,
+                         target: Res<TrainerTarget>,
+                         mut sources: ResMut<Assets<AudioSource>>,
+                         mut commands: Commands| {
+                            let harp = richter_harp(&key.0);
+                            let Some(note) = target_note(&harp, *target) else {
+                                return;
+                            };
+                            let Some(freq) = note_freq_hz(&note) else {
+                                return;
+                            };
+                            let wav = synth_reference_tone(freq);
+                            let handle = sources.add(AudioSource { bytes: wav.into() });
+                            commands.spawn((
+                                AudioPlayer::<AudioSource>(handle),
+                                PlaybackSettings::DESPAWN.with_volume(Volume::Linear(0.6)),
+                            ));
+                        },
+                    ));
+                });
+                card.spawn((
+                    Text::new(""),
                     TextFont {
-                        font_size: FontSize::Px(16.0),
+                        font_size: FontSize::Px(15.0),
                         ..default()
                     },
-                    TextColor(Color::srgb(0.80, 0.90, 0.95)),
-                    TargetLabel,
-                ));
-                row.spawn_empty().apply_scene(button::small(
-                    &loc.msg("bending-listen-button"),
-                    |_: On<Activate>,
-                     key: Res<TrainerKey>,
-                     target: Res<TrainerTarget>,
-                     mut sources: ResMut<Assets<AudioSource>>,
-                     mut commands: Commands| {
-                        let harp = richter_harp(&key.0);
-                        let Some(note) = target_note(&harp, *target) else {
-                            return;
-                        };
-                        let Some(freq) = note_freq_hz(&note) else {
-                            return;
-                        };
-                        let wav = synth_reference_tone(freq);
-                        let handle = sources.add(AudioSource { bytes: wav.into() });
-                        commands.spawn((
-                            AudioPlayer::<AudioSource>(handle),
-                            PlaybackSettings::DESPAWN.with_volume(Volume::Linear(0.6)),
-                        ));
-                    },
+                    TextColor(Color::srgb(0.55, 0.85, 0.60)),
+                    TunerReadout,
                 ));
             });
 
-            left.spawn((
-                Text::new(""),
-                TextFont {
-                    font_size: FontSize::Px(15.0),
-                    ..default()
-                },
-                TextColor(Color::srgb(0.55, 0.85, 0.60)),
-                TunerReadout,
-            ));
-
-            // ── Adaptive drill toggle ────────────────────────────────────────
+            // ── Drill: adaptive ear-training loop. The toggle button is
+            // tagged `DrillToggleButton` so `update_drill_button_visual`
+            // can highlight it while running — the on/off state used to be
+            // carried by the small `DrillLabel` text alone, easy to miss at
+            // a glance. Its hover explanation now sits directly below the
+            // button itself, not across in the right column (where hovering
+            // a left-column control used to change text nowhere near the
+            // pointer) ───────────────────────────────────────────────────────
+            left_section(left, &loc.msg("bending-section-drill"));
             left.spawn(Node {
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::Center,
@@ -736,6 +788,7 @@ pub fn setup(
                             }
                         },
                     ))
+                    .insert(DrillToggleButton)
                     .observe(show_drill_explanation)
                     .observe(hide_drill_explanation);
                 row.spawn((
@@ -748,8 +801,22 @@ pub fn setup(
                     DrillLabel,
                 ));
             });
+            left.spawn((
+                Node {
+                    width: Val::Px(320.0),
+                    ..default()
+                },
+                Text::new(""),
+                TextFont {
+                    font_size: FontSize::Px(14.0),
+                    ..default()
+                },
+                TextColor(Color::srgb(0.60, 0.60, 0.70)),
+                DrillExplanation,
+            ));
 
             // ── Tempo control: −  ♩ = NN (in the metronome)  + ──────────────
+            left_section(left, &loc.msg("bending-section-tempo"));
             left.spawn(Node {
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::Center,
@@ -757,12 +824,14 @@ pub fn setup(
                 ..default()
             })
             .with_children(|row| {
-                row.spawn_empty().apply_scene(button::small(
-                    "\u{2212}",
-                    |_: On<Activate>, mut tempo: ResMut<MetronomeTempo>| {
-                        tempo.bpm = (tempo.bpm - BPM_STEP).max(MIN_BPM);
-                    },
-                ));
+                row.spawn_empty()
+                    .apply_scene(button::small(
+                        "\u{2212}",
+                        |_: On<Activate>, mut tempo: ResMut<MetronomeTempo>| {
+                            tempo.bpm = (tempo.bpm - BPM_STEP).max(MIN_BPM);
+                        },
+                    ))
+                    .insert(Tooltip(String::from(loc.msg("bending-tempo-decrease"))));
                 row.spawn(Node {
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
@@ -772,12 +841,14 @@ pub fn setup(
                 .with_children(|metro| {
                     spawn_metronome(metro, &loc, tempo.beats_per_bar, tempo.bpm);
                 });
-                row.spawn_empty().apply_scene(button::small(
-                    "+",
-                    |_: On<Activate>, mut tempo: ResMut<MetronomeTempo>| {
-                        tempo.bpm = (tempo.bpm + BPM_STEP).min(MAX_BPM);
-                    },
-                ));
+                row.spawn_empty()
+                    .apply_scene(button::small(
+                        "+",
+                        |_: On<Activate>, mut tempo: ResMut<MetronomeTempo>| {
+                            tempo.bpm = (tempo.bpm + BPM_STEP).min(MAX_BPM);
+                        },
+                    ))
+                    .insert(Tooltip(String::from(loc.msg("bending-tempo-increase"))));
             });
 
             left.spawn((
@@ -817,39 +888,23 @@ pub fn setup(
                 });
 
             right
-                .spawn(Node {
-                    flex_direction: FlexDirection::Column,
-                    width: Val::Px(280.0),
-                    row_gap: Val::Px(8.0),
-                    ..default()
-                })
-                .with_children(|col| {
-                    col.spawn((
-                        Node {
-                            padding: UiRect::all(Val::Px(8.0)),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgba(0.10, 0.10, 0.14, 0.85)),
-                    ))
-                    .with_children(|p| {
-                        p.spawn((
-                            Text::new(technique_hint(target.technique, target.hole)),
-                            TextFont {
-                                font_size: FontSize::Px(15.0),
-                                ..default()
-                            },
-                            TextColor(Color::srgb(0.75, 0.75, 0.85)),
-                            HintLabel,
-                        ));
-                    });
-                    col.spawn((
-                        Text::new(""),
+                .spawn((
+                    Node {
+                        width: Val::Px(280.0),
+                        padding: UiRect::all(Val::Px(8.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.10, 0.10, 0.14, 0.85)),
+                ))
+                .with_children(|p| {
+                    p.spawn((
+                        Text::new(technique_hint(target.technique, target.hole)),
                         TextFont {
                             font_size: FontSize::Px(15.0),
                             ..default()
                         },
-                        TextColor(Color::srgb(0.60, 0.60, 0.70)),
-                        DrillExplanation,
+                        TextColor(Color::srgb(0.75, 0.75, 0.85)),
+                        HintLabel,
                     ));
                 });
         });
@@ -1100,6 +1155,34 @@ pub fn update_drill_label(
         } else {
             loc.msg("bending-drill-off")
         }));
+    }
+}
+
+/// A plain dark amber, distinct from every other button's resting
+/// [`button::color_default`], for the Drill button while the drill is
+/// running.
+const DRILL_ACTIVE_COLOR: Color = Color::srgb(0.45, 0.35, 0.10);
+
+/// Highlights the Drill toggle button itself while the drill is running,
+/// alongside [`update_drill_label`]'s text — a toggle should visibly look
+/// pressed, not only say so in small text next to it. Writes
+/// [`BaseButtonColor`], not `BackgroundColor` directly: `dialogs::button`'s
+/// own hover/press layer owns `BackgroundColor` and would fight a system
+/// that wrote it here (see `BaseButtonColor`'s doc comment).
+pub fn update_drill_button_visual(
+    drill: Res<DrillState>,
+    mut buttons: Query<&mut BaseButtonColor, With<DrillToggleButton>>,
+) {
+    if !drill.is_changed() {
+        return;
+    }
+    let color = if drill.enabled {
+        DRILL_ACTIVE_COLOR
+    } else {
+        button::color_default()
+    };
+    for mut base in &mut buttons {
+        base.0 = color;
     }
 }
 

@@ -93,11 +93,6 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(OnExit(MenuPage::JamGenerate), scene::cleanup_menu)
             .add_systems(
-                Update,
-                pages::jam_generate::update_jam_generate_labels
-                    .run_if(in_state(MenuPage::JamGenerate)),
-            )
-            .add_systems(
                 OnEnter(MenuPage::HelpAbout),
                 pages::help_about::setup_help_about_menu,
             )

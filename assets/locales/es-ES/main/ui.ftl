@@ -39,10 +39,10 @@ play-3d = Jugar en 3D
 # Generar Jam (base sintetizada, sin necesidad de una canción)
 jam-generate-title = Generar una Base de Jam
 jam-generate-start = Empezar la Jam
-jam-generate-key = Tono: {$key}
-jam-generate-tempo = Tempo: {$bpm}
-jam-generate-progression = Progresión: {$progression}
-jam-generate-position = Posición: {$position}
+jam-generate-key = Tono
+jam-generate-tempo = Tempo
+jam-generate-progression = Progresión
+jam-generate-position = Posición
 
 # Créditos
 credits-back-to-menu = Volver al Menú
@@ -610,6 +610,12 @@ bending-in-tune = ✓ Afinado  ({$note})
 bending-cents-sharp = ↑ {$cents} cents agudo  (objetivo {$note})
 bending-cents-flat = ↓ {$cents} cents grave  (objetivo {$note})
 bending-detect-label = Detectar
+bending-section-setup = Configuración
+bending-section-target = Objetivo de Práctica
+bending-section-drill = Ejercicio
+bending-section-tempo = Tempo
+bending-tempo-decrease = Reducir tempo
+bending-tempo-increase = Aumentar tempo
 
 # Jam Session
 jam-loop-button = ↻ Bucle

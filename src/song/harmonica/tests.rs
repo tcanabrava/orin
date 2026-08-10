@@ -180,19 +180,15 @@ fn minor_blues_keeps_the_standard_roots_but_i_and_iv_go_minor() {
 }
 
 #[test]
-fn progression_cycles_forward_and_wraps() {
-    assert_eq!(Progression::Standard.next(), Progression::QuickChange);
-    assert_eq!(Progression::QuickChange.next(), Progression::Minor);
-    assert_eq!(Progression::Minor.next(), Progression::JazzBlues);
-    assert_eq!(Progression::JazzBlues.next(), Progression::Standard);
+fn every_progression_label_round_trips_through_from_label() {
+    for &p in Progression::all() {
+        assert_eq!(Progression::from_label(p.label()), Some(p));
+    }
 }
 
 #[test]
-fn progression_cycles_backward_and_wraps() {
-    assert_eq!(Progression::Standard.prev(), Progression::JazzBlues);
-    assert_eq!(Progression::JazzBlues.prev(), Progression::Minor);
-    assert_eq!(Progression::Minor.prev(), Progression::QuickChange);
-    assert_eq!(Progression::QuickChange.prev(), Progression::Standard);
+fn progression_from_label_rejects_unknown_text() {
+    assert_eq!(Progression::from_label("nonsense"), None);
 }
 
 #[test]
@@ -211,17 +207,15 @@ fn jazz_blues_ends_in_a_ii_v_i_cadence() {
 }
 
 #[test]
-fn position_cycles_forward_and_wraps() {
-    assert_eq!(Position::First.next(), Position::Second);
-    assert_eq!(Position::Second.next(), Position::Third);
-    assert_eq!(Position::Third.next(), Position::First);
+fn every_position_label_round_trips_through_from_label() {
+    for &p in Position::all() {
+        assert_eq!(Position::from_label(p.label()), Some(p));
+    }
 }
 
 #[test]
-fn position_cycles_backward_and_wraps() {
-    assert_eq!(Position::First.prev(), Position::Third);
-    assert_eq!(Position::Third.prev(), Position::Second);
-    assert_eq!(Position::Second.prev(), Position::First);
+fn position_from_label_rejects_unknown_text() {
+    assert_eq!(Position::from_label("nonsense"), None);
 }
 
 #[test]

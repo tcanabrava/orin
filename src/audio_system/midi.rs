@@ -46,22 +46,6 @@ pub fn midi_to_note(midi: i32) -> String {
     format!("{}{}", NOTE_NAMES[semitone as usize], octave)
 }
 
-/// The key after `k` in the chromatic cycle (wrapping from B back to C).
-/// Shared by any "cycle through all 12 keys" picker — `gameplay::
-/// bending_trainer`'s and `menu::jam_generate`'s key controls both call
-/// this instead of keeping their own copy. Unrecognised input falls back to
-/// `NOTE_NAMES[0]` ("C"), same permissive fallback `prev_key` uses.
-pub fn next_key(k: &str) -> String {
-    let i = NOTE_NAMES.iter().position(|&x| x == k).unwrap_or(0);
-    NOTE_NAMES[(i + 1) % 12].to_string()
-}
-
-/// The key before `k` in the chromatic cycle (wrapping from C back to B).
-pub fn prev_key(k: &str) -> String {
-    let i = NOTE_NAMES.iter().position(|&x| x == k).unwrap_or(0);
-    NOTE_NAMES[(i + 11) % 12].to_string()
-}
-
 /// Concert-pitch frequency (Hz) for a MIDI note number. Fractional input is
 /// allowed so callers can price in bends/cents (e.g. a half-step-flat draw
 /// note is `midi - 0.5`) without rounding to the nearest semitone first.
@@ -138,33 +122,6 @@ mod tests {
                 "roundtrip failed for midi={midi}"
             );
         }
-    }
-
-    // ── next_key / prev_key ──────────────────────────────────────────────────
-
-    #[test]
-    fn next_key_cycles_forward_and_wraps() {
-        assert_eq!(next_key("C"), "C#");
-        assert_eq!(next_key("B"), "C");
-    }
-
-    #[test]
-    fn prev_key_cycles_backward_and_wraps() {
-        assert_eq!(prev_key("C#"), "C");
-        assert_eq!(prev_key("C"), "B");
-    }
-
-    #[test]
-    fn every_key_round_trips_through_next_then_prev() {
-        for &k in &NOTE_NAMES {
-            assert_eq!(prev_key(&next_key(k)), k);
-        }
-    }
-
-    #[test]
-    fn unrecognised_key_falls_back_to_c() {
-        assert_eq!(next_key("nonsense"), "C#");
-        assert_eq!(prev_key("nonsense"), "B");
     }
 
     // ── freq_to_midi ──────────────────────────────────────────────────────────

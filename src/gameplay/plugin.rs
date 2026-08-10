@@ -164,6 +164,7 @@ impl Plugin for GameplayPlugin {
                 bending_trainer::update_tuner_readout,
                 bending_trainer::drill_update,
                 bending_trainer::update_drill_label,
+                bending_trainer::update_drill_button_visual,
                 // Suspended while the guided tour is showing this screen —
                 // Esc shouldn't leave out from under it (see `menu::tutorial`).
                 bending_trainer::handle_escape.run_if(not(tour_active)),

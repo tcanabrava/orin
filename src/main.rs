@@ -150,6 +150,7 @@ fn main() {
         harmonicon::dialogs::keyboard_nav::KeyboardNavPlugin,
         harmonicon::dialogs::scroll_area::ScrollAreaPlugin,
         harmonicon::dialogs::tab_bar::TabBarPlugin,
+        harmonicon::dialogs::text_input::NumericInputPlugin,
         harmonicon::dialogs::tooltip::TooltipPlugin,
     ));
 
