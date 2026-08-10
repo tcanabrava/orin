@@ -81,11 +81,12 @@ pub(super) fn spawn_form_scroll_content(
     scroll: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    state: &super::state::EditorState,
     compact: bool,
     legend_visible: bool,
 ) {
-    spawn_meta_form(scroll, loc, colors, compact, legend_visible);
-    spawn_lesson_form(scroll, loc, colors);
+    spawn_meta_form(scroll, loc, colors, state, compact, legend_visible);
+    spawn_lesson_form(scroll, loc, colors, state);
 
     scroll.spawn((
         StatusMsg,

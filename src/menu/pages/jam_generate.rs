@@ -149,6 +149,8 @@ pub(crate) fn setup_jam_generate_menu(
         config.bpm,
         MIN_BPM,
         MAX_BPM,
+        Color::srgb(0.10, 0.10, 0.16),
+        Color::srgb(0.35, 0.35, 0.45),
         |ev: On<NumericInputCommitted>, mut cfg: ResMut<JamGenerateConfig>| {
             cfg.bpm = ev.value;
         },

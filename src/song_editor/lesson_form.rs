@@ -80,6 +80,7 @@ pub(super) fn spawn_lesson_form(
     root: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    state: &EditorState,
 ) {
     root.spawn((
         LessonFormGroup,
@@ -114,12 +115,12 @@ pub(super) fn spawn_lesson_form(
             .with_children(|form| {
                 super::meta_form::spawn_form_column(form, |col| {
                     for &(field, label) in &LESSON_FIELDS[..MID] {
-                        spawn_conditional_field_row(col, loc, colors, field, label);
+                        spawn_conditional_field_row(col, loc, colors, state, field, label);
                     }
                 });
                 super::meta_form::spawn_form_column(form, |col| {
                     for &(field, label) in &LESSON_FIELDS[MID..] {
-                        spawn_conditional_field_row(col, loc, colors, field, label);
+                        spawn_conditional_field_row(col, loc, colors, state, field, label);
                     }
                 });
             });
@@ -133,10 +134,11 @@ fn spawn_conditional_field_row(
     col: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    state: &EditorState,
     field: Field,
     label: &str,
 ) {
-    let row = super::meta_form::spawn_field_row(col, loc, colors, field, label);
+    let row = super::meta_form::spawn_field_row(col, loc, colors, state, field, label);
     if matches!(field, Field::LessonThreshold | Field::LessonTechnique) {
         col.commands()
             .entity(row)

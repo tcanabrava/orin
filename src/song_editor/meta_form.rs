@@ -27,6 +27,7 @@ use super::{HEADER_H, MIDI_PURPOSE, MUSIC_PURPOSE, ROW_H, SILENCE_ROW_H, grid_he
 use crate::dialogs::button::make_interactive;
 use crate::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
 use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
+use crate::dialogs::text_input::{TextInputCommitted, spawn_text_input};
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
 use crate::song::chart::Scale;
@@ -281,21 +282,35 @@ fn spawn_snap_mode_row(
 /// with a row whose relevance depends on another field's value (e.g.
 /// `lesson_form`'s `LessonThreshold`/`LessonTechnique`) can tag it with a
 /// marker component afterward for a visibility system to key on.
+///
+/// Two widget shapes, branching on [`Field::is_cycle`]: the five
+/// click-to-cycle fields (`Key`/`Position`/the three lesson-enum pickers)
+/// stay a plain `WidgetButton` that steps the value on `Activate`; every
+/// other field gets a real text box (`dialogs::text_input::
+/// spawn_text_input`, built on `bevy_text::EditableText`) instead of the
+/// hand-rolled per-character `KeyboardInput` capture the editor used to
+/// drive itself with (see `panel::sync_meta_field_text` for how a
+/// programmatic write — Load, MIDI import, Browse picking a file — reaches
+/// a field the player isn't actively typing into, since the text box no
+/// longer re-renders from `EditorState` every frame the way the old
+/// `MetaFieldText` display did).
 pub(super) fn spawn_field_row(
     col: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    state: &EditorState,
     field: Field,
     label: &str,
 ) -> Entity {
-    col.spawn(Node {
+    let mut row_ec = col.spawn(Node {
         width: Val::Percent(100.0),
         flex_direction: FlexDirection::Row,
         align_items: AlignItems::Center,
         column_gap: Val::Px(8.0),
         ..default()
-    })
-    .with_children(|line| {
+    });
+    let row_id = row_ec.id();
+    row_ec.with_children(|line| {
         line.spawn((
             Node {
                 width: Val::Px(FORM_LABEL_W),
@@ -309,75 +324,88 @@ pub(super) fn spawn_field_row(
             TextColor(colors.label),
         ));
 
-        let mut btn = line.spawn((
-            WidgetButton,
-            TabIndex(0),
-            MetaFieldBox(field),
-            Node {
-                width: Val::Px(240.0),
-                height: Val::Px(26.0),
-                align_items: AlignItems::Center,
-                padding: UiRect::horizontal(Val::Px(8.0)),
-                border: UiRect::all(Val::Px(1.0)),
-                ..default()
-            },
-            BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
-        ));
-        make_interactive(&mut btn, colors.field_bg);
-
-        if field == Field::Key {
-            btn.insert(Tooltip(String::from(loc.msg("editor-field-key-tooltip"))))
-                .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
-                    state.key = cycle_next(&HARP_KEYS, &state.key);
-                });
-        } else if field == Field::Position {
-            btn.insert(Tooltip(String::from(
-                loc.msg("editor-field-position-tooltip"),
-            )))
-            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
-                state.position = cycle_next(&POSITIONS, &state.position);
-            });
-        } else if field == Field::LessonPassCriteria {
-            btn.insert(Tooltip(String::from(
-                loc.msg("editor-field-lesson-pass-criteria-tooltip"),
-            )))
-            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
-                state.lesson_pass_criteria =
-                    cycle_next(&PASS_CRITERIA_KINDS, &state.lesson_pass_criteria);
-            });
-        } else if field == Field::LessonTechnique {
-            btn.insert(Tooltip(String::from(
-                loc.msg("editor-field-lesson-technique-tooltip"),
-            )))
-            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
-                state.lesson_technique = cycle_next(&TECHNIQUE_NAMES, &state.lesson_technique);
-            });
-        } else if field == Field::LessonProgression {
-            btn.insert(Tooltip(String::from(
-                loc.msg("editor-field-lesson-progression-tooltip"),
-            )))
-            .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
-                state.lesson_progression = cycle_next(&PROGRESSIONS, &state.lesson_progression);
-            });
-        } else {
-            btn.insert(Tooltip(String::from(loc.msg("editor-field-text-tooltip"))))
-                .observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
-                    state.focus = Some(field);
-                });
-        }
-
-        btn.with_children(|b| {
-            b.spawn((
-                MetaFieldText(field),
-                Text::new(String::new()),
-                TextFont {
-                    font_size: FontSize::Px(14.0),
+        if field.is_cycle() {
+            let mut btn = line.spawn((
+                WidgetButton,
+                TabIndex(0),
+                MetaFieldBox(field),
+                Node {
+                    width: Val::Px(240.0),
+                    height: Val::Px(26.0),
+                    align_items: AlignItems::Center,
+                    padding: UiRect::horizontal(Val::Px(8.0)),
+                    border: UiRect::all(Val::Px(1.0)),
                     ..default()
                 },
-                TextColor(Color::WHITE),
-                Pickable::IGNORE,
+                BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
             ));
-        });
+            make_interactive(&mut btn, colors.field_bg);
+
+            if field == Field::Key {
+                btn.insert(Tooltip(String::from(loc.msg("editor-field-key-tooltip"))))
+                    .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
+                        state.key = cycle_next(&HARP_KEYS, &state.key);
+                    });
+            } else if field == Field::Position {
+                btn.insert(Tooltip(String::from(
+                    loc.msg("editor-field-position-tooltip"),
+                )))
+                .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
+                    state.position = cycle_next(&POSITIONS, &state.position);
+                });
+            } else if field == Field::LessonPassCriteria {
+                btn.insert(Tooltip(String::from(
+                    loc.msg("editor-field-lesson-pass-criteria-tooltip"),
+                )))
+                .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
+                    state.lesson_pass_criteria =
+                        cycle_next(&PASS_CRITERIA_KINDS, &state.lesson_pass_criteria);
+                });
+            } else if field == Field::LessonTechnique {
+                btn.insert(Tooltip(String::from(
+                    loc.msg("editor-field-lesson-technique-tooltip"),
+                )))
+                .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
+                    state.lesson_technique = cycle_next(&TECHNIQUE_NAMES, &state.lesson_technique);
+                });
+            } else {
+                btn.insert(Tooltip(String::from(
+                    loc.msg("editor-field-lesson-progression-tooltip"),
+                )))
+                .observe(|_: On<Activate>, mut state: ResMut<EditorState>| {
+                    state.lesson_progression = cycle_next(&PROGRESSIONS, &state.lesson_progression);
+                });
+            }
+
+            btn.with_children(|b| {
+                b.spawn((
+                    MetaFieldText(field),
+                    Text::new(String::new()),
+                    TextFont {
+                        font_size: FontSize::Px(14.0),
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                    Pickable::IGNORE,
+                ));
+            });
+        } else {
+            let input_id = spawn_text_input(
+                line.commands_mut(),
+                row_id,
+                state.field_text(field),
+                240.0,
+                colors.field_bg,
+                Color::srgb(0.30, 0.30, 0.40),
+                move |ev: On<TextInputCommitted>, mut state: ResMut<EditorState>| {
+                    *state.field_text_mut(field) = ev.value.clone();
+                },
+            );
+            line.commands_mut().entity(input_id).insert((
+                MetaFieldBox(field),
+                Tooltip(String::from(loc.msg("editor-field-text-tooltip"))),
+            ));
+        }
 
         if field == Field::Music {
             let mut browse = line.spawn((
@@ -420,8 +448,8 @@ pub(super) fn spawn_field_row(
                     ));
                 });
         }
-    })
-    .id()
+    });
+    row_id
 }
 
 fn spawn_midi_track_row(
@@ -584,6 +612,7 @@ pub(super) fn spawn_meta_form(
     root: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
+    state: &EditorState,
     compact: bool,
     legend_visible: bool,
 ) {
@@ -606,12 +635,12 @@ pub(super) fn spawn_meta_form(
             spawn_harmonica_kind_row(col, loc, colors);
             spawn_snap_mode_row(col, loc, colors);
             for &(field, label) in &FIELDS[..MID] {
-                spawn_field_row(col, loc, colors, field, label);
+                spawn_field_row(col, loc, colors, state, field, label);
             }
         });
         spawn_form_column(form, |col| {
             for &(field, label) in &FIELDS[MID..] {
-                spawn_field_row(col, loc, colors, field, label);
+                spawn_field_row(col, loc, colors, state, field, label);
             }
             spawn_midi_track_row(col, loc, colors);
         });

@@ -426,6 +426,7 @@ pub(super) fn setup(
                         scroll,
                         &loc,
                         colors,
+                        &state,
                         compact.0,
                         state.legend_visible,
                     );

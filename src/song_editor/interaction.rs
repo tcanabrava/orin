@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-use bevy::input::ButtonState;
-use bevy::input::keyboard::KeyboardInput;
 use bevy::input::mouse::MouseWheel;
+use bevy::input_focus::InputFocus;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Drag, Pointer};
 use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
+use bevy::text::EditableText;
 use bevy::ui::{ComputedNode, RelativeCursorPosition};
 use bevy::ui_render::prelude::MaterialNode;
 
@@ -346,6 +346,18 @@ pub(super) fn cycle_sticky_vibrato(state: &mut EditorState) {
 
 // ── Keyboard / scroll systems ─────────────────────────────────────────────────
 
+/// True while one of the meta form's free-text fields (`dialogs::text_input`,
+/// built on `bevy_text::EditableText`) has real keyboard focus — the gate
+/// every shortcut below checks so typing into a field never steals Delete/
+/// Backspace/Escape/Ctrl+C/V/Z/Y or arrow-key panning. Checking for
+/// `EditableText` specifically (not just any focused entity) is what
+/// excludes the five click-to-cycle fields (`Key`/`Position`/...), which are
+/// plain `WidgetButton`s that can also take keyboard focus via Tab but never
+/// accept typed input.
+fn a_text_field_has_focus(focus: &InputFocus, fields: &Query<(), With<EditableText>>) -> bool {
+    focus.get().is_some_and(|e| fields.contains(e))
+}
+
 /// Escape first deselects the current note (if any); pressed again with
 /// nothing selected, it leaves the editor for the menu — same "back" rule
 /// every other screen follows. Suppressed while a save/load dialog is open,
@@ -357,8 +369,10 @@ pub(super) fn grid_keys(
     file_dialog: Res<FileDialog>,
     mut next_state: ResMut<NextState<AppState>>,
     mut ret_play: ResMut<crate::app::ReturnToPlay>,
+    focus: Res<InputFocus>,
+    fields: Query<(), With<EditableText>>,
 ) {
-    if state.focus.is_some() {
+    if a_text_field_has_focus(&focus, &fields) {
         return;
     }
     if keyboard.just_pressed(KeyCode::Delete) || keyboard.just_pressed(KeyCode::Backspace) {
@@ -392,8 +406,10 @@ pub(super) fn handle_copy_paste(
     mut clipboard: ResMut<NoteClipboard>,
     scroll: Res<Scroll>,
     grid_area: Query<(&RelativeCursorPosition, &ComputedNode), With<GridArea>>,
+    focus: Res<InputFocus>,
+    fields: Query<(), With<EditableText>>,
 ) {
-    if state.focus.is_some() || !ctrl_held(&keyboard) {
+    if a_text_field_has_focus(&focus, &fields) || !ctrl_held(&keyboard) {
         return;
     }
     if keyboard.just_pressed(KeyCode::KeyC) && !state.selected.is_empty() {
@@ -423,14 +439,16 @@ pub(super) fn handle_copy_paste(
 /// `Ctrl+Z` undoes the last content edit (note placement/move/resize/
 /// delete, paste, Erase/Remove, a whole recording take, ...); `Ctrl+Y`
 /// redoes it — see `undo::UndoHistory` for what counts as an edit. Same
-/// `state.focus`/`ctrl_held` gating as [`handle_copy_paste`], so typing
+/// text-field-focus/`ctrl_held` gating as [`handle_copy_paste`], so typing
 /// into a meta-form text field never steals these keys.
 pub(super) fn handle_undo_redo(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<EditorState>,
     mut history: ResMut<super::undo::UndoHistory>,
+    focus: Res<InputFocus>,
+    fields: Query<(), With<EditableText>>,
 ) {
-    if state.focus.is_some() || !ctrl_held(&keyboard) {
+    if a_text_field_has_focus(&focus, &fields) || !ctrl_held(&keyboard) {
         return;
     }
     if keyboard.just_pressed(KeyCode::KeyZ) {
@@ -440,45 +458,14 @@ pub(super) fn handle_undo_redo(
     }
 }
 
-pub(super) fn type_into_field(
-    mut keys: MessageReader<KeyboardInput>,
-    mut state: ResMut<EditorState>,
-) {
-    let Some(field) = state.focus else {
-        keys.clear();
-        return;
-    };
-    for ev in keys.read() {
-        if ev.state != ButtonState::Pressed {
-            continue;
-        }
-        match &ev.logical_key {
-            bevy::input::keyboard::Key::Character(s) => {
-                for c in s.chars() {
-                    if !c.is_control() {
-                        state.field_text_mut(field).push(c);
-                    }
-                }
-            }
-            bevy::input::keyboard::Key::Space => state.field_text_mut(field).push(' '),
-            bevy::input::keyboard::Key::Backspace => {
-                state.field_text_mut(field).pop();
-            }
-            bevy::input::keyboard::Key::Enter | bevy::input::keyboard::Key::Escape => {
-                state.focus = None;
-            }
-            _ => {}
-        }
-    }
-}
-
 pub(super) fn pan_keys(
     keyboard: Res<ButtonInput<KeyCode>>,
-    state: Res<EditorState>,
     file_dialog: Res<FileDialog>,
     mut scroll: ResMut<Scroll>,
+    focus: Res<InputFocus>,
+    fields: Query<(), With<EditableText>>,
 ) {
-    if state.focus.is_some() || file_dialog.open {
+    if a_text_field_has_focus(&focus, &fields) || file_dialog.open {
         return;
     }
     if keyboard.just_pressed(KeyCode::ArrowRight) {

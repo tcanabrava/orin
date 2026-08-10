@@ -202,7 +202,6 @@ impl Plugin for SongEditor2Plugin {
                         interaction::handle_undo_redo.run_if(not(tour_active)),
                         undo::track_changes,
                     ),
-                    interaction::type_into_field,
                     (
                         interaction::live_resize,
                         interaction::update_move_ghost,
@@ -236,6 +235,8 @@ impl Plugin for SongEditor2Plugin {
                         resource_exists_and_changed::<state::EditorState>
                             .or_else(resource_changed::<LoadedTheme>),
                     ),
+                    panel::sync_meta_field_text
+                        .run_if(resource_exists_and_changed::<state::EditorState>),
                     (
                         panel::update_harmonica_kind_text,
                         panel::update_content_kind_text,

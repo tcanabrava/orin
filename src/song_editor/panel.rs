@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
+use bevy::input_focus::InputFocus;
 use bevy::prelude::*;
+use bevy::text::{EditableText, TextEdit};
 
 use super::practice::PracticeState;
 use super::record::RecordState;
@@ -85,30 +87,48 @@ pub(super) fn update_mod_panel(
     }
 }
 
+/// Keeps the five click-to-cycle fields' displayed text in step with
+/// `EditorState` — the nine free-text fields render themselves (see
+/// [`sync_meta_field_text`]) and no longer carry a [`MetaFieldText`] child.
 pub(super) fn update_meta_fields(
     state: Res<EditorState>,
-    theme: Res<LoadedTheme>,
     mut texts: Query<(&MetaFieldText, &mut Text)>,
-    mut boxes: Query<(&MetaFieldBox, &mut BaseButtonColor)>,
 ) {
-    let colors = theme.song_editor_colors();
     for (tag, mut text) in &mut texts {
         **text = if tag.0 == Field::Key {
             format!("\u{2039}  {}  \u{203A}", state.key)
         } else {
-            let mut s = state.field_text(tag.0).to_string();
-            if state.focus == Some(tag.0) {
-                s.push('_');
-            }
-            s
+            state.field_text(tag.0).to_string()
         };
     }
-    for (tag, mut bg) in &mut boxes {
-        bg.0 = if tag.0 != Field::Key && state.focus == Some(tag.0) {
-            colors.field_bg_focus
-        } else {
-            colors.field_bg
-        };
+}
+
+/// Keeps every meta-form text box's *displayed* buffer in step with
+/// `EditorState` whenever it changes from outside the widget itself — Load,
+/// MIDI import, Browse picking a music file, ... — since typing only
+/// commits into `EditorState` on blur/Enter (`dialogs::text_input`), and
+/// nothing else re-renders a box's buffer from `EditorState` every frame the
+/// way the old `MetaFieldText` display used to. Skips whichever field
+/// currently has real keyboard focus so it never fights the player's own
+/// in-progress typing. Can't gate on `EditorState::is_changed()` to detect
+/// "a field's text changed" — the resource changes on essentially every
+/// frame regardless (note edits, selection, ...) — so this just compares
+/// each field's own string every frame instead; cheap at nine short fields.
+pub(super) fn sync_meta_field_text(
+    state: Res<EditorState>,
+    focus: Res<InputFocus>,
+    mut fields: Query<(Entity, &MetaFieldBox, &mut EditableText)>,
+) {
+    let focused = focus.get();
+    for (entity, tag, mut text) in &mut fields {
+        if Some(entity) == focused {
+            continue;
+        }
+        let want = state.field_text(tag.0);
+        if text.value().to_string() != want {
+            text.editor_mut().set_text(want);
+            text.queue_edit(TextEdit::TextEnd(false));
+        }
     }
 }
 
@@ -543,27 +563,18 @@ mod tests {
     // ── update_meta_fields ────────────────────────────────────────────────────
 
     #[test]
-    fn update_meta_fields_formats_the_key_field_specially_and_marks_focus_elsewhere() {
+    fn update_meta_fields_formats_the_key_field_specially() {
         let mut world = World::new();
         let state = EditorState {
             key: "G".into(),
-            tempo: "140".into(),
-            focus: Some(Field::Tempo),
+            position: "3rd".into(),
             ..Default::default()
         };
         world.insert_resource(state);
-        world.insert_resource(LoadedTheme::default());
-        let colors = LoadedTheme::default().song_editor_colors();
 
         let key_text = world.spawn((MetaFieldText(Field::Key), Text::new(""))).id();
-        let tempo_text = world
-            .spawn((MetaFieldText(Field::Tempo), Text::new("")))
-            .id();
-        let tempo_box = world
-            .spawn((MetaFieldBox(Field::Tempo), BaseButtonColor(colors.field_bg)))
-            .id();
-        let key_box = world
-            .spawn((MetaFieldBox(Field::Key), BaseButtonColor(colors.field_bg)))
+        let position_text = world
+            .spawn((MetaFieldText(Field::Position), Text::new("")))
             .id();
 
         let mut schedule = Schedule::default();
@@ -574,19 +585,65 @@ mod tests {
             world.get::<Text>(key_text).unwrap().0,
             "\u{2039}  G  \u{203A}"
         );
+        assert_eq!(world.get::<Text>(position_text).unwrap().0, "3rd");
+    }
+
+    // ── sync_meta_field_text ──────────────────────────────────────────────────
+
+    #[test]
+    fn sync_meta_field_text_pushes_an_external_change_into_the_unfocused_box() {
+        let mut world = World::new();
+        world.insert_resource(EditorState {
+            name: "New Title".into(),
+            ..Default::default()
+        });
+        world.insert_resource(InputFocus::default());
+
+        let name_input = world
+            .spawn((MetaFieldBox(Field::Name), EditableText::new("Old Title")))
+            .id();
+
+        let mut schedule = Schedule::default();
+        schedule.add_systems(sync_meta_field_text);
+        schedule.run(&mut world);
+
         assert_eq!(
-            world.get::<Text>(tempo_text).unwrap().0,
-            "140_",
-            "the focused field gets a trailing cursor"
+            world
+                .get::<EditableText>(name_input)
+                .unwrap()
+                .value()
+                .to_string(),
+            "New Title"
         );
+    }
+
+    #[test]
+    fn sync_meta_field_text_never_touches_the_focused_box() {
+        let mut world = World::new();
+        world.insert_resource(EditorState {
+            name: "New Title".into(),
+            ..Default::default()
+        });
+
+        let name_input = world
+            .spawn((MetaFieldBox(Field::Name), EditableText::new("still typing")))
+            .id();
+        let mut focus = InputFocus::default();
+        focus.set(name_input, bevy::input_focus::FocusCause::Pressed);
+        world.insert_resource(focus);
+
+        let mut schedule = Schedule::default();
+        schedule.add_systems(sync_meta_field_text);
+        schedule.run(&mut world);
+
         assert_eq!(
-            world.get::<BaseButtonColor>(tempo_box).unwrap().0,
-            colors.field_bg_focus
-        );
-        assert_eq!(
-            world.get::<BaseButtonColor>(key_box).unwrap().0,
-            colors.field_bg,
-            "Key never highlights as focused, even if it somehow were"
+            world
+                .get::<EditableText>(name_input)
+                .unwrap()
+                .value()
+                .to_string(),
+            "still typing",
+            "the box the player is actively typing into must never be overwritten"
         );
     }
 

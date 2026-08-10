@@ -292,6 +292,24 @@ pub(super) enum Field {
     LessonProgression,
 }
 
+impl Field {
+    /// True for the five fields that cycle through a fixed set of values on
+    /// click (`Key`, `Position`, the three lesson-enum pickers) rather than
+    /// accepting typed text. `meta_form::spawn_field_row` branches on this
+    /// to decide whether to spawn a click-to-cycle button or a real text
+    /// input (`dialogs::text_input::spawn_text_input`).
+    pub(super) fn is_cycle(self) -> bool {
+        matches!(
+            self,
+            Field::Key
+                | Field::Position
+                | Field::LessonPassCriteria
+                | Field::LessonTechnique
+                | Field::LessonProgression
+        )
+    }
+}
+
 /// Each entry pairs a [`Field`] with the localization key used for its label.
 pub(super) const FIELDS: [(Field, &str); 6] = [
     (Field::Tempo, "editor-field-tempo"),
@@ -425,7 +443,6 @@ pub(super) struct EditorState {
     pub(super) music: String,
     pub(super) name: String,
     pub(super) author: String,
-    pub(super) focus: Option<Field>,
     pub(super) drag_msg: crate::localization::LocalizedStr,
     pub(super) mode: Mode,
     /// Whether this editing session is authoring a song or a lesson — see
@@ -500,7 +517,6 @@ impl Default for EditorState {
             music: String::new(),
             name: String::new(),
             author: String::new(),
-            focus: None,
             drag_msg: crate::localization::LocalizedStr::default(),
             mode: Mode::default(),
             content_kind: ContentKind::default(),

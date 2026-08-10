@@ -433,7 +433,6 @@ pub(super) fn load_harpchart(v: &serde_json::Value, state: &mut EditorState, scr
     state.next_id = next_id;
     state.selected.clear();
     state.dragging = None;
-    state.focus = None;
     state.scroll_beat = 0;
     scroll.px = 0.0;
 }
