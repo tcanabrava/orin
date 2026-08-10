@@ -8,11 +8,13 @@
 //! the chosen key (transposed Richter layout), rebuilding the diagram
 //! whenever the key changes.
 //!
-//! Two columns, the same split `jam::session` uses: left has everything but
-//! the harmonica itself (title, key control, detect-algorithm picker,
-//! ear-training target/Listen, tuner readout, drill toggle, tempo control,
-//! hint line); right is entirely the harmonica — the bend diagram plus its
-//! technique hint/drill explanation text.
+//! A shared header (title top-left, Back button top-right — same shape as
+//! every menu page, see `menu::scene::header_scene`/`spawn_back_button`)
+//! sits above a two-column body, the same split `jam::session` uses: left
+//! has everything but the harmonica itself (key control, detect-algorithm
+//! picker, ear-training target/Listen, tuner readout, drill toggle, tempo
+//! control, hint line); right is entirely the harmonica — the bend diagram
+//! plus its technique hint/drill explanation text.
 
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::picking::events::{Click, Out, Over, Pointer};
@@ -39,6 +41,7 @@ use super::harmonica_overlay::{
 };
 use super::metronome_overlay::{MetronomeTempo, spawn_metronome};
 use super::{ActivePitches, GameplayClock, GameplayRoot};
+use crate::menu::scene::{header_scene, spawn_back_button, title_column_scene};
 
 const MIN_BPM: f32 = 40.0;
 const MAX_BPM: f32 = 220.0;
@@ -538,16 +541,56 @@ pub fn setup(
     // which persists them on the way out.
     drill.stats = stats_from_profile(&profile.drills);
 
-    let mut root_ec = commands.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            flex_direction: FlexDirection::Row,
-            ..default()
+    let root_id = commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.05, 0.05, 0.08)),
+            GameplayRoot,
+        ))
+        .id();
+
+    // Header: title top-left, Back button top-right — the same shared
+    // header shape every menu page uses (`menu::scene::header_scene`/
+    // `title_column_scene`/`spawn_back_button`), composed directly rather
+    // than through `spawn_menu_root` since this screen isn't a menu page
+    // and doesn't want its background image/scroll-area/`MenuRoot` cleanup
+    // tag. Not separately tagged `GameplayRoot` — despawning `root_id` on
+    // exit (`cleanup_gameplay`) already recurses into every child.
+    let title_column = commands
+        .spawn_scene(title_column_scene(String::from(loc.msg("bending-trainer"))))
+        .id();
+    let header = commands.spawn_scene(header_scene()).id();
+    commands.entity(header).add_child(title_column);
+    commands.entity(root_id).add_child(header);
+    spawn_back_button(
+        &mut commands,
+        header,
+        &loc.msg("back"),
+        |_: On<Activate>,
+         mut next_state: ResMut<NextState<AppState>>,
+         mut ret_play: ResMut<crate::app::ReturnToPlay>| {
+            ret_play.0 = true;
+            next_state.set(AppState::Menu);
         },
-        BackgroundColor(Color::srgb(0.05, 0.05, 0.08)),
-        GameplayRoot,
-    ));
+    );
+
+    // Body: the two-column layout below the header, filling the rest of
+    // the screen's height.
+    let body = commands
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            flex_direction: FlexDirection::Row,
+            flex_grow: 1.0,
+            min_height: Val::Px(0.0),
+            ..default()
+        })
+        .id();
+    commands.entity(root_id).add_child(body);
     // Captured so the Detect-algorithm combobox below can pass it as the
     // *backdrop*'s parent — `combobox::spawn_combobox` requires a
     // full-screen-sized backdrop parent for its click-catching backdrop to
@@ -555,8 +598,7 @@ pub fn setup(
     // the right column (not just the left) still dismisses an open dropdown.
     // The combobox's visible trigger, meanwhile, is parented to the left
     // column itself so it sits in that column's normal vertical flow.
-    let root_id = root_ec.id();
-    root_ec.with_children(|root| {
+    commands.entity(body).with_children(|root| {
         // ── Left half: everything but the harmonica itself ───────────────
         let mut left_ec = root.spawn(Node {
             width: Val::Percent(50.0),
@@ -570,15 +612,6 @@ pub fn setup(
         });
         let left_id = left_ec.id();
         left_ec.with_children(|left| {
-            left.spawn((
-                Text::new(String::from(loc.msg("bending-trainer"))),
-                TextFont {
-                    font_size: FontSize::Px(26.0),
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-            ));
-
             // ── Key control: ◂  Key: C  ▸ ───────────────────────────────────
             left.spawn(Node {
                 flex_direction: FlexDirection::Row,
@@ -767,19 +800,6 @@ pub fn setup(
                     ..default()
                 },
                 TextColor(Color::srgb(0.55, 0.55, 0.65)),
-            ));
-
-            // A visible Back — this screen has no pause menu (unlike a
-            // song/Jam Session), so Escape was the only way out; a touch
-            // target matters for a future mobile build with no keyboard.
-            left.spawn_empty().apply_scene(button::small(
-                &String::from(loc.msg("back")),
-                |_: On<Activate>,
-                 mut next_state: ResMut<NextState<AppState>>,
-                 mut ret_play: ResMut<crate::app::ReturnToPlay>| {
-                    ret_play.0 = true;
-                    next_state.set(AppState::Menu);
-                },
             ));
         });
 

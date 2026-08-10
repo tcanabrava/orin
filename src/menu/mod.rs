@@ -14,7 +14,7 @@ use crate::song_editor;
 
 mod pages;
 pub(crate) mod routing;
-mod scene;
+pub(crate) mod scene;
 
 pub(crate) use pages::tutorial;
 pub(crate) use routing::MenuPage;

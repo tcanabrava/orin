@@ -44,7 +44,7 @@ const SCROLLBAR_THUMB_COLOR: Color = Color::srgba(1.0, 1.0, 1.0, 0.35);
 /// Marks every entity that belongs to a menu screen so `cleanup_menu` can
 /// remove it in one sweep when the page changes. Shared with the `options` page.
 #[derive(Component, Default, Clone)]
-pub(super) struct MenuRoot;
+pub(crate) struct MenuRoot;
 
 fn menu_bg() -> Color {
     Color::srgb(0.05, 0.05, 0.08)
@@ -77,8 +77,14 @@ fn heading_scene(text: String, size: f32, color: Color) -> impl Scene {
 /// (`flex_grow: 1.0` — the "horizontal-stretch" that pushes a trailing
 /// [`spawn_back_button`] to the row's far edge) plus whatever a page adds
 /// via that function. `flex_shrink: 0.0` keeps it at its natural height
-/// even if `body`'s content overflows.
-fn header_scene() -> impl Scene {
+/// even if `body`'s content overflows. `pub(crate)`, alongside
+/// [`title_column_scene`], so a full-screen `AppState` that isn't an
+/// ordinary menu page (e.g. `gameplay::bending_trainer`) can still build
+/// the same title-top-left/back-top-right header without going through
+/// [`spawn_menu_root`]'s whole page shape (background image, scroll area,
+/// `MenuRoot` cleanup tag) — see that module's own header for how it's
+/// composed directly with [`spawn_back_button`].
+pub(crate) fn header_scene() -> impl Scene {
     bsn! {
         Node {
             width: {Val::Percent(100.0)},
@@ -91,7 +97,7 @@ fn header_scene() -> impl Scene {
     }
 }
 
-fn title_column_scene(title: String) -> impl Scene {
+pub(crate) fn title_column_scene(title: String) -> impl Scene {
     bsn! {
         Node {
             flex_direction: {FlexDirection::Column},
