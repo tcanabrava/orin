@@ -300,6 +300,7 @@ lesson-unit-blowing = Unidade 1 · Soprando a Gaita
 lesson-unit-rhythm = Unidade 2 · Contando o Blues
 lesson-unit-blues = Unidade 3 · Vocabulário do Blues
 lesson-unit-scales = Unidade 4 · Escalas e Improvisação
+lesson-unit-jazz = Unidade 5 · Jazz
 
 # Lição: nota única
 lesson-single-note-title = Tocando uma Nota Só
@@ -617,6 +618,42 @@ lesson-minor-pentatonic-improv-body =
     Você vai perceber que ela perdoa menos — não tem nota azul pra te salvar se uma frase escapar, só as cinco notas pentatônicas limpas, dentro ou fora.
     Essa é exatamente a escala que músicos de verdade buscam quando querem algo que sempre soa "seguro" sobre quase qualquer acorde — essa confiabilidade é o motivo de praticá-la sozinha.
     Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — julgada por quanto do que você tocou ficou dentro da escala pentatônica menor.
+
+# Lição: colcheias swingadas
+lesson-swing-eighths-title = Colcheias Swingadas
+lesson-swing-eighths-body =
+    Bem-vindo à unidade de jazz. Mesmo balanço de colcheias longa-curta do shuffle-feel, mas a janela de tempo é mais apertada — o swing de jazz recompensa precisão, não só as notas certas.
+    Dois pares de notas dessa vez em vez de um: 4 sopro/4 sugado, depois 5 sopro/5 sugado, alternando. Mantenha o mesmo balanço longa-curta em cada par ao trocar entre eles.
+    Se o shuffle-feel pareceu confortável, isso deve parecer familiar, mas exigir mais — preste atenção se você está caindo bem em cima do tempo swingado ou só perto dele.
+    Esse senso de tempo mais apertado atravessa o resto desta unidade; as lições de ii-V-I e blues de jazz que vêm a seguir assumem que você já consegue swingar colcheias com limpeza.
+    Vá devagar antes de acelerar — um swing limpo num andamento moderado vale mais que um bagunçado num andamento rápido.
+
+# Lição: notas do acorde ii-V-I
+lesson-ii-v-i-chord-tones-title = Notas do Acorde ii-V-I
+lesson-ii-v-i-chord-tones-body =
+    A cadência central do vocabulário de jazz: um acorde ii menor com sétima, um acorde V dominante com sétima, e um acorde I maior com sétima, cada um arpejado por vez — Dm7, depois G7, depois Cmaj7.
+    Duas dessas notas precisam dos dobramentos de um tom inteiro da lição de dobramentos profundos (2 sugado dobrado pro Fá, 3 sugado dobrado pro Lá) — os mesmos dobramentos que você já usou na escala maior, agora aplicados pra desenhar um acorde em vez de uma escala.
+    Repare como cada arpejo tem seu próprio caráter: Dm7 soa em suspenso, G7 puxa em direção à resolução, e Cmaj7 finalmente chega em casa — esse puxão é o ponto inteiro dessa cadência.
+    Essa é a espinha dorsal harmônica por baixo de uma quantidade enorme do repertório de jazz; assim que essas três formas estiverem sob seus dedos, você vai começar a ouvir esse mesmo movimento ii-V-I em todo lugar.
+    Toque devagar no começo, focando em cair limpo em cada nota do acorde em vez de correr pelas mudanças.
+
+# Lição: a forma do blues de jazz
+lesson-jazz-blues-form-title = A Forma do Blues de Jazz
+lesson-jazz-blues-form-body =
+    Mesma Jam Session aberta das outras lições de improvisação, mas a progressão de base agora é o blues de jazz completo — a forma padrão de 12 compassos com uma volta ii-V-I de verdade construída nos últimos compassos.
+    O compasso 8 substitui por uma dominante secundária, depois os compassos 9 e 10 percorrem o próprio ii-V que você acabou de aprender na lição anterior, resolvendo pro I antes da volta final em V.
+    Isso é julgado do mesmo jeito que a improvisação sobre notas do acorde: caia especificamente numa nota do acorde conforme as mudanças acontecem, não só em qualquer lugar da escala — mas agora as mudanças acontecem mais rápido e de um jeito menos previsível nessa volta.
+    O mapa de furos e a grade de 12 compassos continuam ao vivo e refletem a forma do blues de jazz em tempo real, então confie neles se você se perder de onde a volta começa.
+    Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — o jogo soma quanto do que você tocou caiu numa nota do acorde.
+
+# Lição: fundamentos do slide cromático
+lesson-chromatic-slide-basics-title = Fundamentos do Slide Cromático
+lesson-chromatic-slide-basics-body =
+    Sua primeira lição de gaita cromática: uma escala cromática completa, um semitom de cada vez, subindo e descendo — usando o botão de slide pra preencher cada nota que o padrão de sopro/sugado sozinho pula.
+    Diferente de um dobramento diatônico, o slide é mecânico, não de embocadura: aperte o botão pra uma nota deslizada, solte pra uma natural, e a altura muda instantânea e precisamente.
+    Cerca de metade desse trecho precisa do slide apertado — repare como ele sempre é usado pra alcançar a nota específica um semitom acima do que aquele furo já dá sem apertar nada.
+    Essa escala é de propósito só técnica, não melodia — assim que apertar o slide bem na nota certa parecer automático, você está pronto pra usá-lo musicalmente, não só mecanicamente.
+    Tome seu tempo pra encaixar o momento do slide com o início da nota — um slide apertado um pouco tarde ainda registra como a nota errada, sem o slide.
 
 # Jogo — contagem regressiva, legenda, dicas do diagrama da harmônica
 gameplay-get-ready = PREPARE-SE

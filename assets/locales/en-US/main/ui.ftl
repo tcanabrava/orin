@@ -302,6 +302,7 @@ lesson-unit-blowing = Unit 1 · Blowing the Harmonica
 lesson-unit-rhythm = Unit 2 · Counting the Blues
 lesson-unit-blues = Unit 3 · Blues Vocabulary
 lesson-unit-scales = Unit 4 · Scales and Improvisation
+lesson-unit-jazz = Unit 5 · Jazz
 
 # Lesson: single note
 lesson-single-note-title = Playing a Single Note
@@ -619,6 +620,42 @@ lesson-minor-pentatonic-improv-body =
     You'll find it forgives less — there's no blue note to fall back into if a lick strays, just the five clean pentatonic tones, in or out.
     This is exactly the scale real players reach for when they want something that always sounds "safe" over almost any chord — that reliability is the whole point of practicing it on its own.
     When you feel ready to stop, open the pause menu and press "Finish Lesson" — judged by how much of what you played stayed inside the minor pentatonic scale.
+
+# Lesson: swing eighths
+lesson-swing-eighths-title = Swing Eighths
+lesson-swing-eighths-body =
+    Welcome to the jazz unit. Same swung long-short eighth-note feel as shuffle-feel, but the timing window is tighter — jazz swing rewards precision, not just the right notes.
+    Two note pairs this time instead of one: 4 blow/4 draw, then 5 blow/5 draw, alternating. Keep the same long-short bounce on each pair as you switch between them.
+    If shuffle-feel felt comfortable, this should feel familiar but demand more — listen closely for whether you're landing right on the swung beat or just close to it.
+    This tighter feel for timing carries through the rest of this unit; the ii-V-I and jazz-blues lessons that follow assume you can already swing eighth notes cleanly.
+    Take it slow before speeding up — a clean swing at a modest tempo beats a sloppy one at a fast one.
+
+# Lesson: ii-V-I chord tones
+lesson-ii-v-i-chord-tones-title = ii-V-I Chord Tones
+lesson-ii-v-i-chord-tones-body =
+    The core cadence of jazz vocabulary: a minor 7th ii chord, a dominant 7th V chord, and a major 7th I chord, each arpeggiated in turn — Dm7, then G7, then Cmaj7.
+    Two of these notes need the whole-step draw bends from deep-bends (2 draw bent for F, 3 draw bent for A) — the same bends you already used in the major-scale drill, now applied to outline a chord instead of a scale.
+    Notice how each arpeggio has its own character: Dm7 sounds unresolved, G7 pulls toward resolution, and Cmaj7 finally lands home — that pull is the whole point of this cadence.
+    This is the harmonic backbone under a huge amount of jazz repertoire; once these three shapes are under your fingers, you'll start hearing this same ii-V-I motion everywhere.
+    Play it slowly at first, focusing on landing cleanly on each chord tone rather than rushing through the changes.
+
+# Lesson: jazz blues form
+lesson-jazz-blues-form-title = The Jazz Blues Form
+lesson-jazz-blues-form-body =
+    Same open Jam Session as the other improvisation lessons, but the backing progression is now the full jazz blues — the standard 12-bar form with a real ii-V-I turnaround built into the last few bars.
+    Bar 8 substitutes a secondary dominant, then bars 9 and 10 walk through the actual ii-V you just learned in the previous lesson, resolving to I before the final V turnaround.
+    This is judged the same way as chord-tone-improv: land specifically on chord tones as the changes move, not just anywhere in the scale — but now the changes move faster and less predictably through that turnaround.
+    The hole map and 12-bar grid both stay live and reflect the jazz-blues form in real time, so lean on them if you lose track of where the turnaround starts.
+    When you feel ready to stop, open the pause menu and press "Finish Lesson" — the game tallies how much of what you played landed on a chord tone.
+
+# Lesson: chromatic slide basics
+lesson-chromatic-slide-basics-title = Chromatic Slide Basics
+lesson-chromatic-slide-basics-body =
+    Your first chromatic harmonica lesson: a full chromatic scale, one semitone at a time, up and down — using the slide button to fill in every note the blow/draw pattern alone skips.
+    Unlike a diatonic bend, the slide is mechanical, not embouchure: press the button for a slid note, release it for a natural one, and the pitch changes instantly and precisely.
+    About half of this run needs the slide pressed — notice how it's always used to reach the specific note a half-step above whatever that hole's unslid note already gives you.
+    This scale is deliberately just technique, not melody — once pressing the slide at exactly the right note feels automatic, you're ready to use it musically instead of just mechanically.
+    Take your time matching the slide's timing to the note's onset — a slide pressed a little late still registers as the wrong, unslid pitch.
 
 # Gameplay — countdown, legend, harmonica overlay hints
 gameplay-get-ready = GET READY
