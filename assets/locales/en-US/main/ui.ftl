@@ -301,6 +301,7 @@ lesson-failed-banner = Goal not reached — read the lesson again and retry
 lesson-unit-blowing = Unit 1 · Blowing the Harmonica
 lesson-unit-rhythm = Unit 2 · Counting the Blues
 lesson-unit-blues = Unit 3 · Blues Vocabulary
+lesson-unit-scales = Unit 4 · Scales and Improvisation
 
 # Lesson: single note
 lesson-single-note-title = Playing a Single Note
@@ -556,6 +557,15 @@ lesson-minor-blues-improv-body =
     The hole map still recolors live exactly like the other jam lessons; trust the color, not what you'd expect from a major blues.
     When you feel ready to stop, open the pause menu and press "Finish Lesson" — this one is judged the same way as the original improvisation drill, scale adherence against the minor blues scale.
 
+# Lesson: quick change improvisation
+lesson-quick-change-improv-title = Quick Change Improvisation
+lesson-quick-change-improv-body =
+    Same open Jam Session and the same blues scale as the original improvisation drill, but the backing progression switches to the quick change — bar 2 moves to the IV chord instead of staying on I.
+    That means the harmonic ground shifts under you a full two bars sooner than the standard 12-bar form you're used to.
+    Nothing about which notes are "in the scale" changes — this is still judged the same way as the original improvisation lesson — but listening for that earlier chord change will sharpen your sense of where you are in the form.
+    If you lose track, the 12-bar grid and hole map are both still live and reflect the quick-change form in real time.
+    When you feel ready to stop, open the pause menu and press "Finish Lesson" — judged the same way as the original improvisation drill, scale adherence against the blues scale.
+
 # Lesson: question and answer
 lesson-question-answer-title = Question and Answer
 lesson-question-answer-body =
@@ -564,6 +574,51 @@ lesson-question-answer-body =
     It's tempting to keep noodling through the rest — resist it. The hole map and your own ears both know the difference between a rest and a held note.
     This is the same open Jam Session as the other improvisation lessons; play whatever licks or scale runs feel right in your two bars, then genuinely let go of the harmonica.
     When you feel ready to stop, open the pause menu and press "Finish Lesson" — the game judges how much of what you played landed outside those rest windows.
+
+# Lesson: major scale
+lesson-major-scale-title = The Major Scale
+lesson-major-scale-body =
+    Eight notes, up and down: 1 blow, 1 draw, 2 blow, 2 draw bent a whole step, 3 blow, 3 draw bent a whole step, 3 draw, 4 blow.
+    Blues harmonica lives on the blues scale, but the plain major scale is the foundation everything else — including that blues sound — bends away from.
+    Two of these notes need the whole-step draw bends from the deep-bends drill, landing on F and A instead of the natural notes those holes sing when you don't bend at all.
+    Play it slowly, listening for exactly where the pitch needs to land — a shallow bend undershoots and still sounds like the natural note underneath it.
+    Once you can hear the difference between a natural note and its neighboring bent note, you're ready to use this scale for real melodies, not just this drill.
+
+# Lesson: minor pentatonic scale
+lesson-minor-pentatonic-scale-title = Minor Pentatonic Scale
+lesson-minor-pentatonic-scale-body =
+    Six notes, up and down: 2 draw, 3 draw bent, 4 blow, 4 draw, 5 draw, 6 blow — the blues scale you already know, with the blue note (the flatted 5th) left out.
+    This is the minor pentatonic scale, one of the most widely used scales across blues, rock, and folk playing — and on this harp, it's just the blues scale minus one note.
+    Because it drops the note that needs the trickiest ear (the flatted 5th sits awkwardly between two others), it's often easier to play cleanly in a fast lick than the full blues scale.
+    Notice how it still sounds complete and bluesy on its own — the flatted 5th is a spice, not a requirement.
+    Once this shape feels as automatic as the full blues scale, try switching between the two mid-phrase — that's exactly the choice real improvisers make on the fly.
+
+# Lesson: country scale
+lesson-country-scale-title = The Country Scale
+lesson-country-scale-body =
+    Nine notes, up and down, using only natural blow and draw notes — no bending at all: 1 blow, 1 draw, 2 blow, 2 draw, 4 blow, 4 draw, 5 blow, 6 blow, 6 draw.
+    This is the major pentatonic scale, nicknamed "the Country scale" in harmonica pedagogy because it's the sound of country, folk, and old-time playing — bright and open rather than bluesy.
+    Notice the jump between 2 draw and 4 blow: this harp simply doesn't have a natural note in between at this octave, which is exactly why the scale skips there.
+    Because nothing here needs bending, this is a great scale to reach for early, or any time you want a cheerful, un-bluesy sound instead of the blues scale's darker color.
+    Compare how different this feels from the blues scale runs elsewhere in this unit — same instrument, same key, a completely different mood.
+
+# Lesson: major scale improvisation
+lesson-major-scale-improv-title = Major Scale Improvisation
+lesson-major-scale-improv-body =
+    An open Jam Session again, but this time the hole map and the "Finish Lesson" judgment are keyed to the plain major scale you just learned, not the blues scale.
+    Everything you play is measured against C major (the notes from the major-scale drill) instead of the blues hexatonic every other jam lesson in this game uses.
+    It'll feel different under your fingers: no blue notes to lean on, no bent 3rd or 5th to bend into for effect — just the seven straight major-scale tones, in or out.
+    Use the two whole-step bends from the major-scale drill freely; they're still legal notes, they just land on major-scale tones (F and A) instead of blues ones.
+    When you feel ready to stop, open the pause menu and press "Finish Lesson" — judged by how much of what you played stayed inside the major scale.
+
+# Lesson: minor pentatonic improvisation
+lesson-minor-pentatonic-improv-title = Minor Pentatonic Improvisation
+lesson-minor-pentatonic-improv-body =
+    Another open Jam Session, this time keyed to the minor pentatonic scale from the drill you just finished — the blues scale with its flatted 5th left out.
+    Everything you play is measured against that six-note-minus-one shape instead of the full blues hexatonic the other jam lessons use.
+    You'll find it forgives less — there's no blue note to fall back into if a lick strays, just the five clean pentatonic tones, in or out.
+    This is exactly the scale real players reach for when they want something that always sounds "safe" over almost any chord — that reliability is the whole point of practicing it on its own.
+    When you feel ready to stop, open the pause menu and press "Finish Lesson" — judged by how much of what you played stayed inside the minor pentatonic scale.
 
 # Gameplay — countdown, legend, harmonica overlay hints
 gameplay-get-ready = GET READY

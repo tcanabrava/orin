@@ -299,6 +299,7 @@ lesson-failed-banner = Objetivo no alcanzado — relee la lección e inténtalo 
 lesson-unit-blowing = Unidad 1 · Soplar la Armónica
 lesson-unit-rhythm = Unidad 2 · Contar el Blues
 lesson-unit-blues = Unidad 3 · Vocabulario del Blues
+lesson-unit-scales = Unidad 4 · Escalas e Improvisación
 
 # Lección: nota única
 lesson-single-note-title = Tocar una Sola Nota
@@ -554,6 +555,15 @@ lesson-minor-blues-improv-body =
     El mapa de agujeros sigue recoloreando en vivo exactamente igual que en las demás lecciones de jam; confía en el color, no en lo que esperarías de un blues mayor.
     Cuando sientas que estás listo para parar, abre el menú de pausa y pulsa "Finalizar Lección" — se juzga igual que el ejercicio de improvisación original, adherencia a la escala contra la escala de blues menor.
 
+# Lección: improvisación con cambio rápido
+lesson-quick-change-improv-title = Improvisación con Cambio Rápido
+lesson-quick-change-improv-body =
+    Misma jam abierta y la misma escala de blues que la lección de improvisación original, pero la progresión base cambia al "quick change" — el compás 2 pasa al acorde IV en vez de quedarse en el I.
+    Esto significa que el terreno armónico cambia bajo tus pies dos compases antes que en la forma estándar de 12 compases que ya conoces.
+    Nada cambia sobre qué notas "están en la escala" — esta lección se juzga igual que la lección de improvisación original — pero prestar atención a ese cambio de acorde más temprano afinará tu sentido de dónde estás en la forma.
+    Si te pierdes, la cuadrícula de 12 compases y el mapa de agujeros siguen en vivo y reflejan la forma quick change en tiempo real.
+    Cuando sientas que estás listo para parar, abre el menú de pausa y pulsa "Finalizar Lección" — se juzga igual que el ejercicio de improvisación original, adherencia a la escala contra la escala de blues.
+
 # Lección: pregunta y respuesta
 lesson-question-answer-title = Pregunta y Respuesta
 lesson-question-answer-body =
@@ -562,6 +572,51 @@ lesson-question-answer-body =
     Es tentador seguir toqueteando durante el descanso — resístete. El mapa de agujeros y tus propios oídos saben la diferencia entre un descanso y una nota sostenida.
     Esta es la misma Jam Session abierta de las demás lecciones de improvisación; toca las frases o escalas que te parezcan bien en tus dos compases, luego suelta la armónica de verdad.
     Cuando sientas que estás listo para parar, abre el menú de pausa y pulsa "Finalizar Lección" — el juego juzga cuánto de lo que tocaste cayó fuera de esas ventanas de descanso.
+
+# Lección: escala mayor
+lesson-major-scale-title = La Escala Mayor
+lesson-major-scale-body =
+    Ocho notas, subiendo y bajando: 1 soplado, 1 aspirado, 2 soplado, 2 aspirado doblado un tono entero, 3 soplado, 3 aspirado doblado un tono entero, 3 aspirado, 4 soplado.
+    La armónica de blues vive en la escala de blues, pero la escala mayor común es la base de la que hasta ese sonido de blues se aleja al doblar las notas.
+    Dos de estas notas necesitan los doblados de un tono entero de la lección de doblados profundos, cayendo en Fa y La en vez de las notas naturales que esos agujeros dan sin doblar nada.
+    Tócala despacio, prestando atención a dónde exactamente debe caer la nota — un doblado poco profundo se queda corto y todavía suena como la nota natural debajo de él.
+    Cuando puedas oír la diferencia entre una nota natural y su vecina doblada, estás listo para usar esta escala en melodías de verdad, no solo en este ejercicio.
+
+# Lección: escala pentatónica menor
+lesson-minor-pentatonic-scale-title = Escala Pentatónica Menor
+lesson-minor-pentatonic-scale-body =
+    Seis notas, subiendo y bajando: 2 aspirado, 3 aspirado doblado, 4 soplado, 4 aspirado, 5 aspirado, 6 soplado — la escala de blues que ya conoces, sin la nota azul (la 5ª bemol).
+    Esta es la escala pentatónica menor, una de las escalas más usadas en el blues, el rock y la música folk — y en esta armónica, es solo la escala de blues sin una nota.
+    Como deja fuera la nota que exige el oído más fino (la 5ª bemol queda en una posición incómoda entre las otras dos), suele ser más fácil tocarla limpia en una frase rápida que la escala de blues completa.
+    Fíjate en cómo suena completa y con sabor a blues por sí sola — la 5ª bemol es un condimento, no una obligación.
+    Cuando esta forma te resulte tan automática como la escala de blues completa, prueba a alternar entre las dos a mitad de frase — es exactamente la elección que hacen los improvisadores de verdad sobre la marcha.
+
+# Lección: escala country
+lesson-country-scale-title = La Escala Country
+lesson-country-scale-body =
+    Nueve notas, subiendo y bajando, usando solo notas naturales de soplado y aspirado — sin doblar nada: 1 soplado, 1 aspirado, 2 soplado, 2 aspirado, 4 soplado, 4 aspirado, 5 soplado, 6 soplado, 6 aspirado.
+    Esta es la escala pentatónica mayor, apodada "escala Country" en la pedagogía de la armónica porque es el sonido del country, el folk y la música old-time — brillante y abierta, a diferencia del blues.
+    Fíjate en el salto entre 2 aspirado y 4 soplado: esta armónica simplemente no tiene una nota natural en medio en esa octava, y por eso la escala salta ahí.
+    Como nada aquí necesita doblado, es una excelente escala para usar pronto en tu aprendizaje, o siempre que quieras un sonido alegre y nada bluesy en vez del color más oscuro de la escala de blues.
+    Compara lo distinto que suena esto de las frases de escala de blues del resto de esta unidad — mismo instrumento, misma tonalidad, un ambiente completamente diferente.
+
+# Lección: improvisación en la escala mayor
+lesson-major-scale-improv-title = Improvisación en la Escala Mayor
+lesson-major-scale-improv-body =
+    Otra Jam Session abierta, pero esta vez el mapa de agujeros y el juicio de "Finalizar Lección" están calibrados con la escala mayor común que acabas de aprender, no con la escala de blues.
+    Todo lo que toques se mide contra Do mayor (las notas de la lección de la escala mayor) en vez de la hexatónica de blues que usan las demás lecciones de jam de este juego.
+    Se sentirá distinto bajo tus dedos: sin notas azules en las que apoyarte, sin 3ª ni 5ª dobladas por efecto — solo las siete notas rectas de la escala mayor, dentro o fuera.
+    Usa los dos doblados de tono entero de la lección de la escala mayor con libertad; siguen siendo notas válidas, solo que caen en notas de la escala mayor (Fa y La) en vez de notas de blues.
+    Cuando sientas que estás listo para parar, abre el menú de pausa y pulsa "Finalizar Lección" — se juzga por cuánto de lo que tocaste se mantuvo dentro de la escala mayor.
+
+# Lección: improvisación pentatónica menor
+lesson-minor-pentatonic-improv-title = Improvisación Pentatónica Menor
+lesson-minor-pentatonic-improv-body =
+    Otra Jam Session abierta, esta vez calibrada con la escala pentatónica menor de la lección que acabas de terminar — la escala de blues sin la 5ª bemol.
+    Todo lo que toques se mide contra esa forma de seis-notas-menos-una, en vez de la hexatónica de blues completa que usan las demás lecciones de jam.
+    Notarás que perdona menos — no hay nota azul que te salve si una frase se desvía, solo las cinco notas pentatónicas limpias, dentro o fuera.
+    Esta es exactamente la escala a la que recurren los músicos de verdad cuando quieren algo que siempre suene "seguro" sobre casi cualquier acorde — esa fiabilidad es el motivo de practicarla por separado.
+    Cuando sientas que estás listo para parar, abre el menú de pausa y pulsa "Finalizar Lección" — se juzga por cuánto de lo que tocaste se mantuvo dentro de la escala pentatónica menor.
 
 # Juego — cuenta atrás, leyenda, pistas del diagrama de armónica
 gameplay-get-ready = PREPÁRATE

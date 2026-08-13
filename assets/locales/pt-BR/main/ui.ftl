@@ -299,6 +299,7 @@ lesson-failed-banner = Meta não atingida — releia a lição e tente de novo
 lesson-unit-blowing = Unidade 1 · Soprando a Gaita
 lesson-unit-rhythm = Unidade 2 · Contando o Blues
 lesson-unit-blues = Unidade 3 · Vocabulário do Blues
+lesson-unit-scales = Unidade 4 · Escalas e Improvisação
 
 # Lição: nota única
 lesson-single-note-title = Tocando uma Nota Só
@@ -554,6 +555,15 @@ lesson-minor-blues-improv-body =
     O mapa de furos ainda recolore ao vivo exatamente como nas outras lições de jam; confie na cor, não no que você esperaria de um blues maior.
     Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — esta é julgada do mesmo jeito que o exercício de improvisação original, aderência à escala contra a escala de blues menor.
 
+# Lição: improvisação com mudança rápida
+lesson-quick-change-improv-title = Improvisação com Mudança Rápida
+lesson-quick-change-improv-body =
+    Mesma jam aberta e a mesma escala de blues da lição de improvisação original, mas a progressão de base muda para o "quick change" — o compasso 2 vai pro acorde IV em vez de ficar no I.
+    Isso significa que o chão harmônico muda sob você dois compassos mais cedo do que na forma padrão de 12 compassos que você já conhece.
+    Nada muda sobre quais notas "estão na escala" — esta lição é julgada do mesmo jeito que a lição de improvisação original — mas prestar atenção nessa troca de acorde mais cedo vai afiar seu senso de onde você está na forma.
+    Se você se perder, a grade de 12 compassos e o mapa de furos continuam ao vivo e refletem a forma quick change em tempo real.
+    Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — julgada do mesmo jeito que o exercício de improvisação original, aderência à escala contra a escala de blues.
+
 # Lição: pergunta e resposta
 lesson-question-answer-title = Pergunta e Resposta
 lesson-question-answer-body =
@@ -562,6 +572,51 @@ lesson-question-answer-body =
     É tentador continuar dedilhando durante o descanso — resista. O mapa de furos e seus próprios ouvidos sabem a diferença entre um descanso e uma nota sustentada.
     Esta é a mesma Jam Session aberta das outras lições de improvisação; toque as frases ou escalas que fizerem sentido nos seus dois compassos, depois solte a gaita de verdade.
     Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — o jogo julga quanto do que você tocou caiu fora dessas janelas de descanso.
+
+# Lição: escala maior
+lesson-major-scale-title = A Escala Maior
+lesson-major-scale-body =
+    Oito notas, subindo e descendo: 1 sopro, 1 sugado, 2 sopro, 2 sugado dobrado um tom inteiro, 3 sopro, 3 sugado dobrado um tom inteiro, 3 sugado, 4 sopro.
+    A gaita de blues vive na escala de blues, mas a escala maior comum é a base da qual até esse som de blues se afasta ao dobrar as notas.
+    Duas dessas notas precisam dos dobramentos de um tom inteiro da lição de dobramentos profundos, caindo em Fá e Lá em vez das notas naturais que esses furos soam sem dobrar nada.
+    Toque devagar, prestando atenção em exatamente onde a nota precisa cair — um dobramento raso fica curto e ainda soa como a nota natural por baixo dele.
+    Quando você conseguir ouvir a diferença entre uma nota natural e sua vizinha dobrada, está pronto pra usar essa escala em melodias de verdade, não só neste exercício.
+
+# Lição: escala pentatônica menor
+lesson-minor-pentatonic-scale-title = Escala Pentatônica Menor
+lesson-minor-pentatonic-scale-body =
+    Seis notas, subindo e descendo: 2 sugado, 3 sugado dobrado, 4 sopro, 4 sugado, 5 sugado, 6 sopro — a escala de blues que você já conhece, sem a nota azul (a 5ª bemol).
+    Essa é a escala pentatônica menor, uma das escalas mais usadas no blues, rock e música folk — e nessa gaita, é só a escala de blues sem uma nota.
+    Como ela deixa de fora a nota que exige o ouvido mais afiado (a 5ª bemol fica numa posição incômoda entre as outras duas), muitas vezes é mais fácil tocar limpo numa frase rápida do que com a escala de blues completa.
+    Repare como ela ainda soa completa e bluesy sozinha — a 5ª bemol é um tempero, não uma obrigação.
+    Quando essa forma ficar tão automática quanto a escala de blues completa, tente alternar entre as duas no meio de uma frase — é exatamente a escolha que improvisadores de verdade fazem na hora.
+
+# Lição: escala country
+lesson-country-scale-title = A Escala Country
+lesson-country-scale-body =
+    Nove notas, subindo e descendo, usando só notas naturais de sopro e sugado — sem dobrar nada: 1 sopro, 1 sugado, 2 sopro, 2 sugado, 4 sopro, 4 sugado, 5 sopro, 6 sopro, 6 sugado.
+    Essa é a escala pentatônica maior, apelidada de "escala Country" na pedagogia da gaita porque é o som do country, do folk e da música old-time — brilhante e aberta, ao contrário do blues.
+    Repare no salto entre 2 sugado e 4 sopro: essa gaita simplesmente não tem uma nota natural no meio nessa oitava, e é exatamente por isso que a escala pula ali.
+    Como nada aqui precisa de dobramento, essa é uma ótima escala pra usar cedo no seu aprendizado, ou sempre que você quiser um som alegre e nada bluesy em vez da cor mais sombria da escala de blues.
+    Compare como isso soa diferente das frases de escala de blues do resto desta unidade — mesmo instrumento, mesma tonalidade, um clima completamente diferente.
+
+# Lição: improvisação na escala maior
+lesson-major-scale-improv-title = Improvisação na Escala Maior
+lesson-major-scale-improv-body =
+    Outra Jam Session aberta, mas dessa vez o mapa de furos e o julgamento de "Finalizar Lição" são calibrados pela escala maior comum que você acabou de aprender, não pela escala de blues.
+    Tudo que você tocar é medido contra Dó maior (as notas da lição da escala maior) em vez da hexatônica de blues que as outras lições de jam deste jogo usam.
+    Vai parecer diferente sob seus dedos: sem notas azuis pra se apoiar, sem 3ª ou 5ª dobrada por efeito — só as sete notas retas da escala maior, dentro ou fora.
+    Use os dois dobramentos de tom inteiro da lição da escala maior à vontade; eles continuam sendo notas válidas, só que caem em notas da escala maior (Fá e Lá) em vez de notas de blues.
+    Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — julgada por quanto do que você tocou ficou dentro da escala maior.
+
+# Lição: improvisação pentatônica menor
+lesson-minor-pentatonic-improv-title = Improvisação Pentatônica Menor
+lesson-minor-pentatonic-improv-body =
+    Mais uma Jam Session aberta, dessa vez calibrada pela escala pentatônica menor da lição que você acabou de terminar — a escala de blues sem a 5ª bemol.
+    Tudo que você tocar é medido contra essa forma de seis-notas-menos-uma, em vez da hexatônica de blues completa que as outras lições de jam usam.
+    Você vai perceber que ela perdoa menos — não tem nota azul pra te salvar se uma frase escapar, só as cinco notas pentatônicas limpas, dentro ou fora.
+    Essa é exatamente a escala que músicos de verdade buscam quando querem algo que sempre soa "seguro" sobre quase qualquer acorde — essa confiabilidade é o motivo de praticá-la sozinha.
+    Quando sentir que está pronto pra parar, abra o menu de pausa e aperte "Finalizar Lição" — julgada por quanto do que você tocou ficou dentro da escala pentatônica menor.
 
 # Jogo — contagem regressiva, legenda, dicas do diagrama da harmônica
 gameplay-get-ready = PREPARE-SE
