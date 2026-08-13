@@ -1,0 +1,505 @@
+{
+  "metadata": {
+    "format_version": "1.0.0",
+    "author": "Harmonicon",
+    "source": "Original exercise",
+    "license": "MIT",
+    "description": "Lesson drill: a full chromatic scale (13 semitones), ascending then descending, on a 12-hole C chromatic harmonica. About half the notes need the slide button pressed to fill in what the blow/draw pattern alone skips."
+  },
+  "song": {
+    "title": "Chromatic Slide Basics",
+    "artist": "Harmonicon Lessons",
+    "tempo_bpm": 70,
+    "key": "C",
+    "time_signature": "4/4",
+    "difficulty": "intermediate"
+  },
+  "timing": {
+    "resolution": 480,
+    "tempo_map": [
+      {
+        "tick": 0,
+        "bpm": 70
+      }
+    ]
+  },
+  "harmonica": {
+    "type": "chromatic",
+    "holes": 12,
+    "layout": {
+      "blow": [
+        "C4",
+        "D4",
+        "E4",
+        "F4",
+        "G4",
+        "A4",
+        "B4",
+        "C5",
+        "D5",
+        "E5",
+        "F5",
+        "G5"
+      ],
+      "draw": [
+        "D4",
+        "E4",
+        "F#4",
+        "G4",
+        "A4",
+        "B4",
+        "C#5",
+        "D5",
+        "E5",
+        "F#5",
+        "G5",
+        "A5"
+      ],
+      "blow_slide": [
+        "C#4",
+        "D#4",
+        "F4",
+        "F#4",
+        "G#4",
+        "A#4",
+        "C5",
+        "C#5",
+        "D#5",
+        "F5",
+        "F#5",
+        "G#5"
+      ],
+      "draw_slide": [
+        "D#4",
+        "F4",
+        "G4",
+        "G#4",
+        "A#4",
+        "C5",
+        "D5",
+        "D#5",
+        "F5",
+        "G5",
+        "G#5",
+        "A#5"
+      ]
+    }
+  },
+  "track": [
+    {
+      "id": "n01",
+      "time": 0.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "blow",
+          "note": "C4"
+        }
+      ],
+      "phrase": "Ascending"
+    },
+    {
+      "id": "n02",
+      "time": 4.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "blow",
+          "note": "C#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n03",
+      "time": 8.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "draw",
+          "note": "D4"
+        }
+      ]
+    },
+    {
+      "id": "n04",
+      "time": 12.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "draw",
+          "note": "D#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n05",
+      "time": 16.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 2,
+          "action": "draw",
+          "note": "E4"
+        }
+      ]
+    },
+    {
+      "id": "n06",
+      "time": 20.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 2,
+          "action": "draw",
+          "note": "F4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n07",
+      "time": 24.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 3,
+          "action": "draw",
+          "note": "F#4"
+        }
+      ]
+    },
+    {
+      "id": "n08",
+      "time": 28.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 3,
+          "action": "draw",
+          "note": "G4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n09",
+      "time": 32.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 4,
+          "action": "draw",
+          "note": "G#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n10",
+      "time": 36.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 5,
+          "action": "draw",
+          "note": "A4"
+        }
+      ]
+    },
+    {
+      "id": "n11",
+      "time": 40.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 5,
+          "action": "draw",
+          "note": "A#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n12",
+      "time": 44.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 6,
+          "action": "draw",
+          "note": "B4"
+        }
+      ]
+    },
+    {
+      "id": "n13",
+      "time": 48.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 6,
+          "action": "draw",
+          "note": "C5",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n14",
+      "time": 52.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 6,
+          "action": "draw",
+          "note": "C5",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ],
+      "phrase": "Descending"
+    },
+    {
+      "id": "n15",
+      "time": 56.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 6,
+          "action": "draw",
+          "note": "B4"
+        }
+      ]
+    },
+    {
+      "id": "n16",
+      "time": 60.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 5,
+          "action": "draw",
+          "note": "A#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n17",
+      "time": 64.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 5,
+          "action": "draw",
+          "note": "A4"
+        }
+      ]
+    },
+    {
+      "id": "n18",
+      "time": 68.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 4,
+          "action": "draw",
+          "note": "G#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n19",
+      "time": 72.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 3,
+          "action": "draw",
+          "note": "G4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n20",
+      "time": 76.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 3,
+          "action": "draw",
+          "note": "F#4"
+        }
+      ]
+    },
+    {
+      "id": "n21",
+      "time": 80.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 2,
+          "action": "draw",
+          "note": "F4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n22",
+      "time": 84.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 2,
+          "action": "draw",
+          "note": "E4"
+        }
+      ]
+    },
+    {
+      "id": "n23",
+      "time": 88.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "draw",
+          "note": "D#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n24",
+      "time": 92.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "draw",
+          "note": "D4"
+        }
+      ]
+    },
+    {
+      "id": "n25",
+      "time": 96.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "blow",
+          "note": "C#4",
+          "modifiers": [
+            {
+              "type": "slide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n26",
+      "time": 100.0,
+      "duration": 3.5,
+      "play_mode": "single",
+      "events": [
+        {
+          "hole": 1,
+          "action": "blow",
+          "note": "C4"
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "perfect_window_ms": 150,
+    "good_window_ms": 350,
+    "miss_window_ms": 550
+  }
+}

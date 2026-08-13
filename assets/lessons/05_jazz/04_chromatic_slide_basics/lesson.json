@@ -1,0 +1,9 @@
+{
+  "id": "chromatic-slide-basics",
+  "unit": "jazz",
+  "title_key": "lesson-chromatic-slide-basics-title",
+  "body_key": "lesson-chromatic-slide-basics-body",
+  "chart": "song/chart.harpchart",
+  "prerequisites": ["swing-eighths"],
+  "pass_criteria": { "type": "technique", "technique": "slide", "threshold": 0.5 }
+}
