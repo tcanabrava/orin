@@ -1,0 +1,10 @@
+{
+  "id": "quick-change-improv",
+  "unit": "blues",
+  "title_key": "lesson-quick-change-improv-title",
+  "body_key": "lesson-quick-change-improv-body",
+  "chart": "song/chart.harpchart",
+  "progression": "quick-change",
+  "prerequisites": ["improvisation"],
+  "pass_criteria": { "type": "scale-adherence", "threshold": 0.8 }
+}
