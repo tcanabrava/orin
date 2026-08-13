@@ -114,6 +114,27 @@ impl Genre {
     }
 }
 
+/// The genre picked for the current generated jam, kept around after
+/// `build_generated_manifest` bakes it into the audio/chart so a live
+/// gameplay-side system (`jam::rhythm_guide`) can still read it — unlike
+/// `Genre` itself, which is otherwise only ever a plain function parameter.
+/// Lives here (not `app::`, alongside `JamProgression`/`JamScale`) because
+/// `Genre` lives in this same `jam::` layer already; `app::` is reserved
+/// for wrapping types from *lower* layers (`song::`) that a higher one
+/// like `jam::` reads — putting `Genre` there would mean `app::` importing
+/// from `jam::`, inverting the "dependencies point downward" rule `jam`
+/// itself already relies on (`jam::session` imports `crate::app::
+/// JamProgression`/`JamScale`, not the other way around).
+///
+/// Set on Start by `menu::pages::jam_generate` (alongside `JamProgression`/
+/// `JamScale`) and reset to the default (`Genre::Blues`) by the real-song
+/// "Jam Session" button (`menu::pages::jam_session`) — a real song has no
+/// genre concept attached to it; `jam::rhythm_guide`'s widget only ever
+/// spawns for a `GeneratedJamSession` regardless, so this reset is just
+/// defense against a stale value lingering, not load-bearing on its own.
+#[derive(Resource, Default)]
+pub struct JamGenre(pub Genre);
+
 /// Semitone offsets of the classic 12-bar "blues box" bass shape, relative
 /// to whatever chord root is sounding: root, root, 5th, 5th, flat-7th,
 /// flat-7th, 5th, flat-7th — 8 slots per bar. Quality-agnostic like every
@@ -161,7 +182,11 @@ const COUNTRY_PATTERN: [Option<i32>; 8] =
 
 /// This genre's per-bar note pattern (see the `*_PATTERN` constants above)
 /// and whether its eighth-note pairs swing 2:1 or play straight/even.
-fn genre_pattern(genre: Genre) -> (&'static [Option<i32>; 8], bool) {
+/// `pub(crate)` so `jam::rhythm_guide` can drive its live harmonica-attack
+/// pulse row from the exact same rhythmic skeleton the bass audio uses —
+/// one shared "what does this genre's groove look like" source, two
+/// different renderings (audio synthesis here, a visual guide there).
+pub(crate) fn genre_pattern(genre: Genre) -> (&'static [Option<i32>; 8], bool) {
     match genre {
         Genre::Blues => (&BLUES_PATTERN, true),
         Genre::Jazz => (&JAZZ_PATTERN, true),
@@ -175,8 +200,10 @@ fn genre_pattern(genre: Genre) -> (&'static [Option<i32>; 8], bool) {
 /// short one takes the rest) — the same 2:1 "triplet swing" ratio
 /// `metronome_overlay`'s `MetronomeFeel::Shuffle` clicks to, so a genre
 /// that swings (see [`genre_pattern`]) swings in step with the shuffle-feel
-/// metronome. A straight genre splits the beat evenly instead.
-const SWING_LONG_FRAC: f32 = 2.0 / 3.0;
+/// metronome. A straight genre splits the beat evenly instead. `pub(crate)`
+/// so `jam::rhythm_guide::active_slot` can use the identical split for its
+/// live pulse timing instead of a second, possibly-drifting copy.
+pub(crate) const SWING_LONG_FRAC: f32 = 2.0 / 3.0;
 
 /// One simple bass tone: a sine fundamental plus a second and third harmonic
 /// for warmth, and a short attack/release envelope. The harmonics matter for

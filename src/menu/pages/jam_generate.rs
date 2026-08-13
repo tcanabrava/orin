@@ -13,7 +13,7 @@ use bevy_fluent::Localization;
 use crate::audio_system::midi::NOTE_NAMES;
 use crate::dialogs::combobox;
 use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
-use crate::jam::backing::{GeneratedJamSession, Genre, build_generated_manifest};
+use crate::jam::backing::{GeneratedJamSession, Genre, JamGenre, build_generated_manifest};
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
 use crate::song::chart::Scale;
@@ -215,6 +215,7 @@ pub(crate) fn setup_jam_generate_menu(
          mut mode: ResMut<GameplayMode>,
          mut progression: ResMut<JamProgression>,
          mut scale: ResMut<JamScale>,
+         mut genre_res: ResMut<JamGenre>,
          mut commands: Commands,
          mut state: ResMut<NextState<AppState>>| {
             let background = theme.default_background.clone().unwrap_or_default();
@@ -234,6 +235,7 @@ pub(crate) fn setup_jam_generate_menu(
             *mode = GameplayMode::JamSession;
             progression.0 = config.progression;
             scale.0 = config.scale;
+            genre_res.0 = config.genre;
             // Synthesized synchronously above (no async asset load to wait
             // on), so this skips `AppState::SongLoading` entirely and goes
             // straight to `Playing` — `check_loading`'s only job is waiting

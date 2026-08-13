@@ -8,6 +8,7 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::{GameplayMode, JamProgression, JamScale};
+use crate::jam::backing::{Genre, JamGenre};
 use crate::localization::LocalizationExt;
 use crate::song::chart::Scale;
 use crate::song::harmonica::Progression;
@@ -37,6 +38,7 @@ pub(crate) fn setup_jam_session_menu(
          mut mode: ResMut<GameplayMode>,
          mut progression: ResMut<JamProgression>,
          mut scale: ResMut<JamScale>,
+         mut genre: ResMut<JamGenre>,
          mut page: ResMut<NextState<MenuPage>>| {
             *mode = GameplayMode::JamSession;
             // A real song always plays its own actual chords regardless of
@@ -49,6 +51,12 @@ pub(crate) fn setup_jam_session_menu(
             // sets one (see `jam::session::setup`); this is only the
             // fallback for a song that doesn't.
             scale.0 = Scale::FirstPosition;
+            // Same reasoning again: a real song has no genre concept
+            // attached to it at all (unlike scale, no per-song override
+            // exists or would make sense) — `jam::rhythm_guide` only ever
+            // spawns for a `GeneratedJamSession` regardless, so this is
+            // just defense against a stale value lingering.
+            genre.0 = Genre::Blues;
             page.set(MenuPage::ArtistList);
         },
     );

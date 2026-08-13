@@ -724,6 +724,7 @@ jam-call-response-on = Call & Response: on
 jam-call-response-listen = Listen…
 jam-call-response-your-turn = Your turn
 jam-midi-track-mute-tooltip = Click to mute/unmute this track
+jam-rhythm-guide = Rhythm Guide
 jam-spectrogram-style-button = ↻ View
 jam-spectrogram-style-bars = Bars
 jam-spectrogram-style-oscilloscope = Oscilloscope

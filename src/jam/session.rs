@@ -36,8 +36,10 @@ use crate::gameplay::song_progress_overlay::{BAR_HEIGHT, NoteMarker, spawn_song_
 use crate::gameplay::twelve_bar_blues_overlay::{GridConfig, spawn_12_bar_grid};
 use crate::spectrogram::{OscMaterial, SpectrogramStyle, spawn_spectrogram};
 
+use super::backing::{GeneratedJamSession, JamGenre};
 use super::improv::classify_note_fit;
 use super::midi_tracks::{JamMidiMute, spawn_midi_track_row};
+use super::rhythm_guide::spawn_rhythm_guide;
 
 /// Free-play screen, two columns: left has everything but the harmonica
 /// itself (title, loop toggle, 12-bar chart, metronome, spectrogram); right
@@ -57,6 +59,8 @@ pub fn setup(
     theme: Res<LoadedTheme>,
     jam_progression: Res<JamProgression>,
     jam_scale: Res<JamScale>,
+    jam_genre: Res<JamGenre>,
+    generated: Option<Res<GeneratedJamSession>>,
     loc: Res<Localization>,
 ) {
     let Some(manifest) = manifests.get(&selected.0) else {
@@ -254,6 +258,12 @@ pub fn setup(
                         .with_children(|metro| {
                             spawn_metronome(metro, &loc, beats_per_bar, bpm);
                         });
+                        // Only for a generated jam — a real song has no
+                        // `Genre` concept attached to it (see
+                        // `jam::rhythm_guide`'s own doc comment).
+                        if generated.is_some() {
+                            spawn_rhythm_guide(left, &loc, jam_genre.0);
+                        }
                         crate::spectrogram::spawn_style_toggle(left, *spectrogram_style, &loc);
                         left.spawn(Node {
                             width: Val::Percent(100.0),

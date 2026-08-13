@@ -10,8 +10,8 @@ use bevy::prelude::*;
 use crate::app::{AppState, GameplayMode};
 use crate::audio_system::pitch_detect::PitchRange;
 use crate::jam::{
-    call_response as jam_call_response, improv, midi_tracks as jam_midi_tracks,
-    session as jam_session,
+    backing::GeneratedJamSession, call_response as jam_call_response, improv,
+    midi_tracks as jam_midi_tracks, rhythm_guide as jam_rhythm_guide, session as jam_session,
 };
 use crate::menu::tutorial::tour_active;
 use crate::settings::AudioSettings;
@@ -278,6 +278,21 @@ impl Plugin for GameplayPlugin {
                 .run_if(
                     in_state(AppState::Playing)
                         .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
+                ),
+        )
+        // Jam Session: the harmonica rhythm-guide pulse row — only ever
+        // spawned for a generated jam (see `jam::rhythm_guide`'s own doc
+        // comment), so gated on `GeneratedJamSession`'s presence too, not
+        // just the mode.
+        .add_systems(
+            Update,
+            jam_rhythm_guide::update_rhythm_guide
+                .after(GameplayLogic)
+                .run_if(
+                    in_state(AppState::Playing)
+                        .and_then(|p: Res<Paused>| !p.0)
+                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession)
+                        .and_then(resource_exists::<GeneratedJamSession>),
                 ),
         )
         // Call-and-response: fires each phrase's synthesized demo audio the

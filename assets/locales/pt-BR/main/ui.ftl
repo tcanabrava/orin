@@ -722,6 +722,7 @@ jam-call-response-on = Pergunta & Resposta: ligado
 jam-call-response-listen = Escute…
 jam-call-response-your-turn = Sua vez
 jam-midi-track-mute-tooltip = Clique para silenciar/ativar esta faixa
+jam-rhythm-guide = Guia de Ritmo
 jam-spectrogram-style-button = ↻ Visualização
 jam-spectrogram-style-bars = Barras
 jam-spectrogram-style-oscilloscope = Osciloscópio
