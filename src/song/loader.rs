@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use super::{
     MidiTrackAudio, SongManifest,
-    chart::{CURRENT_FORMAT_VERSION, HarpChart, format_version_supported},
+    chart::{CURRENT_FORMAT_VERSION, HarpChart, format_version_supported, migrate_chart_json},
 };
 use crate::audio_system::{
     synth::SAMPLE_RATE,
@@ -76,7 +76,20 @@ impl SongChartLoader {
         reader.read_to_end(&mut bytes).await?;
 
         // Parse to a generic JSON value first so we can validate before deserializing.
-        let chart_value: serde_json::Value = serde_json::from_slice(&bytes)?;
+        let mut chart_value: serde_json::Value = serde_json::from_slice(&bytes)?;
+
+        // Fix up any schema-breaking change from an older chart format
+        // (e.g. a stray pre-1.1.0 `fx_mapping`) before validation even
+        // runs — an old chart that still has a since-removed field fails
+        // `additionalProperties: false` outright, so this has to happen
+        // before, not after, the validation step below. See
+        // `chart::migrate_chart_json`'s own doc comment.
+        if migrate_chart_json(&mut chart_value) {
+            info!(
+                "Migrated chart at {} to format_version {CURRENT_FORMAT_VERSION}",
+                load_context.path()
+            );
+        }
 
         // Validate against the embedded schema — compiling the schema and
         // walking the whole chart value against it is real work on a big

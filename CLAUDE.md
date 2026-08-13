@@ -226,9 +226,31 @@ Manual testing needs a mic, audio out, and a display.
   - The schema uses `additionalProperties: false` at every level, so
     *removing* a field from the schema breaks previously-authored charts at
     validation (serde would have ignored it). Removals must keep the old
-    key as an allowed-but-ignored property, or bump `format_version` and
-    accept the break — the `fx_mapping` removal did neither (a known,
-    accepted break; `ROADMAP.md` 0.5 covers its possible reintroduction).
+    key as an allowed-but-ignored property, bump `format_version` and
+    accept the break, or add a migration step — the `fx_mapping` removal
+    did none of these when it landed, which is exactly what broke loading
+    old charts on a fresh install; `chart::migrate_chart_json` (below)
+    fixes that one retroactively.
+  - **Old charts self-heal on load, they aren't rewritten on disk.**
+    `song::chart::migrate_chart_json` runs on the raw JSON `Value` *before*
+    schema validation (a chart that fails validation never reaches typed
+    deserialization, so migrating after would be too late) — a small
+    ordered list of `Migration { target_version, apply }` steps, each
+    skipped once a chart's own `metadata.format_version` already meets
+    `target_version` (missing/unparsable counts as older than everything,
+    since almost every chart old enough to need migrating predates the
+    field). Currently one step: `strip_legacy_fx_mapping`, folded into
+    `1.1.0`. A step's `apply` returns whether it actually changed anything,
+    separate from whether it was *attempted* — most charts below a step's
+    threshold don't actually have the specific problem it fixes (e.g. a
+    declared-1.0.0 chart that never used `fx_mapping`), so `song::loader`
+    only logs when real content changed, though `format_version` itself is
+    always stamped to `CURRENT_FORMAT_VERSION` whenever any step's
+    threshold applied, so a chart that passes through never gets
+    re-evaluated against the same migrations again. The fix lives entirely
+    in memory for that load — nothing writes the migrated JSON back to the
+    `.harpchart` file on disk (a re-save through the Song Editor would,
+    naturally, since it serializes current in-memory state).
   - `metadata.format_version` is actively checked, not just descriptive:
     `song::chart::CURRENT_FORMAT_VERSION` is the newest version this
     build's loader understands, and `song::loader` rejects (with a clear

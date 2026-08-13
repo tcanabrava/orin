@@ -20,7 +20,10 @@ Its top-level shape:
   declaring a *newer* version than the running build understands is
   rejected with a clear "this chart needs a newer Harmonicon" message
   rather than failing confusingly downstream against a schema it wasn't
-  written for.
+  written for. An *older* chart goes through `chart::migrate_chart_json`
+  first (see below) rather than being checked directly — a chart old
+  enough to still carry a since-removed field would otherwise fail schema
+  validation before this check is even reached.
 - **`song`** — title, artist, tempo, key, time signature.
 - **`harmonica`** — diatonic or chromatic, hole layout, tuning/bending
   profile, and (see the Song Editor and Jam Session chapters) the
@@ -41,10 +44,42 @@ schema evolution.** Every level of the schema sets
 `additionalProperties: false`, so *removing* a field from the schema
 would break previously-authored charts still carrying it at validation
 time (a plain `serde` struct would just silently ignore an unknown
-field; the schema validator won't). Field removals in this codebase
-either keep the old key present-but-ignored in the schema, or accept the
-break explicitly and bump `format_version` — there's no silent middle
-ground.
+field; the schema validator won't). A field removal has three legitimate
+ways to handle this — keep the old key present-but-ignored in the schema,
+accept the break explicitly and bump `format_version`, or add a migration
+step (below) that fixes the content up before validation ever sees it.
+The original `fx_mapping` removal did none of these, which is exactly why
+old charts carrying it failed to load; `migrate_chart_json` (below) fixes
+that specific case retroactively, and is the template for handling any
+future removal the same way instead of repeating that gap.
+
+### Migrating old charts on load
+
+`song::chart::migrate_chart_json` runs on the raw `serde_json::Value`
+**before** schema validation — migrating after would be too late, since a
+chart that fails validation never reaches typed deserialization at all.
+It walks an ordered list of `Migration { target_version, apply }` steps
+(currently one: `strip_legacy_fx_mapping`, folded into `1.1.0`), skipping
+any step whose `target_version` is already covered by the chart's own
+declared `metadata.format_version` — a missing or unparsable version is
+treated as older than everything, since almost every chart old enough to
+need migrating predates the field itself.
+
+Each step's `apply` returns whether it actually changed anything, kept
+deliberately separate from whether it was merely *attempted*: most
+charts below a step's version threshold don't actually have the specific
+problem it fixes (a chart declaring `1.0.0` that never used `fx_mapping`
+to begin with, say). `song::loader` only logs when real content changed;
+`metadata.format_version` itself is unconditionally stamped to
+`CURRENT_FORMAT_VERSION` whenever *any* step's threshold applied, whether
+or not that step found something to fix, so a chart that's passed through
+here once never gets re-evaluated against the same migrations again.
+
+This is purely an in-memory fix-up for that one load — nothing writes the
+migrated JSON back to the `.harpchart` file on disk. A re-save through the
+Song Editor naturally picks up the fix, since it serializes whatever's
+currently in memory, but an external chart a player never re-saves stays
+migrated-on-load, indefinitely, every time it's opened.
 
 ## `SongManifest`: the loaded, in-memory result
 

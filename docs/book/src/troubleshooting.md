@@ -47,6 +47,13 @@ versions — rather than failing on a confusing, unrelated error further
 into loading. If you see this, update Harmonicon, or double-check the
 chart's `format_version` field wasn't set higher than it should have been.
 
+An *older* chart is a different story: Harmonicon automatically fixes up a
+handful of known old-format issues (like a leftover field from a since-
+removed feature) the moment it loads the file, so an old chart just works
+without you needing to edit it by hand. This happens silently in memory —
+it doesn't rewrite the file on disk — unless you also save it again from
+the Song Editor, at which point the fixed-up version is what gets written.
+
 ## The game feels stuttery or slow
 
 - Practice Speed (pause menu, 50%–100%) slows the highway/metronome down

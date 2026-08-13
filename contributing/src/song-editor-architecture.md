@@ -234,6 +234,45 @@ the second needed the same treatment, and only then extend — rather
 than either guessing at the full scope up front or leaving the gap
 undiscovered.
 
+## Meta-form text fields: real `EditableText`, not hand-rolled input
+
+The nine free-text meta-form fields (Tempo, Music, Name, Author, and five
+lesson fields) are built on `bevy_text::EditableText` via a small shared
+widget, `dialogs::text_input::spawn_text_input` — real click-to-focus,
+cursor rendering, and keyboard editing supplied by `bevy_ui_widgets`'
+`EditableTextInputPlugin` (already registered app-wide), rather than a
+hand-rolled per-character `KeyboardInput` capture. The five click-to-cycle
+fields (Key, Position, and three lesson-enum pickers) are unrelated —
+plain `WidgetButton`s that step their value on `Activate`, never text
+input at all.
+
+Two consequences of building on real focus/editing primitives instead of
+a custom `EditorState.focus: Option<Field>` flag (which this used to be):
+
+- **Keyboard-shortcut gating reads real `InputFocus`.** `interaction::
+  grid_keys`/`handle_copy_paste`/`handle_undo_redo`/`pan_keys` each check
+  `Res<InputFocus>` against `Query<(), With<EditableText>>` (a small
+  shared helper, `a_text_field_has_focus`) instead of a bespoke flag, so
+  Delete/Ctrl+C/V/Z/Y/arrow-panning correctly stay disabled while typing.
+  This also means Tab-focusing a field and typing immediately now works —
+  under the old flag-based system it silently didn't, since only a click
+  (never Tab) ever set the flag.
+- **Programmatic writes need their own sync path.** A field's `EditableText`
+  buffer is its own live source of truth while focused, so `EditorState`
+  can't just be blindly redrawn into it every frame the way the old
+  `MetaFieldText` display was — `EditorState` changes on essentially every
+  frame during ordinary editing (note placement, selection, ...), and a
+  naive resync would erase whatever the player is mid-typing. `panel::
+  sync_meta_field_text` handles this: it reconciles every field's buffer
+  against `EditorState::field_text` every frame, but skips whichever field
+  entity currently equals `InputFocus::get()`. This is what lets Load,
+  MIDI import, and Browse-picking a music file all update a field's
+  displayed text with zero code of their own — they just write
+  `EditorState`'s plain `String` fields as before, and the sync system
+  picks it up on the next frame (unless the player happens to be typing
+  in that exact field at that exact moment, in which case it's skipped
+  until they move on).
+
 ## Save/load and the schema/version contract
 
 Saving serializes `EditorState` into the same `.harpchart` JSON shape

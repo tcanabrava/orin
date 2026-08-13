@@ -67,6 +67,157 @@ pub fn format_version_supported(chart_version: Option<&str>, current_version: &s
     }
 }
 
+/// A schema-breaking change from an older chart format, fixed up on the raw
+/// JSON before schema validation — see [`migrate_chart_json`]. `target_version`
+/// is the `format_version` the fix was folded into: a chart already
+/// declaring that version or newer is assumed to already be clean of
+/// whatever `apply` fixes, and the step is skipped. `apply` returns whether
+/// it actually changed anything — most charts below `target_version` don't
+/// actually have the specific problem a given step fixes (e.g. most
+/// pre-1.1.0 charts never used `fx_mapping` at all), so "old enough to
+/// maybe need this" and "this step actually did something" are tracked
+/// separately (see [`migrate_chart_json`]'s own doc comment for why that
+/// distinction matters).
+struct Migration {
+    target_version: &'static str,
+    apply: fn(&mut serde_json::Value) -> bool,
+}
+
+/// Removes a stray top-level `fx_mapping` object some pre-1.1.0 charts still
+/// carry. The field was dropped from the schema without being kept as an
+/// allowed-but-ignored property (`additionalProperties: false` at every
+/// level), so a chart that still has it fails validation outright instead
+/// of just silently ignoring the field — this is what actually broke
+/// loading those charts on a fresh install. `fx_mapping` never had any
+/// gameplay effect (per-technique audio FX mapping was unbuilt), so
+/// dropping it is always safe.
+fn strip_legacy_fx_mapping(value: &mut serde_json::Value) -> bool {
+    value
+        .as_object_mut()
+        .is_some_and(|obj| obj.remove("fx_mapping").is_some())
+}
+
+/// Every known schema-breaking change, oldest first. Add a new entry here
+/// whenever a future removal/rename needs migrating instead of just
+/// documented as an accepted break (see CLAUDE.md's Chart format notes on
+/// `additionalProperties: false`).
+const MIGRATIONS: &[Migration] = &[Migration {
+    target_version: "1.1.0",
+    apply: strip_legacy_fx_mapping,
+}];
+
+/// Fixes up a chart's raw JSON in place so it validates against the current
+/// schema, running every [`MIGRATIONS`] step whose `target_version` is newer
+/// than the chart's own declared `metadata.format_version` (a missing or
+/// unparsable version is treated as older than everything, since almost
+/// every chart old enough to need migrating predates the field itself).
+/// Called by `song::loader` on the raw JSON *before* schema validation —
+/// migrating after validation would be too late, since an old chart with a
+/// since-removed field fails validation before ever reaching typed
+/// deserialization.
+///
+/// Returns whether any step actually changed the content (not just whether
+/// one was *attempted* — most charts below a step's `target_version` don't
+/// actually have the specific problem it fixes, e.g. a 1.0.0 chart that
+/// never used `fx_mapping` to begin with). The caller uses this to decide
+/// whether a migration is worth logging; `metadata.format_version` itself is
+/// always stamped to [`CURRENT_FORMAT_VERSION`] whenever at least one step's
+/// threshold applied, whether or not that step found anything to fix, so a
+/// chart that passes through here never gets re-evaluated against the same
+/// migrations again (e.g. on a re-save from the Song Editor).
+pub fn migrate_chart_json(value: &mut serde_json::Value) -> bool {
+    let declared = value
+        .get("metadata")
+        .and_then(|m| m.get("format_version"))
+        .and_then(|v| v.as_str())
+        .and_then(parse_format_version);
+
+    let mut needs_version_bump = false;
+    let mut changed = false;
+    for step in MIGRATIONS {
+        let target =
+            parse_format_version(step.target_version).expect("MIGRATIONS version is well-formed");
+        if declared.map(|d| d < target).unwrap_or(true) {
+            needs_version_bump = true;
+            if (step.apply)(value) {
+                changed = true;
+            }
+        }
+    }
+
+    if needs_version_bump && let Some(obj) = value.as_object_mut() {
+        let metadata = obj
+            .entry("metadata")
+            .or_insert_with(|| serde_json::json!({}));
+        metadata["format_version"] = serde_json::Value::String(CURRENT_FORMAT_VERSION.to_string());
+    }
+
+    changed
+}
+
+#[cfg(test)]
+mod migration_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn strips_fx_mapping_from_a_chart_with_no_declared_version() {
+        let mut value = json!({
+            "song": {},
+            "fx_mapping": { "bend": "pitch_bend" },
+        });
+        assert!(migrate_chart_json(&mut value));
+        assert!(value.get("fx_mapping").is_none());
+        assert_eq!(
+            value["metadata"]["format_version"],
+            json!(CURRENT_FORMAT_VERSION)
+        );
+    }
+
+    #[test]
+    fn bumps_the_version_even_when_nothing_needed_fixing() {
+        let mut value = json!({
+            "metadata": { "format_version": "1.0.0" },
+            "song": {},
+        });
+        assert!(
+            !migrate_chart_json(&mut value),
+            "no fx_mapping present, so nothing actually changed"
+        );
+        assert_eq!(
+            value["metadata"]["format_version"],
+            json!(CURRENT_FORMAT_VERSION)
+        );
+    }
+
+    #[test]
+    fn leaves_an_already_current_chart_untouched() {
+        let mut value = json!({
+            "metadata": { "format_version": CURRENT_FORMAT_VERSION },
+            "song": {},
+            "fx_mapping": { "bend": "pitch_bend" },
+        });
+        assert!(
+            !migrate_chart_json(&mut value),
+            "a chart already declaring the current version is assumed clean"
+        );
+        assert!(
+            value.get("fx_mapping").is_some(),
+            "migrations below the declared version don't run"
+        );
+    }
+
+    #[test]
+    fn creates_a_metadata_object_when_the_chart_has_none_at_all() {
+        let mut value = json!({ "song": {}, "fx_mapping": {} });
+        assert!(migrate_chart_json(&mut value));
+        assert_eq!(
+            value["metadata"]["format_version"],
+            json!(CURRENT_FORMAT_VERSION)
+        );
+    }
+}
+
 #[cfg(test)]
 mod format_version_tests {
     use super::*;
