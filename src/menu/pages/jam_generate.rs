@@ -13,7 +13,7 @@ use bevy_fluent::Localization;
 use crate::audio_system::midi::NOTE_NAMES;
 use crate::dialogs::combobox;
 use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
-use crate::jam::backing::{GeneratedJamSession, build_generated_manifest};
+use crate::jam::backing::{GeneratedJamSession, Genre, build_generated_manifest};
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
 use crate::song::chart::Scale;
@@ -37,6 +37,7 @@ pub(crate) struct JamGenerateConfig {
     pub progression: Progression,
     pub position: Position,
     pub scale: Scale,
+    pub genre: Genre,
 }
 
 impl Default for JamGenerateConfig {
@@ -47,6 +48,7 @@ impl Default for JamGenerateConfig {
             progression: Progression::Standard,
             position: Position::First,
             scale: Scale::FirstPosition,
+            genre: Genre::Blues,
         }
     }
 }
@@ -71,6 +73,10 @@ fn position_labels() -> Vec<String> {
 
 fn scale_labels() -> Vec<String> {
     Scale::all().iter().map(|s| s.label().to_string()).collect()
+}
+
+fn genre_labels() -> Vec<String> {
+    Genre::all().iter().map(|g| g.label().to_string()).collect()
 }
 
 pub(crate) fn setup_jam_generate_menu(
@@ -141,6 +147,20 @@ pub(crate) fn setup_jam_generate_menu(
         },
     );
 
+    combobox::spawn_combobox(
+        &mut commands,
+        root,
+        page_root,
+        &loc.msg("jam-generate-genre"),
+        &genre_labels(),
+        config.genre.label(),
+        |ev: On<combobox::ComboboxSelect>, mut cfg: ResMut<JamGenerateConfig>| {
+            if let Some(g) = Genre::from_label(&ev.value) {
+                cfg.genre = g;
+            }
+        },
+    );
+
     // ── Tempo: a numeric text box rather than a combobox — a free-form BPM
     // isn't a short pick-one-of-N choice, it's a number, so it gets its own
     // widget (`dialogs::text_input::spawn_numeric_input`) instead of forcing
@@ -197,6 +217,7 @@ pub(crate) fn setup_jam_generate_menu(
                 config.bpm,
                 config.progression,
                 config.position,
+                config.genre,
                 background,
                 Handle::default(),
                 &mut sources,

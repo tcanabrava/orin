@@ -46,6 +46,7 @@ jam-generate-tempo = Tempo
 jam-generate-progression = Progression
 jam-generate-position = Position
 jam-generate-scale = Scale
+jam-generate-genre = Genre
 
 # Credits
 credits-back-to-menu = Back to Menu
