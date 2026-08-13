@@ -1,0 +1,178 @@
+// SPDX-License-Identifier: MIT
+
+//! Post-detection harmonica-constraint filtering — the "Harmonica
+//! Constraint Solver" stage from `Harmonica Note Detection Roadmap.md`
+//! (repo root, not checked in): a harmonica's reed plate only responds to
+//! one wind direction at a time, so a raw detector's simultaneous
+//! candidate pitch set (e.g. `PitchAlgorithm::Nmf`'s activations) can
+//! still contain a physically impossible mix — a pitch only reachable by
+//! blowing alongside one only reachable by drawing, which no single
+//! breath can produce. This module is pure post-processing over a
+//! `Harmonica` plus a candidate MIDI pitch set; it doesn't know or care
+//! which detector produced the candidates, so it composes with any of
+//! them (most usefully the polyphonic ones).
+//!
+//! Deliberately lives under `song::`, not `audio_system::`: `Harmonica` is
+//! a `song` type, and `song` already depends on `audio_system` (never the
+//! other way — see `docs/physical_design_plan.md`'s "dependencies point
+//! downward"), so a detector-output filter that needs the harmonica model
+//! can't live inside `audio_system::pitch_detect` itself without inverting
+//! that. Callers that have both a detector's raw output and the active
+//! chart's `Harmonica` (`note_bench`, and eventually the live gameplay
+//! pitch-gate path) apply this as a separate step instead.
+
+use crate::audio_system::midi::note_to_midi;
+use crate::song::harmonica::{Harmonica, hole_notes};
+
+fn to_midi_u8(note: &str) -> Option<u8> {
+    u8::try_from(note_to_midi(note)?).ok()
+}
+
+/// Whether `harp` can produce `midi` via a blow-family technique (the
+/// natural blow note, or an overblow on holes 1/4/5/6) and/or a
+/// draw-family technique (the natural draw note, a bend, or an overdraw on
+/// holes 7-10). A pitch reachable both ways (e.g. a bend landing on the
+/// same semitone an adjacent hole's natural note already covers — ordinary
+/// on a Richter-tuned diatonic) sets both flags.
+///
+/// Which family a bend/overblow/overdraw falls into follows
+/// [`hole_notes`]'s own derivation: on holes 1-6 a bend pulls the *draw*
+/// reed down (draw-family) and an overblow is produced by blowing
+/// (blow-family, even though its pitch sits a semitone above the draw
+/// reed); on holes 7-10 a bend pushes the *blow* reed down (blow-family)
+/// and an overdraw is produced by drawing (draw-family).
+fn reachable(harp: &Harmonica, midi: u8) -> (bool, bool) {
+    let mut blow = false;
+    let mut draw = false;
+    for hole in 1..=harp.hole_count() {
+        let notes = hole_notes(harp, hole);
+        if notes.blow.as_deref().and_then(to_midi_u8) == Some(midi) {
+            blow = true;
+        }
+        if notes.draw.as_deref().and_then(to_midi_u8) == Some(midi) {
+            draw = true;
+        }
+        if notes.bends.iter().any(|b| to_midi_u8(b) == Some(midi)) {
+            if hole <= 6 {
+                draw = true;
+            } else {
+                blow = true;
+            }
+        }
+        if notes.over.as_deref().and_then(to_midi_u8) == Some(midi) {
+            if matches!(hole, 1 | 4 | 5 | 6) {
+                blow = true;
+            } else {
+                draw = true;
+            }
+        }
+    }
+    (blow, draw)
+}
+
+/// Filters `candidates` (a raw detector's simultaneous MIDI pitch guesses)
+/// down to a physically plausible subset for `harp`:
+///
+/// 1. Drop any pitch `harp` can't produce at all, by any technique — noise
+///    or a detector artifact, not a real harmonica note.
+/// 2. Of what's left, keep only the pitches reachable under a single wind
+///    direction — all-blow-family or all-draw-family, whichever explains
+///    more of the remaining candidates — since a player can't blow and
+///    draw at the same instant. Ties (equally many either way) keep blow,
+///    an arbitrary but deterministic choice.
+///
+/// Returns a sorted, deduplicated `Vec<u8>` — empty if `candidates` is
+/// empty or none of them are producible on `harp` at all. A chord/octave
+/// (several notes sharing one wind direction) passes through untouched;
+/// only a mix that needs both directions at once loses its minority side.
+pub fn plausible_notes(harp: &Harmonica, candidates: &[u8]) -> Vec<u8> {
+    let reach: Vec<(u8, bool, bool)> = candidates
+        .iter()
+        .map(|&midi| {
+            let (blow, draw) = reachable(harp, midi);
+            (midi, blow, draw)
+        })
+        .filter(|&(_, blow, draw)| blow || draw)
+        .collect();
+
+    let blow_count = reach.iter().filter(|&&(_, blow, _)| blow).count();
+    let draw_count = reach.iter().filter(|&&(_, _, draw)| draw).count();
+    let keep_blow = draw_count <= blow_count;
+
+    let mut kept: Vec<u8> = reach
+        .into_iter()
+        .filter(|&(_, blow, draw)| if keep_blow { blow } else { draw })
+        .map(|(midi, _, _)| midi)
+        .collect();
+    kept.sort_unstable();
+    kept.dedup();
+    kept
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::song::harmonica::richter_harp;
+
+    // Richter C harp reference (see song::harmonica::{C_BLOW, C_DRAW}):
+    // hole 1: blow C4=60, draw D4=62, bend C#4=61 (draw-family), overblow D#4=63 (blow-family)
+    // hole 2: blow E4=64, draw G4=67
+    // hole 3: blow G4=67 (same pitch as hole 2's draw — an ordinary Richter overlap)
+
+    #[test]
+    fn drops_the_minority_wind_direction() {
+        let harp = richter_harp("C");
+        // Two blow notes (60, 64) outnumber one draw note (62).
+        let kept = plausible_notes(&harp, &[60, 64, 62]);
+        assert_eq!(kept, vec![60, 64]);
+    }
+
+    #[test]
+    fn an_overblow_counts_as_blow_family() {
+        let harp = richter_harp("C");
+        // Overblow (63) + natural blow (60) outvote the natural draw (62),
+        // even though a naive "action per hole" reading might expect 62 to
+        // survive as "the" hole-1 note.
+        let kept = plausible_notes(&harp, &[63, 60, 62]);
+        assert_eq!(kept, vec![60, 63]);
+    }
+
+    #[test]
+    fn a_bend_counts_as_draw_family_on_low_holes() {
+        let harp = richter_harp("C");
+        // Bend (61) + natural draw (62) outvote the natural blow (60).
+        let kept = plausible_notes(&harp, &[61, 62, 60]);
+        assert_eq!(kept, vec![61, 62]);
+    }
+
+    #[test]
+    fn an_unproducible_pitch_is_dropped_regardless() {
+        let harp = richter_harp("C");
+        // 40 (E2) is far below anything this harp can produce.
+        let kept = plausible_notes(&harp, &[60, 40]);
+        assert_eq!(kept, vec![60]);
+    }
+
+    #[test]
+    fn a_pure_blow_chord_survives_untouched() {
+        let harp = richter_harp("C");
+        // Holes 1-3 blow together (a classic "train" chord) — 67 is
+        // ambiguous (also hole 2's draw note) but blow still wins 3-to-1.
+        let mut kept = plausible_notes(&harp, &[60, 64, 67]);
+        kept.sort_unstable();
+        assert_eq!(kept, vec![60, 64, 67]);
+    }
+
+    #[test]
+    fn a_tie_keeps_blow() {
+        let harp = richter_harp("C");
+        let kept = plausible_notes(&harp, &[60, 62]);
+        assert_eq!(kept, vec![60]);
+    }
+
+    #[test]
+    fn empty_candidates_yield_empty_output() {
+        let harp = richter_harp("C");
+        assert!(plausible_notes(&harp, &[]).is_empty());
+    }
+}
