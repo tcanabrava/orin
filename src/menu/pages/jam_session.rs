@@ -7,8 +7,9 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::app::{GameplayMode, JamProgression};
+use crate::app::{GameplayMode, JamProgression, JamScale};
 use crate::localization::LocalizationExt;
+use crate::song::chart::Scale;
 use crate::song::harmonica::Progression;
 use crate::theme::LoadedTheme;
 
@@ -35,6 +36,7 @@ pub(crate) fn setup_jam_session_menu(
         |_: On<Activate>,
          mut mode: ResMut<GameplayMode>,
          mut progression: ResMut<JamProgression>,
+         mut scale: ResMut<JamScale>,
          mut page: ResMut<NextState<MenuPage>>| {
             *mode = GameplayMode::JamSession;
             // A real song always plays its own actual chords regardless of
@@ -42,6 +44,11 @@ pub(crate) fn setup_jam_session_menu(
             // but reset it anyway so a stale pick from an earlier generated
             // jam can't linger and confuse anyone reading the resource value.
             progression.0 = Progression::Standard;
+            // Same reasoning for scale — though unlike progression, a real
+            // song's own `Harmonica::scale()` still wins over this when it
+            // sets one (see `jam::session::setup`); this is only the
+            // fallback for a song that doesn't.
+            scale.0 = Scale::FirstPosition;
             page.set(MenuPage::ArtistList);
         },
     );

@@ -12,7 +12,7 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::{
-    app::{JamProgression, SelectedSong},
+    app::{JamProgression, JamScale, SelectedSong},
     dialogs::button,
     gameplay::{
         ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
@@ -21,10 +21,10 @@ use crate::{
     localization::LocalizationExt,
     settings::AudioSettings,
     song::SongManifest,
-    song::chart::Action,
+    song::chart::{Action, Scale},
     song::harmonica::{
-        ChordQuality, Harmonica, Progression, blues_scale_classes, chord_intervals, harp_banner,
-        progression_bars, semitone,
+        ChordQuality, Harmonica, Progression, chord_intervals, harp_banner, progression_bars,
+        semitone,
     },
     theme::LoadedTheme,
 };
@@ -56,6 +56,7 @@ pub fn setup(
     osc_material: Res<OscMaterial>,
     theme: Res<LoadedTheme>,
     jam_progression: Res<JamProgression>,
+    jam_scale: Res<JamScale>,
     loc: Res<Localization>,
 ) {
     let Some(manifest) = manifests.get(&selected.0) else {
@@ -88,10 +89,15 @@ pub fn setup(
     };
 
     // Per-hole note labels + the lookup the live feedback system uses to light
-    // the hole(s) the player is currently sounding, coloured by blues-scale fit
-    // and — bar by bar — by whether the note is a tone of the chord currently
-    // sounding (I, IV, or V), not just "somewhere in the blues scale".
-    let (holes_info, guide) = build_hole_guide(&chart.harmonica, key, progression);
+    // the hole(s) the player is currently sounding, coloured by scale fit and
+    // — bar by bar — by whether the note is a tone of the chord currently
+    // sounding (I, IV, or V), not just "somewhere in the scale". The chart's
+    // own declared `Harmonica::scale()` wins when it sets one (a real song
+    // authored for e.g. a major-pentatonic melody); otherwise `JamScale`
+    // decides — `FirstPosition` (the blues hexatonic) unless "Generate Jam"
+    // or a jam-based lesson picked something else.
+    let scale = chart.harmonica.scale().unwrap_or(jam_scale.0);
+    let (holes_info, guide) = build_hole_guide(&chart.harmonica, key, progression, scale);
 
     // Which physical harp to grab: a Richter harp's key is its hole-1 blow note.
     let harp_hint = harp_banner(&chart.harmonica, key);
@@ -425,10 +431,11 @@ pub fn restart_finished_jam_music(
 // ── Live harmonica hole map ─────────────────────────────────────────────────────
 
 /// Lookup driving the live hole feedback, rebuilt for each jam: which holes
-/// can sound a given `note+octave`; which note classes are in the song's
-/// blues scale generally; and, per bar of the 12-bar cycle, which note
-/// classes are tones of *that bar's* chord (I, IV, or V) — chord-tone
-/// awareness is a distinct, more advanced skill than just staying in scale.
+/// can sound a given `note+octave`; which note classes are in the jam's
+/// active [`Scale`] generally (blues by default, but configurable — see
+/// `JamScale`); and, per bar of the 12-bar cycle, which note classes are
+/// tones of *that bar's* chord (I, IV, or V) — chord-tone awareness is a
+/// distinct, more advanced skill than just staying in scale.
 ///
 /// Fields are `pub(crate)`: `jam::improv::accumulate_improv_stats` reads
 /// them directly, the same lookup `update_hole_map`'s tint uses, so the
@@ -490,15 +497,18 @@ fn chord_tone_classes(chord_root: &str, quality: ChordQuality) -> HashSet<String
 /// Build the per-hole render data and the live-feedback lookup from the harp
 /// layout, the song key, its `progression` (see `song::harmonica::
 /// Progression` — `Standard` for a real-song jam, player-selected for a
-/// generated one), and its tempo (needed to track which bar — and thus
-/// which chord — is currently sounding).
+/// generated one), its `scale` (see `song::chart::Scale` — the caller
+/// resolves the chart-vs-`JamScale` precedence; this function just applies
+/// whichever one it's given), and its tempo (needed to track which bar —
+/// and thus which chord — is currently sounding).
 pub(crate) fn build_hole_guide(
     harp: &Harmonica,
     key: &str,
     progression: Progression,
+    scale: Scale,
 ) -> (Vec<HoleInfo>, JamHoleGuide) {
     let dash = "\u{2014}";
-    let scale_classes = blues_scale_classes(key);
+    let scale_classes = scale.classes(key);
     let chord_tones_by_bar: [HashSet<String>; 12] = {
         let bars = progression_bars(key, progression);
         std::array::from_fn(|i| {

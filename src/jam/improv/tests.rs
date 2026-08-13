@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+use crate::song::chart::Scale;
 use crate::song::harmonica::{Harmonica, Progression};
 
 use super::super::session::build_hole_guide;
@@ -95,7 +96,7 @@ fn improv_pitch_info(midi: u8, note: &str) -> crate::audio_system::pitch_detect:
 
 fn improv_test_world() -> World {
     let mut world = World::new();
-    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Standard);
+    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::FirstPosition);
     world.insert_resource(guide);
     world.insert_resource(CurrentBar(0)); // bar 0 is the I chord (C7)
     world.insert_resource(AbsoluteBar(0)); // a "play" bar

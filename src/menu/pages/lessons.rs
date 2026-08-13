@@ -19,10 +19,11 @@ use crate::lessons::{
 use crate::localization::LocalizationExt;
 use crate::profile::{PlayerProfile, record_lesson, save_profile};
 use crate::song::SongManifest;
+use crate::song::chart::Scale;
 use crate::song::harmonica::Progression;
 use crate::theme::LoadedTheme;
 
-use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
+use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
@@ -129,6 +130,23 @@ pub(crate) fn parse_progression(s: Option<&str>) -> Progression {
         Some("minor") => Progression::Minor,
         Some("jazz-blues") => Progression::JazzBlues,
         _ => Progression::Standard,
+    }
+}
+
+/// Parses a lesson manifest's `scale` field (schema-enforced to
+/// `"first-position"`/`"second-position"`/`"third-position"`/`"major"`/
+/// `"minor-pentatonic"`/`"country"` when present) into the `Scale` it
+/// names. Absent or unrecognized both fall back to `FirstPosition` (the
+/// blues hexatonic) — same "don't let a stale pick linger" reasoning as
+/// [`parse_progression`].
+pub(crate) fn parse_scale(s: Option<&str>) -> Scale {
+    match s {
+        Some("second-position") => Scale::SecondPosition,
+        Some("third-position") => Scale::ThirdPosition,
+        Some("major") => Scale::Major,
+        Some("minor-pentatonic") => Scale::MinorPentatonic,
+        Some("country") => Scale::Country,
+        _ => Scale::FirstPosition,
     }
 }
 
@@ -457,6 +475,7 @@ pub(crate) fn setup_lesson_reader(
             let lesson_id = entry.manifest.id.clone();
             let criteria = entry.manifest.pass_criteria.clone();
             let progression = entry.manifest.progression.clone();
+            let scale = entry.manifest.scale.clone();
             spawn_button(
                 &mut commands,
                 root,
@@ -465,6 +484,7 @@ pub(crate) fn setup_lesson_reader(
                       asset_server: Res<AssetServer>,
                       mut mode: ResMut<GameplayMode>,
                       mut jam_progression: ResMut<JamProgression>,
+                      mut jam_scale: ResMut<JamScale>,
                       mut state: ResMut<NextState<AppState>>,
                       mut commands: Commands| {
                     commands.insert_resource(SelectedSong(
@@ -480,6 +500,7 @@ pub(crate) fn setup_lesson_reader(
                     if is_jam_criteria(criteria.as_ref()) {
                         *mode = GameplayMode::JamSession;
                         jam_progression.0 = parse_progression(progression.as_deref());
+                        jam_scale.0 = parse_scale(scale.as_deref());
                     } else {
                         *mode = GameplayMode::Play2D;
                     }
@@ -572,6 +593,27 @@ mod tests {
     fn parse_progression_defaults_to_standard_when_absent_or_unknown() {
         assert_eq!(parse_progression(None), Progression::Standard);
         assert_eq!(parse_progression(Some("jazz")), Progression::Standard);
+    }
+
+    // ── parse_scale ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn parse_scale_reads_each_known_value() {
+        assert_eq!(parse_scale(Some("first-position")), Scale::FirstPosition);
+        assert_eq!(parse_scale(Some("second-position")), Scale::SecondPosition);
+        assert_eq!(parse_scale(Some("third-position")), Scale::ThirdPosition);
+        assert_eq!(parse_scale(Some("major")), Scale::Major);
+        assert_eq!(
+            parse_scale(Some("minor-pentatonic")),
+            Scale::MinorPentatonic
+        );
+        assert_eq!(parse_scale(Some("country")), Scale::Country);
+    }
+
+    #[test]
+    fn parse_scale_defaults_to_first_position_when_absent_or_unknown() {
+        assert_eq!(parse_scale(None), Scale::FirstPosition);
+        assert_eq!(parse_scale(Some("dorian")), Scale::FirstPosition);
     }
 
     #[test]

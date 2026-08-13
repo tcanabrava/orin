@@ -179,6 +179,7 @@ mod tests {
                 prerequisites: Vec::new(),
                 pass_criteria: None,
                 progression: None,
+                scale: None,
             },
             chart_asset_path: None,
         }

@@ -16,10 +16,11 @@ use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
 use crate::jam::backing::{GeneratedJamSession, build_generated_manifest};
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
+use crate::song::chart::Scale;
 use crate::song::harmonica::{Position, Progression};
 use crate::theme::LoadedTheme;
 
-use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
+use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
 
@@ -35,6 +36,7 @@ pub(crate) struct JamGenerateConfig {
     pub bpm: f32,
     pub progression: Progression,
     pub position: Position,
+    pub scale: Scale,
 }
 
 impl Default for JamGenerateConfig {
@@ -44,6 +46,7 @@ impl Default for JamGenerateConfig {
             bpm: 90.0,
             progression: Progression::Standard,
             position: Position::First,
+            scale: Scale::FirstPosition,
         }
     }
 }
@@ -64,6 +67,10 @@ fn position_labels() -> Vec<String> {
         .iter()
         .map(|p| p.label().to_string())
         .collect()
+}
+
+fn scale_labels() -> Vec<String> {
+    Scale::all().iter().map(|s| s.label().to_string()).collect()
 }
 
 pub(crate) fn setup_jam_generate_menu(
@@ -120,6 +127,20 @@ pub(crate) fn setup_jam_generate_menu(
         },
     );
 
+    combobox::spawn_combobox(
+        &mut commands,
+        root,
+        page_root,
+        &loc.msg("jam-generate-scale"),
+        &scale_labels(),
+        config.scale.label(),
+        |ev: On<combobox::ComboboxSelect>, mut cfg: ResMut<JamGenerateConfig>| {
+            if let Some(s) = Scale::from_label(&ev.value) {
+                cfg.scale = s;
+            }
+        },
+    );
+
     // ── Tempo: a numeric text box rather than a combobox — a free-form BPM
     // isn't a short pick-one-of-N choice, it's a number, so it gets its own
     // widget (`dialogs::text_input::spawn_numeric_input`) instead of forcing
@@ -167,6 +188,7 @@ pub(crate) fn setup_jam_generate_menu(
          mut sources: ResMut<Assets<AudioSource>>,
          mut mode: ResMut<GameplayMode>,
          mut progression: ResMut<JamProgression>,
+         mut scale: ResMut<JamScale>,
          mut commands: Commands,
          mut state: ResMut<NextState<AppState>>| {
             let background = theme.default_background.clone().unwrap_or_default();
@@ -184,6 +206,7 @@ pub(crate) fn setup_jam_generate_menu(
             commands.insert_resource(GeneratedJamSession);
             *mode = GameplayMode::JamSession;
             progression.0 = config.progression;
+            scale.0 = config.scale;
             // Synthesized synchronously above (no async asset load to wait
             // on), so this skips `AppState::SongLoading` entirely and goes
             // straight to `Playing` — `check_loading`'s only job is waiting

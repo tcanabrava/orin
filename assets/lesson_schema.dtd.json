@@ -119,6 +119,11 @@
       "type": "string",
       "enum": ["standard", "quick-change", "minor", "jazz-blues"],
       "description": "A jam-based lesson's backing progression, seeded into the jam when Start routes into it. Absent = Standard. See menu::lessons::parse_progression."
+    },
+    "scale": {
+      "type": "string",
+      "enum": ["first-position", "second-position", "third-position", "major", "minor-pentatonic", "country"],
+      "description": "A jam-based lesson's scale for live scale-adherence feedback, seeded into JamScale when Start routes into it. Absent = first-position (the blues hexatonic). See menu::lessons::parse_scale."
     }
   }
 }

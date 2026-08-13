@@ -43,6 +43,7 @@ jam-generate-key = Tono
 jam-generate-tempo = Tempo
 jam-generate-progression = Progresión
 jam-generate-position = Posición
+jam-generate-scale = Escala
 
 # Créditos
 credits-back-to-menu = Volver al Menú

@@ -69,6 +69,15 @@ pub struct LessonManifest {
     /// reasoning the real-song Jam Session button already applies.
     #[serde(default)]
     pub progression: Option<String>,
+    /// A jam-based lesson's scale for live scale-adherence feedback
+    /// (`"first-position"`/`"second-position"`/`"third-position"`/
+    /// `"major"`/`"minor-pentatonic"`/`"country"`), seeded into
+    /// `crate::app::JamScale` when routing into `GameplayMode::JamSession`
+    /// — see `menu::pages::lessons::parse_scale`. `None` resets to
+    /// `first-position` (the blues hexatonic), the same "don't let a stale
+    /// pick linger" reasoning `progression` above applies.
+    #[serde(default)]
+    pub scale: Option<String>,
 }
 
 /// Parses and schema-validates one `lesson.json`'s bytes.
@@ -207,6 +216,31 @@ mod tests {
     fn rejects_an_unknown_progression_value() {
         let err = parse_lesson(
             br#"{"id":"x","unit":"u","title_key":"t","body_key":"b","progression":"jazz"}"#,
+        )
+        .unwrap_err();
+        assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn parses_a_scale_field() {
+        let m = parse_lesson(
+            br#"{"id":"major-scale-improv","unit":"scales","title_key":"t","body_key":"b",
+                 "scale":"major"}"#,
+        )
+        .unwrap();
+        assert_eq!(m.scale.as_deref(), Some("major"));
+    }
+
+    #[test]
+    fn scale_defaults_to_none_when_absent() {
+        let m = parse_lesson(br#"{"id":"x","unit":"u","title_key":"t","body_key":"b"}"#).unwrap();
+        assert_eq!(m.scale, None);
+    }
+
+    #[test]
+    fn rejects_an_unknown_scale_value() {
+        let err = parse_lesson(
+            br#"{"id":"x","unit":"u","title_key":"t","body_key":"b","scale":"dorian"}"#,
         )
         .unwrap_err();
         assert!(!err.is_empty());

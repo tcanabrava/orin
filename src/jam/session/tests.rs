@@ -47,7 +47,7 @@ fn note_class_drops_octave() {
 #[test]
 fn guide_maps_a_shared_note_to_every_hole_that_sounds_it() {
     // On a C harp, G4 is both draw-2 and blow-3 — both holes should light.
-    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Standard);
+    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::FirstPosition);
     let mut holes = guide.note_to_holes.get(&67u8).cloned().unwrap_or_default(); // G4
     holes.sort_unstable();
     assert_eq!(holes, vec![2, 3]);
@@ -55,7 +55,7 @@ fn guide_maps_a_shared_note_to_every_hole_that_sounds_it() {
 
 #[test]
 fn guide_marks_scale_membership_per_direction() {
-    let (holes, _) = build_hole_guide(&c_harp(), "C", Progression::Standard);
+    let (holes, _) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::FirstPosition);
     let hole1 = holes.iter().find(|h| h.hole == 1).unwrap();
     assert!(hole1.blow_in_scale, "blow C4 is the root → in scale");
     assert!(!hole1.draw_in_scale, "draw D4 (major 2nd) → outside");
@@ -64,8 +64,21 @@ fn guide_marks_scale_membership_per_direction() {
 }
 
 #[test]
+fn guide_uses_the_scale_it_is_given_instead_of_always_blues() {
+    let (_, blues) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::FirstPosition);
+    let (_, major) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::Major);
+    // Blues hexatonic on C: C, D#, F, F#, G, A#. Major scale on C: C, D, E,
+    // F, G, A, B. "D" (a major 2nd) is in the major scale but not blues;
+    // "D#" (the blues b3) is the other way around.
+    assert!(major.scale_classes.contains("D"));
+    assert!(!blues.scale_classes.contains("D"));
+    assert!(blues.scale_classes.contains("D#"));
+    assert!(!major.scale_classes.contains("D#"));
+}
+
+#[test]
 fn guide_covers_all_ten_holes() {
-    let (holes, _) = build_hole_guide(&c_harp(), "C", Progression::Standard);
+    let (holes, _) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::FirstPosition);
     assert_eq!(holes.len(), 10);
 }
 
@@ -83,7 +96,12 @@ fn c_chromatic_harp() -> Harmonica {
 
 #[test]
 fn guide_covers_all_twelve_holes_for_a_chromatic_harp() {
-    let (holes, _) = build_hole_guide(&c_chromatic_harp(), "C", Progression::Standard);
+    let (holes, _) = build_hole_guide(
+        &c_chromatic_harp(),
+        "C",
+        Progression::Standard,
+        Scale::FirstPosition,
+    );
     assert_eq!(holes.len(), 12);
 }
 
@@ -113,7 +131,7 @@ fn chord_tone_classes_are_the_minor_seventh_for_minor_quality() {
 fn guide_indexes_chord_tones_per_bar_of_the_twelve_bar_cycle() {
     // C 12-bar: bars are [I,I,I,I,IV,IV,I,I,V,IV,I,V] (0-indexed) — see
     // `twelve_bar`. Bar 4 is IV (F7); bar 8 is V (G7).
-    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Standard);
+    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Standard, Scale::FirstPosition);
     assert!(guide.chord_tones_by_bar[0].contains("C"), "bar 0 is I (C7)");
     assert!(
         guide.chord_tones_by_bar[4].contains("F"),
@@ -132,7 +150,12 @@ fn guide_follows_a_non_standard_progression() {
     // C7 = C,E,G,A#; F7 = F,A,C,D# — "E" is the major 3rd of C7 and
     // not a tone of F7 at all, so it distinguishes the two even though
     // both chords happen to share the note C (F7's 5th).
-    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::QuickChange);
+    let (_, guide) = build_hole_guide(
+        &c_harp(),
+        "C",
+        Progression::QuickChange,
+        Scale::FirstPosition,
+    );
     assert!(
         guide.chord_tones_by_bar[1].contains("F"),
         "quick change moves bar 1 to IV (F7)"
@@ -142,7 +165,7 @@ fn guide_follows_a_non_standard_progression() {
 
 #[test]
 fn guide_uses_minor_seventh_chord_tones_for_a_minor_blues() {
-    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Minor);
+    let (_, guide) = build_hole_guide(&c_harp(), "C", Progression::Minor, Scale::FirstPosition);
     // Bar 0 is i (Cm7): the minor 3rd (Eb=D#) is a chord tone, the
     // major 3rd (E) is not.
     assert!(guide.chord_tones_by_bar[0].contains("D#"));

@@ -187,6 +187,7 @@ fn populate_from_lesson_manifest_round_trips_a_technique_criterion() {
             threshold: 0.5,
         }),
         progression: None,
+        scale: None,
     };
     let mut s = EditorState::default();
     populate_from_lesson_manifest(&manifest, &mut s);
@@ -210,6 +211,7 @@ fn populate_from_lesson_manifest_defaults_pass_criteria_to_none_when_absent() {
         prerequisites: Vec::new(),
         pass_criteria: None,
         progression: Some("standard".into()),
+        scale: None,
     };
     let mut s = EditorState::default();
     populate_from_lesson_manifest(&manifest, &mut s);

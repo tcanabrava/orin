@@ -7,8 +7,8 @@
 use bevy::prelude::*;
 
 use crate::app::{
-    AppState, GameplayMode, JamProgression, ReturnToHelpAbout, ReturnToOptions, ReturnToPlay,
-    ReturnToSongList, SelectedArtist,
+    AppState, GameplayMode, JamProgression, JamScale, ReturnToHelpAbout, ReturnToOptions,
+    ReturnToPlay, ReturnToSongList, SelectedArtist,
 };
 use crate::song_editor;
 
@@ -32,6 +32,7 @@ impl Plugin for MenuPlugin {
             .init_resource::<pages::jam_generate::JamGenerateConfig>()
             .init_resource::<GameplayMode>()
             .init_resource::<JamProgression>()
+            .init_resource::<JamScale>()
             .init_resource::<ReturnToSongList>()
             .init_resource::<ReturnToOptions>()
             .init_resource::<ReturnToPlay>()

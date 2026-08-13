@@ -45,6 +45,7 @@ jam-generate-key = Key
 jam-generate-tempo = Tempo
 jam-generate-progression = Progression
 jam-generate-position = Position
+jam-generate-scale = Scale
 
 # Credits
 credits-back-to-menu = Back to Menu

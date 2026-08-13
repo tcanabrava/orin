@@ -76,6 +76,7 @@ mod tests {
             prerequisites: prereqs.iter().map(|s| s.to_string()).collect(),
             pass_criteria: None,
             progression: None,
+            scale: None,
         }
     }
 

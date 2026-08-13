@@ -43,6 +43,7 @@ jam-generate-key = Tom
 jam-generate-tempo = Andamento
 jam-generate-progression = Progressão
 jam-generate-position = Posição
+jam-generate-scale = Escala
 
 # Créditos
 credits-back-to-menu = Voltar ao Menu

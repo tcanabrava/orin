@@ -11,6 +11,7 @@
 use bevy::prelude::*;
 
 use crate::song::SongManifest;
+use crate::song::chart::Scale;
 use crate::song::harmonica::Progression;
 
 // ── App-level states ──────────────────────────────────────────────────────────
@@ -53,6 +54,19 @@ pub enum GameplayMode {
 /// regardless of this resource — see `twelve_bar_blues_overlay::update_bar`).
 #[derive(Resource, Default)]
 pub struct JamProgression(pub Progression);
+
+/// The scale Jam Session's live hole-map feedback (`jam::session::
+/// JamHoleGuide`) judges played notes against — see `song::chart::Scale`.
+/// Defaults to `FirstPosition` (the blues hexatonic — unchanged Jam
+/// Session behavior before this resource existed). Set explicitly by
+/// "Generate Jam" (`menu::jam_generate`) and by a jam-based lesson's
+/// `scale` manifest field (`menu::pages::lessons::parse_scale`); the
+/// real-song "Jam Session" button resets it to `FirstPosition`, mirroring
+/// `JamProgression`'s own reset — though a real song's own declared
+/// `Harmonica::scale()` (if it sets one) still wins over this resource,
+/// see `jam::session::build_hole_guide`'s caller.
+#[derive(Resource, Default)]
+pub struct JamScale(pub Scale);
 
 // ── Selection resources ───────────────────────────────────────────────────────
 
