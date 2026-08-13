@@ -182,22 +182,20 @@ the editor UI means hand-editing `lesson.json`'s `"scale"` key afterward.
 Small, bounded follow-up if the editor UI is ever extended (mirror
 `progression`'s existing click-to-cycle field).
 
-### Unit 5 — jazz (`05_jazz/`, the 0.6 milestone)
+### Unit 5 — jazz (`05_jazz/`) — 4 of 5 lessons shipped
 
-Deliberately after everything above ships — its content sourcing is harder
-(jazz standards are more often still in copyright than blues heads; lean on
-original drills and public-domain jazz-blues heads). Its own engine work
-(jazz chord-tone tables, a jazz-blues `Progression` variant) is done — see
-"Engine work (done)" below; what's left for Unit 5 is content only. Planned
-shape:
+Its own engine work (jazz chord-tone tables, a jazz-blues `Progression`
+variant) was already done before this unit's content — see "Engine work
+(done)" below — so all four drills below needed zero further engine
+changes, only content:
 
-| Lesson | Scoreable? | Mechanism | Notes |
-|---|---|---|---|
-| **Swing eighths** — swung-eighth drills at tightening windows | **Scored** | `feel: shuffle` + per-chart windows, zero engine work | Could ship early, but pedagogically belongs here |
-| **ii–V–I chord tones** — arpeggio drills over a ii–V–I backing | **Scored** | `song::harmonica::ii_v_i_chords` (chord-tone table) + `classify_note_fit`, which already takes any chord-tone set | Original arpeggio content, rights-safe |
-| **Jazz-blues form** — the 12-bar with the ii–V turnaround, taught like `bar-counting` | **Scored** | `Progression::JazzBlues` + `TwelveBarBluesOverlay` labels | |
-| **Chromatic slide basics** — half-steps with the slide button, on a chromatic chart | **Scored** | `Modifier::Slide` onset scoring already exists; chromatic charts fully supported | First bundled chromatic lesson content |
-| **Jazz heads** — actual repertoire | **Scored** | Ordinary charts | Rights-sensitive: public-domain only, human judgment required (`TODO.md`) |
+| Lesson (id, folder) | Scoreable? | Mechanism | Prereq | Pass |
+|---|---|---|---|---|
+| **Swing eighths** (`swing-eighths`, `01_swing_eighths`) — swung-eighth drills at a tighter timing window than `shuffle-feel`, alternating a 4-hole and a 5-hole blow/draw pair | **Scored** | `feel: shuffle` + tighter per-chart windows (100/220/380ms vs. `shuffle-feel`'s 150/350/550), zero engine work | `shuffle-feel` (Unit 2) | accuracy ≥ 0.6 |
+| **ii-V-I chord tones** (`ii-v-i-chord-tones`, `02_ii_v_i_chord_tones`) — the Dm7-G7-Cmaj7 turnaround in C, each chord arpeggiated low to high | **Scored** | Plain chart, notes computed from `song::harmonica::ii_v_i_chords("C", false)`; reuses `deep-bends`'s whole-step draw bends for F/A | `swing-eighths`, `deep-bends` (Unit 1) | accuracy ≥ 0.6 |
+| **The jazz blues form** (`jazz-blues-form`, `03_jazz_blues_form`) — open jam over the full jazz-blues progression (a real ii-V-I turnaround in the last few bars) | **Scored via proxy** | `PassCriteria::ChordToneAdherence` + existing `progression: "jazz-blues"` field — the same mechanism `minor-blues-improv`/`quick-change-improv` already use, just a different `Progression` value | `ii-v-i-chord-tones`, `chord-tone-improv` (Unit 3) | chord-tone fraction ≥ 0.4 |
+| **Chromatic slide basics** (`chromatic-slide-basics`, `04_chromatic_slide_basics`) — a full ascending/descending chromatic scale on a 12-hole chromatic harp, computed directly from the chromatic layout tables (not transcribed) | **Scored** | `Modifier::Slide` onset scoring, already built; first bundled chromatic lesson content | `swing-eighths` | technique `slide` ≥ 0.5 |
+| **Jazz heads** — actual repertoire | **Scored** | Ordinary charts | Rights-sensitive: public-domain only, human judgment required (`TODO.md`) — **deliberately not built**; needs specific pieces confirmed public domain before charting |
 
 ### Engine work (done)
 
@@ -211,8 +209,9 @@ manifest's `progression` field, and `jam_session::in_rest_window` +
 fraction for whichever criterion a given lesson declares. Unit 3 (above)
 used every one of these with no further engine changes. Wave 3's `JamScale`
 resource + `LessonManifest::scale` field (see above) is the other piece of
-engine work landed so far; Unit 5 (jazz) below is what's left needing new
-engine work.
+engine work landed so far. Unit 5 (jazz) below needed none of its own —
+every mechanism its four shipped lessons use already existed; only "jazz
+heads" (rights-blocked content, not an engine gap) remains.
 
 Cross-cutting authoring notes:
 
@@ -229,7 +228,7 @@ Cross-cutting authoring notes:
 
 ### Suggested build order (what's left)
 
-Units 3 and 4 (scales) are fully shipped. All that's left of the lessons
-curriculum is **Unit 5 jazz** — gated on the 0.6 milestone's jazz
-chord-tone tables and a ii–V–I/jazz-blues `Progression` variant
-(`ROADMAP.md`).
+Units 3 and 4 (scales) are fully shipped. Unit 5 (jazz) is 4/5 lessons
+shipped — all that's left of the lessons curriculum is **jazz heads**,
+blocked on picking specific repertoire someone has actually confirmed is
+public domain (not just "probably fine"); see that row above.
