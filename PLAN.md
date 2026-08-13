@@ -21,6 +21,11 @@ one-line index of what's landed.
   Jam Session.
 - **Lessons content wave 2** — Units 1–3 (basics extensions, bar-counting/
   train-rhythm drills, blues-vocabulary licks + improvisation), 19 lessons.
+- **Lessons content wave 3** — new Unit 4 "Scales and Improvisation" (6
+  lessons: major/minor-pentatonic/country scale run drills, major/minor-
+  pentatonic open-jam improvisation, quick-change improvisation) plus the
+  `JamScale` engine work making Jam Session's live scale feedback
+  configurable instead of hardcoded to blues (`docs/lessons_plan.md`).
 - **Physical-design restructuring** — layering fixes, inline tests evicted
   to `tests.rs` files, `gameplay`/`menu`/`lessons` split into their target
   layouts, `jam` gathered into `src/jam/`, a file-size budget test.
@@ -78,7 +83,7 @@ Finishing 0.4:
 1. **Backing track variety, remainder** (0.4): recorded loops per style
    (shuffle, slow blues, swing) as a richer alternative to the generated
    bass — real audio content, not a code task.
-2. **Lessons Unit 4 "jazz"** engine prerequisites are done; what's left is
+2. **Lessons Unit 5 "jazz"** engine prerequisites are done; what's left is
    content, and it isn't part of finishing 0.4 (`ROADMAP.md`).
 
 No open Song Editor items remain in `TODO.md` — undo/redo, the

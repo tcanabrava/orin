@@ -124,8 +124,9 @@ safe-to-author subset per `TODO.md`); nothing melodic or rights-sensitive.
 | **Chord-tone improvisation** (`chord-tone-improv`, `05_chord_tone_improv`) — open jam; don't just stay in the scale, *land on chord tones* when the chord changes | **Scored via proxy** | `PassCriteria::ChordToneAdherence`, reads `ImprovStats::chord_tone_adherence()` | `improvisation` (Unit 2), `blues-scale` | chord-tone fraction ≥ 0.4 |
 | **Minor blues** (`minor-blues-improv`, `06_minor_blues`) — improvise over the minor blues progression; body copy covers what changes (b3 is home now) | **Scored via proxy** | `Progression::Minor` — the lesson manifest's `progression: "minor"` field seeds `menu::JamProgression` on Start | `chord-tone-improv` | `ScaleAdherence` ≥ 0.8 |
 | **Question & answer** (`question-answer`, `07_question_answer`) — phrasing: improvise for 2 bars, *rest* for 2 bars, alternating through the form; leaving space is the lesson | **Scored via proxy** | `PassCriteria::PhraseDiscipline`, reads `ImprovStats::phrase_discipline()`; the 2-on/2-off pattern is fixed (`jam_session::PHRASE_PLAY_BARS`/`PHRASE_REST_BARS`) | `improvisation` | phrase discipline ≥ 0.7 |
+| **Quick change improvisation** (`quick-change-improv`, `08_quick_change_improv`) — added in wave 3 (below), but lives here since it's blues-scale improv, not a new scale; same open jam as `improvisation`, backing progression set to `Progression::QuickChange` | **Scored via proxy** | `PassCriteria::ScaleAdherence` — existing `progression` manifest field, zero engine work | `improvisation` | `ScaleAdherence` ≥ 0.8 |
 
-Like the `improvisation` lesson it builds on, each of the three jam-criteria
+Like the `improvisation` lesson it builds on, each of the jam-criteria
 lessons still needs a minimal `chart` field — a single long placeholder
 `TrackItem` spanning the jam, supplying `song.key`/`harmonica` for
 `JamHoleGuide` construction — even though no notes are individually scored.
@@ -133,15 +134,61 @@ lessons still needs a minimal `chart` field — a single long placeholder
 imprecise — the code has always required one, and the shipped lessons
 follow that pattern.)
 
-What's left of wave 2 is only the Unit 4 jazz milestone, below.
+## Wave 3 — Scales and Improvisation — shipped
 
-### Unit 4 — jazz (`04_jazz/`, the 0.6 milestone)
+A new unit, `04_scales/` (`unit: "scales"`), 6 lessons — the direct
+response to "there's nothing here about scales other than blues, or
+improvising over anything but the blues scale." Two parts:
+
+1. **Scale run drills, content-only** — three fixed charts teaching scale
+   *shapes* the way `blues-scale` (Unit 3) already does, scored by plain
+   accuracy: `major-scale` (1st position, reusing `deep-bends`'s
+   whole-step draw bends for F/A), `minor-pentatonic-scale` (2nd
+   position — literally the shipped `blues-scale` chart's fingering minus
+   its flatted-5th step, since minor pentatonic *is* the blues hexatonic
+   minus one degree), and `country-scale` (1st position major pentatonic,
+   no bending at all — the accessible entry point of the three, unlocked
+   off `multiple-notes` instead of `deep-bends`).
+2. **True non-blues jam improvisation, needing new engine work** — Jam
+   Session's live hole-map/scale-adherence feedback
+   (`jam::session::JamHoleGuide`) was hardcoded to
+   `blues_scale_classes` regardless of what a lesson or "Generate Jam"
+   picked. Fixed by a new `JamScale` resource (`src/app.rs`, mirrors the
+   existing `JamProgression`) plus a `LessonManifest::scale` field
+   (mirrors `progression`, parsed by `menu::pages::lessons::parse_scale`)
+   — `major-scale-improv` and `minor-pentatonic-improv` are the first
+   lessons to actually exercise it, each pairing with its run-drill
+   sibling (`song.key` matches, so the same notes taught in the drill are
+   what the jam judges against). A chart's own declared
+   `Harmonica::scale()` still wins over `JamScale` when it sets one (see
+   `jam::session::setup`); "Generate Jam" also grew a Scale combobox
+   alongside Progression/Position so this isn't lesson-only.
+
+| Lesson (id, folder) | Scoreable? | Mechanism | Prereq | Pass |
+|---|---|---|---|---|
+| **The major scale** (`major-scale`, `01_major_scale`) — 1st-position major scale up and down: 1B · 1D · 2B · 2D'' · 3B · 3D'' · 3D · 4B (the two `''` steps are the whole-step draw bends from `deep-bends`) | **Scored** | Plain chart + existing bend scoring | `deep-bends` (Unit 1) | accuracy ≥ 0.6 |
+| **Minor pentatonic scale** (`minor-pentatonic-scale`, `02_minor_pentatonic_scale`) — 2nd-position minor pentatonic: `blues-scale`'s own fingering minus its 4D' (flatted 5th) step | **Scored** | Plain chart, reuses `blues-scale`'s bend | `blues-scale` (Unit 3) | accuracy ≥ 0.6 |
+| **The Country scale** (`country-scale`, `03_country_scale`) — 1st-position major pentatonic, all-natural notes, no bending: 1B · 1D · 2B · 2D · 4B · 4D · 5B · 6B · 6D | **Scored** | Plain chart, no bend/technique scoring needed | `multiple-notes` (Unit 1) | accuracy ≥ 0.6 |
+| **Major scale improvisation** (`major-scale-improv`, `04_major_scale_improv`) — open jam judged against the plain major scale instead of blues | **Scored via proxy** | `PassCriteria::ScaleAdherence` + `"scale": "major"` (new `JamScale` engine work) | `major-scale`, `improvisation` | `ScaleAdherence` ≥ 0.8 |
+| **Minor pentatonic improvisation** (`minor-pentatonic-improv`, `05_minor_pentatonic_improv`) — open jam judged against the minor pentatonic scale | **Scored via proxy** | `PassCriteria::ScaleAdherence` + `"scale": "minor-pentatonic"` | `minor-pentatonic-scale`, `improvisation` | `ScaleAdherence` ≥ 0.8 |
+
+`quick-change-improv` (content-only, no new scale) is the 6th lesson of
+this wave but lives in `03_blues/` — see its row in Unit 3's table above.
+
+**Known gap, not built in this wave:** the Song Editor's lesson-authoring
+form (`song_editor::lesson_form`) still only round-trips `progression`,
+not the new `scale` field — authoring a scale-based jam lesson through
+the editor UI means hand-editing `lesson.json`'s `"scale"` key afterward.
+Small, bounded follow-up if the editor UI is ever extended (mirror
+`progression`'s existing click-to-cycle field).
+
+### Unit 5 — jazz (`05_jazz/`, the 0.6 milestone)
 
 Deliberately after everything above ships — its content sourcing is harder
 (jazz standards are more often still in copyright than blues heads; lean on
 original drills and public-domain jazz-blues heads). Its own engine work
 (jazz chord-tone tables, a jazz-blues `Progression` variant) is done — see
-"Engine work (done)" below; what's left for Unit 4 is content only. Planned
+"Engine work (done)" below; what's left for Unit 5 is content only. Planned
 shape:
 
 | Lesson | Scoreable? | Mechanism | Notes |
@@ -162,8 +209,10 @@ manifest's `progression` field, and `jam_session::in_rest_window` +
 `ScaleAdherence`) into `GameplayMode::JamSession`;
 `gameplay::pause_menu::jam_fraction_for` picks the right `ImprovStats`
 fraction for whichever criterion a given lesson declares. Unit 3 (above)
-used every one of these with no further engine changes; Unit 4 below is
-the only thing left needing new engine work.
+used every one of these with no further engine changes. Wave 3's `JamScale`
+resource + `LessonManifest::scale` field (see above) is the other piece of
+engine work landed so far; Unit 5 (jazz) below is what's left needing new
+engine work.
 
 Cross-cutting authoring notes:
 
@@ -180,6 +229,7 @@ Cross-cutting authoring notes:
 
 ### Suggested build order (what's left)
 
-Unit 3 is fully shipped. All that's left of the lessons curriculum is
-**Unit 4 jazz** — gated on the 0.6 milestone's jazz chord-tone tables and
-a ii–V–I/jazz-blues `Progression` variant (`ROADMAP.md`).
+Units 3 and 4 (scales) are fully shipped. All that's left of the lessons
+curriculum is **Unit 5 jazz** — gated on the 0.6 milestone's jazz
+chord-tone tables and a ii–V–I/jazz-blues `Progression` variant
+(`ROADMAP.md`).
