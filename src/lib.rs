@@ -31,4 +31,5 @@ pub mod settings;
 pub mod song;
 pub mod song_editor;
 pub mod spectrogram;
+pub mod synthetic_dataset;
 pub mod theme;

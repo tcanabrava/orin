@@ -85,6 +85,36 @@ No open Song Editor items remain in `TODO.md` — undo/redo, the
 metronome/count-in, note audition, save/validation feedback, and the
 swing/triplet grid snap are all done (see Shipped above).
 
+**Note detection benchmarking** (see `Harmonica Note Detection Roadmap.md`,
+repo root, not checked in): a **harmonica constraint solver**
+(`song::harmonica_constraints::plausible_notes` — rejects any simultaneous
+blow+draw pitch mix, keeps chords/octaves) and a **synthetic benchmark
+dataset generator** (`synthetic_dataset.rs` / `cargo run --bin
+gen_synthetic_dataset`, writing into `assets/debug_songs/` in
+`note_bench`'s own format, as a stand-in until real recordings exist) are
+done — `note_bench` prints a `<algorithm>+HC` row showing the solver's
+effect. It reliably cuts NMF's phantom count (e.g. single notes 67→43,
+octaves 26→15 in the synthetic benchmark) but occasionally drops a genuine
+hit too (its majority-wind-direction heuristic misjudging).
+
+**Deliberately not wired into live gameplay yet** — decided, not just
+not-gotten-to:
+- Only validated against synthetic (sample-accurate, noiseless) audio; a
+  real reed's blow/draw transition frames could get needlessly stripped
+  the same way a phantom does.
+- A dropped note costs the player score/combo live, while an un-filtered
+  phantom is already mostly harmless to scoring (it just doesn't match
+  the expected pitch) — so this trade needs real debug recordings to
+  confirm it's a net win before it's worth building, since right now
+  there's no plumbing at all to thread the active chart's `Harmonica`
+  down to where `PitchEvent` is consumed (`audio_system` deliberately
+  doesn't depend on `song`).
+- When it does go in, scope it to NMF only — FFT/YIN/MPM barely
+  benefited in the synthetic benchmark.
+- Blocked on: a real harmonica + real debug recordings via
+  `song_editor::debug_record` (`--features dev`), then re-running
+  `note_bench` against them before revisiting this decision.
+
 3. **Repo-wide comment-shortening pass — done.** Every directory under
    `src/` (`song_editor/`, `gameplay/`, `menu/`, `dialogs/`, `jam/`,
    `audio_system/`, `song/`, `lessons/`, `music_score/`,

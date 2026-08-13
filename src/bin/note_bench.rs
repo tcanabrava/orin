@@ -31,7 +31,8 @@ use harmonicon::audio_system::pitch_detect::{
 };
 use harmonicon::audio_system::wav::decode_wav_pcm16;
 use harmonicon::note_bench::{
-    DEFAULT_TIMING_TOLERANCE_SECS, compare, expected_notes_from_chart, run_algorithm,
+    DEFAULT_TIMING_TOLERANCE_SECS, apply_constraints, compare, expected_notes_from_chart,
+    run_algorithm,
 };
 use harmonicon::song::chart::HarpChart;
 use std::path::{Path, PathBuf};
@@ -149,5 +150,21 @@ fn run_one(song_dir: &Path, chart_path: &Path, wav_path: &Path, tolerance_secs: 
         for (want, got, count) in report.confusion.iter().filter(|(w, d, _)| w != d).take(5) {
             println!("        {count:>4}x  played {want:?} -> detected {got:?}");
         }
+
+        // Same frames, re-filtered through the harmonica constraint solver
+        // (`song::harmonica_constraints::plausible_notes` — rejects any
+        // simultaneous blow+draw mix, which no single breath can produce)
+        // — printed alongside the raw algorithm so its effect is visible
+        // directly, before deciding whether it's worth wiring into the
+        // live pipeline.
+        let constrained = apply_constraints(&chart.harmonica, &frames);
+        let constrained_report = compare(&expected, &constrained, tolerance_secs);
+        println!(
+            "  {:>5}+HC: hit {:>5}  miss {:>5}  phantom {:>5}",
+            algorithm.label(),
+            constrained_report.true_positive,
+            constrained_report.false_negative,
+            constrained_report.false_positive,
+        );
     }
 }

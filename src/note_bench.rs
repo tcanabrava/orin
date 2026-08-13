@@ -19,6 +19,8 @@ use crate::audio_system::audio_input::{CHUNK_SIZE, HOP_SIZE};
 use crate::audio_system::midi::note_to_midi;
 use crate::audio_system::pitch_detect::{self, FftState, PitchAlgorithm, PitchRange};
 use crate::song::chart::{Action, HarpChart, tick_to_seconds};
+use crate::song::harmonica::Harmonica;
+use crate::song::harmonica_constraints::plausible_notes;
 
 // ── Ground truth ─────────────────────────────────────────────────────────────
 
@@ -155,6 +157,23 @@ pub fn run_algorithm(
     frames
 }
 
+/// Re-filters each of `frames`' detected pitch sets through
+/// `song::harmonica_constraints::plausible_notes` — the "Harmonica
+/// Constraint Solver" roadmap stage, applied here as an offline
+/// post-process so its effect on `compare`'s hit/miss/phantom counts can be
+/// measured directly against a detector's raw output, on the same
+/// recording, before deciding whether it's worth wiring into the live
+/// pipeline. Frame `time_secs` is untouched; only `detected` changes.
+pub fn apply_constraints(harp: &Harmonica, frames: &[Frame]) -> Vec<Frame> {
+    frames
+        .iter()
+        .map(|f| Frame {
+            time_secs: f.time_secs,
+            detected: plausible_notes(harp, &f.detected),
+        })
+        .collect()
+}
+
 // ── Comparison / confusion matrix ────────────────────────────────────────────
 
 /// One algorithm's aggregate performance against a chart's expected notes:
@@ -227,6 +246,44 @@ mod tests {
         Difficulty, HarpChart, NoteEvent, PlayMode, Scoring, Song, TempoPoint, Timing, TrackItem,
     };
     use crate::song::harmonica::richter_harp;
+
+    // ── apply_constraints ────────────────────────────────────────────────────
+
+    #[test]
+    fn apply_constraints_drops_a_minority_wind_direction_phantom() {
+        let harp = richter_harp("C");
+        // Hole-1 blow (60) and hole-2 blow (64) outnumber hole-1 draw (62) —
+        // the same "two blow notes really were played, 62 is a phantom
+        // detection" scenario the roadmap's own confusion-matrix example
+        // calls out.
+        let frames = vec![frame(0.1, &[60, 64, 62])];
+        let constrained = apply_constraints(&harp, &frames);
+        assert_eq!(constrained[0].detected, vec![60, 64]);
+        assert_eq!(constrained[0].time_secs, frames[0].time_secs);
+    }
+
+    #[test]
+    fn apply_constraints_can_turn_a_phantom_false_positive_into_a_clean_true_positive() {
+        let harp = richter_harp("C");
+        let expected = vec![expected(60), expected(64)];
+        let frames = vec![frame(0.1, &[60, 64, 62])];
+        let raw_report = compare(&expected, &frames, 0.0);
+        assert_eq!(raw_report.false_positive, 1);
+
+        let constrained = apply_constraints(&harp, &frames);
+        let constrained_report = compare(&expected, &constrained, 0.0);
+        assert_eq!(constrained_report.true_positive, 2);
+        assert_eq!(constrained_report.false_positive, 0);
+    }
+
+    #[test]
+    fn apply_constraints_leaves_a_legal_chord_untouched() {
+        let harp = richter_harp("C");
+        // Holes 1-3 blow together — all blow-family, nothing to drop.
+        let frames = vec![frame(0.1, &[60, 64, 67])];
+        let constrained = apply_constraints(&harp, &frames);
+        assert_eq!(constrained[0].detected, vec![60, 64, 67]);
+    }
 
     fn flat_chart(track: Vec<TrackItem>) -> HarpChart {
         HarpChart {
