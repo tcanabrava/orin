@@ -255,9 +255,36 @@ pub fn spawn_metronome(
         });
 }
 
+/// How bright the current beat's dot should be at `t` (its fraction, `0.0`
+/// to `1.0`, through that beat) — `Straight` decays once from the beat's
+/// own onset; `Shuffle` decays *twice*: once from the beat click at `t=0`
+/// (full brightness) and once from the swung "and" click at `t=2/3` (a
+/// softer peak, matching that subdivision's own `0.55` audio gain in
+/// [`click_for_tick`]) — so a shuffle-feel dot visibly pulses twice per
+/// beat instead of once, matching what [`play_click_if_due`] actually
+/// plays instead of a single beat-long decay that goes visually silent
+/// exactly where the audio swings. `2.0/3.0` is the same long/short split
+/// [`tick_index`]'s triplet-eighth division uses (a beat's first two
+/// triplet-eighths are the "long" note, the third is the "short" one).
+fn beat_brightness(t: f32, feel: MetronomeFeel) -> f32 {
+    const SWUNG_AND_FRAC: f32 = 2.0 / 3.0;
+    const SWUNG_AND_GAIN: f32 = 0.55;
+    match feel {
+        MetronomeFeel::Straight => (1.0 - t).powf(1.5),
+        MetronomeFeel::Shuffle => {
+            if t < SWUNG_AND_FRAC {
+                (1.0 - t / SWUNG_AND_FRAC).powf(1.5)
+            } else {
+                SWUNG_AND_GAIN * (1.0 - (t - SWUNG_AND_FRAC) / (1.0 - SWUNG_AND_FRAC)).powf(1.5)
+            }
+        }
+    }
+}
+
 pub fn update_metronome(
     clock: Res<GameplayClock>,
     tempo: Res<MetronomeTempo>,
+    feel: Res<MetronomeFeel>,
     mut beats: Query<(&MetronomeBeat, &mut BackgroundColor)>,
 ) {
     if clock.get() < 0.0 {
@@ -269,11 +296,11 @@ pub fn update_metronome(
     let beats_per_bar = tempo.beats_per_bar;
     let beat_pos = clock.get() / beat_dur;
     let current = beat_pos.floor() as usize % beats_per_bar;
-    let phase = beat_pos.fract() as f32;
+    let t = beat_pos.fract() as f32;
 
     for (cell, mut bg) in &mut beats {
         let brightness = if cell.0 == current {
-            (1.0 - phase).powf(1.5)
+            beat_brightness(t, *feel)
         } else {
             0.0
         };
@@ -608,5 +635,40 @@ mod tests {
     fn degenerate_bar_treats_every_beat_as_downbeat() {
         assert!(is_downbeat(0, 0.0));
         assert!(is_downbeat(7, 1.0));
+    }
+
+    // ── beat_brightness ──────────────────────────────────────────────────────
+
+    #[test]
+    fn straight_brightness_decays_once_from_the_beat_onset() {
+        assert_eq!(beat_brightness(0.0, MetronomeFeel::Straight), 1.0);
+        assert!(beat_brightness(0.999, MetronomeFeel::Straight) < 0.01);
+    }
+
+    #[test]
+    fn shuffle_brightness_peaks_twice_per_beat() {
+        // Full peak on the beat click...
+        assert_eq!(beat_brightness(0.0, MetronomeFeel::Shuffle), 1.0);
+        // ...decayed to near-nothing just before the swung "and"...
+        assert!(beat_brightness(2.0 / 3.0 - 0.001, MetronomeFeel::Shuffle) < 0.01);
+        // ...then a second, softer peak right at it, matching
+        // click_for_tick's own 0.55 gain for that subdivision...
+        assert!((beat_brightness(2.0 / 3.0, MetronomeFeel::Shuffle) - 0.55).abs() < 1e-4);
+        // ...decaying again toward the next beat.
+        assert!(beat_brightness(0.999, MetronomeFeel::Shuffle) < 0.01);
+    }
+
+    #[test]
+    fn beat_brightness_never_leaves_the_unit_range() {
+        for i in 0..1000 {
+            let t = i as f32 / 1000.0;
+            for feel in [MetronomeFeel::Straight, MetronomeFeel::Shuffle] {
+                let b = beat_brightness(t, feel);
+                assert!(
+                    (0.0..=1.0).contains(&b),
+                    "t={t} feel={feel:?} brightness={b}"
+                );
+            }
+        }
     }
 }
