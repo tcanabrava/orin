@@ -22,7 +22,7 @@ use crate::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root_plain};
 
 const MIN_BPM: f32 = 60.0;
 const MAX_BPM: f32 = 160.0;
@@ -85,7 +85,13 @@ pub(crate) fn setup_jam_generate_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header, page_root) = spawn_menu_root(
+    // `_plain`, not `spawn_menu_root`: this page's five comboboxes + tempo
+    // field + button will never realistically overflow a window, but a
+    // combobox's open dropdown is a literal ECS child of its toggle and
+    // gets clipped to a `ScrollArea` ancestor's own (content-sized, not
+    // full-window) bounds — see `spawn_menu_root`'s own doc comment. The
+    // Genre combobox (the row closest to the clip edge) hit exactly that.
+    let (root, header, page_root) = spawn_menu_root_plain(
         &mut commands,
         &loc.msg("jam-generate-title"),
         None,

@@ -144,22 +144,20 @@ fn body_scene() -> impl Scene {
     }
 }
 
-/// Spawns the full-screen root, its header (title/subtitle, plus whatever
-/// back button a caller adds via [`spawn_back_button`]), and a scrollable
-/// body content area — returning `(content, header, page_root)`:
-/// `content` is where every caller's buttons/rows go (auto-scrolling, with
-/// a real visible scrollbar — `dialogs::scroll_area::spawn_scroll_area` —
-/// once a page's content, e.g. a long artist/song/lesson/theme list, no
-/// longer fits); `header` is where a page attaches its own Back control;
-/// `page_root` is the true `100% x 100%` outer container (see this
-/// module's own doc comment for why a caller would need it over `content`).
-pub(crate) fn spawn_menu_root(
+/// Shared scaffolding between [`spawn_menu_root`] and
+/// [`spawn_menu_root_plain`] — the full-screen root, header (title/
+/// subtitle, plus whatever back button a caller adds via
+/// [`spawn_back_button`]), background image, and `TabGroup`. Callers attach
+/// their own `body` child of the returned `page_root` immediately after —
+/// see [`body_scene`] for the flex shape a body should follow to fill the
+/// remaining space correctly. Returns `(page_root, header)`.
+fn spawn_menu_chrome(
     commands: &mut Commands,
     title: &str,
     subtitle: Option<&str>,
     theme: &LoadedTheme,
     menu_id: &str,
-) -> (Entity, Entity, Entity) {
+) -> (Entity, Entity) {
     let root = commands.spawn_scene(menu_root_scene()).id();
 
     let title_column = if let Some(sub) = subtitle {
@@ -177,9 +175,6 @@ pub(crate) fn spawn_menu_root(
     let header = commands.spawn_scene(header_scene()).id();
     commands.entity(header).add_child(title_column);
     commands.entity(root).add_child(header);
-
-    let body = commands.spawn_scene(body_scene()).id();
-    commands.entity(root).add_child(body);
 
     // Background image behind all other content. Inserted at index 0 so it stays
     // the lowest layer regardless of when this command is applied.
@@ -200,14 +195,82 @@ pub(crate) fn spawn_menu_root(
         commands.entity(root).insert_children(0, &[bg_layer]);
     }
 
-    let mut content = Entity::PLACEHOLDER;
-    commands.entity(body).with_children(|children| {
-        content = spawn_scroll_area(children, SCROLLBAR_THUMB_COLOR, SCROLLBAR_TRACK_COLOR);
-    });
     // Scopes Tab/Shift+Tab cycling to this page's header (its Back button)
     // and body content together — on `root`, not just `content`, since the
     // back button lives in a sibling of `content` now.
     commands.entity(root).insert(TabGroup::default());
+
+    (root, header)
+}
+
+/// Spawns the full-screen root, its header, and a scrollable body content
+/// area — returning `(content, header, page_root)`: `content` is where
+/// every caller's buttons/rows go (auto-scrolling, with a real visible
+/// scrollbar — `dialogs::scroll_area::spawn_scroll_area` — once a page's
+/// content, e.g. a long artist/song/lesson/theme list, no longer fits);
+/// `header` is where a page attaches its own Back control; `page_root` is
+/// the true `100% x 100%` outer container (see this module's own doc
+/// comment for why a caller would need it over `content`).
+///
+/// For a short, bounded-height page that will never realistically need to
+/// scroll (a handful of form rows + a button), use
+/// [`spawn_menu_root_plain`] instead — nesting a combobox inside this
+/// `ScrollArea` clips its open dropdown to the *content's own* height, not
+/// the full available body height (`content`/`body` size to their content,
+/// see this module's own doc comment), so a combobox near the bottom of a
+/// page whose content happens to be shorter than the window gets its
+/// dropdown cut off with nothing to scroll to — not a hypothetical, this is
+/// exactly the bug `jam_generate`'s Genre combobox hit.
+pub(crate) fn spawn_menu_root(
+    commands: &mut Commands,
+    title: &str,
+    subtitle: Option<&str>,
+    theme: &LoadedTheme,
+    menu_id: &str,
+) -> (Entity, Entity, Entity) {
+    let (root, header) = spawn_menu_chrome(commands, title, subtitle, theme, menu_id);
+
+    let body = commands.spawn_scene(body_scene()).id();
+    commands.entity(root).add_child(body);
+
+    let mut content = Entity::PLACEHOLDER;
+    commands.entity(body).with_children(|children| {
+        content = spawn_scroll_area(children, SCROLLBAR_THUMB_COLOR, SCROLLBAR_TRACK_COLOR);
+    });
+
+    (content, header, root)
+}
+
+/// Like [`spawn_menu_root`], but `content` is a plain, non-clipping column
+/// instead of a `ScrollArea` — for a page whose content is short enough to
+/// never need scrolling and contains a combobox, where `spawn_menu_root`'s
+/// `ScrollArea` would risk clipping an open dropdown (see that function's
+/// own doc comment for why). Not a drop-in general replacement: a page
+/// whose content genuinely can overflow (a long list) still needs
+/// `spawn_menu_root`'s real scrolling.
+pub(crate) fn spawn_menu_root_plain(
+    commands: &mut Commands,
+    title: &str,
+    subtitle: Option<&str>,
+    theme: &LoadedTheme,
+    menu_id: &str,
+) -> (Entity, Entity, Entity) {
+    let (root, header) = spawn_menu_chrome(commands, title, subtitle, theme, menu_id);
+
+    let body = commands.spawn_scene(body_scene()).id();
+    commands.entity(root).add_child(body);
+
+    let mut content = Entity::PLACEHOLDER;
+    commands.entity(body).with_children(|children| {
+        content = children
+            .spawn(Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                row_gap: Val::Px(16.0),
+                ..default()
+            })
+            .id();
+    });
 
     (content, header, root)
 }
