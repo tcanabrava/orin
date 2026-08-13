@@ -1,0 +1,10 @@
+{
+  "id": "minor-pentatonic-improv",
+  "unit": "scales",
+  "title_key": "lesson-minor-pentatonic-improv-title",
+  "body_key": "lesson-minor-pentatonic-improv-body",
+  "chart": "song/chart.harpchart",
+  "scale": "minor-pentatonic",
+  "prerequisites": ["minor-pentatonic-scale", "improvisation"],
+  "pass_criteria": { "type": "scale-adherence", "threshold": 0.8 }
+}
