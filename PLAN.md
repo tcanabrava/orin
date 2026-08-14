@@ -31,6 +31,24 @@ one-line index of what's landed.
   content, no engine work needed. "Jazz heads" (actual repertoire) is
   deliberately not built — blocked on specific pieces confirmed public
   domain, not just content authoring (`docs/lessons_plan.md`).
+- **Genre-selectable Jam Session backing** — a `Genre` axis (Blues/Jazz/
+  Rock/Reggae/Country, `jam::backing`) alongside the existing `Progression`,
+  each with its own bass rhythm pattern and straight/swing feel; a new
+  "Genre" combobox on Generate Jam. Also fixed that page's comboboxes
+  getting their open dropdowns clipped (a `ScrollArea` clips to its
+  content's own height, not the full window, when content is shorter than
+  available space) via a new non-scrolling `spawn_menu_root_plain`.
+- **Harmonica rhythm guide + metronome swing-visual fix** — a live pulse
+  row in Jam Session (`jam::rhythm_guide`) showing when the picked genre's
+  groove wants a harmonica attack, reusing `jam::backing::genre_pattern`'s
+  rhythm data directly so it can't drift from the bass audio it's modeled
+  on. Along the way, fixed the metronome's visual beat dot to actually
+  pulse twice per beat in Shuffle feel (matching the audio click, which
+  already did) instead of a single beat-long decay.
+- **Circle-of-fifths lesson** — a new `dialogs::circle_of_fifths` diagram
+  widget (this crate's first circular UI layout) visualizing that a
+  harmonica `Position` is just a step count around the circle of fifths;
+  `Position` also grew `Fourth`/`Fifth`/`Twelfth` variants.
 - **Physical-design restructuring** — layering fixes, inline tests evicted
   to `tests.rs` files, `gameplay`/`menu`/`lessons` split into their target
   layouts, `jam` gathered into `src/jam/`, a file-size budget test.

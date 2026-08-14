@@ -179,6 +179,45 @@ this wave but lives in `03_blues/` — see its row in Unit 3's table above.
 form (`song_editor::lesson_form`) still only round-trips `progression`,
 not the new `scale` field — authoring a scale-based jam lesson through
 the editor UI means hand-editing `lesson.json`'s `"scale"` key afterward.
+
+## Wave 4 — Circle of fifths — shipped
+
+One lesson, `circle-of-fifths` (`04_scales/06_circle_of_fifths`) —
+instructional only, no chart, no pass criteria (Mark-as-Done). Makes
+visible a relationship the engine already runs on but never showed: a
+harmonica position (`song::harmonica::Position`) *is* a step count around
+the circle of fifths — `interval_below_jam_key`'s existing 0/7/2 values
+for 1st/2nd/3rd are exactly 0/1/2 fifths, just expressed in semitones.
+
+Two new pieces, both generic (not lesson-specific):
+
+- **`dialogs::circle_of_fifths`** — this crate's first circular UI layout
+  (a `circle_point` pure function computing evenly-spaced points via
+  `sin`/`cos`; every other absolutely-positioned UI elsewhere in this
+  codebase is edge/percentage-anchored, never N points around a ring).
+  `spawn_circle_of_fifths(harp_key, positions, colors)` iterates whatever
+  `Position::all()` currently contains — it doesn't hardcode 1st/2nd/3rd,
+  so extending `Position` needs no changes here. New `theme::
+  CircleOfFifthsColors` (mirrors `TwelveBarColors`' exact shape) themes it.
+- **`LessonManifest::diagram`** — a new schema-enforced enum field
+  (`"circle-of-fifths"`, room for more later), mirroring `progression`/
+  `scale`'s own shape. The lesson reader page
+  (`menu::pages::lessons::setup_lesson_reader`) was text-only before this
+  — every prior instructional lesson is prose, some of it literally
+  telling the player to go look at a live diagram elsewhere (`twelve-bar`'s
+  own body text does exactly that) rather than embedding one. This is the
+  first lesson with real embedded visual content.
+
+Alongside it, `song::harmonica::Position` grew three more variants —
+`Fourth`/`Fifth`/`Twelfth`, the next most commonly taught blues/jazz
+positions beyond 1st–3rd (confirmed formula: position *N* sits
+`((N-1) * 7) mod 12` semitones below the jam key, `Twelfth` being one step
+the *other* way around the circle rather than 11 steps forward). The
+entire compiler-enforced surface for new variants turned out to be two
+functions in `harmonica.rs` (`all()`, `interval_below_jam_key()`) plus
+`label()` — nothing outside that file matches over `Position`
+exhaustively, so the Generate Jam Position combobox and this lesson's own
+diagram picked the new positions up automatically, no other file touched.
 Small, bounded follow-up if the editor UI is ever extended (mirror
 `progression`'s existing click-to-cycle field).
 
