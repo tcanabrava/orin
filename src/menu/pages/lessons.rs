@@ -26,7 +26,7 @@ use crate::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 use crate::menu::routing::MenuPage;
-use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};
+use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root, spawn_menu_root_plain};
 
 /// The lesson the reader page shows — set by the list page's buttons right
 /// before switching to [`MenuPage::LessonReader`].
@@ -161,13 +161,30 @@ pub(crate) fn setup_lessons_menu(
     theme: Res<LoadedTheme>,
     loc: Res<Localization>,
 ) {
-    let (root, header, _page_root) = spawn_menu_root(
+    // `spawn_menu_root_plain`, not `spawn_menu_root`: this page's own list
+    // box (below) needs to stretch to fill the body's full height and do
+    // its own scrolling — nesting it inside `spawn_menu_root`'s
+    // shrink-to-content, then-centered `ScrollArea` is what left it
+    // reading as a small floating box with dead space beneath it instead
+    // of a real full-height list panel.
+    let (root, header, _page_root) = spawn_menu_root_plain(
         &mut commands,
         &loc.msg("menu-lessons"),
         None,
         &theme,
         "Lessons",
     );
+    // Stretch to fill the body's remaining height below the header,
+    // instead of `spawn_menu_root_plain`'s default shrink-to-content
+    // sizing — see the comment above.
+    commands.entity(root).insert(Node {
+        flex_direction: FlexDirection::Column,
+        align_items: AlignItems::Center,
+        row_gap: Val::Px(16.0),
+        flex_grow: 1.0,
+        min_height: Val::Px(0.0),
+        ..default()
+    });
 
     let units = group_by_unit(&lessons.0);
     if units.is_empty() {
@@ -208,6 +225,14 @@ pub(crate) fn setup_lessons_menu(
 
     // The selected unit's lessons, in a vertical scrollbox (`ScrollArea`
     // gives wheel scrolling — same pattern as `dialogs::file_dialog`).
+    // `flex_grow: 1.0` + `min_height: Val::Px(0.0)` (the same "min-height:
+    // auto" shrink trick `dialogs::scroll_area::spawn_scroll_area` uses)
+    // makes this box fill the rest of `root`'s height below the tab bar —
+    // a real list panel down to the bottom of the screen — rather than a
+    // fixed `max_height: Percent(48.0)` that left it undersized with empty
+    // space below regardless of how much room was actually available;
+    // `overflow: scroll_y()` still only starts scrolling once the rows
+    // themselves outgrow that space.
     let list = commands
         .spawn((
             Node {
@@ -215,7 +240,8 @@ pub(crate) fn setup_lessons_menu(
                 align_items: AlignItems::Center,
                 row_gap: Val::Px(8.0),
                 width: Val::Px(520.0),
-                max_height: Val::Percent(48.0),
+                flex_grow: 1.0,
+                min_height: Val::Px(0.0),
                 overflow: Overflow::scroll_y(),
                 padding: UiRect::all(Val::Px(10.0)),
                 ..default()
