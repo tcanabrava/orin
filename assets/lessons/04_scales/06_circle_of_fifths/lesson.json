@@ -1,0 +1,8 @@
+{
+  "id": "circle-of-fifths",
+  "unit": "scales",
+  "title_key": "lesson-circle-of-fifths-title",
+  "body_key": "lesson-circle-of-fifths-body",
+  "diagram": "circle-of-fifths",
+  "prerequisites": ["single-note"]
+}
