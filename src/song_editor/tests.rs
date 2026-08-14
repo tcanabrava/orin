@@ -188,6 +188,7 @@ fn populate_from_lesson_manifest_round_trips_a_technique_criterion() {
         }),
         progression: None,
         scale: None,
+        diagram: None,
     };
     let mut s = EditorState::default();
     populate_from_lesson_manifest(&manifest, &mut s);
@@ -212,6 +213,7 @@ fn populate_from_lesson_manifest_defaults_pass_criteria_to_none_when_absent() {
         pass_criteria: None,
         progression: Some("standard".into()),
         scale: None,
+        diagram: None,
     };
     let mut s = EditorState::default();
     populate_from_lesson_manifest(&manifest, &mut s);

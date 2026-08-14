@@ -196,6 +196,25 @@
               "type": "string"
             }
           }
+        },
+        "circle_of_fifths": {
+          "description": "Colors for dialogs::circle_of_fifths' diagram (used by the circle-of-fifths lesson).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base": {
+              "description": "The 11 key points not currently highlighted.",
+              "type": "string"
+            },
+            "harp_key": {
+              "description": "The reference harp key's own point.",
+              "type": "string"
+            },
+            "position": {
+              "description": "A position's point (one per step clockwise from the harp key).",
+              "type": "string"
+            }
+          }
         }
       }
     }

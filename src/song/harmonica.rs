@@ -323,12 +323,32 @@ pub enum Position {
     /// The harp is pitched a whole step below the jam's key (e.g. a C harp
     /// jamming in D) — minor/dorian flavored.
     Third,
+    /// The harp is pitched a minor 3rd below the jam's key (e.g. a C harp
+    /// jamming in Eb) — three steps around the circle of fifths from 1st;
+    /// less common than 1st–3rd but a real, taught blues/gospel position.
+    Fourth,
+    /// The harp is pitched a tritone below the jam's key (e.g. a C harp
+    /// jamming in F#/Gb) — four steps around the circle of fifths; used for
+    /// its dark, unresolved quality.
+    Fifth,
+    /// The harp is pitched a perfect 5th below the jam's key (e.g. a C harp
+    /// jamming in G, but read the *other* direction from 2nd position — 11
+    /// steps clockwise around the circle of fifths, equivalently one step
+    /// counter-clockwise). An occasional, exotic minor-key position.
+    Twelfth,
 }
 
 impl Position {
     /// Every variant, in the order the "Generate Jam" combobox lists them.
     pub fn all() -> &'static [Position] {
-        &[Position::First, Position::Second, Position::Third]
+        &[
+            Position::First,
+            Position::Second,
+            Position::Third,
+            Position::Fourth,
+            Position::Fifth,
+            Position::Twelfth,
+        ]
     }
 
     /// Display label for the picker and [`harp_banner`].
@@ -337,6 +357,9 @@ impl Position {
             Position::First => "1st",
             Position::Second => "2nd",
             Position::Third => "3rd",
+            Position::Fourth => "4th",
+            Position::Fifth => "5th",
+            Position::Twelfth => "12th",
         }
     }
 
@@ -346,12 +369,20 @@ impl Position {
         Self::all().iter().copied().find(|p| p.label() == label)
     }
 
-    /// Semitones the harp key sits below the jam key for this position.
-    fn interval_below_jam_key(self) -> i32 {
+    /// Semitones the harp key sits below the jam key for this position —
+    /// equivalently, `(N - 1)` steps of a fifth (7 semitones) around the
+    /// circle of fifths, reduced mod 12: 1st is 0 steps, 2nd is 1, 3rd is
+    /// 2, and so on. `dialogs::circle_of_fifths` reads this directly (hence
+    /// `pub(crate)`, not private) to know how many steps clockwise from the
+    /// reference harp key to highlight for a given position.
+    pub(crate) fn interval_below_jam_key(self) -> i32 {
         match self {
             Position::First => 0,
             Position::Second => 7,
             Position::Third => 2,
+            Position::Fourth => 9,
+            Position::Fifth => 4,
+            Position::Twelfth => 5,
         }
     }
 

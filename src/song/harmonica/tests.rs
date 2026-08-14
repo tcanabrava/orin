@@ -236,6 +236,34 @@ fn third_position_harp_is_a_whole_step_below_the_jam_key() {
 }
 
 #[test]
+fn fourth_position_harp_is_a_minor_third_below_the_jam_key() {
+    assert_eq!(Position::Fourth.harp_key("C"), "D#");
+}
+
+#[test]
+fn fifth_position_harp_is_a_tritone_below_the_jam_key() {
+    assert_eq!(Position::Fifth.harp_key("C"), "G#");
+}
+
+#[test]
+fn twelfth_position_harp_is_a_fifth_below_the_jam_key() {
+    assert_eq!(Position::Twelfth.harp_key("C"), "G");
+}
+
+#[test]
+fn twelfth_position_is_one_step_counter_clockwise_from_first() {
+    // "12th" names its real-world place in the full 12-position cycle
+    // (11 fifths forward), not this enum's own array order (`all()` skips
+    // 6th-11th) — 11 fifths forward and 1 fifth backward land on the same
+    // note, which is the more useful way to think about it: a step *back*
+    // around the circle of fifths from the harp's own key.
+    assert_eq!(
+        Position::Twelfth.interval_below_jam_key(),
+        (-7i32).rem_euclid(12)
+    );
+}
+
+#[test]
 fn chord_intervals_are_dominant_or_minor_seventh() {
     assert_eq!(chord_intervals(ChordQuality::Dominant7), [0, 4, 7, 10]);
     assert_eq!(chord_intervals(ChordQuality::Minor7), [0, 3, 7, 10]);

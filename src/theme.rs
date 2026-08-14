@@ -90,6 +90,8 @@ pub struct ThemeColorsJson {
     pub twelve_bar: TwelveBarColors,
     #[serde(default)]
     pub notes: NoteColors,
+    #[serde(default)]
+    pub circle_of_fifths: CircleOfFifthsColors,
 }
 
 /// Chord-function colors for a 12-bar blues progression (I / IV / V), read
@@ -116,6 +118,32 @@ impl Default for TwelveBarColors {
             tonic: Color::srgba(0.10, 0.16, 0.26, 0.85),
             subdominant: Color::srgba(0.10, 0.20, 0.14, 0.85),
             dominant: Color::srgba(0.20, 0.10, 0.14, 0.85),
+        }
+    }
+}
+
+/// Colors for `dialogs::circle_of_fifths`' diagram, read from a theme's
+/// `theme.json` under `"colors": { "circle_of_fifths": { ... } }`.
+#[derive(Deserialize, Clone, Copy, Debug)]
+#[serde(default)]
+pub struct CircleOfFifthsColors {
+    /// The 11 key points not currently highlighted.
+    #[serde(deserialize_with = "hex_color")]
+    pub base: Color,
+    /// The reference harp key's own point.
+    #[serde(deserialize_with = "hex_color")]
+    pub harp_key: Color,
+    /// A position's point (one per step clockwise from the harp key).
+    #[serde(deserialize_with = "hex_color")]
+    pub position: Color,
+}
+
+impl Default for CircleOfFifthsColors {
+    fn default() -> Self {
+        Self {
+            base: Color::srgba(0.30, 0.30, 0.36, 0.85),
+            harp_key: Color::srgb(0.95, 0.80, 0.35),
+            position: Color::srgb(0.35, 0.75, 0.95),
         }
     }
 }
@@ -357,6 +385,15 @@ impl LoadedTheme {
         self.colors
             .as_ref()
             .map_or_else(TwelveBarColors::default, |c| c.twelve_bar)
+    }
+
+    /// Circle-of-fifths diagram colors for the active theme, or
+    /// [`CircleOfFifthsColors::default`] if the theme's `theme.json` has no
+    /// `"colors"` block at all.
+    pub fn circle_of_fifths_colors(&self) -> CircleOfFifthsColors {
+        self.colors
+            .as_ref()
+            .map_or_else(CircleOfFifthsColors::default, |c| c.circle_of_fifths)
     }
 
     /// Blow/draw note colors for the active theme, or [`NoteColors::default`]

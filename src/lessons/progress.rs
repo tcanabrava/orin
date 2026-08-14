@@ -77,6 +77,7 @@ mod tests {
             pass_criteria: None,
             progression: None,
             scale: None,
+            diagram: None,
         }
     }
 

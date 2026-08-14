@@ -1,6 +1,7 @@
 pub mod algo_picker;
 pub mod button;
 pub mod checkbox;
+pub mod circle_of_fifths;
 pub mod combobox;
 pub mod confirm_dialog;
 pub mod file_dialog;

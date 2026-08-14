@@ -78,6 +78,15 @@ pub struct LessonManifest {
     /// pick linger" reasoning `progression` above applies.
     #[serde(default)]
     pub scale: Option<String>,
+    /// An instructional lesson's embedded reference diagram
+    /// (`"circle-of-fifths"` — see `dialogs::circle_of_fifths`), rendered
+    /// by `menu::pages::lessons::setup_lesson_reader` alongside the body
+    /// text. `None` (the common case) renders no diagram. Schema-enforced
+    /// to a fixed enum, like `progression`/`scale` above, so a second
+    /// diagram type later just adds another accepted value here rather
+    /// than a new field.
+    #[serde(default)]
+    pub diagram: Option<String>,
 }
 
 /// Parses and schema-validates one `lesson.json`'s bytes.
@@ -241,6 +250,31 @@ mod tests {
     fn rejects_an_unknown_scale_value() {
         let err = parse_lesson(
             br#"{"id":"x","unit":"u","title_key":"t","body_key":"b","scale":"dorian"}"#,
+        )
+        .unwrap_err();
+        assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn parses_a_diagram_field() {
+        let m = parse_lesson(
+            br#"{"id":"circle-of-fifths","unit":"scales","title_key":"t","body_key":"b",
+                 "diagram":"circle-of-fifths"}"#,
+        )
+        .unwrap();
+        assert_eq!(m.diagram.as_deref(), Some("circle-of-fifths"));
+    }
+
+    #[test]
+    fn diagram_defaults_to_none_when_absent() {
+        let m = parse_lesson(br#"{"id":"x","unit":"u","title_key":"t","body_key":"b"}"#).unwrap();
+        assert_eq!(m.diagram, None);
+    }
+
+    #[test]
+    fn rejects_an_unknown_diagram_value() {
+        let err = parse_lesson(
+            br#"{"id":"x","unit":"u","title_key":"t","body_key":"b","diagram":"mandala"}"#,
         )
         .unwrap_err();
         assert!(!err.is_empty());

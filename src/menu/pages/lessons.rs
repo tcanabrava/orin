@@ -11,6 +11,7 @@ use bevy::ui_widgets::{Activate, ScrollArea};
 use bevy_fluent::Localization;
 
 use crate::dialogs::button;
+use crate::dialogs::circle_of_fifths::spawn_circle_of_fifths;
 use crate::dialogs::tab_bar::{TabSelect, spawn_tab_bar};
 use crate::lessons::{
     AvailableLessons, LessonContext, LessonEntry, LessonsRescanned, PassCriteria, group_by_unit,
@@ -20,7 +21,7 @@ use crate::localization::LocalizationExt;
 use crate::profile::{PlayerProfile, record_lesson, save_profile};
 use crate::song::SongManifest;
 use crate::song::chart::Scale;
-use crate::song::harmonica::Progression;
+use crate::song::harmonica::{Position, Progression};
 use crate::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
@@ -451,6 +452,19 @@ pub(crate) fn setup_lesson_reader(
         })
         .id();
     commands.entity(root).add_child(body);
+
+    // Embedded reference diagram, if this lesson declares one — spawned
+    // right under the body text, above the goal/pass lines.
+    if entry.manifest.diagram.as_deref() == Some("circle-of-fifths") {
+        commands.entity(root).with_children(|parent| {
+            spawn_circle_of_fifths(
+                parent,
+                "C",
+                Position::all(),
+                theme.circle_of_fifths_colors(),
+            );
+        });
+    }
 
     if let Some(goal) = goal_line(&loc, entry) {
         spawn_reader_line(&mut commands, root, goal, Color::srgb(0.85, 0.72, 0.35));
