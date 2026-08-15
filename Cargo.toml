@@ -3,6 +3,7 @@ name = "harmonicon"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+default-run = "harmonicon"
 
 [dependencies]
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
