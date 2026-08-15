@@ -8,7 +8,7 @@ use crate::{
     song::chart::{Action, Modifier, NoteEvent},
 };
 
-use super::{GameplayClock, Paused, resolve_item_time};
+use super::{GameplayClock, GameplayLogic, Paused, resolve_item_time};
 
 /// Live banner text showing the current phrase and groove from the chart.
 #[derive(Component)]
@@ -287,6 +287,7 @@ impl Plugin for PhrasePlugin {
                 Update,
                 (watch_phrase_boundaries, update_phrase, update_tab_ribbon)
                     .chain()
+                    .after(GameplayLogic)
                     .run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
             );
     }
