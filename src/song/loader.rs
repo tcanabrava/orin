@@ -21,14 +21,28 @@ use crate::audio_system::{
 
 const SCHEMA: &str = include_str!("../../assets/song_schema.dtd.json");
 
+/// The compiled chart schema, built once for the whole process. Compiling
+/// it is the expensive half of validating a chart and the schema is a
+/// compile-time constant, so paying for it once per song buys nothing, and
+/// a menu entry can load several charts in a row. Both `expect`s are on
+/// that embedded constant: a schema this build ships that doesn't parse or
+/// compile is a broken build, which `tests/asset_layout.rs` catches long
+/// before a player does.
+fn chart_validator() -> &'static jsonschema::Validator {
+    static VALIDATOR: std::sync::OnceLock<jsonschema::Validator> = std::sync::OnceLock::new();
+    VALIDATOR.get_or_init(|| {
+        let schema: serde_json::Value =
+            serde_json::from_str(SCHEMA).expect("embedded song schema must be valid JSON");
+        jsonschema::validator_for(&schema).expect("embedded song schema must compile")
+    })
+}
+
 #[derive(Error, Debug)]
 pub enum SongLoadError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
     #[error("JSON parse error: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("Schema is invalid: {0}")]
-    Schema(String),
     #[error("Chart validation failed:\n{0}")]
     Validation(String),
 }
@@ -96,11 +110,7 @@ impl SongChartLoader {
         // chart, worth separating out from the rest of the load.
         let chart: HarpChart = {
             let _span = info_span!("validate_and_parse_chart").entered();
-            let schema_value: serde_json::Value = serde_json::from_str(SCHEMA)?;
-            let validator = jsonschema::validator_for(&schema_value)
-                .map_err(|e| SongLoadError::Schema(e.to_string()))?;
-
-            let errors: Vec<String> = validator
+            let errors: Vec<String> = chart_validator()
                 .iter_errors(&chart_value)
                 .map(|e| format!("  - {e} (at /{path})", path = e.instance_path()))
                 .collect();
