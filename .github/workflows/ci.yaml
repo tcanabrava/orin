@@ -59,8 +59,12 @@ jobs:
           components: clippy
       - name: Install Dependencies
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
+      # --all-targets: the plain form skips the binaries in src/bin, the
+      # tests and build.rs, which is most of what a review actually breaks.
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Run clippy with the dev feature
+        run: cargo clippy --all-targets --features dev -- -D warnings
 
   # Run cargo deny check (licenses, advisories, sources)
   deny:
