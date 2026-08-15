@@ -11,7 +11,9 @@ use super::{LOAD_PURPOSE, MUSIC_PURPOSE, SAVE_PURPOSE, TICKS_PER_BEAT};
 use crate::audio_system::midi::{midi_to_note, note_to_midi};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::localization::LocalizationExt;
-use crate::song::chart::{Action, Scale, TempoPoint, seconds_to_tick, tick_to_seconds};
+use crate::song::chart::{
+    Action, CURRENT_FORMAT_VERSION, Scale, TempoPoint, seconds_to_tick, tick_to_seconds,
+};
 use crate::song::harmonica::{Harmonica, hole_notes};
 use bevy_fluent::prelude::Localization;
 
@@ -202,7 +204,7 @@ pub(super) fn serialize_harpchart_notes(state: &EditorState, notes: &[GridNote])
     // convention, never this field) — omit it entirely rather than writing
     // an empty string when no audio file has been picked yet.
     let mut metadata = json!({
-        "format_version": "1.0.0",
+        "format_version": CURRENT_FORMAT_VERSION,
         "author": artist,
         "description": "Created with Harmonicon Song Editor 2"
     });
