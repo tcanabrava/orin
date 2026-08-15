@@ -14,6 +14,7 @@
 //! first.
 
 use bevy::asset::AssetServer;
+use bevy::input_focus::tab_navigation::TabGroup;
 use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
@@ -352,6 +353,10 @@ pub(crate) fn sync_tutorial_overlay(
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.35)),
             GlobalZIndex(500),
+            // Modal: the overlay blocks clicks on the screen behind it, so
+            // Tab must not reach that screen's buttons either. Skip
+            // Tutorial is the one way out, by keyboard as much as by mouse.
+            TabGroup::modal(),
             TutorialOverlayRoot,
         ))
         .with_children(|overlay| {
