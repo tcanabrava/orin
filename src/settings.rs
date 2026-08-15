@@ -203,7 +203,7 @@ fn save_settings(settings: &Settings) {
     }
     match serde_json::to_string_pretty(settings) {
         Ok(json) => {
-            if let Err(err) = std::fs::write(&path, json) {
+            if let Err(err) = crate::config_file::write_atomic(&path, &json) {
                 warn!("Could not write settings to {}: {err}", path.display());
             }
         }
