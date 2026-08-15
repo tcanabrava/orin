@@ -2164,6 +2164,25 @@ fn undo_restores_the_previous_content_and_enables_redo() {
 }
 
 #[test]
+fn undo_drops_a_selection_pointing_at_a_removed_note() {
+    let mut history = UndoHistory::default();
+    let before = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
+    history.record_if_changed(&before);
+
+    let mut added = note(2, Dir::Draw, Pitch::Normal);
+    added.id = 7;
+    let mut state = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal), added]);
+    state.selected = vec![7];
+    history.record_if_changed(&state);
+
+    history.undo(&mut state);
+    assert!(
+        state.selected.is_empty(),
+        "the undone note's id must not stay selected"
+    );
+}
+
+#[test]
 fn redo_reapplies_the_undone_content() {
     let mut history = UndoHistory::default();
     let before = state_with_notes(vec![note(1, Dir::Blow, Pitch::Normal)]);
