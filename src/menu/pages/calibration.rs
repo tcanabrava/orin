@@ -566,10 +566,7 @@ fn setup_ui(mut commands: Commands, loc: Res<Localization>) {
 
         // ── Status text ───────────────────────────────────────────────────────
         p.spawn((
-            Text::new(
-                "Play any note on each beat — the game measures how late \
-                       your mic detects sound.",
-            ),
+            Text::new(String::from(loc.msg("calibration-instructions"))),
             TextFont {
                 font_size: FontSize::Px(16.0),
                 ..default()
