@@ -62,6 +62,34 @@ jobs:
       - name: Run clippy
         run: cargo clippy -- -D warnings
 
+  # Keep the wasm target compiling. The library only: the helper binaries
+  # in src/bin are desktop tools and were never meant to run in a browser.
+  wasm_check:
+    name: Wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.toml') }}
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install Dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
+      - name: Run cargo check
+        run: cargo check --lib --target wasm32-unknown-unknown
+
   # Run cargo fmt --all -- --check
   format:
     name: Format
