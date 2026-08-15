@@ -64,6 +64,16 @@ dev = [
 # needs (spans below `info` are dropped before any backend sees them).
 trace_tracy = ["bevy/trace_tracy"]
 
+# Bevy systems routinely take one parameter per resource/component/message
+# type they touch — that's the ECS, not a design smell — and `Query` filter
+# tuples like `(With<A>, Without<B>, Without<C>)` are inherently "complex" by
+# that lint's simple heuristic despite being completely idiomatic Bevy.
+# Here rather than as a `lib.rs` inner attribute so the binaries and the
+# integration tests are held to the same set as the library.
+[lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
+
 [[bin]]
 name = "hole-editor"
 path = "src/bin/hole_editor.rs"
