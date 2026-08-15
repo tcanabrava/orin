@@ -197,7 +197,7 @@ pub fn save_profile(profile: &PlayerProfile) {
     }
     match serde_json::to_string_pretty(profile) {
         Ok(json) => {
-            if let Err(err) = std::fs::write(&path, json) {
+            if let Err(err) = crate::config_file::write_atomic(&path, &json) {
                 warn!("Could not write profile to {}: {err}", path.display());
             }
         }
