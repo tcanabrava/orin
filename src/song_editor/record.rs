@@ -220,6 +220,7 @@ pub(super) fn stop_record(
     if record.active {
         let t = (playhead.elapsed - record.detect_delay).max(0.0);
         finish_open_notes(record, &mut state.notes, t, playhead.secs_per_tick);
+        state.prune_selection();
         *pitch_range = PitchRange::default();
     }
     for e in playing {
@@ -278,6 +279,9 @@ pub(super) fn record_tick(
         t,
         secs_per_tick,
     );
+    // Both of the above punch out whatever the take overlaps, so a note
+    // that was selected before the take started can vanish under it.
+    state.prune_selection();
 }
 
 // ── Pure-ish helpers ─────────────────────────────────────────────────────────
