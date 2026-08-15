@@ -18,7 +18,7 @@ use crate::{
     song::{SongManifest, chart::Feel},
 };
 
-use super::{GameplayClock, Paused};
+use super::{GameplayClock, GameplayLogic, Paused};
 
 /// The metronome's tempo, decoupled from the song so it can be driven by the
 /// gameplay screens (set from the chart) or the standalone Bending Trainer (set
@@ -542,7 +542,9 @@ impl Plugin for MetronomePlugin {
             // Clicks/beat animation: gameplay (unpaused) and the Bending Trainer.
             .add_systems(
                 Update,
-                (update_metronome, click_metronome).run_if(metronome_running),
+                (update_metronome, click_metronome)
+                    .after(GameplayLogic)
+                    .run_if(metronome_running),
             )
             // Toggles + label refreshes stay responsive even while paused. The
             // buttons' click/hover ride along as inline on(...) observers (see
