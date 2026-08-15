@@ -764,6 +764,7 @@ results-best-score = Best score
 
 # Latency calibration
 calibration-title = Latency Calibration
+calibration-instructions = Play any note on each beat — the game measures how late your mic detects sound.
 calibration-mean-offset-placeholder = Mean offset: —
 calibration-mean-offset = Mean offset: {$sign}{$ms}ms
 calibration-suggested-placeholder = Current: —   →   Suggested: —

@@ -762,6 +762,7 @@ results-best-score = Melhor pontuação
 
 # Calibração de latência
 calibration-title = Calibração de Latência
+calibration-instructions = Toque qualquer nota em cada batida — o jogo mede o atraso com que o microfone detecta o som.
 calibration-mean-offset-placeholder = Deslocamento médio: —
 calibration-mean-offset = Deslocamento médio: {$sign}{$ms}ms
 calibration-suggested-placeholder = Atual: —   →   Sugerido: —
