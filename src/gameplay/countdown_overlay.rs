@@ -13,7 +13,9 @@ use crate::{
     song::SongManifest,
 };
 
-use super::{GameplayClock, GameplayRoot, MidiTrackPlayer, MusicPlayer, MusicStarted, Paused};
+use super::{
+    GameplayClock, GameplayLogic, GameplayRoot, MidiTrackPlayer, MusicPlayer, MusicStarted, Paused,
+};
 
 #[derive(Component, Default, Clone)]
 pub struct CountdownOverlay;
@@ -155,7 +157,9 @@ impl Plugin for CountdownPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            update_countdown.run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
+            update_countdown
+                .after(GameplayLogic)
+                .run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
         );
     }
 }
