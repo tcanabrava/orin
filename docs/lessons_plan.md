@@ -221,6 +221,38 @@ diagram picked the new positions up automatically, no other file touched.
 Small, bounded follow-up if the editor UI is ever extended (mirror
 `progression`'s existing click-to-cycle field).
 
+## Wave 5 — Circle of fifths, live in Jam Session — shipped
+
+Wave 4's diagram was purely instructional — nothing the player could
+actually play against. This wave makes it a live playing aid and adds a
+lesson that requires actually switching position, not just reading about
+it.
+
+- **`jam::position_guide`** — a live "position compass" (reusing
+  `dialogs::circle_of_fifths` as-is) always spawned by `jam::session::setup`
+  next to the harmonica bend diagram, showing the equipped harp's own key
+  (detected from its hole-1 blow note — `song::harmonica::detected_harp_key`,
+  factored out of `harp_banner` so both share it) and whichever `Position`
+  the loaded chart declares.
+- **`LessonManifest::position_cycle`** (a new schema-enforced boolean, seeded
+  into a new `crate::app::JamPositionCycle` resource on Start, mirroring
+  `progression`/`scale`): when on, `jam::position_guide::cycle_position`
+  walks `JamScale` through `FirstPosition`/`SecondPosition`/`ThirdPosition`
+  every 4 bars — the three `Scale` variants with a matching `Position`,
+  i.e. the practical, stay-on-one-harp meaning of "switching position"
+  (blues-hexatonic pitch classes rooted at the jam key +0/+7/+2 semitones).
+  `on_position_called` re-highlights the compass and patches the live
+  `JamHoleGuide::scale_classes` in place (it's normally computed once at
+  session setup and never re-derived) so the *existing*
+  `PassCriteria::ScaleAdherence`/`jam::improv::ImprovStats` machinery judges
+  played notes against whichever position was actually called — no new
+  scoring machinery, just a moving target for what already exists.
+- **New lesson `circle-of-fifths-jam`** (`04_scales/07_circle_of_fifths_jam`)
+  — an open Jam Session on a fixed C harmonica with `position_cycle: true`,
+  prerequisites `circle-of-fifths` + `improvisation`, judged by
+  `scale-adherence` at a 0.65 threshold (looser than the fixed-scale improv
+  lessons' 0.8, since chasing a moving target is harder).
+
 ### Unit 5 — jazz (`05_jazz/`) — 4 of 5 lessons shipped
 
 Its own engine work (jazz chord-tone tables, a jazz-blues `Progression`

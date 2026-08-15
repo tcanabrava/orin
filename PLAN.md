@@ -49,6 +49,11 @@ one-line index of what's landed.
   widget (this crate's first circular UI layout) visualizing that a
   harmonica `Position` is just a step count around the circle of fifths;
   `Position` also grew `Fourth`/`Fifth`/`Twelfth` variants.
+- **Circle-of-fifths, live in Jam Session** — `jam::position_guide` adds a
+  live position compass (always shown in Jam Session) and a
+  `position_cycle` lesson mechanic that calls a new position every 4 bars,
+  reusing the existing `ScaleAdherence` scoring against a moving target
+  instead of a fixed one; new lesson `circle-of-fifths-jam`.
 - **Physical-design restructuring** — layering fixes, inline tests evicted
   to `tests.rs` files, `gameplay`/`menu`/`lessons` split into their target
   layouts, `jam` gathered into `src/jam/`, a file-size budget test.
