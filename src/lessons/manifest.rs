@@ -89,15 +89,23 @@ pub struct LessonManifest {
     pub diagram: Option<String>,
 }
 
+/// The compiled lesson schema, built once for the whole process: the
+/// startup scan validates every bundled and external lesson in a row, and
+/// compiling the schema again for each of them is the expensive half.
+fn lesson_validator() -> &'static jsonschema::Validator {
+    static VALIDATOR: std::sync::OnceLock<jsonschema::Validator> = std::sync::OnceLock::new();
+    VALIDATOR.get_or_init(|| {
+        let schema: serde_json::Value =
+            serde_json::from_str(SCHEMA).expect("embedded lesson schema must be valid JSON");
+        jsonschema::validator_for(&schema).expect("embedded lesson schema must compile")
+    })
+}
+
 /// Parses and schema-validates one `lesson.json`'s bytes.
 pub fn parse_lesson(bytes: &[u8]) -> Result<LessonManifest, String> {
     let value: serde_json::Value =
         serde_json::from_slice(bytes).map_err(|e| format!("JSON parse error: {e}"))?;
-    let schema: serde_json::Value =
-        serde_json::from_str(SCHEMA).expect("embedded lesson schema must be valid JSON");
-    let validator =
-        jsonschema::validator_for(&schema).map_err(|e| format!("schema is invalid: {e}"))?;
-    let errors: Vec<String> = validator
+    let errors: Vec<String> = lesson_validator()
         .iter_errors(&value)
         .map(|e| format!("{e} (at /{})", e.instance_path()))
         .collect();
