@@ -54,7 +54,9 @@ use super::pause_menu::SelectedPhraseIndex;
 use super::song_waveform_material::{
     SongWaveformMaterial, SongWaveformMaterialPlugin, pack_amplitudes,
 };
-use super::{GameplayClock, GameplayRoot, LoopConfig, Paused, SongEnd, loop_range_valid};
+use super::{
+    GameplayClock, GameplayLogic, GameplayRoot, LoopConfig, Paused, SongEnd, loop_range_valid,
+};
 
 /// Every bar keeps at least this much height (as a fraction 0..1) even during
 /// silence, so the waveform reads as a continuous shape rather than gaps.
@@ -888,7 +890,9 @@ impl Plugin for SongProgressPlugin {
             .add_message::<RequestLoopRange>()
             .add_systems(
                 Update,
-                update_progress.run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
+                update_progress
+                    .after(GameplayLogic)
+                    .run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
             )
             .add_systems(
                 Update,
