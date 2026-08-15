@@ -686,6 +686,15 @@ impl EditorState {
             n.pitch = sanitize(kind, n.pitch);
         }
         self.sticky_pitch = sanitize(kind, self.sticky_pitch);
+        self.prune_selection();
+    }
+
+    /// Drops selected ids whose note no longer exists. Any path that can
+    /// remove a note without going through the selection has to call this:
+    /// a harmonica-kind switch, an undo, a recording take punching out what
+    /// it overlaps. Otherwise `selected_note` keeps naming a note that
+    /// isn't there and the mod panel's edits land on nothing.
+    pub(super) fn prune_selection(&mut self) {
         let notes = &self.notes;
         self.selected.retain(|id| notes.iter().any(|n| n.id == *id));
     }
