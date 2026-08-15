@@ -380,6 +380,17 @@ fn check_source(source: &str, report: &mut dyn FnMut(usize, &str)) {
                 // `format!(` left open at end of line — the template string
                 // is the first non-blank line after it.
                 check_lookahead_literal(&lines, i, 1, &format!("{ctor}format!(...))"), report);
+            } else if line.trim_end().ends_with(ctor) {
+                // Same, one level up: a long literal is routinely wrapped
+                // onto its own line under the constructor, leaving the
+                // constructor line itself with no quote to scan.
+                check_lookahead_literal(
+                    &lines,
+                    i,
+                    1,
+                    &format!("{ctor}\"...\") with a natural-language literal"),
+                    report,
+                );
             }
         }
 
@@ -569,8 +580,13 @@ fn extract_quoted_after(line: &str, needle: &str) -> Option<String> {
             Some(c) => content.push(c),
         }
     }
-    // No closing quote on this line — treat as no match rather than
-    // guessing at partial content.
+    // A trailing backslash is a line continuation: the literal keeps going
+    // on the next line, and what has been read so far is already enough to
+    // fingerprint it. Anything else unterminated is treated as no match
+    // rather than guessing at partial content.
+    if after_quote.trim_end().ends_with('\\') {
+        return Some(content);
+    }
     None
 }
 
@@ -742,6 +758,18 @@ mod tests {
         assert!(violations(r#"Text::new(format!("{}", n))"#).is_empty());
         assert!(violations(r#"Text::new(String::from(label))"#).is_empty());
         assert!(violations(r#"Text::new(String::from(loc.msg("key")))"#).is_empty());
+    }
+
+    #[test]
+    fn flags_a_literal_wrapped_onto_its_own_line() {
+        let source = "Text::new(\n    \"Play any note on each beat\",\n),";
+        assert_eq!(violations(source).len(), 1);
+    }
+
+    #[test]
+    fn flags_a_literal_split_by_a_line_continuation() {
+        let source = "Text::new(\n    \"Play any note on each beat \\\n    and listen\",\n),";
+        assert_eq!(violations(source).len(), 1);
     }
 
     #[test]
