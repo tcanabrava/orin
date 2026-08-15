@@ -56,6 +56,16 @@ fn open_in_default_app(path: &std::path::Path) -> std::io::Result<()> {
             .arg(path)
             .spawn()?;
     }
+
+    // Anywhere else, meaning wasm, there is no process to spawn: say so
+    // instead of reporting a success that never happened.
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    return Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        format!("no default application handler for {}", path.display()),
+    ));
+
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     Ok(())
 }
 
