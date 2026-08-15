@@ -196,6 +196,13 @@ pub struct FftState {
     last_size: usize,
     /// Cached NMF note dictionary, rebuilt when the spectrum size / rate change.
     nmf_dict: Option<NmfDict>,
+    /// The windowed chunk the transform runs over, kept between calls: it is
+    /// one allocation per analysed chunk otherwise, and chunks arrive at
+    /// twice the rate of the 4096-sample window thanks to the 50% overlap.
+    windowed: Vec<Complex<f32>>,
+    /// rustfft's own scratch space, sized by `get_inplace_scratch_len`.
+    /// `process` allocates it per call, `process_with_scratch` doesn't.
+    scratch: Vec<Complex<f32>>,
 }
 
 impl Default for FftState {
@@ -205,6 +212,8 @@ impl Default for FftState {
             plan: None,
             last_size: 0,
             nmf_dict: None,
+            windowed: Vec::new(),
+            scratch: Vec::new(),
         }
     }
 }
@@ -263,17 +272,17 @@ pub fn analyze(
         let plan = state.plan.as_ref().unwrap();
 
         // Hanning window applied in-place before FFT.
-        let mut buffer: Vec<Complex<f32>> = samples
-            .iter()
-            .enumerate()
-            .map(|(i, &s)| {
-                let w =
-                    0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (n - 1) as f32).cos());
-                Complex::new(s * w, 0.0)
-            })
-            .collect();
+        let buffer = &mut state.windowed;
+        buffer.clear();
+        buffer.extend(samples.iter().enumerate().map(|(i, &s)| {
+            let w = 0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (n - 1) as f32).cos());
+            Complex::new(s * w, 0.0)
+        }));
 
-        plan.process(&mut buffer);
+        state
+            .scratch
+            .resize(plan.get_inplace_scratch_len(), Complex::new(0.0, 0.0));
+        plan.process_with_scratch(buffer, &mut state.scratch);
 
         let half = n / 2;
         buffer[..half]
