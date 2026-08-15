@@ -23,6 +23,7 @@
 use bevy::{
     audio::{AudioSource, Volume},
     ecs::system::IntoObserverSystem,
+    input_focus::tab_navigation::TabGroup,
     prelude::*,
     ui_widgets::Activate,
 };
@@ -549,6 +550,7 @@ fn setup_ui(mut commands: Commands, loc: Res<Localization>) {
                 ..default()
             },
             BackgroundColor(Color::srgb(0.05, 0.05, 0.08)),
+            TabGroup::default(),
             CalRoot,
         ))
         .id();
