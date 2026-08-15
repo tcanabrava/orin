@@ -149,8 +149,8 @@ fn loop_test_note(time: f64) -> ScheduledNote {
         held: 1.0,
         sustain_scored: true,
         modifiers: Vec::new(),
-        pitch_samples: Vec::new(),
-        amp_samples: Vec::new(),
+        pitch_samples: vec![(0.0, 440.0)],
+        amp_samples: vec![(0.0, 0.5)],
         phrase_section: 0,
         chord_pitches: Vec::new(),
         force_wait: false,
@@ -191,6 +191,10 @@ fn loop_boundary_rewinds_the_clock_and_resets_notes_in_range() {
         assert!(
             !reset.hit && !reset.missed && !reset.sustain_scored && reset.held == 0.0,
             "note {i} (in range or a LOOKAHEAD preview past it) should be reset"
+        );
+        assert!(
+            reset.pitch_samples.is_empty() && reset.amp_samples.is_empty(),
+            "note {i} must not carry the previous lap's sustain samples"
         );
     }
     assert_eq!(song_notes.cursor, 1, "cursor rewinds to the in-range note");
