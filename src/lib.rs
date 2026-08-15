@@ -9,6 +9,7 @@
 pub mod app;
 pub mod assets_management;
 pub mod audio_system;
+pub mod config_file;
 pub mod dialogs;
 pub mod gameplay;
 pub mod jam;
