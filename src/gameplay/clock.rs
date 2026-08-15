@@ -227,6 +227,11 @@ pub(crate) fn handle_loop_boundary(
         note.missed = false;
         note.held = 0.0;
         note.sustain_scored = false;
+        // The sustain samples are what `technique_confirmed` measures a
+        // vibrato/wah rate from, so the next lap must start collecting
+        // them from scratch rather than on top of the previous lap's.
+        note.pitch_samples.clear();
+        note.amp_samples.clear();
     }
     // These notes are playable again, so `judge::score_notes`'s cursor
     // (which only ever advances past *permanently* resolved notes) can't
