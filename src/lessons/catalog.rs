@@ -181,6 +181,7 @@ mod tests {
                 progression: None,
                 scale: None,
                 diagram: None,
+                position_cycle: false,
             },
             chart_asset_path: None,
         }

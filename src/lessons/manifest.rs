@@ -87,6 +87,14 @@ pub struct LessonManifest {
     /// than a new field.
     #[serde(default)]
     pub diagram: Option<String>,
+    /// A jam-based lesson that periodically calls a new position (cycling
+    /// `crate::app::JamScale` through First/Second/Third position every few
+    /// bars — see `jam::position_guide`), seeded into
+    /// `crate::app::JamPositionCycle` when routing into
+    /// `GameplayMode::JamSession`. Defaults to `false` — an ordinary jam
+    /// lesson's `scale` field stays fixed for the whole session.
+    #[serde(default)]
+    pub position_cycle: bool,
 }
 
 /// The compiled lesson schema, built once for the whole process: the
@@ -286,6 +294,22 @@ mod tests {
         )
         .unwrap_err();
         assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn parses_a_position_cycle_field() {
+        let m = parse_lesson(
+            br#"{"id":"circle-of-fifths-jam","unit":"scales","title_key":"t","body_key":"b",
+                 "position_cycle":true}"#,
+        )
+        .unwrap();
+        assert!(m.position_cycle);
+    }
+
+    #[test]
+    fn position_cycle_defaults_to_false_when_absent() {
+        let m = parse_lesson(br#"{"id":"x","unit":"u","title_key":"t","body_key":"b"}"#).unwrap();
+        assert!(!m.position_cycle);
     }
 
     #[test]

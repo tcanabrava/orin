@@ -23,8 +23,8 @@ use crate::{
     song::SongManifest,
     song::chart::{Action, Scale},
     song::harmonica::{
-        ChordQuality, Harmonica, Progression, chord_intervals, harp_banner, progression_bars,
-        semitone,
+        ChordQuality, Harmonica, Position, Progression, chord_intervals, detected_harp_key,
+        harp_banner, progression_bars, semitone,
     },
     theme::LoadedTheme,
 };
@@ -39,6 +39,7 @@ use crate::spectrogram::{OscMaterial, SpectrogramStyle, spawn_spectrogram};
 use super::backing::{GeneratedJamSession, JamGenre};
 use super::improv::classify_note_fit;
 use super::midi_tracks::{JamMidiMute, spawn_midi_track_row};
+use super::position_guide::spawn_position_compass;
 use super::rhythm_guide::spawn_rhythm_guide;
 
 /// Free-play screen, two columns: left has everything but the harmonica
@@ -105,6 +106,10 @@ pub fn setup(
 
     // Which physical harp to grab: a Richter harp's key is its hole-1 blow note.
     let harp_hint = harp_banner(&chart.harmonica, key);
+    // Same detection, bare (no banner sentence), plus whichever position the
+    // chart itself declares — for the live position compass below.
+    let harp_key = detected_harp_key(&chart.harmonica);
+    let position = chart.harmonica.position().and_then(Position::from_label);
 
     commands
         .spawn((
@@ -291,6 +296,13 @@ pub fn setup(
                     .with_children(|right| {
                         spawn_harmonica_overlay(right, &chart.harmonica, &loc);
                         spawn_hole_map(right, &holes_info, &loc);
+                        spawn_position_compass(
+                            right,
+                            &loc,
+                            harp_key.as_deref(),
+                            position,
+                            theme.circle_of_fifths_colors(),
+                        );
                     });
             });
 

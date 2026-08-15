@@ -24,7 +24,9 @@ use crate::song::chart::Scale;
 use crate::song::harmonica::{Position, Progression};
 use crate::theme::LoadedTheme;
 
-use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
+use crate::app::{
+    AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, SelectedSong,
+};
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root, spawn_menu_root_plain};
 
@@ -516,6 +518,7 @@ pub(crate) fn setup_lesson_reader(
             let criteria = entry.manifest.pass_criteria.clone();
             let progression = entry.manifest.progression.clone();
             let scale = entry.manifest.scale.clone();
+            let position_cycle = entry.manifest.position_cycle;
             spawn_button(
                 &mut commands,
                 root,
@@ -525,6 +528,7 @@ pub(crate) fn setup_lesson_reader(
                       mut mode: ResMut<GameplayMode>,
                       mut jam_progression: ResMut<JamProgression>,
                       mut jam_scale: ResMut<JamScale>,
+                      mut jam_position_cycle: ResMut<JamPositionCycle>,
                       mut state: ResMut<NextState<AppState>>,
                       mut commands: Commands| {
                     commands.insert_resource(SelectedSong(
@@ -541,6 +545,7 @@ pub(crate) fn setup_lesson_reader(
                         *mode = GameplayMode::JamSession;
                         jam_progression.0 = parse_progression(progression.as_deref());
                         jam_scale.0 = parse_scale(scale.as_deref());
+                        jam_position_cycle.0 = position_cycle;
                     } else {
                         *mode = GameplayMode::Play2D;
                     }

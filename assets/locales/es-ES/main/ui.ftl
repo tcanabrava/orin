@@ -629,6 +629,15 @@ lesson-circle-of-fifths-body =
     También existen posiciones más allá de la 3ª — 4ª, 5ª, e incluso 12ª (un paso en el sentido *contrario* alrededor del círculo) — cada una con su propio carácter, de más brillante a más oscura y exótica cuanto más te alejas de casa.
     No necesitas memorizar este diagrama — solo recuerda la idea: elige una armónica, y cada posición en la que puede tocar ya está trazada para ti, un paso a la vez, alrededor de este círculo.
 
+# Lección: jam del círculo de quintas
+lesson-circle-of-fifths-jam-title = Jam del Círculo de Quintas
+lesson-circle-of-fifths-jam-body =
+    Hora de tocar el círculo de verdad, no solo leer sobre él. Esta es una Jam Session abierta con una sola armónica de C fija — sin cambiar de armónica, nunca.
+    Cada pocos compases, el juego llama a una nueva posición: 1ª, luego 2ª, luego 3ª, repitiendo en ciclo. Observa la brújula junto al diagrama de tu armónica — la tonalidad resaltada cambia para mostrar cuál está activa ahora mismo.
+    Cambiar de posición en una sola armónica significa cambiar dónde resuelven tus frases, no qué agujeros existen. La 1ª posición descansa en el agujero 4 (soplo); la 2ª se apoya en las notas aspiradas y descansa ahí; la 3ª cambia de nuevo. Los agujeros son los mismos — lo que cuenta como "casa" es lo que se mueve.
+    No te preocupes si estás a mitad de una frase cuando cambia la llamada — termina tu idea y luego dirígete hacia las notas de descanso de la nueva posición.
+    Cuando sientas que estás listo para parar, abre el menú de pausa y pulsa "Finalizar Lección" — se juzga por cuánto de lo que tocaste se mantuvo dentro de la posición que estaba llamada en ese momento.
+
 # Lección: corcheas con swing
 lesson-swing-eighths-title = Corcheas con Swing
 lesson-swing-eighths-body =
@@ -732,6 +741,7 @@ jam-call-response-listen = Escucha…
 jam-call-response-your-turn = Tu turno
 jam-midi-track-mute-tooltip = Haz clic para silenciar/activar esta pista
 jam-rhythm-guide = Guía de Ritmo
+jam-position-label = Posición: {$position}
 jam-spectrogram-style-button = ↻ Vista
 jam-spectrogram-style-bars = Barras
 jam-spectrogram-style-oscilloscope = Osciloscopio

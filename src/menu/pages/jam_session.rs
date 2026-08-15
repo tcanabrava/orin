@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::app::{GameplayMode, JamProgression, JamScale};
+use crate::app::{GameplayMode, JamPositionCycle, JamProgression, JamScale};
 use crate::jam::backing::{Genre, JamGenre};
 use crate::localization::LocalizationExt;
 use crate::song::chart::Scale;
@@ -39,6 +39,7 @@ pub(crate) fn setup_jam_session_menu(
          mut progression: ResMut<JamProgression>,
          mut scale: ResMut<JamScale>,
          mut genre: ResMut<JamGenre>,
+         mut position_cycle: ResMut<JamPositionCycle>,
          mut page: ResMut<NextState<MenuPage>>| {
             *mode = GameplayMode::JamSession;
             // A real song always plays its own actual chords regardless of
@@ -57,6 +58,10 @@ pub(crate) fn setup_jam_session_menu(
             // spawns for a `GeneratedJamSession` regardless, so this is
             // just defense against a stale value lingering.
             genre.0 = Genre::Blues;
+            // Same reasoning once more: a previous jam-based lesson's
+            // position-calling can't be allowed to leak into an ordinary
+            // real-song jam.
+            position_cycle.0 = false;
             page.set(MenuPage::ArtistList);
         },
     );

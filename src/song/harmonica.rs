@@ -541,16 +541,26 @@ pub fn progression_bars(key: &str, progression: Progression) -> [(String, ChordQ
     }
 }
 
+/// The physical harp's own key, detected from its hole-1 blow note (a
+/// Richter diatonic's key note) — `None` when it can't be determined (an
+/// unusual/incomplete layout). Shared by [`harp_banner`] and the Jam
+/// Session position compass (`jam::position_guide`).
+pub(crate) fn detected_harp_key(harp: &Harmonica) -> Option<String> {
+    let blow1 = harp.wind_direction_label(1, &Action::Blow);
+    let key = blow1
+        .trim_end_matches(|c: char| c.is_ascii_digit())
+        .to_string();
+    (!key.is_empty() && key != "\u{2014}").then_some(key)
+}
+
 /// One-line "which harp to grab" hint. A Richter diatonic's key is its hole-1
 /// blow note, so it's derived from the layout and paired with the song's
 /// position and key — e.g. `"Use a C harmonica · 2nd position · key of G"`.
 /// Falls back to just the key when the harp key can't be determined.
 pub fn harp_banner(harp: &Harmonica, song_key: &str) -> String {
-    let blow1 = harp.wind_direction_label(1, &Action::Blow);
-    let harp_key = blow1.trim_end_matches(|c: char| c.is_ascii_digit());
-    if harp_key.is_empty() || harp_key == "\u{2014}" {
+    let Some(harp_key) = detected_harp_key(harp) else {
         return format!("Playing in {song_key}");
-    }
+    };
     match harp.position() {
         Some(pos) => {
             format!(

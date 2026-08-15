@@ -68,6 +68,17 @@ pub struct JamProgression(pub Progression);
 #[derive(Resource, Default)]
 pub struct JamScale(pub Scale);
 
+/// Whether Jam Session should periodically call a new position (cycling
+/// `JamScale` through First/Second/Third position) — see
+/// `jam::position_guide`. Only ever `true` for a jam-based lesson that opts
+/// in via its manifest's `position_cycle` field
+/// (`menu::pages::lessons::setup_lesson_reader`'s Start handler); the
+/// real-song "Jam Session" button resets it to `false`, mirroring
+/// `JamProgression`/`JamScale`'s own reset, so a previous lesson's cycling
+/// can't leak into an ordinary jam.
+#[derive(Resource, Default)]
+pub struct JamPositionCycle(pub bool);
+
 // ── Selection resources ───────────────────────────────────────────────────────
 
 #[derive(Resource)]

@@ -631,6 +631,15 @@ lesson-circle-of-fifths-body =
     There are positions beyond 3rd too — 4th, 5th, and even 12th (one step the *other* way around the circle) — each with its own character, from brighter to darker and more exotic the further you travel from home.
     You don't need to memorize this diagram — just remember the idea: pick a harp, and every position it can play in is already laid out for you, one step at a time, around this circle.
 
+# Lesson: circle of fifths jam
+lesson-circle-of-fifths-jam-title = Circle of Fifths Jam
+lesson-circle-of-fifths-jam-body =
+    Time to actually play the circle instead of just reading it. This is an open Jam Session on one fixed C harmonica — no swapping harps, ever.
+    Every few bars, the game calls a new position: 1st, then 2nd, then 3rd, cycling on repeat. Watch the compass next to your harmonica diagram — the highlighted key changes to show which one is active right now.
+    Switching position on a single harp means changing where your phrases resolve, not which holes exist. 1st position rests on hole 4 (blow); 2nd leans into the draw notes and rests there instead; 3rd shifts again. The holes are the same — what counts as "home" moves.
+    Don't panic if you're mid-phrase when the call changes — finish your thought, then work your way toward the new position's own resting notes.
+    When you feel ready to stop, open the pause menu and press "Finish Lesson" — judged by how much of what you played stayed inside whichever position was called at the time.
+
 # Lesson: swing eighths
 lesson-swing-eighths-title = Swing Eighths
 lesson-swing-eighths-body =
@@ -734,6 +743,7 @@ jam-call-response-listen = Listen…
 jam-call-response-your-turn = Your turn
 jam-midi-track-mute-tooltip = Click to mute/unmute this track
 jam-rhythm-guide = Rhythm Guide
+jam-position-label = Position: {$position}
 jam-spectrogram-style-button = ↻ View
 jam-spectrogram-style-bars = Bars
 jam-spectrogram-style-oscilloscope = Oscilloscope

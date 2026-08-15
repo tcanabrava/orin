@@ -11,7 +11,8 @@ use crate::app::{AppState, GameplayMode};
 use crate::audio_system::pitch_detect::PitchRange;
 use crate::jam::{
     backing::GeneratedJamSession, call_response as jam_call_response, improv,
-    midi_tracks as jam_midi_tracks, rhythm_guide as jam_rhythm_guide, session as jam_session,
+    midi_tracks as jam_midi_tracks, position_guide as jam_position_guide,
+    rhythm_guide as jam_rhythm_guide, session as jam_session,
 };
 use crate::menu::tutorial::tour_active;
 use crate::settings::AudioSettings;
@@ -89,6 +90,7 @@ impl Plugin for GameplayPlugin {
         .init_resource::<jam_midi_tracks::JamMidiMute>()
         .init_resource::<improv::ImprovGate>()
         .init_resource::<improv::ImprovStats>()
+        .add_message::<jam_position_guide::PositionCalled>()
         .init_resource::<jam_call_response::CallResponseEnabled>()
         .init_resource::<jam_call_response::CallResponseState>()
         .init_resource::<call_response::CallCues>()
@@ -245,6 +247,26 @@ impl Plugin for GameplayPlugin {
                 .chain()
                 .in_set(GameplayLogic)
                 .run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
+        )
+        // Jam Session, position-cycling lesson mechanic: calls a new position
+        // (cycling `JamScale`) every few bars and patches `JamHoleGuide` to
+        // match — ordered before `improv::accumulate_improv_stats` so a
+        // bar-boundary frame is never scored against the stale scale. A
+        // no-op for an ordinary jam (`JamPositionCycle` off).
+        .add_systems(
+            Update,
+            (
+                jam_position_guide::cycle_position,
+                jam_position_guide::on_position_called,
+            )
+                .chain()
+                .after(GameplayLogic)
+                .before(improv::accumulate_improv_stats)
+                .run_if(
+                    in_state(AppState::Playing)
+                        .and_then(|p: Res<Paused>| !p.0)
+                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
+                ),
         )
         // Jam Session: live harmonica hole-map feedback from the mic, plus the
         // improv lesson's scale-adherence tally (always accumulating during a
