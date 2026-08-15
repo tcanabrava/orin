@@ -6,7 +6,10 @@
 //! Entry: Main Menu → Credits button.
 //! Exit:  ESC key or the "Back to Menu" button.
 
-use bevy::{camera::visibility::RenderLayers, prelude::*, ui_widgets::Activate};
+use bevy::{
+    camera::visibility::RenderLayers, input_focus::tab_navigation::TabGroup, prelude::*,
+    ui_widgets::Activate,
+};
 use bevy_fluent::Localization;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
@@ -229,6 +232,9 @@ fn spawn_ui(commands: &mut Commands, loc: &Localization) {
                 ..default()
             },
             GlobalZIndex(20),
+            // The screen's only focusable element hangs off this anchor, so
+            // this is what Tab has to scope to.
+            TabGroup::default(),
             CreditsRoot,
         ))
         .id();
