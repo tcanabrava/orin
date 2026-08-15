@@ -47,6 +47,7 @@ impl Snapshot {
     fn restore(self, state: &mut EditorState) {
         state.notes = self.notes;
         state.tempo_changes = self.tempo_changes;
+        state.prune_selection();
     }
 }
 
