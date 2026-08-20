@@ -36,11 +36,12 @@ use crate::gameplay::song_progress_overlay::{BAR_HEIGHT, NoteMarker, spawn_song_
 use crate::gameplay::twelve_bar_blues_overlay::{GridConfig, spawn_12_bar_grid};
 use crate::spectrogram::{OscMaterial, SpectrogramStyle, spawn_spectrogram};
 
-use super::backing::{GeneratedJamSession, JamGenre};
+use super::backing::JamGenre;
 use super::improv::classify_note_fit;
 use super::midi_tracks::{JamMidiMute, spawn_midi_track_row};
 use super::position_guide::spawn_position_compass;
 use super::rhythm_guide::spawn_rhythm_guide;
+use crate::app::GeneratedJamSession;
 
 /// Free-play screen, two columns: left has everything but the harmonica
 /// itself (title, loop toggle, 12-bar chart, metronome, spectrogram); right

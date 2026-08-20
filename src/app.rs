@@ -79,6 +79,17 @@ pub struct JamScale(pub Scale);
 #[derive(Resource, Default)]
 pub struct JamPositionCycle(pub bool);
 
+/// Present while a generated-backing jam is in flight (from the "Start Jam"
+/// button through `Playing`, including any Restart). Its presence — checked
+/// by both `menu::route_menu_entry` and `gameplay::pause_menu::on_restart`
+/// — tells those call sites this `SelectedSong` was built by
+/// [`build_generated_manifest`] via `Assets::add` rather than loaded through
+/// the `AssetServer`, so it has no tracked `LoadState`: both routes skip
+/// `AppState::SongLoading` and go straight to `Playing`. Removed on
+/// returning to the menu, same end-of-life point `LessonContext` uses.
+#[derive(Resource)]
+pub struct GeneratedJamSession;
+
 /// Set while the guided tutorial tour (`menu::pages::tutorial`) is driving
 /// the app automatically. Every screen the tour passes through
 /// (`gameplay::pause_menu`, the Bending Trainer, the Song Editor's grid

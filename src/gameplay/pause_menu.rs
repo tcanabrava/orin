@@ -14,11 +14,9 @@ use super::adaptive_difficulty::AdaptiveDifficulty;
 use super::{GameplayRoot, LoopConfig, MusicPlayer, Paused};
 use crate::app::{AppState, GameplayMode, ReturnToSongList, SelectedSong};
 use crate::dialogs::button;
-use crate::jam::backing;
-use crate::jam::improv::ImprovStats;
-use crate::lessons::{LessonContext, PassCriteria, lesson_passed};
+use crate::lessons::LessonContext;
 use crate::localization::LocalizationExt;
-use crate::profile::{PlayerProfile, record_lesson, save_profile};
+use crate::profile::PlayerProfile;
 use crate::song::SongManifest;
 
 /// Root of the pause overlay; toggled between hidden/visible.
@@ -758,7 +756,7 @@ fn on_restart(
     _: On<Activate>,
     mut paused: ResMut<Paused>,
     mut next_state: ResMut<NextState<AppState>>,
-    generated_jam: Option<Res<backing::GeneratedJamSession>>,
+    generated_jam: Option<Res<crate::app::GeneratedJamSession>>,
 ) {
     // A generated jam's `SelectedSong` was built by `Assets::add`, not
     // `AssetServer::load` — it has no tracked `LoadState`, so routing
@@ -785,40 +783,15 @@ fn on_quit(
     apply_quit(&mut paused, &mut next_state, &mut return_to_song_list);
 }
 
-/// Picks the one `ImprovStats` fraction relevant to `criteria` — the three
-/// jam-based `PassCriteria` variants (`ScaleAdherence`/`ChordToneAdherence`/
-/// `PhraseDiscipline`) each read a different tally off the same running
-/// stats; `None` for a chart-backed criterion (or no criterion), which never
-/// reads `ImprovStats` at all. Pure so it's directly unit-testable.
-fn jam_fraction_for(criteria: Option<&PassCriteria>, stats: &ImprovStats) -> Option<f32> {
-    match criteria {
-        Some(PassCriteria::ScaleAdherence { .. }) => stats.adherence(),
-        Some(PassCriteria::ChordToneAdherence { .. }) => stats.chord_tone_adherence(),
-        Some(PassCriteria::PhraseDiscipline { .. }) => stats.phrase_discipline(),
-        _ => None,
-    }
-}
+/// Emitted by the pause menu's "Finish Lesson" button. The button lives
+/// here because that is where the pause menu is built; the judging lives in
+/// `jam::lesson`, because `ImprovStats` is jam's and `gameplay` sits below
+/// `jam` (`docs/physical_design_plan.md` rule 2).
+#[derive(Message)]
+pub struct FinishLessonRequested;
 
-/// Judges a jam-based lesson on demand — the only lesson types with no
-/// natural end to judge them at (see `PassCriteria::ScaleAdherence`).
-/// Records the result and returns to the menu the same way "Quit Song"
-/// does; `route_menu_entry` sees the still-present `LessonContext` and
-/// routes to the lesson list from there, same as any other lesson.
-fn on_finish_lesson(
-    _: On<Activate>,
-    lesson: Res<LessonContext>,
-    improv_stats: Res<ImprovStats>,
-    mut profile: ResMut<PlayerProfile>,
-    mut paused: ResMut<Paused>,
-    mut next_state: ResMut<NextState<AppState>>,
-    mut return_to_song_list: ResMut<ReturnToSongList>,
-) {
-    let fraction = jam_fraction_for(lesson.pass_criteria.as_ref(), &improv_stats);
-    let passed = lesson_passed(lesson.pass_criteria.as_ref(), 0.0, &[], fraction);
-    let record = profile.lessons.entry(lesson.lesson_id.clone()).or_default();
-    record_lesson(record, passed, fraction.unwrap_or(0.0));
-    save_profile(&profile);
-    apply_quit(&mut paused, &mut next_state, &mut return_to_song_list);
+fn on_finish_lesson(_: On<Activate>, mut requested: MessageWriter<FinishLessonRequested>) {
+    requested.write(FinishLessonRequested);
 }
 
 // Pure effects, split out so they can be unit-tested without the UI/observers.
@@ -835,7 +808,7 @@ fn apply_restart(paused: &mut Paused, next_state: &mut NextState<AppState>, targ
     next_state.set(target);
 }
 
-fn apply_quit(
+pub(crate) fn apply_quit(
     paused: &mut Paused,
     next_state: &mut NextState<AppState>,
     return_to_song_list: &mut ReturnToSongList,
@@ -900,52 +873,6 @@ fn on_pause_button_click(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // ── jam_fraction_for ─────────────────────────────────────────────────────
-
-    fn stats(
-        chord_tone: u32,
-        in_scale: u32,
-        out_of_scale: u32,
-        rest_violations: u32,
-    ) -> ImprovStats {
-        ImprovStats {
-            chord_tone,
-            in_scale,
-            out_of_scale,
-            rest_violations,
-        }
-    }
-
-    #[test]
-    fn jam_fraction_for_reads_the_matching_stat() {
-        let s = stats(3, 5, 2, 1);
-        assert_eq!(
-            jam_fraction_for(Some(&PassCriteria::ScaleAdherence { threshold: 0.1 }), &s),
-            s.adherence()
-        );
-        assert_eq!(
-            jam_fraction_for(
-                Some(&PassCriteria::ChordToneAdherence { threshold: 0.1 }),
-                &s
-            ),
-            s.chord_tone_adherence()
-        );
-        assert_eq!(
-            jam_fraction_for(Some(&PassCriteria::PhraseDiscipline { threshold: 0.1 }), &s),
-            s.phrase_discipline()
-        );
-    }
-
-    #[test]
-    fn jam_fraction_for_is_none_for_a_non_jam_criterion() {
-        let s = stats(3, 5, 2, 1);
-        assert_eq!(jam_fraction_for(None, &s), None);
-        assert_eq!(
-            jam_fraction_for(Some(&PassCriteria::Accuracy { threshold: 0.5 }), &s),
-            None
-        );
-    }
 
     // A fresh keyboard with Escape registered as just-pressed this frame.
     fn escape_down() -> ButtonInput<KeyCode> {

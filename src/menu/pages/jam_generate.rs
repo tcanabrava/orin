@@ -10,10 +10,11 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
+use crate::app::GeneratedJamSession;
 use crate::audio_system::midi::NOTE_NAMES;
 use crate::dialogs::combobox;
 use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
-use crate::jam::backing::{GeneratedJamSession, Genre, JamGenre, build_generated_manifest};
+use crate::jam::backing::{Genre, JamGenre, build_generated_manifest};
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
 use crate::song::chart::Scale;

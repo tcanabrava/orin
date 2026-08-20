@@ -11,11 +11,6 @@ use crate::app::tour_active;
 use crate::app::{AppState, GameplayMode};
 use crate::audio_system::AudioSettings;
 use crate::audio_system::pitch_detect::PitchRange;
-use crate::jam::{
-    backing::GeneratedJamSession, call_response as jam_call_response, improv,
-    midi_tracks as jam_midi_tracks, position_guide as jam_position_guide,
-    rhythm_guide as jam_rhythm_guide, session as jam_session,
-};
 
 use super::bars::{self, AbsoluteBar, BarChanged, CurrentBar};
 use super::clock::{self, GameplayClock};
@@ -83,16 +78,10 @@ impl Plugin for GameplayPlugin {
         .init_resource::<AbsoluteBar>()
         .add_message::<BarChanged>()
         .add_message::<NoteScored>()
+        .add_message::<pause_menu::FinishLessonRequested>()
         .init_resource::<bending_trainer::TrainerKey>()
         .init_resource::<bending_trainer::TrainerTarget>()
         .init_resource::<bending_trainer::DrillState>()
-        .init_resource::<jam_session::JamLoop>()
-        .init_resource::<jam_midi_tracks::JamMidiMute>()
-        .init_resource::<improv::ImprovGate>()
-        .init_resource::<improv::ImprovStats>()
-        .add_message::<jam_position_guide::PositionCalled>()
-        .init_resource::<jam_call_response::CallResponseEnabled>()
-        .init_resource::<jam_call_response::CallResponseState>()
         .init_resource::<call_response::CallCues>()
         .init_resource::<pause_menu::WaitForNoteMode>()
         .init_resource::<pause_menu::PracticeSpeed>()
@@ -107,7 +96,6 @@ impl Plugin for GameplayPlugin {
                 pause_menu::setup_pause_menu,
                 gameplay_2d::setup.run_if(|m: Res<GameplayMode>| *m == GameplayMode::Play2D),
                 gameplay_3d::setup.run_if(|m: Res<GameplayMode>| *m == GameplayMode::Play3D),
-                jam_session::setup.run_if(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
                 // Call-and-response cues need `SongNotes`' response notes to
                 // lead into — Jam Session never builds those.
                 call_response::setup_call_cues.run_if(|m: Res<GameplayMode>| {
@@ -248,75 +236,6 @@ impl Plugin for GameplayPlugin {
                 .in_set(GameplayLogic)
                 .run_if(in_state(AppState::Playing).and_then(|p: Res<Paused>| !p.0)),
         )
-        // Jam Session, position-cycling lesson mechanic: calls a new position
-        // (cycling `JamScale`) every few bars and patches `JamHoleGuide` to
-        // match — ordered before `improv::accumulate_improv_stats` so a
-        // bar-boundary frame is never scored against the stale scale. A
-        // no-op for an ordinary jam (`JamPositionCycle` off).
-        .add_systems(
-            Update,
-            (
-                jam_position_guide::cycle_position,
-                jam_position_guide::on_position_called,
-            )
-                .chain()
-                .after(GameplayLogic)
-                .before(improv::accumulate_improv_stats)
-                .run_if(
-                    in_state(AppState::Playing)
-                        .and_then(|p: Res<Paused>| !p.0)
-                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
-                ),
-        )
-        // Jam Session: live harmonica hole-map feedback from the mic, plus the
-        // improv lesson's scale-adherence tally (always accumulating during a
-        // jam, not just when a lesson is in flight — same "always-on
-        // diagnostic" convention as `SongStats::clean_attack`).
-        .add_systems(
-            Update,
-            (
-                jam_session::update_hole_map,
-                improv::accumulate_improv_stats,
-                jam_call_response::drive_call_response,
-                jam_call_response::update_call_response_banner,
-                jam_call_response::update_call_response_label,
-                jam_midi_tracks::update_track_mute_buttons,
-            )
-                .after(GameplayLogic)
-                .run_if(
-                    in_state(AppState::Playing)
-                        .and_then(|p: Res<Paused>| !p.0)
-                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
-                ),
-        )
-        // Muted-track sink volume — after `apply_music_volume` (a mid-song
-        // global-volume change touches every `MusicPlayer` sink, per-track
-        // ones included) so a muted track always ends up silent regardless
-        // of which order the two would otherwise run in.
-        .add_systems(
-            Update,
-            jam_midi_tracks::apply_midi_track_mute
-                .after(lifecycle::apply_music_volume)
-                .run_if(
-                    in_state(AppState::Playing)
-                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
-                ),
-        )
-        // Jam Session: the harmonica rhythm-guide pulse row — only ever
-        // spawned for a generated jam (see `jam::rhythm_guide`'s own doc
-        // comment), so gated on `GeneratedJamSession`'s presence too, not
-        // just the mode.
-        .add_systems(
-            Update,
-            jam_rhythm_guide::update_rhythm_guide
-                .after(GameplayLogic)
-                .run_if(
-                    in_state(AppState::Playing)
-                        .and_then(|p: Res<Paused>| !p.0)
-                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession)
-                        .and_then(resource_exists::<GeneratedJamSession>),
-                ),
-        )
         // Call-and-response: fires each phrase's synthesized demo audio the
         // instant the clock reaches its scheduled lead time. Fire-and-forget
         // (see `call_response`'s doc comment on why it never touches the
@@ -331,19 +250,6 @@ impl Plugin for GameplayPlugin {
                         matches!(*m, GameplayMode::Play2D | GameplayMode::Play3D)
                     }),
             ),
-        )
-        // Jam Session: music loop toggle + its readout.
-        .add_systems(
-            Update,
-            (
-                jam_session::restart_finished_jam_music,
-                jam_session::update_jam_loop_label,
-            )
-                .run_if(
-                    in_state(AppState::Playing)
-                        .and_then(|p: Res<Paused>| !p.0)
-                        .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),
-                ),
         )
         // Results screen lifecycle. The Retry/Continue buttons carry their own
         // click/hover behaviour as inline on(...) observers (see results::setup).

@@ -26,17 +26,6 @@ use crate::song::chart::{
 use crate::song::harmonica::{Position, Progression, progression_bars, richter_harp, semitone};
 use crate::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
 
-/// Present while a generated-backing jam is in flight (from the "Start Jam"
-/// button through `Playing`, including any Restart). Its presence — checked
-/// by both `menu::route_menu_entry` and `gameplay::pause_menu::on_restart`
-/// — tells those call sites this `SelectedSong` was built by
-/// [`build_generated_manifest`] via `Assets::add` rather than loaded through
-/// the `AssetServer`, so it has no tracked `LoadState`: both routes skip
-/// `AppState::SongLoading` and go straight to `Playing`. Removed on
-/// returning to the menu, same end-of-life point `LessonContext` uses.
-#[derive(Resource)]
-pub struct GeneratedJamSession;
-
 pub const SAMPLE_RATE: u32 = 44_100;
 
 /// How many 12-bar choruses to render into one generated backing loop —

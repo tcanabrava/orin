@@ -17,6 +17,7 @@ use harmonicon::assets_management::AssetsManagementPlugin;
 use harmonicon::audio_system::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
 use harmonicon::audio_system::{audio_input, pipeline};
 use harmonicon::gameplay::GameplayPlugin;
+use harmonicon::jam::JamPlugin;
 use harmonicon::lessons::LessonsPlugin;
 use harmonicon::localization::LocalizationPlugin;
 use harmonicon::menu::MenuPlugin;
@@ -133,6 +134,7 @@ fn main() {
         SongPlugin,
         MenuPlugin,
         GameplayPlugin,
+        JamPlugin,
         SpectrogramPlugin,
         SettingsPlugin,
         ProfilePlugin,

@@ -134,6 +134,19 @@ pub(crate) fn in_rest_window(bar_index: usize, play_bars: usize, rest_bars: usiz
 const PHRASE_PLAY_BARS: usize = 2;
 const PHRASE_REST_BARS: usize = 2;
 
+/// Clears the running tallies at the start of every `Playing` session.
+///
+/// Registered by `jam::JamPlugin` on `OnEnter(AppState::Playing)` — the
+/// same point `gameplay::lifecycle::reset_score` clears the scored-mode
+/// counters. Jam resets its own rather than being reset from there, so
+/// that `gameplay` needn't depend on `jam` (`docs/physical_design_plan.md`
+/// rule 2); like `reset_score` it runs for every mode, not just jam, so
+/// the tallies are always in a known state.
+pub fn reset_improv_stats(mut gate: ResMut<ImprovGate>, mut stats: ResMut<ImprovStats>) {
+    *gate = ImprovGate::default();
+    *stats = ImprovStats::default();
+}
+
 /// Tallies each fresh note attack into [`ImprovStats`], classified by
 /// [`classify_note_fit`] against the bar it landed on — the live twin of
 /// `session::update_hole_map`'s per-frame tint, but counting discrete
