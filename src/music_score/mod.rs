@@ -30,7 +30,7 @@ use bevy::prelude::*;
 use bevy::ui::ComputedNode;
 use bevy::ui_render::prelude::MaterialNode;
 
-use crate::audio_system::midi::midi_to_note;
+use harmonicon_core::midi::midi_to_note;
 
 mod tie_material;
 use tie_material::{TieMaterialHandle, TieMaterialPlugin};

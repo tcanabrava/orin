@@ -8,14 +8,14 @@ use super::state::{
     Dir, EditorState, Expr, GridNote, HARP_KEYS, HarmonicaKind, POSITIONS, Pitch, Scroll,
 };
 use super::{LOAD_PURPOSE, MUSIC_PURPOSE, SAVE_PURPOSE, TICKS_PER_BEAT};
-use crate::audio_system::midi::{midi_to_note, note_to_midi};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::localization::LocalizationExt;
-use crate::song::chart::{
+use bevy_fluent::prelude::Localization;
+use harmonicon_core::chart::{
     Action, CURRENT_FORMAT_VERSION, Scale, TempoPoint, seconds_to_tick, tick_to_seconds,
 };
-use crate::song::harmonica::{Harmonica, hole_notes};
-use bevy_fluent::prelude::Localization;
+use harmonicon_core::harmonica::{Harmonica, hole_notes};
+use harmonicon_core::midi::{midi_to_note, note_to_midi};
 
 // ── Serialisation ────────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ use bevy_fluent::prelude::Localization;
 /// actual sounded pitch (bend/overblow/overdraw/slide applied), not just
 /// the natural blow/draw note. Shares its derivation with the editor's own
 /// preview/practice synthesis (`playback::note_freq`) via
-/// `crate::song::harmonica`, so an exported chart always matches what the
+/// `harmonicon_core::harmonica`, so an exported chart always matches what the
 /// editor actually plays; overblow/overdraw resolve via [`hole_notes`],
 /// which knows overblow sits above the *draw* reed on holes 1/4/5/6.
 fn note_name_for(n: &GridNote, harp: &Harmonica) -> String {
@@ -589,8 +589,7 @@ fn save_midi_backing(
 
     match super::midi_import::render_backing_pcm(&midi.bytes, track_index) {
         Ok((_bpm, pcm)) => {
-            let wav =
-                crate::audio_system::wav::encode_wav(&pcm, crate::audio_system::synth::SAMPLE_RATE);
+            let wav = harmonicon_core::wav::encode_wav(&pcm, harmonicon_core::synth::SAMPLE_RATE);
             let out = dir.join("music.wav");
             match std::fs::write(&out, &wav) {
                 Ok(()) => {

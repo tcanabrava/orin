@@ -322,15 +322,15 @@ fn load_midi_tracks(
     let Ok(smf) = midly::Smf::parse(bytes) else {
         return (None, Vec::new(), 0.0);
     };
-    let Ok(tpq) = crate::song::midi::ticks_per_quarter(&smf) else {
+    let Ok(tpq) = harmonicon_core::midi_file::ticks_per_quarter(&smf) else {
         return (None, Vec::new(), 0.0);
     };
-    let tempo = crate::song::midi::collect_tempo_map(&smf);
+    let tempo = harmonicon_core::midi_file::collect_tempo_map(&smf);
 
     let mut tracks = Vec::new();
     let mut mix: Vec<f32> = Vec::new();
     for (index, track) in smf.tracks.iter().enumerate() {
-        let Some(pcm) = crate::song::midi::render_track_pcm(track, tpq, &tempo) else {
+        let Some(pcm) = harmonicon_core::midi_file::render_track_pcm(track, tpq, &tempo) else {
             continue;
         };
         if mix.len() < pcm.len() {
@@ -339,8 +339,8 @@ fn load_midi_tracks(
         for (m, s) in mix.iter_mut().zip(&pcm) {
             *m += s;
         }
-        let name =
-            crate::song::midi::track_name_of(track).unwrap_or_else(|| format!("Track {index}"));
+        let name = harmonicon_core::midi_file::track_name_of(track)
+            .unwrap_or_else(|| format!("Track {index}"));
         let wav = encode_wav(&pcm, SAMPLE_RATE);
         let source = load_context.add_labeled_asset(
             format!("midi_track_{index}"),

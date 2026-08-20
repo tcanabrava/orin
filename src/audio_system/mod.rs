@@ -8,5 +8,5 @@ pub mod waveform;
 
 pub use config::AudioSettings;
 // Pure pitch/MIDI conversion — lives in `harmonicon-core`, re-exported so
-// `crate::audio_system::midi::…` keeps resolving.
+// `harmonicon_core::midi::…` keeps resolving.
 pub use harmonicon_core::{midi, synth, wav};

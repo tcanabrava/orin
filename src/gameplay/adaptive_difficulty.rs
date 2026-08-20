@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use crate::app::SelectedSong;
 use crate::profile::PlayerProfile;
 use crate::song::SongManifest;
-use crate::song::chart::{Timing, TrackItem};
+use harmonicon_core::chart::{Timing, TrackItem};
 
 use super::{ScheduledNote, last_note_end, resolve_item_time};
 
@@ -299,7 +299,7 @@ pub fn first_unresolved_index(notes: &[ScheduledNote]) -> usize {
 /// the chord/split-badge tags parallel to the rebuilt notes; 3D has no such
 /// badge and discards them.
 pub fn rebuild_song_notes(
-    chart: &crate::song::chart::HarpChart,
+    chart: &harmonicon_core::chart::HarpChart,
     adaptive: &AdaptiveDifficulty,
     song_notes: &mut super::SongNotes,
 ) -> Vec<Option<&'static str>> {

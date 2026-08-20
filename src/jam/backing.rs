@@ -16,15 +16,15 @@ use std::path::PathBuf;
 use bevy::audio::AudioSource;
 use bevy::prelude::*;
 
-use crate::audio_system::midi::{midi_to_freq_hz, note_to_midi};
-use crate::audio_system::wav::encode_wav;
 use crate::audio_system::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
-use crate::song::chart::{
+use crate::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
+use harmonicon_core::chart::{
     Action, Difficulty, Feel, HarpChart, Metadata, NoteEvent, Scoring, Song, TempoPoint, Timing,
     TrackItem,
 };
-use crate::song::harmonica::{Position, Progression, progression_bars, richter_harp, semitone};
-use crate::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
+use harmonicon_core::harmonica::{Position, Progression, progression_bars, richter_harp, semitone};
+use harmonicon_core::midi::{midi_to_freq_hz, note_to_midi};
+use harmonicon_core::wav::encode_wav;
 
 pub const SAMPLE_RATE: u32 = 44_100;
 
@@ -304,7 +304,7 @@ pub fn generated_chart(
 ) -> HarpChart {
     let harp_key = position.harp_key(key);
     let mut harmonica = richter_harp(&harp_key);
-    if let crate::song::harmonica::Harmonica::Diatonic { position: pos, .. } = &mut harmonica {
+    if let harmonicon_core::harmonica::Harmonica::Diatonic { position: pos, .. } = &mut harmonica {
         *pos = Some(position.label().to_string());
     }
     HarpChart {
@@ -589,7 +589,7 @@ mod tests {
             30.0,
         );
         match chart.harmonica {
-            crate::song::harmonica::Harmonica::Diatonic {
+            harmonicon_core::harmonica::Harmonica::Diatonic {
                 holes,
                 layout,
                 position,
@@ -616,7 +616,7 @@ mod tests {
             30.0,
         );
         match chart.harmonica {
-            crate::song::harmonica::Harmonica::Diatonic {
+            harmonicon_core::harmonica::Harmonica::Diatonic {
                 layout, position, ..
             } => {
                 let layout = layout.expect("richter_harp always sets a layout");

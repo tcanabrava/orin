@@ -10,8 +10,8 @@ use std::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 
 use crate::audio_system::pitch_detect::{PitchEvent, PitchInfo};
-use crate::scoring::{AttackGate, HitQuality};
-use crate::song::chart::Modifier;
+use harmonicon_core::chart::Modifier;
+use harmonicon_core::scoring::{AttackGate, HitQuality};
 
 #[derive(Resource, Default)]
 pub struct ActivePitches(pub Vec<PitchInfo>);
@@ -21,7 +21,7 @@ pub struct ActivePitches(pub Vec<PitchInfo>);
 /// stops sounding and is articulated anew. Without this, a single held breath on
 /// (say) G4 would clear every G4 note that later scrolls into its hit window.
 /// Thin `Resource` wrapper around the generic [`AttackGate`] — see
-/// `crate::scoring`, which also backs the Song Editor's Practice mode.
+/// `harmonicon_core::scoring`, which also backs the Song Editor's Practice mode.
 #[derive(Resource, Default)]
 pub struct PitchGate(AttackGate<u8>);
 
@@ -108,7 +108,7 @@ pub struct SongStats {
     pub slide: TechniqueStats,
     pub vibrato: TechniqueStats,
     pub wah: TechniqueStats,
-    /// Onset hits where [`is_clean_attack`](crate::scoring::is_clean_attack)
+    /// Onset hits where [`is_clean_attack`](harmonicon_core::scoring::is_clean_attack)
     /// confirmed no *other* harp-producible pitch sounded alongside the
     /// expected one — separate from the technique buckets above (keyed by
     /// chart modifier, not attack cleanliness) and tallied for every hit

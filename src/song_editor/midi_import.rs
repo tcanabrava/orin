@@ -9,7 +9,7 @@
 //! disruptive than a key.
 //!
 //! MIDI *parsing* (tempo map, note extraction, track names) is shared,
-//! low-level code in `crate::song::midi`; this module adds the
+//! low-level code in `harmonicon_core::midi_file`; this module adds the
 //! editor-specific pieces: pitch-to-harp resolution ([`map_pitch`]), key
 //! suggestion ([`suggest_key`]), and tempo-map conversion
 //! ([`editor_tempo_map`]).
@@ -21,17 +21,17 @@ use super::pitch_map::{map_pitch, suggest_key};
 use super::playback::build_harp;
 use super::state::{EditorState, Expr, GridNote, HarmonicaKind};
 use super::{MIDI_PURPOSE, TICKS_PER_BEAT};
-use crate::audio_system::synth::render_pcm;
 use crate::dialogs::combobox::{ComboboxSelect, spawn_combobox};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
-use crate::song::chart::{TempoPoint, seconds_to_tick};
-use crate::song::midi::{
+use bevy_fluent::prelude::Localization;
+use harmonicon_core::chart::{TempoPoint, seconds_to_tick};
+use harmonicon_core::midi_file::{
     collect_tempo_map, extract_notes, note_on_count, notes_to_phrase, tick_to_seconds,
     ticks_per_quarter, track_name_of,
 };
-use bevy_fluent::prelude::Localization;
+use harmonicon_core::synth::render_pcm;
 
 // ── Resource ──────────────────────────────────────────────────────────────────
 
@@ -367,7 +367,7 @@ fn on_midi_track_selected(
 mod tests {
     use super::super::state::{Dir, Pitch};
     use super::*;
-    use crate::song::midi::{meta, note_off, note_on, smf_bytes};
+    use harmonicon_core::midi_file::{meta, note_off, note_on, smf_bytes};
     use midly::MetaMessage;
     use midly::num::u24;
 

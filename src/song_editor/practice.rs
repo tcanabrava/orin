@@ -5,10 +5,10 @@ use bevy::prelude::*;
 use bevy_fluent::prelude::Localization;
 
 use crate::audio_system::AudioSettings;
-use crate::audio_system::midi::{freq_to_midi, midi_to_note};
 use crate::audio_system::pitch_detect::PitchEvent;
 use crate::localization::{LocalizationExt, LocalizedStr};
-use crate::scoring::{
+use harmonicon_core::midi::{freq_to_midi, midi_to_note};
+use harmonicon_core::scoring::{
     AttackGate, HitQuality, NoteOutcome, classify_note, compute_points, sustain_points,
 };
 
@@ -65,7 +65,7 @@ pub(super) struct PracticeState {
     /// breath. An index is released once that note's expected frequency
     /// stops being detected, re-arming it for the next articulation. Shared
     /// re-attack logic with `crate::gameplay::PitchGate` — see
-    /// `crate::scoring::AttackGate`.
+    /// `harmonicon_core::scoring::AttackGate`.
     consumed: AttackGate<usize>,
     pub score: u32,
     pub hits: u32,

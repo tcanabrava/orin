@@ -11,7 +11,7 @@ use bevy_fluent::Localization;
 use super::gameplay_2d::{note_anim_mode, note_techniques};
 use super::note_tail_2d::{NoteTail2dMaterial, tail_params};
 use crate::localization::LocalizationExt;
-use crate::song::chart::Modifier;
+use harmonicon_core::chart::Modifier;
 
 /// Whether the techniques legend body is collapsed, toggled by clicking its
 /// header. Not reset on song load — like [`super::metronome_overlay::
@@ -33,7 +33,7 @@ struct TechniqueLegendToggleLabel;
 /// `note_anim_mode`/`tail_params` the falling notes use, so the legend
 /// can't drift from what the notes do.
 fn legend_techniques() -> [(Modifier, &'static str); 5] {
-    use crate::song::chart::Modifier::*;
+    use harmonicon_core::chart::Modifier::*;
     [
         (
             Bend {

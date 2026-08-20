@@ -69,7 +69,7 @@ pub(crate) fn setup_scoring_config(
         .timing
         .time_signature_map
         .as_deref()
-        .and_then(|m| crate::song::chart::time_sig_at_tick(0, m))
+        .and_then(|m| harmonicon_core::chart::time_sig_at_tick(0, m))
         .or(chart.song.time_signature.as_deref());
     config.beats_per_bar = parse_beats(beats_str);
 

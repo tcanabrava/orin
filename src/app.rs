@@ -11,8 +11,8 @@
 use bevy::prelude::*;
 
 use crate::song::SongManifest;
-use crate::song::chart::Scale;
-use crate::song::harmonica::Progression;
+use harmonicon_core::chart::Scale;
+use harmonicon_core::harmonica::Progression;
 
 // ── App-level states ──────────────────────────────────────────────────────────
 

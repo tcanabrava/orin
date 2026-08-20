@@ -2,10 +2,11 @@
 
 use bevy::prelude::*;
 
+use harmonicon_core::chart::{Action, Modifier, NoteEvent};
+
 use crate::{
     app::{AppState, SelectedSong},
     song::SongManifest,
-    song::chart::{Action, Modifier, NoteEvent},
 };
 
 use super::{GameplayClock, GameplayLogic, Paused, resolve_item_time};

@@ -21,11 +21,11 @@ use bevy::prelude::*;
 
 use crate::app::SelectedSong;
 use crate::audio_system::AudioSettings;
-use crate::audio_system::midi::midi_to_freq_hz;
-use crate::audio_system::synth::{Expr, PhraseNote, SAMPLE_RATE, TICKS_PER_BEAT, render_pcm};
-use crate::audio_system::wav::encode_wav;
 use crate::song::SongManifest;
-use crate::song::chart::{HarpChart, Modifier, TrackItem};
+use harmonicon_core::chart::{HarpChart, Modifier, TrackItem};
+use harmonicon_core::midi::midi_to_freq_hz;
+use harmonicon_core::synth::{Expr, PhraseNote, SAMPLE_RATE, TICKS_PER_BEAT, render_pcm};
+use harmonicon_core::wav::encode_wav;
 
 use super::{GameplayClock, GameplayRoot, resolve_item_time, target_pitch};
 
@@ -74,7 +74,7 @@ pub(super) fn call_phrase_groups(track: &[TrackItem]) -> Vec<(usize, usize)> {
 /// The natural (un-bent) pitch name for `item`'s hole/action, same fallback
 /// `gameplay_2d::build_combined_notes`/`gameplay_3d::build_notes_3d` use: the
 /// event's own authored `note` if present, else the harmonica's layout.
-fn natural_pitch(chart: &HarpChart, event: &crate::song::chart::NoteEvent) -> String {
+fn natural_pitch(chart: &HarpChart, event: &harmonicon_core::chart::NoteEvent) -> String {
     event.note.clone().unwrap_or_else(|| {
         chart
             .harmonica
@@ -203,7 +203,7 @@ pub(super) fn fire_call_cues(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::song::chart::{Action, NoteEvent};
+    use harmonicon_core::chart::{Action, NoteEvent};
 
     fn item(time: f64, duration: f64, call: bool, holes: &[(u8, Action)]) -> TrackItem {
         TrackItem {

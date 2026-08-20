@@ -14,10 +14,10 @@ use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
-use crate::audio_system::midi::note_to_midi;
 use crate::localization::LocalizationExt;
-use crate::song::chart::Action;
-use crate::song::harmonica::{Harmonica, HoleNotes, hole_notes, valid_note};
+use harmonicon_core::chart::Action;
+use harmonicon_core::harmonica::{Harmonica, HoleNotes, hole_notes, valid_note};
+use harmonicon_core::midi::note_to_midi;
 
 use super::ActivePitches;
 
@@ -416,7 +416,7 @@ mod tests {
         .unwrap()
     }
 
-    // `hole_notes`/`transpose` are now `crate::song::harmonica` — their
+    // `hole_notes`/`transpose` are now `harmonicon_core::harmonica` — their
     // bend/overblow derivation is tested there, not duplicated here.
 
     // ── ROWS layout ──────────────────────────────────────────────────────────────

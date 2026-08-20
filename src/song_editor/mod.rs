@@ -89,8 +89,8 @@ const HANDLE_W: f32 = 8.0;
 // resolution `gameplay::call_response` uses to convert chart-time call
 // phrases into the ticks `render_pcm` expects); re-exported here under its
 // established name for this module's own grid/UI math.
-pub(crate) use crate::audio_system::synth::TICKS_PER_BEAT;
 pub(crate) use harmonicon_core::snap;
+pub(crate) use harmonicon_core::synth::TICKS_PER_BEAT;
 const TICK_W: f32 = BEAT_W / TICKS_PER_BEAT as f32;
 // The silence track: a summary row below the hole lanes showing the gap, in
 // seconds, between consecutive notes — see `ranges::silence_gaps`. Shorter

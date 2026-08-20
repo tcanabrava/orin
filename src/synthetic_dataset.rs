@@ -24,15 +24,15 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::audio_system::midi::{midi_to_freq_hz, midi_to_note, note_to_midi};
-use crate::audio_system::synth::{Expr, PhraseNote, SAMPLE_RATE, render_pcm};
-use crate::audio_system::wav::encode_wav;
 use crate::note_bench::DEFAULT_TIMING_TOLERANCE_SECS;
-use crate::song::chart::{
+use harmonicon_core::chart::{
     Action, CURRENT_FORMAT_VERSION, Difficulty, HarpChart, Metadata, NoteEvent, PlayMode, Scoring,
     Song, TempoPoint, Timing, TrackItem,
 };
-use crate::song::harmonica::{Harmonica, hole_notes, richter_harp};
+use harmonicon_core::harmonica::{Harmonica, hole_notes, richter_harp};
+use harmonicon_core::midi::{midi_to_freq_hz, midi_to_note, note_to_midi};
+use harmonicon_core::synth::{Expr, PhraseNote, SAMPLE_RATE, render_pcm};
+use harmonicon_core::wav::encode_wav;
 
 /// Sustain per synthesized note.
 const NOTE_DUR_SECS: f64 = 0.45;

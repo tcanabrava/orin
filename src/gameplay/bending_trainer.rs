@@ -27,9 +27,7 @@ use bevy_fluent::Localization;
 
 use crate::app::AppState;
 use crate::audio_system::AudioSettings;
-use crate::audio_system::midi::NOTE_NAMES;
 use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
-use crate::audio_system::wav::encode_wav;
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
 use crate::dialogs::button::BaseButtonColor;
@@ -38,7 +36,9 @@ use crate::dialogs::combobox::ComboboxSelect;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
 use crate::profile::{DrillRecord, PlayerProfile};
-use crate::song::harmonica::{Harmonica, HoleNotes, hole_notes, richter_harp};
+use harmonicon_core::harmonica::{Harmonica, HoleNotes, hole_notes, richter_harp};
+use harmonicon_core::midi::NOTE_NAMES;
+use harmonicon_core::wav::encode_wav;
 
 use std::collections::HashSet;
 
@@ -505,7 +505,7 @@ fn target_note(harp: &Harmonica, target: TrainerTarget) -> Option<String> {
 
 /// Frequency in Hz for a note label like `"C#4"`.
 fn note_freq_hz(note: &str) -> Option<f32> {
-    crate::audio_system::midi::note_to_freq_hz(note)
+    harmonicon_core::midi::note_to_freq_hz(note)
 }
 
 /// A short, clean reference tone (fundamental + two soft harmonics) — plain

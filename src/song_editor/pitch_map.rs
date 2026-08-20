@@ -9,8 +9,8 @@
 
 use super::playback::build_harp;
 use super::state::{Dir, HARP_KEYS, HarmonicaKind, Pitch, max_bend, pitch_compatible};
-use crate::song::chart::Action;
-use crate::song::harmonica::Harmonica;
+use harmonicon_core::chart::Action;
+use harmonicon_core::harmonica::Harmonica;
 
 /// Resolves `target` (a MIDI note number) onto `harp` only if it can
 /// genuinely produce it: an exact blow/draw match; otherwise, for a
@@ -153,7 +153,7 @@ pub(super) fn suggest_key(midi_keys: &[u8], kind: HarmonicaKind) -> &'static str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::song::harmonica::{chromatic_harp, richter_harp};
+    use harmonicon_core::harmonica::{chromatic_harp, richter_harp};
 
     // ── map_pitch ─────────────────────────────────────────────────────────────────
 
@@ -161,7 +161,7 @@ mod tests {
     fn map_pitch_maps_a_directly_playable_blow_note() {
         let harp = richter_harp("C");
         // C4 is hole 1 blow on a C richter harp.
-        let midi = crate::audio_system::midi::note_to_midi("C4").unwrap() as u8;
+        let midi = harmonicon_core::midi::note_to_midi("C4").unwrap() as u8;
         let (hole, dir, pitch) = map_pitch(midi, &harp, HarmonicaKind::Diatonic);
         assert_eq!(hole, 1);
         assert_eq!(dir, Dir::Blow);
@@ -173,7 +173,7 @@ mod tests {
         let harp = richter_harp("C");
         // Hole 1 draw is D4; bending down one semitone reaches C#4, which
         // isn't directly playable and is within hole 1's max_bend (1.0).
-        let target = crate::audio_system::midi::note_to_midi("D4").unwrap() as u8 - 1;
+        let target = harmonicon_core::midi::note_to_midi("D4").unwrap() as u8 - 1;
         let (hole, dir, pitch) = map_pitch(target, &harp, HarmonicaKind::Diatonic);
         assert_eq!(hole, 1);
         assert_eq!(dir, Dir::Draw);
@@ -185,7 +185,7 @@ mod tests {
         let harp = chromatic_harp("C");
         // Hole 1 blow is C4; a target one semitone above (C#4) is only
         // reachable via the slide button on a chromatic harp.
-        let target = crate::audio_system::midi::note_to_midi("C4").unwrap() as u8 + 1;
+        let target = harmonicon_core::midi::note_to_midi("C4").unwrap() as u8 + 1;
         let (hole, dir, pitch) = map_pitch(target, &harp, HarmonicaKind::Chromatic);
         assert_eq!(hole, 1);
         assert_eq!(dir, Dir::Blow);
@@ -211,12 +211,12 @@ mod tests {
     #[test]
     fn map_pitch_playable_still_resolves_exact_and_bent_notes() {
         let harp = richter_harp("C");
-        let c4 = crate::audio_system::midi::note_to_midi("C4").unwrap() as u8;
+        let c4 = harmonicon_core::midi::note_to_midi("C4").unwrap() as u8;
         assert_eq!(
             map_pitch_playable(c4, &harp, HarmonicaKind::Diatonic),
             Some((1, Dir::Blow, Pitch::Normal))
         );
-        let bent = crate::audio_system::midi::note_to_midi("D4").unwrap() as u8 - 1;
+        let bent = harmonicon_core::midi::note_to_midi("D4").unwrap() as u8 - 1;
         assert_eq!(
             map_pitch_playable(bent, &harp, HarmonicaKind::Diatonic),
             Some((1, Dir::Draw, Pitch::Bend(1.0)))
@@ -226,7 +226,7 @@ mod tests {
     // ── key_fit_score / suggest_key ──────────────────────────────────────────────
 
     fn midi(note: &str) -> u8 {
-        crate::audio_system::midi::note_to_midi(note).unwrap() as u8
+        harmonicon_core::midi::note_to_midi(note).unwrap() as u8
     }
 
     #[test]

@@ -6,10 +6,10 @@ use bevy::prelude::*;
 
 use crate::app::GameplayMode;
 use crate::audio_system::AudioSettings;
-use crate::audio_system::midi::{midi_to_freq_hz, note_to_midi};
 use crate::audio_system::pitch_detect::{AudioFrame, PitchInfo, PitchRange};
-use crate::scoring::{combo_label, compute_multiplier};
-use crate::song::chart::Modifier;
+use harmonicon_core::chart::Modifier;
+use harmonicon_core::midi::{midi_to_freq_hz, note_to_midi};
+use harmonicon_core::scoring::{combo_label, compute_multiplier};
 
 use super::lifecycle::cleanup_gameplay;
 use super::*;
@@ -329,7 +329,7 @@ fn loop_range_valid_requires_end_strictly_after_start() {
 
 // ── resolve_item_time ───────────────────────────────────────────────────────
 
-use crate::song::chart::{TempoPoint, Timing, TrackItem};
+use harmonicon_core::chart::{TempoPoint, Timing, TrackItem};
 
 fn track_item(time: Option<f64>, tick: Option<u64>) -> TrackItem {
     TrackItem {
@@ -400,7 +400,7 @@ fn last_note_end_empty_track_is_zero() {
 
 #[test]
 fn modifier_fx_keys_match_technique_names() {
-    use crate::song::chart::Modifier::*;
+    use harmonicon_core::chart::Modifier::*;
     assert_eq!(
         modifier_fx_key(&Bend {
             semitones: -1.0,
@@ -428,7 +428,7 @@ fn modifier_fx_keys_match_technique_names() {
 }
 
 // `PitchGate` is now a thin `Resource` wrapper around the shared
-// `AttackGate` (see `crate::scoring`) — its re-attack-detection behaviour
+// `AttackGate` (see `harmonicon_core::scoring`) — its re-attack-detection behaviour
 // is covered by `AttackGate`'s own tests there, not duplicated here.
 
 // ── target_pitch (bend validation) ───────────────────────────────────────────

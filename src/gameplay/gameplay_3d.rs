@@ -4,6 +4,8 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 use bevy_fluent::Localization;
+use harmonicon_core::chart::{Action, HarpChart};
+use harmonicon_core::harmonica::twelve_bar;
 
 use crate::music_score::{self, BravuraFont};
 use crate::{
@@ -15,8 +17,6 @@ use crate::{
     localization::LocalizationExt,
     song::NoteCube3dConfig,
     song::SongManifest,
-    song::chart::{Action, HarpChart},
-    song::harmonica::twelve_bar,
     theme::{LoadedTheme, NoteColors, TwelveBarColors, effective_note_colors},
 };
 
@@ -735,7 +735,7 @@ pub fn setup(
         super::gameplay_2d::spawn_gameplay_music_score(&mut commands, bravura);
     }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
-    let harp_hint = crate::song::harmonica::harp_banner(&chart.harmonica, key);
+    let harp_hint = harmonicon_core::harmonica::harp_banner(&chart.harmonica, key);
     spawn_countdown(&mut commands, &hud.loc, Some(&harp_hint));
 }
 
@@ -790,7 +790,7 @@ fn spawn_harmonica_3d(
 
 fn spawn_hud_overlay(
     commands: &mut Commands,
-    chart: &crate::song::chart::HarpChart,
+    chart: &harmonicon_core::chart::HarpChart,
     chords: &[String],
     key: &str,
 
@@ -965,7 +965,7 @@ fn spawn_hud_overlay(
                         grid,
                         chords,
                         key,
-                        crate::song::harmonica::Progression::Standard,
+                        harmonicon_core::harmonica::Progression::Standard,
                         &GridConfig::for_3d(),
                         twelve_bar_colors,
                     );

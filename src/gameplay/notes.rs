@@ -9,8 +9,8 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 
-use crate::audio_system::midi::note_to_midi;
-use crate::song::chart::{Action, HarpChart, Modifier, PlayMode};
+use harmonicon_core::chart::{Action, HarpChart, Modifier, PlayMode};
+use harmonicon_core::midi::note_to_midi;
 
 use super::adaptive_difficulty::{AdaptiveDifficulty, track_items, unlocked_flags};
 
@@ -199,20 +199,20 @@ pub(crate) fn loop_reset_range(
 /// Resolve a track item's start time in seconds, preferring an explicit `time`
 /// and falling back to converting its `tick` through the tempo map.
 pub fn resolve_item_time(
-    item: &crate::song::chart::TrackItem,
-    timing: &crate::song::chart::Timing,
+    item: &harmonicon_core::chart::TrackItem,
+    timing: &harmonicon_core::chart::Timing,
 ) -> f64 {
     item.time.unwrap_or_else(|| {
         let tick = item.tick.unwrap_or(0);
-        crate::song::chart::tick_to_seconds(tick, timing.resolution, &timing.tempo_map)
+        harmonicon_core::chart::tick_to_seconds(tick, timing.resolution, &timing.tempo_map)
     })
 }
 
 /// The latest moment any note finishes (start + duration) across the track, in
 /// seconds. Drives when the song's content ends. Zero for an empty track.
 pub fn last_note_end(
-    track: &[crate::song::chart::TrackItem],
-    timing: &crate::song::chart::Timing,
+    track: &[harmonicon_core::chart::TrackItem],
+    timing: &harmonicon_core::chart::Timing,
 ) -> f64 {
     track
         .iter()
@@ -343,16 +343,16 @@ pub fn build_scheduled_notes(
 pub fn notes_to_notation(
     notes: &[ScheduledNote],
     resolution: u32,
-    tempo_map: &[crate::song::chart::TempoPoint],
+    tempo_map: &[harmonicon_core::chart::TempoPoint],
     beats_per_bar: f64,
 ) -> Vec<crate::music_score::NotationNote> {
     notes
         .iter()
         .filter_map(|n| {
             let midi = n.expected_pitch?;
-            let start_tick = crate::song::chart::seconds_to_tick(n.time, resolution, tempo_map);
+            let start_tick = harmonicon_core::chart::seconds_to_tick(n.time, resolution, tempo_map);
             let end_tick =
-                crate::song::chart::seconds_to_tick(n.time + n.duration, resolution, tempo_map);
+                harmonicon_core::chart::seconds_to_tick(n.time + n.duration, resolution, tempo_map);
             Some(crate::music_score::NotationNote {
                 start_beat: start_tick as f64 / resolution as f64,
                 duration_beats: (end_tick.saturating_sub(start_tick)).max(1) as f64

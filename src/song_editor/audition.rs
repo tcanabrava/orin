@@ -15,9 +15,9 @@
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::prelude::*;
 
-use crate::audio_system::synth::{PhraseNote, SAMPLE_RATE, render_pcm};
-use crate::audio_system::wav::encode_wav;
-use crate::song::harmonica::Harmonica;
+use harmonicon_core::harmonica::Harmonica;
+use harmonicon_core::synth::{PhraseNote, SAMPLE_RATE, render_pcm};
+use harmonicon_core::wav::encode_wav;
 
 use super::playback::{build_harp, note_freq};
 use super::state::{EditorState, GridNote};
@@ -78,8 +78,8 @@ pub(super) fn audition_on_select(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::song::harmonica::richter_harp;
     use crate::song_editor::state::{Dir, Expr, Pitch};
+    use harmonicon_core::harmonica::richter_harp;
 
     fn note(hole: u8, dir: Dir, pitch: Pitch) -> GridNote {
         GridNote {

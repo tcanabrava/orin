@@ -16,11 +16,11 @@
 use std::collections::HashMap;
 
 use crate::audio_system::audio_input::{CHUNK_SIZE, HOP_SIZE};
-use crate::audio_system::midi::note_to_midi;
 use crate::audio_system::pitch_detect::{self, FftState, PitchAlgorithm, PitchRange};
-use crate::song::chart::{Action, HarpChart, tick_to_seconds};
-use crate::song::harmonica::Harmonica;
-use crate::song::harmonica_constraints::plausible_notes;
+use harmonicon_core::chart::{Action, HarpChart, tick_to_seconds};
+use harmonicon_core::harmonica::Harmonica;
+use harmonicon_core::harmonica_constraints::plausible_notes;
+use harmonicon_core::midi::note_to_midi;
 
 // ── Ground truth ─────────────────────────────────────────────────────────────
 
@@ -242,10 +242,10 @@ pub fn compare(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::song::chart::{
+    use harmonicon_core::chart::{
         Difficulty, HarpChart, NoteEvent, PlayMode, Scoring, Song, TempoPoint, Timing, TrackItem,
     };
-    use crate::song::harmonica::richter_harp;
+    use harmonicon_core::harmonica::richter_harp;
 
     // ── apply_constraints ────────────────────────────────────────────────────
 

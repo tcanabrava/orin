@@ -20,9 +20,9 @@ use crate::lessons::{
 use crate::localization::LocalizationExt;
 use crate::profile::{PlayerProfile, record_lesson, save_profile};
 use crate::song::SongManifest;
-use crate::song::chart::Scale;
-use crate::song::harmonica::{Position, Progression};
 use crate::theme::LoadedTheme;
+use harmonicon_core::chart::Scale;
+use harmonicon_core::harmonica::{Position, Progression};
 
 use crate::app::{
     AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, SelectedSong,

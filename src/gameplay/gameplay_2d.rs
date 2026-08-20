@@ -3,17 +3,14 @@
 use std::collections::HashSet;
 
 use crate::{
-    app::SelectedSong,
-    localization::LocalizationExt,
-    song::NoteThemeConfig,
-    song::SongManifest,
-    song::chart::{Action, Modifier},
-    song::harmonica::twelve_bar,
+    app::SelectedSong, localization::LocalizationExt, song::NoteThemeConfig, song::SongManifest,
 };
 use bevy::asset::AssetPath;
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
 use bevy_fluent::Localization;
+use harmonicon_core::chart::{Action, Modifier};
+use harmonicon_core::harmonica::twelve_bar;
 
 use crate::music_score::{self, BravuraFont};
 
@@ -325,7 +322,7 @@ pub fn setup(
                                 grid,
                                 &chords,
                                 key,
-                                crate::song::harmonica::Progression::Standard,
+                                harmonicon_core::harmonica::Progression::Standard,
                                 &GridConfig::for_2d(),
                                 theme.twelve_bar_colors(),
                             );
@@ -407,7 +404,7 @@ pub fn setup(
         spawn_gameplay_music_score(&mut commands, bravura);
     }
     super::wait_freeze_overlay::spawn_wait_freeze_prompt(&mut commands);
-    let harp_hint = crate::song::harmonica::harp_banner(&chart.harmonica, key);
+    let harp_hint = harmonicon_core::harmonica::harp_banner(&chart.harmonica, key);
     spawn_countdown(&mut commands, &loc, Some(&harp_hint));
 }
 
@@ -537,7 +534,7 @@ pub fn note_head_bottom_pct(note_time: f64, elapsed: f64, lookahead: f64) -> f32
 
 /// Spawns the static highway furniture (lane stripes, dividers, hit zone) —
 /// no notes. Notes are spawned later, lazily, by `spawn_visible_notes`.
-fn spawn_highway(hw: &mut ChildSpawnerCommands, chart: &crate::song::chart::HarpChart) {
+fn spawn_highway(hw: &mut ChildSpawnerCommands, chart: &harmonicon_core::chart::HarpChart) {
     // Lane count/width come from the loaded harmonica, not a fixed 10 —
     // a chromatic chart's 12+ holes need proportionally narrower lanes.
     let hole_count = chart.harmonica.hole_count() as usize;
@@ -805,7 +802,7 @@ fn note_rgb(colors: NoteColors, is_blow: bool) -> (f32, f32, f32) {
 
 fn spawn_harmonica_strip(
     col: &mut ChildSpawnerCommands,
-    chart: &crate::song::chart::HarpChart,
+    chart: &harmonicon_core::chart::HarpChart,
     loc: &Localization,
 ) {
     let hole_count = chart.harmonica.hole_count();

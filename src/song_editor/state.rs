@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use super::snap::SnapMode;
 use super::{HEADER_H, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
-use crate::song::chart::Scale;
+use harmonicon_core::chart::Scale;
 
 // ── Note model types ─────────────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ pub(super) enum HarmonicaKind {
 /// rate in Hz, cycled through by repeatedly clicking the mod button — same
 /// pattern as `Bend`'s depth. Defined in `audio_system::synth` (shared with
 /// `gameplay::call_response`'s demo audio); re-exported under its established name.
-pub(super) use crate::audio_system::synth::Expr;
+pub(super) use harmonicon_core::synth::Expr;
 
 /// Breath direction: blow (exhale) or draw (inhale). Every note is one or the
 /// other; toggled with the Blow/Draw buttons.
@@ -607,7 +607,7 @@ impl EditorState {
     /// tempo_changes`] — the representation every tick↔real-time
     /// conversion in the editor reads, via `song::chart::
     /// tick_to_seconds`/`seconds_to_tick`. See [`build_tempo_map`].
-    pub(super) fn tempo_map(&self) -> Vec<crate::song::chart::TempoPoint> {
+    pub(super) fn tempo_map(&self) -> Vec<harmonicon_core::chart::TempoPoint> {
         build_tempo_map(&self.tempo, &self.tempo_changes)
     }
 
@@ -929,8 +929,8 @@ pub(super) fn note_rect(note: &GridNote) -> (f32, f32, f32, f32) {
 pub(super) fn build_tempo_map(
     tempo: &str,
     tempo_changes: &[(usize, f32)],
-) -> Vec<crate::song::chart::TempoPoint> {
-    use crate::song::chart::TempoPoint;
+) -> Vec<harmonicon_core::chart::TempoPoint> {
+    use harmonicon_core::chart::TempoPoint;
     let bpm0: f32 = tempo.parse::<f32>().unwrap_or(120.0).max(1.0);
     let mut map = vec![TempoPoint { tick: 0, bpm: bpm0 }];
     map.extend(tempo_changes.iter().map(|&(tick, bpm)| TempoPoint {
@@ -946,7 +946,7 @@ pub(super) fn build_tempo_map(
 /// effect at or before it) — the starting point [`toggle_tempo_point`]
 /// steps a new point's bpm from, so a freshly-added point doesn't silently
 /// jump to some unrelated tempo.
-fn bpm_at(tempo_map: &[crate::song::chart::TempoPoint], tick: usize) -> f32 {
+fn bpm_at(tempo_map: &[harmonicon_core::chart::TempoPoint], tick: usize) -> f32 {
     tempo_map
         .iter()
         .rev()

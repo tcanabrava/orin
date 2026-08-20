@@ -28,9 +28,9 @@ use crate::dialogs::circle_of_fifths::spawn_circle_of_fifths;
 use crate::gameplay::AbsoluteBar;
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
-use crate::song::chart::Scale;
-use crate::song::harmonica::Position;
 use crate::theme::{CircleOfFifthsColors, LoadedTheme};
+use harmonicon_core::chart::Scale;
+use harmonicon_core::harmonica::Position;
 
 use super::session::JamHoleGuide;
 

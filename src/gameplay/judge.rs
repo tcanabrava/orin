@@ -3,7 +3,7 @@
 //! The scoring *system*: [`score_notes`] and the pure helpers it depends on
 //! (technique confirmation, style-bonus lookup, attack-cleanliness inputs).
 //! The underlying pure scoring primitives (hit classification, points,
-//! combo math) stay in top-level `crate::scoring`, shared with the Song
+//! combo math) stay in top-level `harmonicon_core::scoring`, shared with the Song
 //! Editor's practice mode; this module is gameplay's own driver of them.
 
 use std::collections::{HashMap, HashSet};
@@ -11,14 +11,14 @@ use std::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 
 use crate::audio_system::AudioSettings;
-use crate::audio_system::midi::midi_to_freq_hz;
 use crate::audio_system::pitch_detect::{AudioFrame, PitchInfo};
-use crate::scoring::{
+use harmonicon_core::chart::Modifier;
+use harmonicon_core::midi::midi_to_freq_hz;
+use harmonicon_core::scoring::{
     HitQuality, NoteOutcome, VIBRATO_MIN_SWING_CENTS, WAH_MIN_SWING_FRAC, chord_is_sounding,
     classify_note, compute_multiplier, compute_points, is_clean_attack, measured_oscillation_hz,
     measured_relative_oscillation_hz, oscillation_matches_rate, should_decay_combo, sustain_points,
 };
-use crate::song::chart::Modifier;
 
 use super::clock::GameplayClock;
 use super::notes::SongNotes;

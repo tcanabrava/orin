@@ -22,12 +22,12 @@ use super::{
     BEAT_W, BEATS_PER_BAR, HANDLE_W, HEADER_H, ROW_H, SILENCE_ROW_H, TICK_W, TICKS_PER_BEAT,
     WAVEFORM_H, WAVEFORM_TOP, grid_height, silence_row_top,
 };
-use crate::audio_system::midi::{freq_to_midi, midi_to_note};
 use crate::gameplay::twelve_bar_blues_overlay::bar_bg;
 use crate::localization::LocalizationExt;
-use crate::song::harmonica::Harmonica;
 use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
+use harmonicon_core::harmonica::Harmonica;
+use harmonicon_core::midi::{freq_to_midi, midi_to_note};
 use std::collections::HashSet;
 
 pub(super) fn visible_beats(win_w: f32) -> usize {
@@ -142,7 +142,7 @@ pub(super) fn rebuild_grid(
         let bar_tint = bar_bg(
             bar_index,
             &state.key,
-            crate::song::harmonica::Progression::Standard,
+            harmonicon_core::harmonica::Progression::Standard,
             bar_colors,
         );
 
@@ -438,13 +438,15 @@ pub(super) fn rebuild_grid(
 
     for (start, end) in silence_gaps(&state.notes) {
         if start < last_tick && end > first_tick {
-            let duration_secs =
-                crate::song::chart::tick_to_seconds(end as u64, TICKS_PER_BEAT as u32, &tempo_map)
-                    - crate::song::chart::tick_to_seconds(
-                        start as u64,
-                        TICKS_PER_BEAT as u32,
-                        &tempo_map,
-                    );
+            let duration_secs = harmonicon_core::chart::tick_to_seconds(
+                end as u64,
+                TICKS_PER_BEAT as u32,
+                &tempo_map,
+            ) - harmonicon_core::chart::tick_to_seconds(
+                start as u64,
+                TICKS_PER_BEAT as u32,
+                &tempo_map,
+            );
             items.push(spawn_silence_gap(
                 &mut commands,
                 start,

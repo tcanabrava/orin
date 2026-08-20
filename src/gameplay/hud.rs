@@ -7,7 +7,7 @@
 
 use bevy::prelude::*;
 
-use crate::scoring::{HitQuality, combo_label, compute_multiplier};
+use harmonicon_core::scoring::{HitQuality, combo_label, compute_multiplier};
 
 use super::state::{HitFeedback, NoteScored, Score, ScoringConfig};
 

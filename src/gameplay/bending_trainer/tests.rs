@@ -168,7 +168,7 @@ fn unparsable_profile_entries_are_dropped_not_fatal() {
     assert!(stats.contains_key(&(2, Technique::Bend1)));
 }
 
-// `key_offset` is now `crate::song::harmonica::key_offset` — its
+// `key_offset` is now `harmonicon_core::harmonica::key_offset` — its
 // octave-folding behaviour is tested there, not duplicated here.
 // `richter_harp`'s own reference layout (C/D/G hole-1 pitches) is tested
 // once, centrally, in `song::harmonica::tests` — not duplicated here; this

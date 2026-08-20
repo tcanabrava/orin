@@ -30,9 +30,9 @@ use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
 use crate::dialogs::text_input::{TextInputCommitted, spawn_text_input};
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
-use crate::song::chart::Scale;
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
+use harmonicon_core::chart::Scale;
 
 pub(super) fn spawn_hole_column(
     row: &mut ChildSpawnerCommands,

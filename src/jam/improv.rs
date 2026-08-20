@@ -45,10 +45,10 @@ pub(crate) fn classify_note_fit(
 
 /// Enforces a fresh attack per pitch for [`accumulate_improv_stats`] — the
 /// same fresh-attack idea `gameplay::PitchGate` uses for scored modes
-/// (`crate::scoring::AttackGate`), so holding one note doesn't tally it
+/// (`harmonicon_core::scoring::AttackGate`), so holding one note doesn't tally it
 /// again every frame it stays sounding.
 #[derive(Resource, Default)]
-pub struct ImprovGate(crate::scoring::AttackGate<u8>);
+pub struct ImprovGate(harmonicon_core::scoring::AttackGate<u8>);
 
 /// Running tally of every fresh note attack played during an open Jam
 /// Session, classified by [`NoteFit`] against the bar it landed on. Reset

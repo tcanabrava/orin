@@ -13,7 +13,7 @@ use bevy::prelude::*;
 use crate::app::{AppState, GameplayMode, SelectedSong};
 use crate::music_score::{MusicScoreNotes, MusicScorePlayhead};
 use crate::song::SongManifest;
-use crate::song::chart::seconds_to_tick;
+use harmonicon_core::chart::seconds_to_tick;
 
 use super::{GameplayClock, GameplayLogic, SongNotes, notes_to_notation};
 

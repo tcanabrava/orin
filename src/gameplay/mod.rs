@@ -36,7 +36,9 @@ mod state;
 pub mod twelve_bar_blues_overlay;
 mod wait_freeze_overlay;
 
-pub use crate::scoring::{HitQuality, NoteOutcome, classify_note, compute_points, sustain_points};
+pub use harmonicon_core::scoring::{
+    HitQuality, NoteOutcome, classify_note, compute_points, sustain_points,
+};
 
 pub use bars::*;
 pub use clock::*;

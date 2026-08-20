@@ -11,6 +11,12 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
+use harmonicon_core::chart::{Action, Scale};
+use harmonicon_core::harmonica::{
+    ChordQuality, Harmonica, Position, Progression, chord_intervals, detected_harp_key,
+    harp_banner, progression_bars, semitone,
+};
+
 use crate::{
     app::{JamProgression, JamScale, SelectedSong},
     audio_system::AudioSettings,
@@ -21,11 +27,6 @@ use crate::{
     },
     localization::LocalizationExt,
     song::SongManifest,
-    song::chart::{Action, Scale},
-    song::harmonica::{
-        ChordQuality, Harmonica, Position, Progression, chord_intervals, detected_harp_key,
-        harp_banner, progression_bars, semitone,
-    },
     theme::LoadedTheme,
 };
 

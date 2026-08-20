@@ -2,8 +2,8 @@
 
 use bevy::prelude::*;
 
-use crate::song::chart::Scale;
-use crate::song::harmonica::{Harmonica, Progression};
+use harmonicon_core::chart::Scale;
+use harmonicon_core::harmonica::{Harmonica, Progression};
 
 use super::super::session::build_hole_guide;
 use super::*;
@@ -90,7 +90,7 @@ fn improv_pitch_info(midi: u8, note: &str) -> crate::audio_system::pitch_detect:
         midi,
         note: note.to_string(),
         octave: 4,
-        frequency: crate::audio_system::midi::midi_to_freq_hz(midi as f32),
+        frequency: harmonicon_core::midi::midi_to_freq_hz(midi as f32),
     }
 }
 

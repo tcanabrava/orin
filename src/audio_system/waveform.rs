@@ -73,14 +73,14 @@ pub fn analyze_ogg_waveform(bytes: &[u8], buckets: usize) -> (Vec<f32>, f64) {
 /// track — the Song Editor's MIDI import writes one of these (a synthesized
 /// mixdown, see `song_editor::midi_import::render_backing_pcm`) since the
 /// engine can't play a raw MIDI file and no OGG encoder is in the
-/// dependency tree. Uses [`crate::audio_system::wav::decode_wav_pcm16`]
+/// dependency tree. Uses [`harmonicon_core::wav::decode_wav_pcm16`]
 /// rather than `rodio::Decoder` (whose WAV support isn't enabled — see
 /// `Cargo.toml`'s comment on the `rodio` dependency) since the only WAV
 /// files this ever needs to read are ones this same codebase wrote.
 pub fn analyze_wav_waveform(bytes: &[u8], buckets: usize) -> (Vec<f32>, f64) {
     // Same off-schedule/hot-loop reasoning as `analyze_ogg_waveform` above.
     let _span = info_span!("analyze_wav_waveform", bytes = bytes.len()).entered();
-    let Some((samples, channels, sample_rate)) = crate::audio_system::wav::decode_wav_pcm16(bytes)
+    let Some((samples, channels, sample_rate)) = harmonicon_core::wav::decode_wav_pcm16(bytes)
     else {
         return (vec![0.0; buckets], 0.0);
     };
@@ -152,7 +152,7 @@ mod tests {
         let samples: Vec<f32> = (0..44_100)
             .map(|i| ((i % 100) as f32 / 50.0) - 1.0)
             .collect();
-        let wav = crate::audio_system::wav::encode_wav(&samples, 44_100);
+        let wav = harmonicon_core::wav::encode_wav(&samples, 44_100);
         let (waveform, duration) = analyze_wav_waveform(&wav, 8);
         assert_eq!(waveform.len(), 8);
         assert!((duration - 1.0).abs() < 1e-6);

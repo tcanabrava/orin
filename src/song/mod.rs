@@ -3,15 +3,15 @@
 mod loader;
 
 // The chart/harmonica/note types are pure logic and live in
-// `harmonicon-core`; re-exported here so `crate::song::chart::…` and
+// `harmonicon-core`; re-exported here so `harmonicon_core::chart::…` and
 // friends keep resolving unchanged across the tree.
 pub use harmonicon_core::midi_file as midi;
 pub use harmonicon_core::{chart, harmonica, harmonica_constraints, note_parser};
 
 use std::path::PathBuf;
 
-pub use chart::HarpChart;
-pub use harmonica::Harmonica;
+pub use harmonicon_core::chart::HarpChart;
+pub use harmonicon_core::harmonica::Harmonica;
 pub use loader::SongChartLoader;
 
 use bevy::{asset::AssetPath, audio::AudioSource, image::Image, prelude::*};

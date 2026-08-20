@@ -6,9 +6,9 @@ use bevy::prelude::*;
 use super::state::{Dir, GridNote, HarmonicaKind, Pitch};
 use super::{TICK_W, TICKS_PER_BEAT};
 use crate::audio_system::AudioSettings;
-use crate::audio_system::midi::{midi_to_freq_hz, note_to_midi};
-use crate::audio_system::synth::{PhraseNote, SAMPLE_RATE, render_pcm};
-use crate::song::harmonica::{Harmonica, chromatic_harp, hole_notes, richter_harp};
+use harmonicon_core::harmonica::{Harmonica, chromatic_harp, hole_notes, richter_harp};
+use harmonicon_core::midi::{midi_to_freq_hz, note_to_midi};
+use harmonicon_core::synth::{PhraseNote, SAMPLE_RATE, render_pcm};
 
 // ── Components / Resources ───────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ pub(super) struct Playhead {
 /// Builds the synthetic [`Harmonica`] the editor's own `GridNote`s (not a
 /// loaded chart's authored layout) are resolved against — a Richter
 /// diatonic or 12-hole chromatic, transposed to `key`. Shared with the
-/// Bending Trainer via `crate::song::harmonica::{richter_harp,
+/// Bending Trainer via `harmonicon_core::harmonica::{richter_harp,
 /// chromatic_harp}`, so both agree on note names, key transposition, and
 /// (via [`hole_notes`]) which reed an overblow/overdraw sounds above.
 pub(super) fn build_harp(key: &str, kind: HarmonicaKind) -> Harmonica {
@@ -87,8 +87,8 @@ pub(super) fn build_harp(key: &str, kind: HarmonicaKind) -> Harmonica {
 /// above the *blow* reed on holes 7–10.
 pub(super) fn note_freq(note: &GridNote, harp: &Harmonica) -> Option<f32> {
     let action = match note.dir {
-        Dir::Blow => crate::song::chart::Action::Blow,
-        Dir::Draw => crate::song::chart::Action::Draw,
+        Dir::Blow => harmonicon_core::chart::Action::Blow,
+        Dir::Draw => harmonicon_core::chart::Action::Draw,
     };
     let label = match note.pitch {
         Pitch::Normal => harp.wind_direction_label(note.hole, &action),
@@ -109,8 +109,8 @@ pub(super) fn note_freq(note: &GridNote, harp: &Harmonica) -> Option<f32> {
 /// target_pitch`). `None` under the same conditions as `note_freq`.
 pub(super) fn note_midi(note: &GridNote, harp: &Harmonica) -> Option<u8> {
     let action = match note.dir {
-        Dir::Blow => crate::song::chart::Action::Blow,
-        Dir::Draw => crate::song::chart::Action::Draw,
+        Dir::Blow => harmonicon_core::chart::Action::Blow,
+        Dir::Draw => harmonicon_core::chart::Action::Draw,
     };
     let label = match note.pitch {
         Pitch::Normal => harp.wind_direction_label(note.hole, &action),
@@ -212,7 +212,7 @@ pub(super) fn start_playback(
                 expr: n.expr,
             })
             .collect();
-        let wav = crate::audio_system::wav::encode_wav(&render_pcm(&phrase, spt), SAMPLE_RATE);
+        let wav = harmonicon_core::wav::encode_wav(&render_pcm(&phrase, spt), SAMPLE_RATE);
         let handle = sources.add(AudioSource { bytes: wav.into() });
         commands.spawn((
             EditorAudio,

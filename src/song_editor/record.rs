@@ -46,7 +46,7 @@ use bevy::prelude::*;
 use crate::audio_system::AudioSettings;
 use crate::audio_system::audio_input::{AudioCapture, CHUNK_SIZE};
 use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchEvent, PitchRange};
-use crate::song::harmonica::Harmonica;
+use harmonicon_core::harmonica::Harmonica;
 
 #[cfg(test)]
 use super::TICKS_PER_BEAT;
@@ -461,7 +461,7 @@ fn note_len(start_secs: f32, end_secs: f32, secs_per_tick: f32) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::song::harmonica::richter_harp;
+    use harmonicon_core::harmonica::richter_harp;
 
     fn open(id: u32, start_secs: f32) -> OpenNote {
         OpenNote {
@@ -530,7 +530,7 @@ mod tests {
         let table = build_pitch_table(&harp, HarmonicaKind::Diatonic);
         assert_eq!(table.len(), 128);
         // C4 is hole 1 blow on a C richter harp.
-        let c4 = crate::audio_system::midi::note_to_midi("C4").unwrap() as usize;
+        let c4 = harmonicon_core::midi::note_to_midi("C4").unwrap() as usize;
         assert_eq!(table[c4], Some((1, Dir::Blow, Pitch::Normal)));
         // MIDI 0 is far below anything a C harp can sound.
         assert_eq!(table[0], None);
@@ -544,7 +544,7 @@ mod tests {
         // does — recording a bent note shouldn't just snap to the nearest
         // natural note.
         let draw2 = harp
-            .wind_direction_midi(2, &crate::song::chart::Action::Draw)
+            .wind_direction_midi(2, &harmonicon_core::chart::Action::Draw)
             .unwrap();
         let table = build_pitch_table(&harp, HarmonicaKind::Diatonic);
         match table[(draw2 - 1) as usize] {
@@ -572,7 +572,7 @@ mod tests {
             table: build_pitch_table(&richter_harp("C"), HarmonicaKind::Diatonic),
             ..RecordState::default()
         };
-        let c4 = crate::audio_system::midi::note_to_midi("C4").unwrap() as u8;
+        let c4 = harmonicon_core::midi::note_to_midi("C4").unwrap() as u8;
         (record, EditorState::default(), c4)
     }
 
@@ -666,7 +666,7 @@ mod tests {
     fn chord_notes_from_the_same_take_survive_each_other() {
         let (mut record, mut state, c4) = recording_setup();
         // E4 = hole 2 blow on a C harp — a real two-note chord with C4.
-        let e4 = crate::audio_system::midi::note_to_midi("E4").unwrap() as u8;
+        let e4 = harmonicon_core::midi::note_to_midi("E4").unwrap() as u8;
         apply_detected_pitches(&mut record, &mut state, &[c4, e4], 0.0, 0.125);
         grow_open_notes(&mut state.notes, &record.open, &record.take_ids, 0.5, 0.125);
         assert_eq!(
@@ -681,7 +681,7 @@ mod tests {
         let (mut record, mut state, c4) = recording_setup();
         // A confirmed note (two events) and an unconfirmed blip (one event,
         // hole-2 draw = D4 on a C harp).
-        let d4 = crate::audio_system::midi::note_to_midi("D4").unwrap() as u8;
+        let d4 = harmonicon_core::midi::note_to_midi("D4").unwrap() as u8;
         apply_detected_pitches(&mut record, &mut state, &[c4], 0.0, 0.125);
         apply_detected_pitches(&mut record, &mut state, &[c4, d4], 0.05, 0.125);
         assert_eq!(state.notes.len(), 2);

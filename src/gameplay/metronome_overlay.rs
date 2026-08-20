@@ -569,11 +569,11 @@ mod tests {
     #[test]
     fn feel_from_chart_maps_each_declared_feel() {
         assert_eq!(
-            feel_from_chart(Some(crate::song::chart::Feel::Straight)),
+            feel_from_chart(Some(harmonicon_core::chart::Feel::Straight)),
             Some(MetronomeFeel::Straight)
         );
         assert_eq!(
-            feel_from_chart(Some(crate::song::chart::Feel::Shuffle)),
+            feel_from_chart(Some(harmonicon_core::chart::Feel::Shuffle)),
             Some(MetronomeFeel::Shuffle)
         );
     }

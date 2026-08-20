@@ -42,7 +42,6 @@ use crate::app::AppState;
 use crate::audio_system::audio_input::{CHUNK_SIZE, HOP_SIZE};
 use crate::audio_system::pipeline::RawCaptureBuffer;
 use crate::audio_system::pitch_detect::WINDOW_FUNCTION;
-use crate::audio_system::wav::{encode_wav, resample_linear};
 use crate::audio_system::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::dialogs::tooltip::Tooltip;
@@ -50,6 +49,7 @@ use crate::localization::LocalizationExt;
 use crate::settings::ActionButtonStyle;
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
+use harmonicon_core::wav::{encode_wav, resample_linear};
 
 use super::HOLE_COL_W;
 use super::SAVE_PURPOSE;
