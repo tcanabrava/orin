@@ -97,7 +97,7 @@ pub struct DrillRecord {
 
 /// Cross-session result for one lesson, keyed by the lesson manifest's
 /// stable `id` in [`PlayerProfile::lessons`] — a plain string rather than a
-/// type from `crate::lessons`, same dependency reasoning as [`DrillRecord`].
+/// type from `harmonicon_song::lessons`, same dependency reasoning as [`DrillRecord`].
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
 #[serde(default)]
 pub struct LessonRecord {

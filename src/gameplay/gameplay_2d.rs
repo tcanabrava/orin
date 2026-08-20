@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use crate::{app::SelectedSong, song::NoteThemeConfig, song::SongManifest};
+use crate::app::SelectedSong;
 use bevy::asset::AssetPath;
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
@@ -10,6 +10,8 @@ use bevy_fluent::Localization;
 use harmonicon_core::chart::{Action, Modifier};
 use harmonicon_core::harmonica::twelve_bar;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_song::song::NoteThemeConfig;
+use harmonicon_song::song::SongManifest;
 
 use crate::music_score::{self, BravuraFont};
 

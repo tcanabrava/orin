@@ -4,7 +4,7 @@
 //! scrollbox of that unit's lessons, and the per-lesson reader page
 //! (instructional body + Start button for chart-backed lessons,
 //! Mark-as-Done for instructional-only ones). Discovery/unlock/pass logic
-//! lives in `crate::lessons`; this module is only the menu surface.
+//! lives in `harmonicon_song::lessons`; this module is only the menu surface.
 
 use bevy::prelude::*;
 use bevy::ui_widgets::{Activate, ScrollArea};
@@ -13,16 +13,16 @@ use bevy_fluent::Localization;
 use crate::dialogs::button;
 use crate::dialogs::circle_of_fifths::spawn_circle_of_fifths;
 use crate::dialogs::tab_bar::{TabSelect, spawn_tab_bar};
-use crate::lessons::{
-    AvailableLessons, LessonContext, LessonEntry, LessonsRescanned, PassCriteria, group_by_unit,
-    is_unlocked,
-};
 use crate::profile::{PlayerProfile, record_lesson, save_profile};
-use crate::song::SongManifest;
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Position, Progression};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
+use harmonicon_song::lessons::{
+    AvailableLessons, LessonContext, LessonEntry, LessonsRescanned, PassCriteria, group_by_unit,
+    is_unlocked,
+};
+use harmonicon_song::song::SongManifest;
 
 use crate::app::{
     AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, SelectedSong,

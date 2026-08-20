@@ -2,14 +2,12 @@
 
 use bevy::prelude::*;
 
-use crate::{
-    app::{AppState, GameplayMode, JamProgression, SelectedSong},
-    song::{
-        SongManifest,
-        harmonica::{Progression, progression_bars, semitone},
-    },
-};
+use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
 use harmonicon_platform::theme::{LoadedTheme, TwelveBarColors};
+use harmonicon_song::song::{
+    SongManifest,
+    harmonica::{Progression, progression_bars, semitone},
+};
 
 use super::{BarChanged, CurrentBar, GameplayLogic, Paused};
 

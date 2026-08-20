@@ -19,11 +19,11 @@ use super::timeline::{TimelineSurfaceGeometry, drag_end_tick};
 use super::ui::ModButton;
 use super::undo::{HISTORY_LIMIT, UndoHistory};
 use super::{BEAT_W, HEADER_H, HOLE_COL_W, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
-use crate::lessons::{LessonManifest, PassCriteria};
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::blues_scale_classes;
 use harmonicon_core::synth::{PhraseNote, SAMPLE_RATE, envelope, render_pcm};
 use harmonicon_core::wav::encode_wav;
+use harmonicon_song::lessons::{LessonManifest, PassCriteria};
 
 #[test]
 fn cycle_next_wraps_back_to_the_first_option() {

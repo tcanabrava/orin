@@ -16,7 +16,6 @@ use std::path::PathBuf;
 use bevy::audio::AudioSource;
 use bevy::prelude::*;
 
-use crate::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
 use harmonicon_audio::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use harmonicon_core::chart::{
     Action, Difficulty, Feel, HarpChart, Metadata, NoteEvent, Scoring, Song, TempoPoint, Timing,
@@ -25,6 +24,7 @@ use harmonicon_core::chart::{
 use harmonicon_core::harmonica::{Position, Progression, progression_bars, richter_harp, semitone};
 use harmonicon_core::midi::{midi_to_freq_hz, note_to_midi};
 use harmonicon_core::wav::encode_wav;
+use harmonicon_song::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
 
 pub const SAMPLE_RATE: u32 = 44_100;
 

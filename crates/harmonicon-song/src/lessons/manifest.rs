@@ -5,7 +5,7 @@
 
 use serde::Deserialize;
 
-const SCHEMA: &str = include_str!("../../assets/lesson_schema.dtd.json");
+const SCHEMA: &str = include_str!("../../../../assets/lesson_schema.dtd.json");
 
 /// How a lesson is judged. `Accuracy`/`Technique` are judged when a
 /// chart-backed run reaches the results screen; `None` on [`LessonManifest`]

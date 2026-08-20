@@ -24,11 +24,11 @@ use crate::{
         ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
         MusicPlayer, MusicStarted, resolve_item_time,
     },
-    song::SongManifest,
 };
 use harmonicon_audio::AudioSettings;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
+use harmonicon_song::song::SongManifest;
 
 use crate::gameplay::countdown_overlay::spawn_countdown;
 use crate::gameplay::harmonica_overlay::spawn_harmonica_overlay;

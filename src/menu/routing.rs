@@ -27,7 +27,7 @@ pub(crate) enum MenuPage {
     ModeSelect,
     Options,
     Theme,
-    /// Curriculum list, grouped by unit (see `crate::lessons`).
+    /// Curriculum list, grouped by unit (see `harmonicon_song::lessons`).
     Lessons,
     /// One lesson's instructional page (+ Start for chart-backed lessons).
     LessonReader,
@@ -100,7 +100,7 @@ pub(crate) fn check_loading(
 /// retries keep their context).
 pub(crate) fn route_menu_entry(
     tour: Option<Res<tutorial::TutorialTour>>,
-    lesson: Option<Res<crate::lessons::LessonContext>>,
+    lesson: Option<Res<harmonicon_song::lessons::LessonContext>>,
     generated_jam: Option<Res<crate::app::GeneratedJamSession>>,
     mut ret_song: ResMut<ReturnToSongList>,
     mut ret_opts: ResMut<ReturnToOptions>,
@@ -124,7 +124,7 @@ pub(crate) fn route_menu_entry(
         return;
     }
     if lesson.is_some() {
-        commands.remove_resource::<crate::lessons::LessonContext>();
+        commands.remove_resource::<harmonicon_song::lessons::LessonContext>();
         // "Quit Song" sets this unconditionally; for a lesson run the lesson
         // list is the right place to land, so the flag is consumed here.
         ret_song.0 = false;

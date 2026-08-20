@@ -20,8 +20,8 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::dialogs::button;
-use crate::song::SongManifest;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_song::song::SongManifest;
 
 use crate::app::{AppState, GameplayMode, SelectedSong};
 use crate::menu::routing::MenuPage;

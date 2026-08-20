@@ -17,9 +17,9 @@ use bevy_fluent::Localization;
 
 use crate::dialogs::tooltip::Tooltip;
 use crate::gameplay::MidiTrackPlayer;
-use crate::song::MidiTrackAudio;
 use harmonicon_audio::AudioSettings;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_song::song::MidiTrackAudio;
 
 /// Per-track mute state for the currently-playing MIDI-backed song — index
 /// matches `SongManifest::midi_tracks`. Sized (and reset to all-unmuted) by

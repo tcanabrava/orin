@@ -17,7 +17,7 @@ use harmonicon_audio::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use harmonicon_core::synth::SAMPLE_RATE;
 use harmonicon_core::wav::encode_wav;
 
-const SCHEMA: &str = include_str!("../../assets/song_schema.dtd.json");
+const SCHEMA: &str = include_str!("../../../../assets/song_schema.dtd.json");
 
 /// The compiled chart schema, built once for the whole process. Compiling
 /// it is the expensive half of validating a chart and the schema is a

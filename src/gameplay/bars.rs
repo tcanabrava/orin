@@ -7,7 +7,7 @@
 use bevy::prelude::*;
 
 use crate::app::SelectedSong;
-use crate::song::SongManifest;
+use harmonicon_song::song::SongManifest;
 
 use super::clock::GameplayClock;
 use super::state::ScoringConfig;

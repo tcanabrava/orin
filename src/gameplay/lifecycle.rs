@@ -8,8 +8,8 @@ use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::app::{AppState, GameplayMode, SelectedSong};
-use crate::song::SongManifest;
 use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
+use harmonicon_song::song::SongManifest;
 
 use super::bars::parse_beats;
 use super::clock::GameplayClock;

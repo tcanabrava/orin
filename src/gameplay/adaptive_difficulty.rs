@@ -18,8 +18,8 @@ use std::collections::HashMap;
 
 use crate::app::SelectedSong;
 use crate::profile::PlayerProfile;
-use crate::song::SongManifest;
 use harmonicon_core::chart::{Timing, TrackItem};
+use harmonicon_song::song::SongManifest;
 
 use super::{ScheduledNote, last_note_end, resolve_item_time};
 
@@ -339,7 +339,7 @@ pub(super) fn setup_adaptive_difficulty(
     manifests: Res<Assets<SongManifest>>,
     profile: Res<PlayerProfile>,
     setting: Res<harmonicon_platform::settings::AdaptiveDifficultyEnabled>,
-    lesson: Option<Res<crate::lessons::LessonContext>>,
+    lesson: Option<Res<harmonicon_song::lessons::LessonContext>>,
     mut adaptive: ResMut<AdaptiveDifficulty>,
 ) {
     let Some(manifest) = manifests.get(&selected.0) else {

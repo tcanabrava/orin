@@ -26,12 +26,12 @@ use bevy_fluent::Localization;
 
 use crate::app::SelectedSong;
 use crate::gameplay::{AbsoluteBar, BarChanged, CurrentBar, GameplayRoot};
-use crate::song::SongManifest;
 use harmonicon_audio::AudioSettings;
 use harmonicon_core::midi::{midi_to_freq_hz, midi_to_note};
 use harmonicon_core::synth::{Expr, PhraseNote, SAMPLE_RATE, TICKS_PER_BEAT, render_pcm};
 use harmonicon_core::wav::encode_wav;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_song::song::SongManifest;
 
 use super::session::{JamHoleGuide, note_class};
 

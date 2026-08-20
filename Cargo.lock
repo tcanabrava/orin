@@ -3276,6 +3276,7 @@ dependencies = [
  "harmonicon-audio",
  "harmonicon-core",
  "harmonicon-platform",
+ "harmonicon-song",
  "image",
  "jsonschema",
  "midly",
@@ -3334,6 +3335,23 @@ dependencies = [
  "sys-locale",
  "thiserror 2.0.20",
  "unic-langid",
+]
+
+[[package]]
+name = "harmonicon-song"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "dirs",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-platform",
+ "image",
+ "jsonschema",
+ "midly",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

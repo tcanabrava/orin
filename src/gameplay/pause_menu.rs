@@ -14,10 +14,10 @@ use super::adaptive_difficulty::AdaptiveDifficulty;
 use super::{GameplayRoot, LoopConfig, MusicPlayer, Paused};
 use crate::app::{AppState, GameplayMode, ReturnToSongList, SelectedSong};
 use crate::dialogs::button;
-use crate::lessons::LessonContext;
 use crate::profile::PlayerProfile;
-use crate::song::SongManifest;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_song::lessons::LessonContext;
+use harmonicon_song::song::SongManifest;
 
 /// Root of the pause overlay; toggled between hidden/visible.
 #[derive(Component, Default, Clone)]

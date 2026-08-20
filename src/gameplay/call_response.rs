@@ -20,12 +20,12 @@ use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::prelude::*;
 
 use crate::app::SelectedSong;
-use crate::song::SongManifest;
 use harmonicon_audio::AudioSettings;
 use harmonicon_core::chart::{HarpChart, Modifier, TrackItem};
 use harmonicon_core::midi::midi_to_freq_hz;
 use harmonicon_core::synth::{Expr, PhraseNote, SAMPLE_RATE, TICKS_PER_BEAT, render_pcm};
 use harmonicon_core::wav::encode_wav;
+use harmonicon_song::song::SongManifest;
 
 use super::{GameplayClock, GameplayRoot, resolve_item_time, target_pitch};
 

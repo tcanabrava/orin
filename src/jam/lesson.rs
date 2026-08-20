@@ -13,8 +13,8 @@ use bevy::prelude::*;
 use crate::app::{AppState, ReturnToSongList};
 use crate::gameplay::Paused;
 use crate::gameplay::pause_menu::{FinishLessonRequested, apply_quit};
-use crate::lessons::{LessonContext, PassCriteria, lesson_passed};
 use crate::profile::{PlayerProfile, record_lesson, save_profile};
+use harmonicon_song::lessons::{LessonContext, PassCriteria, lesson_passed};
 
 use super::improv::ImprovStats;
 
