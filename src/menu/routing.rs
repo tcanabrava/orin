@@ -36,7 +36,7 @@ pub(crate) enum MenuPage {
     /// `pages::jam_session::setup_jam_session_menu`.
     JamSessionMenu,
     /// Key/tempo picker for a synthesized Jam Session backing (see
-    /// `crate::jam::backing`) — the no-existing-song alternative to
+    /// `harmonicon_jam::jam::backing`) — the no-existing-song alternative to
     /// `ArtistList`'s real-song Jam Session flow.
     JamGenerate,
     /// Documentation link, About, Tutorial, and Credits — see

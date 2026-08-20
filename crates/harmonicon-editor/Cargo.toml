@@ -1,0 +1,29 @@
+[package]
+name = "harmonicon-editor"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+harmonicon-core = { path = "../harmonicon-core" }
+harmonicon-audio = { path = "../harmonicon-audio" }
+harmonicon-platform = { path = "../harmonicon-platform" }
+harmonicon-song = { path = "../harmonicon-song" }
+harmonicon-app = { path = "../harmonicon-app" }
+harmonicon-ui = { path = "../harmonicon-ui" }
+harmonicon-gameplay = { path = "../harmonicon-gameplay" }
+bevy = { workspace = true }
+bevy_fluent = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+midly = { workspace = true }
+jsonschema = { workspace = true }
+dirs = { workspace = true }
+
+[features]
+dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug", "harmonicon-gameplay/dev"]
+trace_tracy = ["bevy/trace_tracy", "harmonicon-gameplay/trace_tracy"]
+
+[lints]
+workspace = true

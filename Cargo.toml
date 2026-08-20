@@ -49,6 +49,8 @@ harmonicon-song = { path = "crates/harmonicon-song" }
 harmonicon-app = { path = "crates/harmonicon-app" }
 harmonicon-ui = { path = "crates/harmonicon-ui" }
 harmonicon-gameplay = { path = "crates/harmonicon-gameplay" }
+harmonicon-jam = { path = "crates/harmonicon-jam" }
+harmonicon-editor = { path = "crates/harmonicon-editor" }
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
 # its Play button (and user-supplied .wav background tracks).
 bevy = { workspace = true }
@@ -103,6 +105,8 @@ dev = [
     "harmonicon-app/dev",
     "harmonicon-ui/dev",
     "harmonicon-gameplay/dev",
+    "harmonicon-jam/dev",
+    "harmonicon-editor/dev",
 ]
 # Streams Bevy's built-in ECS/render/asset spans plus this crate's own
 # manual spans (audio capture, pitch detection) to a running Tracy client
@@ -112,7 +116,7 @@ dev = [
 # `cargo run --release --features trace_tracy` with the Tracy UI already
 # listening; see main.rs for the accompanying LogPlugin filter change this
 # needs (spans below `info` are dropped before any backend sees them).
-trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy", "harmonicon-platform/trace_tracy", "harmonicon-song/trace_tracy", "harmonicon-app/trace_tracy", "harmonicon-ui/trace_tracy", "harmonicon-gameplay/trace_tracy"]
+trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy", "harmonicon-platform/trace_tracy", "harmonicon-song/trace_tracy", "harmonicon-app/trace_tracy", "harmonicon-ui/trace_tracy", "harmonicon-gameplay/trace_tracy", "harmonicon-jam/trace_tracy", "harmonicon-editor/trace_tracy"]
 
 [lints]
 workspace = true

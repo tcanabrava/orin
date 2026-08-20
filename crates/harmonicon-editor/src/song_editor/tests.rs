@@ -1278,7 +1278,7 @@ fn serialize_harpchart_validates_against_the_song_schema() {
     let value: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
 
     let schema: serde_json::Value =
-        serde_json::from_str(include_str!("../../assets/song_schema.dtd.json"))
+        serde_json::from_str(include_str!("../../../../assets/song_schema.dtd.json"))
             .expect("schema is valid JSON");
     let validator = jsonschema::validator_for(&schema).expect("schema compiles");
     let errors: Vec<String> = validator

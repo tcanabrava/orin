@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 //! Generated Jam Session setup: pick a key and tempo, then start an
-//! endless synthesized 12-bar backing (`crate::jam::backing`) without first
+//! endless synthesized 12-bar backing (`harmonicon_jam::jam::backing`) without first
 //! picking an existing song — a second way into `GameplayMode::JamSession`
 //! alongside the "Jam Session" button's real-song flow.
 
@@ -10,11 +10,11 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::jam::backing::{Genre, JamGenre, build_generated_manifest};
 use harmonicon_app::app::GeneratedJamSession;
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Position, Progression};
 use harmonicon_core::midi::NOTE_NAMES;
+use harmonicon_jam::jam::backing::{Genre, JamGenre, build_generated_manifest};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
 use harmonicon_song::song::SongManifest;

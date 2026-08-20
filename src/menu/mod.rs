@@ -6,12 +6,12 @@
 
 use bevy::prelude::*;
 
-use crate::jam::backing::JamGenre;
-use crate::song_editor;
 use harmonicon_app::app::{
     AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, ReturnToHelpAbout,
     ReturnToOptions, ReturnToPlay, ReturnToSongList, SelectedArtist, TourActive,
 };
+use harmonicon_editor::song_editor;
+use harmonicon_jam::jam::backing::JamGenre;
 
 mod pages;
 pub(crate) mod routing;

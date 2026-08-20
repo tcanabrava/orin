@@ -7,10 +7,10 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::jam::backing::{Genre, JamGenre};
 use harmonicon_app::app::{GameplayMode, JamPositionCycle, JamProgression, JamScale};
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::Progression;
+use harmonicon_jam::jam::backing::{Genre, JamGenre};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
 

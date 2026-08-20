@@ -12,8 +12,6 @@
 pub use harmonicon_core::config_file;
 pub use harmonicon_core::scoring;
 
-pub mod jam;
 pub mod menu;
 pub mod note_bench;
-pub mod song_editor;
 pub mod synthetic_dataset;

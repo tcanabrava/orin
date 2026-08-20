@@ -3276,7 +3276,9 @@ dependencies = [
  "harmonicon-app",
  "harmonicon-audio",
  "harmonicon-core",
+ "harmonicon-editor",
  "harmonicon-gameplay",
+ "harmonicon-jam",
  "harmonicon-platform",
  "harmonicon-song",
  "harmonicon-ui",
@@ -3335,6 +3337,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonicon-editor"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_fluent",
+ "dirs",
+ "harmonicon-app",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-gameplay",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "harmonicon-ui",
+ "jsonschema",
+ "midly",
+ "rand",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "harmonicon-gameplay"
 version = "0.1.0"
 dependencies = [
@@ -3346,6 +3369,27 @@ dependencies = [
  "harmonicon-platform",
  "harmonicon-song",
  "harmonicon-ui",
+ "rand",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "harmonicon-jam"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_fluent",
+ "dirs",
+ "harmonicon-app",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-gameplay",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "harmonicon-ui",
+ "jsonschema",
+ "midly",
  "rand",
  "serde",
  "serde_json",
