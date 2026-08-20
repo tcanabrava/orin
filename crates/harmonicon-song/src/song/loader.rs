@@ -416,7 +416,7 @@ mod tests {
             data.len(),
             (GENERATED_BACKGROUND_SIZE * GENERATED_BACKGROUND_SIZE * 4) as usize
         );
-        assert!(data.chunks_exact(4).all(|px| px[3] == 255));
+        assert!(data.as_chunks::<4>().0.iter().all(|px| px[3] == 255));
     }
 
     #[test]

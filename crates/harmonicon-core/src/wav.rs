@@ -79,8 +79,10 @@ pub fn decode_wav_pcm16(bytes: &[u8]) -> Option<(Vec<f32>, u16, u32)> {
         return None;
     }
     let samples = data?
-        .chunks_exact(2)
-        .map(|b| i16::from_le_bytes([b[0], b[1]]) as f32 / i16::MAX as f32)
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|b| i16::from_le_bytes(*b) as f32 / i16::MAX as f32)
         .collect();
     Some((samples, channels.max(1), sample_rate.max(1)))
 }

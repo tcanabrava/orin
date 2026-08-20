@@ -125,7 +125,7 @@ pub(super) fn sync_meta_field_text(
             continue;
         }
         let want = state.field_text(tag.0);
-        if text.value().to_string() != want {
+        if text.value() != want {
             text.editor_mut().set_text(want);
             text.queue_edit(TextEdit::TextEnd(false));
         }

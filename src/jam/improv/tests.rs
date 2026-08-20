@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-use bevy::prelude::*;
-
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Harmonica, Progression};
 
