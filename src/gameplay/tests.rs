@@ -5,10 +5,10 @@ use std::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 
 use crate::app::GameplayMode;
+use crate::audio_system::AudioSettings;
 use crate::audio_system::midi::{midi_to_freq_hz, note_to_midi};
 use crate::audio_system::pitch_detect::{AudioFrame, PitchInfo, PitchRange};
 use crate::scoring::{combo_label, compute_multiplier};
-use crate::settings::AudioSettings;
 use crate::song::chart::Modifier;
 
 use super::lifecycle::cleanup_gameplay;

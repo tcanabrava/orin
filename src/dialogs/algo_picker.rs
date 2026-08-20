@@ -11,10 +11,10 @@
 
 use bevy::prelude::*;
 
+use crate::audio_system::AudioSettings;
 use crate::audio_system::pitch_detect::PitchAlgorithm;
 use crate::dialogs::combobox::ComboboxSelect;
 use crate::dialogs::tooltip::Tooltip;
-use crate::settings::AudioSettings;
 
 /// Marks an entity (a pitch-algorithm combobox's root, from
 /// [`attach_algo_tooltip`]) whose [`Tooltip`] should always describe

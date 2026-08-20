@@ -13,13 +13,13 @@ use bevy_fluent::Localization;
 
 use crate::{
     app::{JamProgression, JamScale, SelectedSong},
+    audio_system::AudioSettings,
     dialogs::button,
     gameplay::{
         ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
         MusicPlayer, MusicStarted, resolve_item_time,
     },
     localization::LocalizationExt,
-    settings::AudioSettings,
     song::SongManifest,
     song::chart::{Action, Scale},
     song::harmonica::{

@@ -20,10 +20,10 @@ use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::prelude::*;
 
 use crate::app::SelectedSong;
+use crate::audio_system::AudioSettings;
 use crate::audio_system::midi::midi_to_freq_hz;
 use crate::audio_system::synth::{Expr, PhraseNote, SAMPLE_RATE, TICKS_PER_BEAT, render_pcm};
 use crate::audio_system::wav::encode_wav;
-use crate::settings::AudioSettings;
 use crate::song::SongManifest;
 use crate::song::chart::{HarpChart, Modifier, TrackItem};
 

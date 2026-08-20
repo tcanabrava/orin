@@ -4,13 +4,13 @@ use bevy::audio::AudioSource;
 use bevy::prelude::*;
 use bevy_fluent::prelude::Localization;
 
+use crate::audio_system::AudioSettings;
 use crate::audio_system::midi::{freq_to_midi, midi_to_note};
 use crate::audio_system::pitch_detect::PitchEvent;
 use crate::localization::{LocalizationExt, LocalizedStr};
 use crate::scoring::{
     AttackGate, HitQuality, NoteOutcome, classify_note, compute_points, sustain_points,
 };
-use crate::settings::AudioSettings;
 
 #[cfg(test)]
 use super::TICKS_PER_BEAT;

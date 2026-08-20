@@ -7,7 +7,7 @@
 
 use bevy::prelude::*;
 
-use crate::settings::AudioSettings;
+use crate::audio_system::AudioSettings;
 
 use super::audio_input;
 #[cfg(feature = "dev")]

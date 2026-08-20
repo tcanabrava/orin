@@ -24,9 +24,9 @@ use bevy_fluent::Localization;
 const TRACK_BG: Color = Color::srgb(0.14, 0.14, 0.22);
 
 use crate::assets_management::{AvailableHarmonicas, SelectedHarmonicaModel, ShowNoteNumbers};
+use crate::audio_system::AudioSettings;
 use crate::audio_system::audio_input::{self, MicStatus};
 use crate::localization::LocalizationExt;
-use crate::settings::AudioSettings;
 
 use crate::theme::LoadedTheme;
 

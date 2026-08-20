@@ -26,6 +26,7 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
+use crate::audio_system::AudioSettings;
 use crate::audio_system::midi::NOTE_NAMES;
 use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use crate::audio_system::wav::encode_wav;
@@ -37,7 +38,6 @@ use crate::dialogs::combobox::ComboboxSelect;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
 use crate::profile::{DrillRecord, PlayerProfile};
-use crate::settings::AudioSettings;
 use crate::song::harmonica::{Harmonica, HoleNotes, hole_notes, richter_harp};
 
 use std::collections::HashSet;

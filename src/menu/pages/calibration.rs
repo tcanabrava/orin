@@ -30,8 +30,8 @@ use bevy::{
 use bevy_fluent::Localization;
 
 use crate::{
-    audio_system::pitch_detect::PitchEvent, dialogs::button, localization::LocalizationExt,
-    settings::AudioSettings,
+    audio_system::AudioSettings, audio_system::pitch_detect::PitchEvent, dialogs::button,
+    localization::LocalizationExt,
 };
 
 use crate::app::{AppState, ReturnToOptions};

@@ -8,6 +8,7 @@
 use bevy::prelude::*;
 
 use crate::app::{AppState, GameplayMode};
+use crate::audio_system::AudioSettings;
 use crate::audio_system::pitch_detect::PitchRange;
 use crate::jam::{
     backing::GeneratedJamSession, call_response as jam_call_response, improv,
@@ -15,7 +16,6 @@ use crate::jam::{
     rhythm_guide as jam_rhythm_guide, session as jam_session,
 };
 use crate::menu::tutorial::tour_active;
-use crate::settings::AudioSettings;
 
 use super::bars::{self, AbsoluteBar, BarChanged, CurrentBar};
 use super::clock::{self, GameplayClock};

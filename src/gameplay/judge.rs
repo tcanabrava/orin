@@ -10,6 +10,7 @@ use std::collections::{HashMap, HashSet};
 
 use bevy::prelude::*;
 
+use crate::audio_system::AudioSettings;
 use crate::audio_system::midi::midi_to_freq_hz;
 use crate::audio_system::pitch_detect::{AudioFrame, PitchInfo};
 use crate::scoring::{
@@ -17,7 +18,6 @@ use crate::scoring::{
     classify_note, compute_multiplier, compute_points, is_clean_attack, measured_oscillation_hz,
     measured_relative_oscillation_hz, oscillation_matches_rate, should_decay_combo, sustain_points,
 };
-use crate::settings::AudioSettings;
 use crate::song::chart::Modifier;
 
 use super::clock::GameplayClock;

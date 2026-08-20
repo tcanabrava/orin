@@ -5,9 +5,9 @@ use bevy::prelude::*;
 
 use super::state::{Dir, GridNote, HarmonicaKind, Pitch};
 use super::{TICK_W, TICKS_PER_BEAT};
+use crate::audio_system::AudioSettings;
 use crate::audio_system::midi::{midi_to_freq_hz, note_to_midi};
 use crate::audio_system::synth::{PhraseNote, SAMPLE_RATE, render_pcm};
-use crate::settings::AudioSettings;
 use crate::song::harmonica::{Harmonica, chromatic_harp, hole_notes, richter_harp};
 
 // ── Components / Resources ───────────────────────────────────────────────────

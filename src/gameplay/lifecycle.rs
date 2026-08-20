@@ -148,7 +148,7 @@ pub(crate) fn detect_song_end(
 /// `AudioSettings` resource changes, so dragging the Options slider is heard
 /// immediately. (Metronome clicks pick up their level when each click spawns.)
 pub(crate) fn apply_music_volume(
-    audio: Res<crate::settings::AudioSettings>,
+    audio: Res<crate::audio_system::AudioSettings>,
     mut sinks: Query<&mut AudioSink, With<MusicPlayer>>,
 ) {
     for mut sink in &mut sinks {

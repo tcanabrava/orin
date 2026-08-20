@@ -6,7 +6,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, StreamConfig};
 use crossbeam_channel::{Receiver, Sender, bounded};
 
-use crate::settings::AudioSettings;
+use crate::audio_system::AudioSettings;
 
 pub const CHUNK_SIZE: usize = 4096;
 
