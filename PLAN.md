@@ -72,7 +72,7 @@ one-line index of what's landed.
   Cargo cannot express a circular crate dependency.
 - **Physical-design restructuring** — layering fixes, inline tests evicted
   to `tests.rs` files, `gameplay`/`menu`/`lessons` split into their target
-  layouts, `jam` gathered into `src/jam/`, a file-size budget test.
+  layouts, `jam` gathered into `harmonicon-jam`, a file-size budget test.
 - **Song editor: full authoring tool** — Record/Edit/Play modes with
   live-mic recording, MIDI import, multi-select, copy-paste,
   Select/Erase/Remove/Tempo tools, a real tempo map, selectable
@@ -102,9 +102,9 @@ one-line index of what's landed.
 - **`phrase_learned` stable keying** — adaptive-difficulty progress keyed
   by phrase name, not track position.
 - **Jam Session: MIDI multi-track backing with per-track mute**.
-- **Shared music-notation staff** (`src/music_score/`, Bravura/SMuFL) —
+- **Shared music-notation staff** (`harmonicon-ui`'s `music_score/`, Bravura/SMuFL) —
   below the song-progress bar in Play 2D/3D and in the Song Editor.
-- **Compact layout for narrow windows** (`src/responsive.rs`) — Play
+- **Compact layout for narrow windows** (`harmonicon-platform`'s `responsive.rs`) — Play
   2D/3D and the Song Editor adapt below a shared width breakpoint; menus
   were already scroll-safe and out of scope.
 - **Android/iOS prep, desktop-verifiable groundwork** — on-screen

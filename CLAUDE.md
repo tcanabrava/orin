@@ -28,48 +28,84 @@ than accumulating history (git log/commit messages are the historical record):
 ## Commands
 
 ```bash
-cargo run --features dev   # local iteration (dynamic linking + asset watcher)
-cargo run --release        # playable build; never ship the dev feature
-cargo test                 # ~590 pure-logic tests; safe headless
-cargo clippy               # keep clean
+cargo run --features dev        # local iteration (dynamic linking + asset watcher)
+cargo run --release             # playable build; never ship the dev feature
+cargo test --workspace          # ~1100 tests; safe headless
+cargo clippy --workspace --all-targets -- -D warnings   # what CI runs
+
+# Working on pure logic? Skip the engine entirely — seconds, not a minute:
+cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
 # Profiling: start the Tracy UI (https://github.com/wolfpld/tracy), click
 # "Connect", then:
 cargo run --release --features trace_tracy
 ```
 
-Binaries: main game, plus `hole-editor`, `note_editor` (in `src/bin/`).
+Binaries: main game (`src/main.rs`), plus `hole-editor`, `note_editor`,
+`note_bench`, `gen_synthetic_dataset` (in `src/bin/`). The root package is
+*only* the binary — every library lives in `crates/`.
 Manual testing needs a mic, audio out, and a display.
 
 ## Architecture (load-bearing facts)
 
-- **Cargo workspace: `harmonicon` (game lib + bins, at the repo root) plus
-  `crates/harmonicon-core`.** `src/lib.rs` re-exports subsystems so the game
-  and tools share them: `audio_system`, `song`, `gameplay`, `jam`, `scoring`,
-  `song_editor`, `lessons`, `menu`, `dialogs`, `music_score`, `responsive`,
-  `spectrogram`, `theme`, `localization`, `settings`, `profile`,
-  `assets_management`.
-  - **`harmonicon-core` is the Bevy-free pure-logic layer** — `harmonica`,
-    `chart`, `note_parser`, `scoring`, `midi` (pitch conversion),
-    `harmonica_constraints`, `config_file`. Its whole dependency tree is
-    `serde`/`serde_json`, so `cargo test -p harmonicon-core` runs its ~170
-    tests in ~2 s against ~30 s for the workspace. **Keep it Bevy-free**:
-    anything needing `Resource`/`Component`/`App` belongs a level up.
-  - Call sites still use the historical paths — the game re-exports each
-    module where it used to live (`crate::song::chart`,
-    `crate::song::harmonica`, `crate::scoring`, `crate::audio_system::midi`,
-    `crate::config_file`), so moving a module between crates doesn't churn
-    every import.
-  - **The module graph is acyclic and enforced**
-    (`tests/physical_design.rs::no_module_dependency_cycles`, no allowlist —
-    see `docs/physical_design_plan.md`'s level order). A crate boundary makes
-    a cycle *impossible* rather than merely detected, which is the main
-    reason to keep extracting crates.
+- **Cargo workspace — eleven library crates plus a binary-only root
+  package.** A crate may depend only on ones *earlier* in this list, and
+  **peers may not depend on each other**:
+
+  | Crate | Holds | Bevy? |
+  |---|---|---|
+  | `harmonicon-core` | music theory, chart types, scoring math, pitch/MIDI conversion, the harmonica synth, WAV, grid snapping | **no** |
+  | `harmonicon-audio` | cpal capture, FFT pitch detection, waveform analysis | yes |
+  | `harmonicon-platform` | asset discovery, localization, settings, theme, responsive | yes |
+  | `harmonicon-song` | chart/manifest loading, MIDI-backed songs, lessons | yes |
+  | `harmonicon-app` | state machine, routing flags, profile | yes |
+  | `harmonicon-ui` | `dialogs`, `music_score`, `spectrogram` | yes |
+  | `harmonicon-gameplay` | clock, judging, 2D/3D highways, overlays, bend trainer | yes |
+  | `harmonicon-jam` / `harmonicon-editor` | Jam Session / Song Editor — **siblings**, neither imports the other | yes |
+  | `harmonicon-menu` | page state machine, routing, one file per screen | yes |
+  | `harmonicon-bench` | pitch-detection benchmark + dataset generator (dev tooling) | yes |
+  | `harmonicon` (root) | `main.rs` + `src/bin/*`; owns `assets/`, `build.rs`, `tests/` | yes |
+
+  - **Keep `harmonicon-core` Bevy-free.** Its whole dependency tree is
+    `serde`/`serde_json`/`midly`, which is why its ~200 tests run in
+    seconds. Anything needing `Resource`/`Component`/`App` belongs a level
+    up. This is the single most valuable property of the split — don't
+    trade it away for convenience.
+  - **No re-export facades.** A call site names the crate it depends on
+    (`harmonicon_core::chart`, `harmonicon_gameplay::gameplay::…`), so every
+    dependency is visible where it's taken. Re-exporting a moved module
+    under its old path was tried and deliberately removed: it hid which
+    crate code came from and let modules reach for things casually.
+  - **Cross-crate ordering goes through a `SystemSet`, never a system
+    name.** `.after(some_private_fn)` forces the owning crate to make the
+    system *and its parameter types* public. `dialogs::combobox::
+    ComboboxEscapeSet` and `gameplay::plugin::MusicVolumeSet` exist for
+    exactly this — publish an ordering point, keep the implementation
+    private.
+  - **A crate cycle is not expressible**, so Cargo enforces the layering.
+    Rust still permits cyclic *modules* inside one crate, which is what
+    `tests/physical_design.rs::no_module_dependency_cycles` catches (no
+    allowlist — see `docs/physical_design_plan.md`).
+  - **Paths reaching `assets/` from a crate need `../../`.** `include_str!`/
+    `include_bytes!` resolve relative to the source file, and
+    `env!("CARGO_MANIFEST_DIR")` now points at the crate, not the repo.
+    A wrong `include_*!` is a compile error; a wrong runtime path is not,
+    so tests that read `assets/` must build the path explicitly rather than
+    relying on the working directory.
+  - **`assets_management`'s wasm manifest is generated by
+    `harmonicon-platform`'s own `build.rs`**, because
+    `include!(concat!(env!("OUT_DIR"), …))` reads the *including* crate's
+    `OUT_DIR` and `OUT_DIR` is per-package. The workspace-root `build.rs`
+    keeps the source-scanning lints (localization, message registration),
+    which walk `src/` **and** every `crates/*/src/`.
+  - **A new crate must forward the `dev`/`trace_tracy` features** to its own
+    `bevy` (`"harmonicon-x/dev"`), or feature unification breaks and the
+    tree ends up with two differently-configured Bevy builds.
 - **Audio input path:** cpal callback → mono downmix → 4096-sample chunks
-  with 50% overlap (`audio_system/audio_input.rs`) → crossbeam channel →
+  with 50% overlap (`harmonicon-audio`'s `audio_input.rs`) → crossbeam channel →
   `process_audio` in `main.rs` → one FFT per chunk (`pitch_detect::analyze`)
   → `PitchEvent` message + `AudioFrame` resource (shared with spectrogram).
   Five selectable algorithms (FFT/YIN/pYIN/MPM/NMF) in
-  `audio_system/pitch_detect.rs`.
+  `harmonicon-audio`'s `pitch_detect.rs`.
   - The capture callback must stay allocation-free: chunk buffers come from
     a recycling pool (`AudioCapture::free_sender`); `process_audio` returns
     the previous `AudioFrame::samples` buffer to that pool each frame. Keep
@@ -130,7 +166,7 @@ Manual testing needs a mic, audio out, and a display.
   debug_record` (`--features dev`) is the recording side — its "Debug
   Recording" checkbox dumps a take's raw mic audio + the chart + metadata
   (algorithm, FFT/hop/window, a live detected-notes log) into
-  `assets/debug_songs/<song name>/`. `note_bench` (`src/note_bench.rs`'s
+  `assets/debug_songs/<song name>/`. `note_bench` (`crates/harmonicon-bench/src/note_bench.rs`'s
   pure, unit-tested comparison logic, driven by the `src/bin/note_bench.rs`
   binary — `cargo run --bin note_bench`) is the analysis side: replays every
   recording found there through all five algorithms and prints a hit/miss/
@@ -164,7 +200,7 @@ Manual testing needs a mic, audio out, and a display.
     in one call — what `handle_loop_boundary` uses, and what any future A–B
     looping UI or practice-speed feature must use too).
 - **Scoring:** pure functions in `harmonicon-core`'s `scoring` (reachable
-  as `crate::scoring`, shared by
+  as `harmonicon_core::scoring`, shared by
   gameplay and the song editor's practice mode), driven by the
   `score_notes` system in `gameplay/judge.rs` (alongside
   `update_active_targets`, `technique_confirmed`, `style_bonus_points`, and
@@ -176,7 +212,7 @@ Manual testing needs a mic, audio out, and a display.
   `gameplay/hud.rs`; song-lifetime setup/teardown (`reset_score`,
   `setup_scoring_config`, `detect_song_end`, `cleanup_gameplay`) lives in
   `gameplay/lifecycle.rs`. `gameplay/mod.rs` itself is wiring + re-exports
-  only — every path below still resolves as `crate::gameplay::X`. Key
+  only — every path below still resolves as `harmonicon_gameplay::gameplay::X`. Key
   concepts:
   - **Pitch identity is a MIDI note number (`u8`), not a formatted name
     string** — `PitchInfo::midi`, `ValidHarpNotes(HashSet<u8>)`,
@@ -240,7 +276,7 @@ Manual testing needs a mic, audio out, and a display.
     and_stats`) — extend it when changing scoring behaviour.
 - **Chart format:** JSON `.harpchart`, schema-validated at load against
   `assets/song_schema.dtd.json` (`song/loader.rs`). Types in
-  `song/chart.rs`. Time is `time` (seconds) or `tick` + tempo map.
+  `harmonicon-core`'s `chart.rs`. Time is `time` (seconds) or `tick` + tempo map.
   - The schema uses `additionalProperties: false` at every level, so
     *removing* a field from the schema breaks previously-authored charts at
     validation (serde would have ignored it). Removals must keep the old
@@ -462,7 +498,7 @@ Manual testing needs a mic, audio out, and a display.
     `audition_on_select` renders a short (0.6 s) blip of its resolved
     pitch and plays it — confirming a bend/overblow/overdraw actually
     sounds like what was intended without running Play/Practice or
-    reaching for a real harp. Reuses `audio_system::synth`'s additive
+    reaching for a real harp. Reuses `harmonicon_core::synth`'s additive
     harmonica voice via `playback::note_freq`/`render_pcm` — the same
     synth Play/Practice/Record preview already render with — rather than
     a separate reference-tone generator (unlike the Bending Trainer's own
@@ -672,7 +708,7 @@ Manual testing needs a mic, audio out, and a display.
   - **The Song Editor's grid supports a swing/triplet-aware snap mode**
     (`song_editor::snap`, split out of `state.rs` purely for that file's
     line budget — `EditorState::snap_mode` is still `state.rs`'s own
-    field). `TICKS_PER_BEAT` (`audio_system::synth`) is 12, not 4 — the
+    field). `TICKS_PER_BEAT` (`harmonicon_core::synth`) is 12, not 4 — the
     lowest resolution divisible by both 4 (straight 16ths, the old
     resolution) and 3 (triplets): a true triplet position doesn't exist as
     an integer tick on a 4-ticks-per-beat grid at all, which is why this
@@ -736,7 +772,7 @@ Manual testing needs a mic, audio out, and a display.
   - **The Song Editor's grid header shows the chart's music file as a
     waveform** (`song_editor::waveform`), aligned against the chart's own
     tempo map (see below) rather than a single constant BPM. Reuses
-    `audio_system::waveform`'s existing decoders (the same ones a shipped
+    `harmonicon_audio::waveform`'s existing decoders (the same ones a shipped
     song's own music gets analyzed with at asset-load time) rather than
     duplicating any audio-decoding logic; `MusicWaveform::path` is the
     resource's own cache of the `EditorState::music` value it was last
@@ -941,7 +977,7 @@ Manual testing needs a mic, audio out, and a display.
   row itself stays blank in that case — there's genuinely no waveform
   data without decoded audio.
 - **A shared music-notation staff renders with the Bravura SMuFL font**
-  (`src/music_score/`, a new top-level module, sibling to `spectrogram` —
+  (`harmonicon-ui`'s `music_score/`, a new top-level module, sibling to `spectrogram` —
   used by Play 2D/3D, below the song-progress bar, and by the Song Editor,
   in its own fixed chrome below the grid). Deliberately coarse, not a
   sight-reading tool: noteheads (whole/half/filled by duration), stems,
@@ -1020,7 +1056,7 @@ Manual testing needs a mic, audio out, and a display.
     for 1/4/5/6 — holes 2/3 fell through the gap (the editor accepted the
     click, but no pitch existed anywhere downstream: scoring, playback,
     or this staff). Fixed `overblow_ok` to match `hole_notes` exactly.
-- **Responsive/compact layout for narrow windows** (`src/responsive.rs`).
+- **Responsive/compact layout for narrow windows** (`harmonicon-platform`'s `responsive.rs`).
   `CompactLayout` (a `Resource`) is derived every frame from the primary
   window's width divided by `UiScale` (the same effective-width math
   `song_editor::interaction`'s own scroll-clamping already used) crossing a
@@ -1060,8 +1096,8 @@ Manual testing needs a mic, audio out, and a display.
   - **Menu pages are out of scope** — they already handle overflow via
     `menu::scene::spawn_menu_root`'s scroll area, so they were judged
     reasonably small-screen-safe already.
-- **Lessons** (`src/lessons/` — `manifest.rs`/`catalog.rs`/`progress.rs` —
-  plus `src/menu/pages/lessons.rs`; design in `docs/lessons_plan.md`):
+- **Lessons** (`harmonicon-song`'s `lessons/` — `manifest.rs`/`catalog.rs`/`progress.rs` —
+  plus `harmonicon-menu`'s `menu/pages/lessons.rs`; design in `docs/lessons_plan.md`):
   `assets/lessons/<unit>/<lesson>/lesson.json` (schema
   `assets/lesson_schema.dtd.json`, validated at startup scan; ids are
   stable — profile keys and prerequisites reference them). A chart-backed
@@ -1128,7 +1164,7 @@ Manual testing needs a mic, audio out, and a display.
     criterion a given lesson declares before calling `lesson_passed`.
     Separately, `LessonManifest::progression` (an optional
     `"standard"`/`"quick-change"`/`"minor"` string, `menu::pages::lessons::
-    parse_progression`) seeds `crate::app::JamProgression` on Start for any
+    parse_progression`) seeds `harmonicon_app::app::JamProgression` on Start for any
     jam-based lesson, defaulting to `Standard` — same "don't let a stale
     pick linger" reasoning the real-song Jam Session button already
     applies.
@@ -1161,7 +1197,7 @@ Manual testing needs a mic, audio out, and a display.
     than a separate timer; a lick is a handful of MIDI pitches rolled from
     the pool of harp-producible notes that are tones of the bar's current
     chord (`JamHoleGuide::chord_tones_by_bar`/`note_to_holes`), rendered
-    through the same `audio_system::synth` additive harmonica voice and
+    through the same `harmonicon_core::synth` additive harmonica voice and
     fired the same fire-and-forget way `gameplay::call_response` does.
     Feedback is purely visual/turn-taking, not a score: a banner reading
     "Listen…"/"Your turn" (`CallResponseState::phase`), and the lick's
@@ -1222,7 +1258,7 @@ Manual testing needs a mic, audio out, and a display.
     sink together the same way, and doesn't need to touch `JamMidiMute`
     at all — it's a resource independent of any particular sink, so a
     track muted before the loop stays muted after it for free.
-- **Guided tutorial tour** (`src/menu/tutorial.rs`): a "Tutorial" button on
+- **Guided tutorial tour** (`harmonicon-menu`'s `menu/pages/tutorial.rs`): a "Tutorial" button on
   the Help/About menu drives a fixed sequence (`TOUR_STEPS`, each a
   `TourTarget`) on a timer, with a click-blocking overlay on top naming the
   current screen and briefly explaining it. Most steps are `TourTarget::

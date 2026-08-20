@@ -153,7 +153,7 @@ improvising over anything but the blues scale." Two parts:
    Session's live hole-map/scale-adherence feedback
    (`jam::session::JamHoleGuide`) was hardcoded to
    `blues_scale_classes` regardless of what a lesson or "Generate Jam"
-   picked. Fixed by a new `JamScale` resource (`src/app.rs`, mirrors the
+   picked. Fixed by a new `JamScale` resource (`harmonicon-app`'s `app.rs`, mirrors the
    existing `JamProgression`) plus a `LessonManifest::scale` field
    (mirrors `progression`, parsed by `menu::pages::lessons::parse_scale`)
    — `major-scale-improv` and `minor-pentatonic-improv` are the first

@@ -176,7 +176,7 @@ Each phase is independently shippable, ordered by (leverage ÷ risk).
 
 ### Phase 1 — cut the layering inversions (small, highest leverage)
 
-1. Create `src/app.rs`: move `AppState`, `GameplayMode`, `JamProgression`,
+1. Create `harmonicon-app`'s `app.rs`: move `AppState`, `GameplayMode`, `JamProgression`,
    `SelectedSong`, `SelectedArtist`, and the `ReturnTo*` flags out of
    `menu/mod.rs`. Leave `pub use crate::app::*;` re-exports in `menu` for
    one commit, migrate the ~11 importing files, drop the shims.
@@ -223,14 +223,14 @@ scoring bullets to the new paths in the same PR.
 
 ### Phase 5 — gather the jam and lessons features
 
-- `src/jam/`: `jam_backing.rs` → `jam/backing.rs`;
+- `harmonicon-jam`: `jam_backing.rs` → `jam/backing.rs`;
   `gameplay/jam_session.rs` → `jam/session.rs` with `ImprovStats` /
   `classify_note_fit` / `in_rest_window` split into `jam/improv.rs`.
   (`menu/pages/jam_generate.rs` stays a menu page — pages live with pages.)
   Do this *before* starting 0.4's remaining jam work (freeform
   call-and-response, cross-harp) so the new code lands in one place
   instead of three.
-- `src/lessons/`: split `lessons.rs` into `manifest.rs` / `catalog.rs` /
+- `harmonicon-song`'s `lessons/`: split `lessons.rs` into `manifest.rs` / `catalog.rs` /
   `progress.rs`.
 
 ### Phase 6 — the remaining big feature files, opportunistically

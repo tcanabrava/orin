@@ -140,41 +140,36 @@ is matched against the note currently in the hit window.
 
 ## Project layout
 
-The crate is split into a library (`src/lib.rs`) so the game binary and the
-helper tools can share the same subsystems.
+A Cargo workspace: eleven library crates under `crates/`, and a root package
+holding just the binary. Each crate may depend only on ones *earlier* in this
+list, so the layering is enforced by Cargo rather than by convention — a
+circular dependency between crates simply cannot be expressed.
 
 ```
-src/
-  main.rs              # Game entry point: wires up plugins, mic capture, pitch loop
-  lib.rs               # Library root, re-exports the subsystems below
-  menu/                # App states, menu pages, Options, latency calibration, guided tour
-  gameplay/            # Core gameplay
-    gameplay_2d.rs     #   2D lane renderer
-    gameplay_3d.rs     #   3D harmonica renderer
-    bending_trainer.rs #   bend/overblow/overdraw drills
-    adaptive_difficulty.rs #  per-phrase note unlocking
-    clock.rs           #   the gameplay clock (audio-anchored time authority)
-    results.rs         #   end-of-song results screen
-    *_overlay.rs       #   countdown, metronome, phrase, song-progress HUDs
-  jam/                 # Jam Session: free-play mode, generated 12-bar backing,
-                       #   MIDI multi-track playback, improv/call-response practice
-  lessons/             # Guided curriculum: manifest parsing, catalog discovery,
-                       #   per-player progress
-  scoring.rs           # Pure scoring math (timing windows, combo/multiplier),
-                       #   shared by gameplay and the song editor's practice mode
-  song_editor/         # In-game chart editor (grid, playback synth, practice,
-                       #   MIDI import, undo/redo)
-  audio_system/        # Microphone capture (cpal), pitch detection algorithms,
-                       #   the additive harmonica-voice synth
-  song/                # Chart format, harmonica layouts, MIDI parsing, asset loader
-  spectrogram/         # Audio visualizers (bars, oscilloscope)
-  dialogs/             # Shared UI widgets (buttons, tooltips, comboboxes, file dialogs)
-  assets_management/   # Font loading, song/theme/harmonica discovery
-  profile.rs           # Persistent player progress (best scores, drills)
-  settings.rs          # Persistent settings (figment-layered JSON)
-  localization.rs      # Fluent localization plumbing
-  theme.rs             # Visual theme config
-  note_bench.rs        # Pitch-detection algorithm comparison logic
+crates/
+  harmonicon-core/     # Pure logic, NO Bevy: music theory, chart types, scoring
+                       #   math, pitch/MIDI conversion, the harmonica synth, WAV.
+                       #   Builds and tests in seconds; keep it engine-free.
+  harmonicon-audio/    # Microphone capture (cpal), the FFT pitch-detection
+                       #   pipeline, offline waveform analysis
+  harmonicon-platform/ # Asset discovery, Fluent localization, persisted settings,
+                       #   visual theme, the narrow-window breakpoint
+  harmonicon-song/     # Chart/manifest asset loading, MIDI-backed songs, and the
+                       #   lessons curriculum discovered on disk
+  harmonicon-app/      # App-wide vocabulary: state machine, routing flags, profile
+  harmonicon-ui/       # Reusable widgets (buttons, comboboxes, dialogs, page
+                       #   chrome), the SMuFL notation staff, the spectrogram
+  harmonicon-gameplay/ # Scored play: audio-anchored clock, note judging, the 2D/3D
+                       #   highways, HUD overlays, the Bending Trainer
+  harmonicon-jam/      # Jam Session: free play, generated 12-bar backing, improv
+                       #   scoring, call-and-response      (sibling of the editor)
+  harmonicon-editor/   # The Song Editor: record/edit/play, MIDI import, undo/redo
+  harmonicon-menu/     # Page state machine, routing, one file per screen
+  harmonicon-bench/    # Developer tooling: pitch-detection benchmark + synthetic
+                       #   dataset generator (not shipped game code)
+
+src/                   # The binary only
+  main.rs              # Entry point: registers every plugin, mic capture, pitch loop
   bin/
     hole_editor.rs     # 3D harmonica hole-layout editor
     note_editor.rs     # Visual editor for 2D note layouts

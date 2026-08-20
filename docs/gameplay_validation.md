@@ -2,8 +2,8 @@
 
 A structured, repeatable check that the main gameplay loop still works across all
 supported modes — **Play 2D**, **Play 3D**, and **Jam Session** — through startup,
-pause, resume, and exit. Run this when changing anything in `src/gameplay/`,
-`src/menu/`, the audio pipeline, or song/asset formats.
+pause, resume, and exit. Run this when changing anything in `harmonicon-gameplay`,
+`harmonicon-menu`, the audio pipeline, or song/asset formats.
 
 Each item lists its **expected outcome** and whether it's **automated** (a unit
 test guards it) or **manual** (needs a run, because it depends on rendering,
