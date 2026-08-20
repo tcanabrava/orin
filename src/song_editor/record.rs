@@ -43,9 +43,9 @@ use std::collections::{HashMap, HashSet};
 use bevy::audio::AudioSource;
 use bevy::prelude::*;
 
-use crate::audio_system::AudioSettings;
-use crate::audio_system::audio_input::{AudioCapture, CHUNK_SIZE};
-use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchEvent, PitchRange};
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::audio_input::{AudioCapture, CHUNK_SIZE};
+use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchEvent, PitchRange};
 use harmonicon_core::harmonica::Harmonica;
 
 #[cfg(test)]

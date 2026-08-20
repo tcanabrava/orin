@@ -22,13 +22,13 @@ use super::transport::{spawn_file_buttons, spawn_playback_buttons, spawn_record_
 use super::ui::{
     EditModeGroup, ModButton, ModeButton, PlayModeGroup, RecordModeGroup, TimelineToolButton,
 };
-use crate::audio_system::pitch_detect::{PitchAlgorithm, PitchRange};
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::combobox;
 use crate::localization::LocalizationExt;
 use crate::settings::ActionButtonStyle;
 use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
+use harmonicon_audio::pitch_detect::{PitchAlgorithm, PitchRange};
 
 /// The mod panel: a short, fixed global-transport strip (Back / Edit /
 /// Perform / Lock / Save / Load — always the same regardless of mode), then

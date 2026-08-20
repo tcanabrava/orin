@@ -9,8 +9,8 @@ use bevy::prelude::*;
 
 use crate::app::tour_active;
 use crate::app::{AppState, GameplayMode};
-use crate::audio_system::AudioSettings;
-use crate::audio_system::pitch_detect::PitchRange;
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::pitch_detect::PitchRange;
 
 use super::bars::{self, AbsoluteBar, BarChanged, CurrentBar};
 use super::clock::{self, GameplayClock};

@@ -6,7 +6,7 @@ use rustfft::{Fft, FftPlanner, num_complex::Complex};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use super::midi::NOTE_NAMES;
+use harmonicon_core::midi::NOTE_NAMES;
 
 /// Frequency bounds (Hz) the pitch detectors search within. Defaults to
 /// roughly a standard-key 10-hole diatonic's range; gameplay narrows/widens

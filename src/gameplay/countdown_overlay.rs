@@ -8,10 +8,10 @@ use bevy_fluent::Localization;
 
 use crate::{
     app::{AppState, GameplayMode, SelectedSong},
-    audio_system::AudioSettings,
     localization::LocalizationExt,
     song::SongManifest,
 };
+use harmonicon_audio::AudioSettings;
 
 use super::{
     GameplayClock, GameplayLogic, GameplayRoot, MidiTrackPlayer, MusicPlayer, MusicStarted, Paused,

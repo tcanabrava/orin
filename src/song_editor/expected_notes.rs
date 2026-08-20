@@ -271,7 +271,7 @@ pub(super) fn spawn_expected_notes_mode_button(
          mut practice: ResMut<super::practice::PracticeState>,
          mut record: ResMut<super::record::RecordState>,
          mut playhead: ResMut<super::playback::Playhead>,
-         mut pitch_range: ResMut<crate::audio_system::pitch_detect::PitchRange>,
+         mut pitch_range: ResMut<harmonicon_audio::pitch_detect::PitchRange>,
          mut count_in: ResMut<super::metronome::CountIn>,
          mut commands: Commands| {
             state.mode = Mode::ExpectedNotes;

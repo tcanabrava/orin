@@ -85,8 +85,8 @@ fn in_rest_window_is_never_resting_with_a_zero_length_cycle() {
 
 // ── accumulate_improv_stats ───────────────────────────────────────────────
 
-fn improv_pitch_info(midi: u8, note: &str) -> crate::audio_system::pitch_detect::PitchInfo {
-    crate::audio_system::pitch_detect::PitchInfo {
+fn improv_pitch_info(midi: u8, note: &str) -> harmonicon_audio::pitch_detect::PitchInfo {
+    harmonicon_audio::pitch_detect::PitchInfo {
         midi,
         note: note.to_string(),
         octave: 4,

@@ -19,7 +19,6 @@ use harmonicon_core::harmonica::{
 
 use crate::{
     app::{JamProgression, JamScale, SelectedSong},
-    audio_system::AudioSettings,
     dialogs::button,
     gameplay::{
         ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
@@ -29,6 +28,7 @@ use crate::{
     song::SongManifest,
     theme::LoadedTheme,
 };
+use harmonicon_audio::AudioSettings;
 
 use crate::gameplay::countdown_overlay::spawn_countdown;
 use crate::gameplay::harmonica_overlay::spawn_harmonica_overlay;

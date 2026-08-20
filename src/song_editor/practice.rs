@@ -4,9 +4,9 @@ use bevy::audio::AudioSource;
 use bevy::prelude::*;
 use bevy_fluent::prelude::Localization;
 
-use crate::audio_system::AudioSettings;
-use crate::audio_system::pitch_detect::PitchEvent;
 use crate::localization::{LocalizationExt, LocalizedStr};
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::pitch_detect::PitchEvent;
 use harmonicon_core::midi::{freq_to_midi, midi_to_note};
 use harmonicon_core::scoring::{
     AttackGate, HitQuality, NoteOutcome, classify_note, compute_points, sustain_points,

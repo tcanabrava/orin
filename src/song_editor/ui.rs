@@ -13,11 +13,11 @@ use super::mod_panel::spawn_mod_panel;
 use super::playback::{EditorAudio, EditorProgressFill, Playhead, PlayheadLine};
 use super::state::{EditorState, Mode, Scroll, TimelineTool};
 use super::{BEAT_W, HOLE_COL_W, NOTE_PAD, ROW_H, grid_height};
-use crate::audio_system::AudioSettings;
-use crate::audio_system::pitch_detect::PitchAlgorithm;
 use crate::settings::ActionButtonStyle;
 use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::pitch_detect::PitchAlgorithm;
 
 // ── Components ────────────────────────────────────────────────────────────────
 

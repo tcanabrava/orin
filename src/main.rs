@@ -14,8 +14,6 @@ const APP_ID: &str = "io.github.tcanabrava.Harmonicon";
 
 use harmonicon::app::AppState;
 use harmonicon::assets_management::AssetsManagementPlugin;
-use harmonicon::audio_system::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
-use harmonicon::audio_system::{audio_input, pipeline};
 use harmonicon::gameplay::GameplayPlugin;
 use harmonicon::jam::JamPlugin;
 use harmonicon::lessons::LessonsPlugin;
@@ -28,6 +26,8 @@ use harmonicon::settings::SettingsPlugin;
 use harmonicon::song::SongPlugin;
 use harmonicon::spectrogram::SpectrogramPlugin;
 use harmonicon::theme::ThemePlugin;
+use harmonicon_audio::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
+use harmonicon_audio::{audio_input, pipeline};
 
 /// A raw debug binary lives under `target/debug`, while the assets remain in
 /// the checkout root. Cargo supplies `CARGO_MANIFEST_DIR` to `cargo run`, but

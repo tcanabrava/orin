@@ -14,7 +14,6 @@ pub use harmonicon_core::scoring;
 
 pub mod app;
 pub mod assets_management;
-pub mod audio_system;
 pub mod dialogs;
 pub mod gameplay;
 pub mod jam;

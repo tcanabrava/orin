@@ -8,8 +8,8 @@ use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::app::{AppState, GameplayMode, SelectedSong};
-use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use crate::song::SongManifest;
+use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 
 use super::bars::parse_beats;
 use super::clock::GameplayClock;
@@ -143,7 +143,7 @@ pub(crate) fn detect_song_end(
 /// `AudioSettings` resource changes, so dragging the Options slider is heard
 /// immediately. (Metronome clicks pick up their level when each click spawns.)
 pub(crate) fn apply_music_volume(
-    audio: Res<crate::audio_system::AudioSettings>,
+    audio: Res<harmonicon_audio::AudioSettings>,
     mut sinks: Query<&mut AudioSink, With<MusicPlayer>>,
 ) {
     for mut sink in &mut sinks {

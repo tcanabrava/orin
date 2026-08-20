@@ -20,8 +20,8 @@ use crate::assets_management::{
     SelectedHarmonicaModel, SelectedNoteTheme2d, SelectedNoteTheme3d, SelectedTheme,
     ShowNoteNumbers,
 };
-use crate::audio_system::AudioSettings;
-use crate::audio_system::pitch_detect::PitchAlgorithm;
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::pitch_detect::PitchAlgorithm;
 
 /// Whether adaptive difficulty (`gameplay::adaptive_difficulty`) gates note
 /// visibility at all — a single global preference, not per-song (unlike the

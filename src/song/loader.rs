@@ -13,11 +13,9 @@ use super::{
     MidiTrackAudio, SongManifest,
     chart::{CURRENT_FORMAT_VERSION, HarpChart, format_version_supported, migrate_chart_json},
 };
-use crate::audio_system::{
-    synth::SAMPLE_RATE,
-    wav::encode_wav,
-    waveform::{WAVEFORM_BUCKETS, bucket_peaks},
-};
+use harmonicon_audio::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
+use harmonicon_core::synth::SAMPLE_RATE;
+use harmonicon_core::wav::encode_wav;
 
 const SCHEMA: &str = include_str!("../../assets/song_schema.dtd.json");
 
@@ -200,9 +198,9 @@ impl SongChartLoader {
         let mid_path = sibling(song_folder.join("song/music.mid"));
         let (music, midi_tracks, waveform, music_duration_secs) =
             if let Ok(bytes) = load_context.read_asset_bytes(ogg_path.clone()).await {
-                let (waveform, duration) = crate::audio_system::waveform::analyze_ogg_waveform(
+                let (waveform, duration) = harmonicon_audio::waveform::analyze_ogg_waveform(
                     &bytes,
-                    crate::audio_system::waveform::WAVEFORM_BUCKETS,
+                    harmonicon_audio::waveform::WAVEFORM_BUCKETS,
                 );
                 (
                     Some(load_context.load::<AudioSource>(ogg_path)),
@@ -211,9 +209,9 @@ impl SongChartLoader {
                     duration,
                 )
             } else if let Ok(bytes) = load_context.read_asset_bytes(wav_path.clone()).await {
-                let (waveform, duration) = crate::audio_system::waveform::analyze_wav_waveform(
+                let (waveform, duration) = harmonicon_audio::waveform::analyze_wav_waveform(
                     &bytes,
-                    crate::audio_system::waveform::WAVEFORM_BUCKETS,
+                    harmonicon_audio::waveform::WAVEFORM_BUCKETS,
                 );
                 (
                     Some(load_context.load::<AudioSource>(wav_path)),

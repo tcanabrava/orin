@@ -1,0 +1,24 @@
+[package]
+name = "harmonicon-audio"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+# Microphone capture and pitch detection. Sits directly above
+# harmonicon-core (which owns the pure pitch/MIDI maths) and below
+# everything else — it knows nothing about songs, scoring or UI.
+[dependencies]
+harmonicon-core = { path = "../harmonicon-core" }
+serde = { workspace = true }
+bevy = { workspace = true }
+cpal = { workspace = true }
+rustfft = { workspace = true }
+crossbeam-channel = { workspace = true }
+rodio = { workspace = true }
+
+[features]
+dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug"]
+trace_tracy = ["bevy/trace_tracy"]
+
+[lints]
+workspace = true

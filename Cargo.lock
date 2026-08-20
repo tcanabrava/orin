@@ -3273,6 +3273,7 @@ dependencies = [
  "fluent_content",
  "getrandom 0.3.4",
  "getrandom 0.4.3",
+ "harmonicon-audio",
  "harmonicon-core",
  "image",
  "jsonschema",
@@ -3289,6 +3290,19 @@ dependencies = [
  "thiserror 2.0.20",
  "unic-langid",
  "winit",
+]
+
+[[package]]
+name = "harmonicon-audio"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "cpal",
+ "crossbeam-channel",
+ "harmonicon-core",
+ "rodio",
+ "rustfft",
+ "serde",
 ]
 
 [[package]]

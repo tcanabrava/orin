@@ -15,8 +15,8 @@
 
 use std::collections::HashMap;
 
-use crate::audio_system::audio_input::{CHUNK_SIZE, HOP_SIZE};
-use crate::audio_system::pitch_detect::{self, FftState, PitchAlgorithm, PitchRange};
+use harmonicon_audio::audio_input::{CHUNK_SIZE, HOP_SIZE};
+use harmonicon_audio::pitch_detect::{self, FftState, PitchAlgorithm, PitchRange};
 use harmonicon_core::chart::{Action, HarpChart, tick_to_seconds};
 use harmonicon_core::harmonica::Harmonica;
 use harmonicon_core::harmonica_constraints::plausible_notes;

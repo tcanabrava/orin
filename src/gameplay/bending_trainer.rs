@@ -26,8 +26,6 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
-use crate::audio_system::AudioSettings;
-use crate::audio_system::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::button;
 use crate::dialogs::button::BaseButtonColor;
@@ -36,6 +34,8 @@ use crate::dialogs::combobox::ComboboxSelect;
 use crate::dialogs::tooltip::Tooltip;
 use crate::localization::LocalizationExt;
 use crate::profile::{DrillRecord, PlayerProfile};
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use harmonicon_core::harmonica::{Harmonica, HoleNotes, hole_notes, richter_harp};
 use harmonicon_core::midi::NOTE_NAMES;
 use harmonicon_core::wav::encode_wav;

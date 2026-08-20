@@ -16,8 +16,8 @@ use std::path::PathBuf;
 use bevy::audio::AudioSource;
 use bevy::prelude::*;
 
-use crate::audio_system::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use crate::song::{NoteCube3dConfig, NoteThemeConfig, SongManifest};
+use harmonicon_audio::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use harmonicon_core::chart::{
     Action, Difficulty, Feel, HarpChart, Metadata, NoteEvent, Scoring, Song, TempoPoint, Timing,
     TrackItem,

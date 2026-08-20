@@ -7,12 +7,12 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::{AppState, ReturnToSongList, SelectedSong};
-use crate::audio_system::AudioSettings;
 use crate::dialogs::button;
 use crate::lessons::{LessonContext, lesson_passed};
 use crate::localization::LocalizationExt;
 use crate::profile::{PlayerProfile, record_lesson, record_play, save_profile};
 use crate::song::SongManifest;
+use harmonicon_audio::AudioSettings;
 
 use super::adaptive_difficulty::{
     AdaptiveDifficulty, bump_learned_sections, learned_vec_from_map, write_learned_into_map,

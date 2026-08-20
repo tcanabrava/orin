@@ -21,8 +21,8 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::AppState;
-use crate::audio_system::pitch_detect::AudioFrame;
 use crate::localization::LocalizationExt;
+use harmonicon_audio::pitch_detect::AudioFrame;
 
 pub use oscilloscope::OscMaterial;
 use oscilloscope::OscilloscopeMaterial;

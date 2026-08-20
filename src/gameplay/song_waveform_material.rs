@@ -14,7 +14,7 @@ use bevy::render::render_resource::AsBindGroup;
 use bevy::shader::ShaderRef;
 use bevy::ui_render::prelude::{UiMaterial, UiMaterialPlugin};
 
-use crate::audio_system::waveform::WAVEFORM_BUCKETS;
+use harmonicon_audio::waveform::WAVEFORM_BUCKETS;
 
 /// Amplitudes packed four-per-`Vec4` for the uniform array.
 const PACKED: usize = WAVEFORM_BUCKETS / 4;

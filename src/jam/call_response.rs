@@ -25,10 +25,10 @@ use bevy::prelude::*;
 use bevy_fluent::Localization;
 
 use crate::app::SelectedSong;
-use crate::audio_system::AudioSettings;
 use crate::gameplay::{AbsoluteBar, BarChanged, CurrentBar, GameplayRoot};
 use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
+use harmonicon_audio::AudioSettings;
 use harmonicon_core::midi::{midi_to_freq_hz, midi_to_note};
 use harmonicon_core::synth::{Expr, PhraseNote, SAMPLE_RATE, TICKS_PER_BEAT, render_pcm};
 use harmonicon_core::wav::encode_wav;

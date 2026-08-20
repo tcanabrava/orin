@@ -1303,8 +1303,8 @@ mod tests {
 
     // ── harp_pitches / step_hole_glow ─────────────────────────────────────────
 
-    fn pitch_info(midi: u8) -> crate::audio_system::pitch_detect::PitchInfo {
-        crate::audio_system::pitch_detect::PitchInfo {
+    fn pitch_info(midi: u8) -> harmonicon_audio::pitch_detect::PitchInfo {
+        harmonicon_audio::pitch_detect::PitchInfo {
             midi,
             note: String::new(),
             octave: 0,

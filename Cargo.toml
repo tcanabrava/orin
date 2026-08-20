@@ -17,6 +17,11 @@ members = ["crates/*"]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 midly = "0.5"
+bevy = { version = "0.19.1", features = ["wav"] }
+cpal = "0.17"
+rustfft = "6.4"
+crossbeam-channel = "0.5"
+rodio = { version = "0.22", default-features = false, features = ["vorbis"] }
 
 # Shared by every member, so binaries and integration tests are held to the
 # same set as each library.
@@ -26,15 +31,16 @@ type_complexity = "allow"
 
 [dependencies]
 harmonicon-core = { path = "crates/harmonicon-core" }
+harmonicon-audio = { path = "crates/harmonicon-audio" }
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
 # its Play button (and user-supplied .wav background tracks).
-bevy = { version = "0.19.1", features = ["wav"] }
-cpal = "0.17"
-rustfft = "6.4"
-crossbeam-channel = "0.5"
+bevy = { workspace = true }
+cpal = { workspace = true }
+rustfft = { workspace = true }
+crossbeam-channel = { workspace = true }
 # Audio decode for Song Editor tempo analysis (ogg via lewton; matches the
 # version bevy_audio already pulls in, so no duplicate rodio).
-rodio = { version = "0.22", default-features = false, features = ["vorbis"] }
+rodio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 jsonschema = { version = "0.49", default-features = false }
@@ -73,7 +79,8 @@ notify-debouncer-full = { version = "0.7", features = ["crossbeam-channel"] }
 dev = [
     "bevy/dev",
     "bevy/dynamic_linking",
-    "bevy/debug"
+    "bevy/debug",
+    "harmonicon-audio/dev",
 ]
 # Streams Bevy's built-in ECS/render/asset spans plus this crate's own
 # manual spans (audio capture, pitch detection) to a running Tracy client
@@ -83,7 +90,7 @@ dev = [
 # `cargo run --release --features trace_tracy` with the Tracy UI already
 # listening; see main.rs for the accompanying LogPlugin filter change this
 # needs (spans below `info` are dropped before any backend sees them).
-trace_tracy = ["bevy/trace_tracy"]
+trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy"]
 
 [lints]
 workspace = true

@@ -15,7 +15,7 @@ use bevy::prelude::*;
 
 use super::TICKS_PER_BEAT;
 use super::state::EditorState;
-use crate::audio_system::waveform::{WAVEFORM_BUCKETS, analyze_ogg_waveform, analyze_wav_waveform};
+use harmonicon_audio::waveform::{WAVEFORM_BUCKETS, analyze_ogg_waveform, analyze_wav_waveform};
 use harmonicon_core::chart::{TempoPoint, seconds_to_tick, tick_to_seconds};
 
 /// The chart's music file, decoded into a peak-amplitude waveform — empty

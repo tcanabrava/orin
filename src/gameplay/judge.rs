@@ -10,8 +10,8 @@ use std::collections::{HashMap, HashSet};
 
 use bevy::prelude::*;
 
-use crate::audio_system::AudioSettings;
-use crate::audio_system::pitch_detect::{AudioFrame, PitchInfo};
+use harmonicon_audio::AudioSettings;
+use harmonicon_audio::pitch_detect::{AudioFrame, PitchInfo};
 use harmonicon_core::chart::Modifier;
 use harmonicon_core::midi::midi_to_freq_hz;
 use harmonicon_core::scoring::{
