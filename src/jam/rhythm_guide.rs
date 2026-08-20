@@ -16,7 +16,7 @@ use bevy_fluent::Localization;
 
 use crate::gameplay::GameplayClock;
 use crate::gameplay::metronome_overlay::MetronomeTempo;
-use crate::localization::LocalizationExt;
+use harmonicon_platform::localization::LocalizationExt;
 
 use super::backing::{Genre, JamGenre, genre_pattern};
 

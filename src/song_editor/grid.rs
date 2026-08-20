@@ -23,11 +23,11 @@ use super::{
     WAVEFORM_H, WAVEFORM_TOP, grid_height, silence_row_top,
 };
 use crate::gameplay::twelve_bar_blues_overlay::bar_bg;
-use crate::localization::LocalizationExt;
-use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::harmonica::Harmonica;
 use harmonicon_core::midi::{freq_to_midi, midi_to_note};
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 use std::collections::HashSet;
 
 pub(super) fn visible_beats(win_w: f32) -> usize {
@@ -705,7 +705,7 @@ pub(super) fn spawn_note(
                 } else if !valid {
                     loc.msg("drag-denied-overlap")
                 } else {
-                    crate::localization::LocalizedStr::default()
+                    harmonicon_platform::localization::LocalizedStr::default()
                 };
                 if let Some(d) = state.dragging.as_mut() {
                     d.target_hole = hole;
@@ -719,7 +719,7 @@ pub(super) fn spawn_note(
                 let Some(drag) = state.dragging.take() else {
                     return;
                 };
-                state.drag_msg = crate::localization::LocalizedStr::default();
+                state.drag_msg = harmonicon_platform::localization::LocalizedStr::default();
                 if drag.kind == DragKind::Move && drag.valid {
                     let hole_count = state.hole_count();
                     let hole_delta = drag.target_hole as i32 - drag.start_hole as i32;

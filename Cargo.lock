@@ -3275,6 +3275,7 @@ dependencies = [
  "getrandom 0.4.3",
  "harmonicon-audio",
  "harmonicon-core",
+ "harmonicon-platform",
  "image",
  "jsonschema",
  "midly",
@@ -3312,6 +3313,27 @@ dependencies = [
  "midly",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "harmonicon-platform"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_fluent",
+ "crossbeam-channel",
+ "dirs",
+ "figment",
+ "fluent",
+ "fluent_content",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "notify-debouncer-full",
+ "serde",
+ "serde_json",
+ "sys-locale",
+ "thiserror 2.0.20",
+ "unic-langid",
 ]
 
 [[package]]

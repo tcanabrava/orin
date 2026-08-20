@@ -18,12 +18,12 @@ use super::record::{RecordState, pause_record, stop_record};
 use super::state::{ContentKind, EditorState};
 use super::{LOAD_PURPOSE, SAVE_PURPOSE};
 use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
-use crate::localization::LocalizationExt;
-use crate::settings::ActionButtonStyle;
-use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::PitchRange;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::settings::ActionButtonStyle;
+use harmonicon_platform::theme::SongEditorColors;
 
 /// Chart file I/O — always visible, in both Edit and Perform mode. Save/Load
 /// both branch on `state.content_kind` for the dialog's title/extension/

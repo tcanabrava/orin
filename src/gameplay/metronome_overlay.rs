@@ -13,10 +13,10 @@ use bevy_fluent::Localization;
 
 use crate::{
     app::{AppState, SelectedSong},
-    localization::LocalizationExt,
     song::{SongManifest, chart::Feel},
 };
 use harmonicon_audio::AudioSettings;
+use harmonicon_platform::localization::LocalizationExt;
 
 use super::{GameplayClock, GameplayLogic, Paused};
 

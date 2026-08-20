@@ -9,7 +9,7 @@
 
 use bevy::prelude::*;
 
-use crate::localization::LocalizedStr;
+use harmonicon_platform::localization::LocalizedStr;
 
 /// How long a save/load outcome stays in the status bar before falling
 /// back to whatever it would otherwise show (drag/record/practice) — long
@@ -62,8 +62,8 @@ pub(super) fn tick_save_feedback(time: Res<Time>, mut feedback: ResMut<SaveFeedb
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::localization::LocalizationExt;
     use bevy_fluent::prelude::Localization;
+    use harmonicon_platform::localization::LocalizationExt;
 
     fn msg(text: &str) -> LocalizedStr {
         // `Localization::default()` has no bundle loaded, so `loc.msg(key)`

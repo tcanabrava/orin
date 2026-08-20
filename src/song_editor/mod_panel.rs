@@ -24,11 +24,11 @@ use super::ui::{
 };
 use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
 use crate::dialogs::combobox;
-use crate::localization::LocalizationExt;
-use crate::settings::ActionButtonStyle;
-use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::pitch_detect::{PitchAlgorithm, PitchRange};
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::settings::ActionButtonStyle;
+use harmonicon_platform::theme::SongEditorColors;
 
 /// The mod panel: a short, fixed global-transport strip (Back / Edit /
 /// Perform / Lock / Save / Load — always the same regardless of mode), then

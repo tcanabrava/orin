@@ -14,9 +14,9 @@ use super::ui::{
 };
 use super::undo::UndoHistory;
 use crate::dialogs::button::BaseButtonColor;
-use crate::localization::LocalizationExt;
-use crate::theme::LoadedTheme;
 use bevy_fluent::prelude::Localization;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::LoadedTheme;
 
 /// Whether `kind`'s button should read as "on" for a note carrying `dir`/
 /// `pitch`/`expr` — shared by the selected-note case (an existing

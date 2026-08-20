@@ -15,9 +15,9 @@ use super::{GameplayRoot, LoopConfig, MusicPlayer, Paused};
 use crate::app::{AppState, GameplayMode, ReturnToSongList, SelectedSong};
 use crate::dialogs::button;
 use crate::lessons::LessonContext;
-use crate::localization::LocalizationExt;
 use crate::profile::PlayerProfile;
 use crate::song::SongManifest;
+use harmonicon_platform::localization::LocalizationExt;
 
 /// Root of the pause overlay; toggled between hidden/visible.
 #[derive(Component, Default, Clone)]
@@ -330,7 +330,7 @@ pub(super) fn update_adaptive_difficulty_label(
 /// a single on/off switch shared by every song, not stored per-song.
 fn on_toggle_adaptive_difficulty(
     _: On<Activate>,
-    mut setting: ResMut<crate::settings::AdaptiveDifficultyEnabled>,
+    mut setting: ResMut<harmonicon_platform::settings::AdaptiveDifficultyEnabled>,
     mut adaptive: ResMut<AdaptiveDifficulty>,
 ) {
     adaptive.enabled = !adaptive.enabled;

@@ -13,11 +13,11 @@ use super::mod_panel::spawn_mod_panel;
 use super::playback::{EditorAudio, EditorProgressFill, Playhead, PlayheadLine};
 use super::state::{EditorState, Mode, Scroll, TimelineTool};
 use super::{BEAT_W, HOLE_COL_W, NOTE_PAD, ROW_H, grid_height};
-use crate::settings::ActionButtonStyle;
-use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::PitchAlgorithm;
+use harmonicon_platform::settings::ActionButtonStyle;
+use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 
 // ── Components ────────────────────────────────────────────────────────────────
 
@@ -333,7 +333,7 @@ pub(super) fn setup(
     state: Res<EditorState>,
     audio: Res<AudioSettings>,
     bravura: Option<Res<crate::music_score::BravuraFont>>,
-    compact: Res<crate::responsive::CompactLayout>,
+    compact: Res<harmonicon_platform::responsive::CompactLayout>,
     action_button_style: Res<ActionButtonStyle>,
 ) {
     let colors = theme.song_editor_colors();

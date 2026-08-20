@@ -22,10 +22,10 @@ use super::ui::{BendDot, ModButton, ModButtonLabel, ModeButton, TimelineToolButt
 use crate::dialogs::button::make_interactive;
 use crate::dialogs::confirm_dialog::OpenConfirmDialog;
 use crate::dialogs::tooltip::Tooltip;
-use crate::localization::LocalizedStr;
-use crate::settings::ActionButtonStyle;
-use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
+use harmonicon_platform::localization::LocalizedStr;
+use harmonicon_platform::settings::ActionButtonStyle;
+use harmonicon_platform::theme::SongEditorColors;
 
 /// The display text for an action button under `style` — icon alone, icon
 /// beside the label, or the label alone. Shared by every button shape in

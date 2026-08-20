@@ -10,8 +10,8 @@ use bevy_fluent::Localization;
 
 use super::gameplay_2d::{note_anim_mode, note_techniques};
 use super::note_tail_2d::{NoteTail2dMaterial, tail_params};
-use crate::localization::LocalizationExt;
 use harmonicon_core::chart::Modifier;
+use harmonicon_platform::localization::LocalizationExt;
 
 /// Whether the techniques legend body is collapsed, toggled by clicking its
 /// header. Not reset on song load — like [`super::metronome_overlay::

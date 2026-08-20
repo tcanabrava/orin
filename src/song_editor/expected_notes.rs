@@ -57,10 +57,10 @@ use super::state::{
 use super::ui::{ExpectedNotesGroup, GridContent, ModButton, ModeButton};
 use crate::app::AppState;
 use crate::dialogs::tooltip::Tooltip;
-use crate::localization::LocalizationExt;
-use crate::settings::ActionButtonStyle;
-use crate::theme::{LoadedTheme, SongEditorColors};
 use bevy_fluent::prelude::Localization;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::settings::ActionButtonStyle;
+use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 
 // ── EditorState accessors ────────────────────────────────────────────────────
 //
@@ -304,8 +304,8 @@ struct ExpectedModButton(ModButton);
 fn spawn_expected_mod_button(
     panel: &mut ChildSpawnerCommands,
     kind: ModButton,
-    label: crate::localization::LocalizedStr,
-    tooltip: crate::localization::LocalizedStr,
+    label: harmonicon_platform::localization::LocalizedStr,
+    tooltip: harmonicon_platform::localization::LocalizedStr,
     icon: &str,
     style: ActionButtonStyle,
     colors: SongEditorColors,

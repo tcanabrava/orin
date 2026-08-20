@@ -9,10 +9,10 @@ use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
 use crate::app::{AppState, SelectedArtist, SelectedSong};
-use crate::assets_management::AvailableSongs;
-use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
-use crate::theme::LoadedTheme;
+use harmonicon_platform::assets_management::AvailableSongs;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};

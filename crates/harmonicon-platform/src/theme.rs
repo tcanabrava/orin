@@ -643,7 +643,7 @@ mod tests {
 
     #[test]
     fn shipped_theme_jsons_with_colors_block_parse_end_to_end() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/themes");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/themes");
         for name in ["default", "BluesNoir"] {
             let path = root.join(name).join("theme.json");
             let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path:?}: {e}"));

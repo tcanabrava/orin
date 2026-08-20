@@ -26,7 +26,7 @@ use super::ui::{
 };
 use super::{AppState, BEAT_W, HEADER_H, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
 use crate::dialogs::file_dialog::FileDialog;
-use crate::theme::LoadedTheme;
+use harmonicon_platform::theme::LoadedTheme;
 
 // ── Note interaction ─────────────────────────────────────────────────────────
 

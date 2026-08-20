@@ -13,8 +13,8 @@ use bevy::{
 use bevy_fluent::Localization;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
-use crate::assets_management::SelectedHarmonicaModel;
-use crate::localization::LocalizationExt;
+use harmonicon_platform::assets_management::SelectedHarmonicaModel;
+use harmonicon_platform::localization::LocalizationExt;
 
 use crate::app::AppState;
 use crate::menu::scene::spawn_back_button;

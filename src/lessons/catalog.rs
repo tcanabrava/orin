@@ -8,7 +8,7 @@ use std::path::Path;
 use bevy::prelude::*;
 
 use super::manifest::{LessonManifest, parse_lesson};
-use crate::assets_management::ExternalFolderChanged;
+use harmonicon_platform::assets_management::ExternalFolderChanged;
 
 /// A discovered lesson: its manifest plus the asset path its chart loads
 /// from (`None` for instructional-only lessons).

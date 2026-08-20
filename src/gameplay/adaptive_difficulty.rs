@@ -338,7 +338,7 @@ pub(super) fn setup_adaptive_difficulty(
     selected: Res<SelectedSong>,
     manifests: Res<Assets<SongManifest>>,
     profile: Res<PlayerProfile>,
-    setting: Res<crate::settings::AdaptiveDifficultyEnabled>,
+    setting: Res<harmonicon_platform::settings::AdaptiveDifficultyEnabled>,
     lesson: Option<Res<crate::lessons::LessonContext>>,
     mut adaptive: ResMut<AdaptiveDifficulty>,
 ) {

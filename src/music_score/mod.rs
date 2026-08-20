@@ -450,8 +450,8 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
         // progress`'s own bar background — the two used to be two
         // independently-tuned near-blacks, which read as separate widgets
         // rather than one panel.
-        BackgroundColor(crate::theme::HUD_PANEL_BG),
-        BorderColor::all(crate::theme::HUD_DIVIDER_COLOR),
+        BackgroundColor(harmonicon_platform::theme::HUD_PANEL_BG),
+        BorderColor::all(harmonicon_platform::theme::HUD_DIVIDER_COLOR),
         MusicScorePanel,
     ));
     let root_id = root.id();

@@ -21,8 +21,8 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
-use crate::theme::CircleOfFifthsColors;
 use harmonicon_core::harmonica::{Position, semitone};
+use harmonicon_platform::theme::CircleOfFifthsColors;
 
 /// The diagram's fixed square size, in px — small enough to sit comfortably
 /// in a lesson reader card, large enough for 12 legible labels.

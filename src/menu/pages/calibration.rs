@@ -30,9 +30,9 @@ use bevy::{
 use bevy_fluent::Localization;
 
 use crate::dialogs::button;
-use crate::localization::LocalizationExt;
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::PitchEvent;
+use harmonicon_platform::localization::LocalizationExt;
 
 use crate::app::{AppState, ReturnToOptions};
 

@@ -22,6 +22,15 @@ cpal = "0.17"
 rustfft = "6.4"
 crossbeam-channel = "0.5"
 rodio = { version = "0.22", default-features = false, features = ["vorbis"] }
+bevy_fluent = "0.15.0"
+fluent = "0.16"
+fluent_content = "0.0.5"
+unic-langid = "0.9"
+sys-locale = "0.3"
+figment = { version = "0.10", features = ["json"] }
+dirs = "5"
+thiserror = "2"
+notify-debouncer-full = { version = "0.7", features = ["crossbeam-channel"] }
 
 # Shared by every member, so binaries and integration tests are held to the
 # same set as each library.
@@ -32,6 +41,7 @@ type_complexity = "allow"
 [dependencies]
 harmonicon-core = { path = "crates/harmonicon-core" }
 harmonicon-audio = { path = "crates/harmonicon-audio" }
+harmonicon-platform = { path = "crates/harmonicon-platform" }
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
 # its Play button (and user-supplied .wav background tracks).
 bevy = { workspace = true }
@@ -44,24 +54,24 @@ rodio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 jsonschema = { version = "0.49", default-features = false }
-thiserror = "2"
+thiserror = { workspace = true }
 midly = { workspace = true }
-figment = { version = "0.10", features = ["json"] }
-dirs = "5"
+figment = { workspace = true }
+dirs = { workspace = true }
 pulldown-cmark = { version = "0.12", default-features = false }
 # Window icon: winit must match Bevy's version; image decodes the PNG.
 winit = "0.30"
 image = { version = "0.25", default-features = false, features = ["png"] }
-bevy_fluent = "0.15.0"
+bevy_fluent = { workspace = true }
 # The `Content` trait used to resolve Fluent message keys; bevy_fluent builds on
 # this same version but does not re-export the trait.
-fluent_content = "0.0.5"
+fluent_content = { workspace = true }
 # `FluentArgs`, for native `{$name}` variable interpolation via `msg_args`;
 # bevy_fluent builds on this same version but does not re-export it.
-fluent = "0.16"
-unic-langid = "0.9"
+fluent = { workspace = true }
+unic-langid = { workspace = true }
 # Detect the OS UI language so the game starts in the player's locale.
-sys-locale = "0.3"
+sys-locale = { workspace = true }
 regex = "1.13.1"
 rand = "0.10"
 clap = { version = "4.6.6", features = ["derive"] }
@@ -69,7 +79,7 @@ clap = { version = "4.6.6", features = ["derive"] }
 # live instead of needing a manual refresh or restart. crossbeam-channel
 # feature: bridges the watcher's background thread into ECS the same way
 # audio_input.rs already bridges the mic capture thread.
-notify-debouncer-full = { version = "0.7", features = ["crossbeam-channel"] }
+notify-debouncer-full = { workspace = true }
 
 [features]
 # Fast local iteration: dynamic-links Bevy and enables its dev tools + asset
@@ -81,6 +91,7 @@ dev = [
     "bevy/dynamic_linking",
     "bevy/debug",
     "harmonicon-audio/dev",
+    "harmonicon-platform/dev",
 ]
 # Streams Bevy's built-in ECS/render/asset spans plus this crate's own
 # manual spans (audio capture, pitch detection) to a running Tracy client
@@ -90,7 +101,7 @@ dev = [
 # `cargo run --release --features trace_tracy` with the Tracy UI already
 # listening; see main.rs for the accompanying LogPlugin filter change this
 # needs (spans below `info` are dropped before any backend sees them).
-trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy"]
+trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy", "harmonicon-platform/trace_tracy"]
 
 [lints]
 workspace = true

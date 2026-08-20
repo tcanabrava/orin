@@ -8,17 +8,12 @@ use harmonicon_core::chart::{Action, HarpChart};
 use harmonicon_core::harmonica::twelve_bar;
 
 use crate::music_score::{self, BravuraFont};
-use crate::{
-    app::SelectedSong,
-    assets_management::{
-        HarmonicaModelConfig, HoleConfig, SelectedHarmonicaModel, SelectedNoteTheme3d,
-        ShowNoteNumbers,
-    },
-    localization::LocalizationExt,
-    song::NoteCube3dConfig,
-    song::SongManifest,
-    theme::{LoadedTheme, NoteColors, TwelveBarColors, effective_note_colors},
+use crate::{app::SelectedSong, song::NoteCube3dConfig, song::SongManifest};
+use harmonicon_platform::assets_management::{
+    HarmonicaModelConfig, HoleConfig, SelectedHarmonicaModel, SelectedNoteTheme3d, ShowNoteNumbers,
 };
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::{LoadedTheme, NoteColors, TwelveBarColors, effective_note_colors};
 
 use super::adaptive_difficulty::AdaptiveDifficulty;
 use super::countdown_overlay::spawn_countdown;
@@ -354,7 +349,7 @@ pub fn spawn_visible_notes_3d(
     existing: Query<&NoteVisual3D>,
     show_numbers: Res<ShowNoteNumbers>,
     theme: Res<LoadedTheme>,
-    colorblind: Res<crate::settings::ColorblindPalette>,
+    colorblind: Res<harmonicon_platform::settings::ColorblindPalette>,
 ) {
     if render_assets.head_mesh.is_none() {
         return;
@@ -598,7 +593,7 @@ pub(super) struct HudContext<'w> {
     theme: Res<'w, LoadedTheme>,
     loc: Res<'w, Localization>,
     bravura: Option<Res<'w, BravuraFont>>,
-    compact: Res<'w, crate::responsive::CompactLayout>,
+    compact: Res<'w, harmonicon_platform::responsive::CompactLayout>,
 }
 
 pub fn setup(
@@ -1165,7 +1160,7 @@ pub fn update_note_visuals_3d(
     mut std_materials: ResMut<Assets<StandardMaterial>>,
     mut tail_materials: ResMut<Assets<NoteTail3dMaterial>>,
     theme: Res<LoadedTheme>,
-    colorblind: Res<crate::settings::ColorblindPalette>,
+    colorblind: Res<harmonicon_platform::settings::ColorblindPalette>,
 ) {
     let colors = effective_note_colors(theme.note_colors(), colorblind.0);
     for (visual, children) in &notes {

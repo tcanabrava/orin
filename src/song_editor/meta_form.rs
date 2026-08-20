@@ -29,10 +29,10 @@ use crate::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
 use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
 use crate::dialogs::text_input::{TextInputCommitted, spawn_text_input};
 use crate::dialogs::tooltip::Tooltip;
-use crate::localization::LocalizationExt;
-use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::Scale;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::SongEditorColors;
 
 pub(super) fn spawn_hole_column(
     row: &mut ChildSpawnerCommands,

@@ -41,15 +41,15 @@ use bevy::ui_widgets::{Checkbox, checkbox_self_update};
 use crate::app::AppState;
 use crate::dialogs::file_dialog::FileChosen;
 use crate::dialogs::tooltip::Tooltip;
-use crate::localization::LocalizationExt;
-use crate::settings::ActionButtonStyle;
-use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::audio_input::{CHUNK_SIZE, HOP_SIZE};
 use harmonicon_audio::pipeline::RawCaptureBuffer;
 use harmonicon_audio::pitch_detect::WINDOW_FUNCTION;
 use harmonicon_audio::waveform::{WAVEFORM_BUCKETS, bucket_peaks};
 use harmonicon_core::wav::{encode_wav, resample_linear};
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::settings::ActionButtonStyle;
+use harmonicon_platform::theme::SongEditorColors;
 
 use super::HOLE_COL_W;
 use super::SAVE_PURPOSE;

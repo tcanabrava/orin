@@ -335,7 +335,7 @@ mod tests {
     /// `en-US` locale, so no screen falls back to a raw key in another language.
     #[test]
     fn locales_define_the_same_keys() {
-        let locales = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/locales");
+        let locales = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/locales");
         let reference = std::fs::read_to_string(locales.join("en-US/main/ui.ftl"))
             .expect("en-US ui.ftl must exist");
         let reference_keys = message_keys(&reference);
@@ -366,7 +366,7 @@ mod tests {
     /// shipped under `assets/locales/` the way a real directory scan would.
     #[test]
     fn locales_const_matches_the_assets_directory() {
-        let locales_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/locales");
+        let locales_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/locales");
         let mut on_disk: Vec<String> = std::fs::read_dir(&locales_dir)
             .expect("locales dir must exist")
             .filter_map(|entry| entry.ok())

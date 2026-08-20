@@ -13,21 +13,21 @@ use bevy::prelude::*;
 const APP_ID: &str = "io.github.tcanabrava.Harmonicon";
 
 use harmonicon::app::AppState;
-use harmonicon::assets_management::AssetsManagementPlugin;
 use harmonicon::gameplay::GameplayPlugin;
 use harmonicon::jam::JamPlugin;
 use harmonicon::lessons::LessonsPlugin;
-use harmonicon::localization::LocalizationPlugin;
 use harmonicon::menu::MenuPlugin;
 use harmonicon::music_score::MusicScorePlugin;
 use harmonicon::profile::ProfilePlugin;
-use harmonicon::responsive::ResponsivePlugin;
-use harmonicon::settings::SettingsPlugin;
 use harmonicon::song::SongPlugin;
 use harmonicon::spectrogram::SpectrogramPlugin;
-use harmonicon::theme::ThemePlugin;
 use harmonicon_audio::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
 use harmonicon_audio::{audio_input, pipeline};
+use harmonicon_platform::assets_management::AssetsManagementPlugin;
+use harmonicon_platform::localization::LocalizationPlugin;
+use harmonicon_platform::responsive::ResponsivePlugin;
+use harmonicon_platform::settings::SettingsPlugin;
+use harmonicon_platform::theme::ThemePlugin;
 
 /// A raw debug binary lives under `target/debug`, while the assets remain in
 /// the checkout root. Cargo supplies `CARGO_MANIFEST_DIR` to `cargo run`, but
@@ -166,7 +166,8 @@ fn main() {
                 // Must run after settings are loaded from disk, or the mic
                 // would always start on the default device, ignoring a saved
                 // `input_device` preference.
-                audio_input::start_capture.after(harmonicon::settings::apply_loaded_settings),
+                audio_input::start_capture
+                    .after(harmonicon_platform::settings::apply_loaded_settings),
             ),
         )
         // Hold on the Startup state until the locale folder has loaded, so the
@@ -175,7 +176,7 @@ fn main() {
             Update,
             enter_menu_when_localized
                 .run_if(in_state(AppState::Startup))
-                .run_if(harmonicon::localization::localization_ready),
+                .run_if(harmonicon_platform::localization::localization_ready),
         )
         .add_systems(Update, pipeline::process_audio)
         .add_systems(

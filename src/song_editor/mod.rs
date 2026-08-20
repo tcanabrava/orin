@@ -17,7 +17,7 @@ use bevy::prelude::*;
 
 use crate::app::AppState;
 use crate::app::tour_active;
-use crate::theme::LoadedTheme;
+use harmonicon_platform::theme::LoadedTheme;
 
 mod audition;
 mod clipboard;
@@ -110,10 +110,10 @@ fn silence_row_top(hole_count: u8) -> f32 {
 
 // ── Colours ───────────────────────────────────────────────────────────────────
 //
-// The editor's palette lives in the active theme (`crate::theme::LoadedTheme`,
+// The editor's palette lives in the active theme (`harmonicon_platform::theme::LoadedTheme`,
 // `theme.song_editor_colors()`) rather than as consts here, so a theme's
 // `theme.json` can override it under `"colors": { "song_editor": { ... } }`.
-// See `crate::theme::SongEditorColors` for the fields and their defaults.
+// See `harmonicon_platform::theme::SongEditorColors` for the fields and their defaults.
 
 // ── Plugin ────────────────────────────────────────────────────────────────────
 

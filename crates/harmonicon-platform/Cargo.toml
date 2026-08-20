@@ -1,0 +1,29 @@
+[package]
+name = "harmonicon-platform"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+harmonicon-core = { path = "../harmonicon-core" }
+harmonicon-audio = { path = "../harmonicon-audio" }
+bevy = { workspace = true }
+bevy_fluent = { workspace = true }
+fluent = { workspace = true }
+fluent_content = { workspace = true }
+unic-langid = { workspace = true }
+sys-locale = { workspace = true }
+figment = { workspace = true }
+dirs = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+crossbeam-channel = { workspace = true }
+notify-debouncer-full = { workspace = true }
+
+[features]
+dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug", "harmonicon-audio/dev"]
+trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy"]
+
+[lints]
+workspace = true

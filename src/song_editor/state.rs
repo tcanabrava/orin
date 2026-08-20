@@ -443,7 +443,7 @@ pub(super) struct EditorState {
     pub(super) music: String,
     pub(super) name: String,
     pub(super) author: String,
-    pub(super) drag_msg: crate::localization::LocalizedStr,
+    pub(super) drag_msg: harmonicon_platform::localization::LocalizedStr,
     pub(super) mode: Mode,
     /// Whether this editing session is authoring a song or a lesson — see
     /// [`ContentKind`].
@@ -517,7 +517,7 @@ impl Default for EditorState {
             music: String::new(),
             name: String::new(),
             author: String::new(),
-            drag_msg: crate::localization::LocalizedStr::default(),
+            drag_msg: harmonicon_platform::localization::LocalizedStr::default(),
             mode: Mode::default(),
             content_kind: ContentKind::default(),
             lesson_id: String::new(),

@@ -9,10 +9,10 @@ use bevy_fluent::Localization;
 
 use crate::app::{GameplayMode, JamPositionCycle, JamProgression, JamScale};
 use crate::jam::backing::{Genre, JamGenre};
-use crate::localization::LocalizationExt;
-use crate::theme::LoadedTheme;
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::Progression;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::LoadedTheme;
 
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root};

@@ -23,12 +23,14 @@ use bevy_fluent::Localization;
 
 const TRACK_BG: Color = Color::srgb(0.14, 0.14, 0.22);
 
-use crate::assets_management::{AvailableHarmonicas, SelectedHarmonicaModel, ShowNoteNumbers};
-use crate::localization::LocalizationExt;
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::audio_input::{self, MicStatus};
+use harmonicon_platform::assets_management::{
+    AvailableHarmonicas, SelectedHarmonicaModel, ShowNoteNumbers,
+};
+use harmonicon_platform::localization::LocalizationExt;
 
-use crate::theme::LoadedTheme;
+use harmonicon_platform::theme::LoadedTheme;
 
 use crate::app::AppState;
 use crate::menu::routing::MenuPage;
@@ -148,10 +150,10 @@ fn setup_options_menu(
     images: ResMut<Assets<Image>>,
     theme: Res<LoadedTheme>,
     show_numbers: Res<ShowNoteNumbers>,
-    adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
-    fullscreen: Res<crate::settings::FullscreenEnabled>,
-    colorblind_palette: Res<crate::settings::ColorblindPalette>,
-    action_button_style: Res<crate::settings::ActionButtonStyle>,
+    adaptive_difficulty: Res<harmonicon_platform::settings::AdaptiveDifficultyEnabled>,
+    fullscreen: Res<harmonicon_platform::settings::FullscreenEnabled>,
+    colorblind_palette: Res<harmonicon_platform::settings::ColorblindPalette>,
+    action_button_style: Res<harmonicon_platform::settings::ActionButtonStyle>,
     ui_scale: Res<UiScale>,
 ) {
     let (root, header, page_root) =
@@ -237,10 +239,10 @@ fn spawn_left_column(
     asset_server: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,
     show_numbers: Res<ShowNoteNumbers>,
-    adaptive_difficulty: Res<crate::settings::AdaptiveDifficultyEnabled>,
-    fullscreen: Res<crate::settings::FullscreenEnabled>,
-    colorblind_palette: Res<crate::settings::ColorblindPalette>,
-    action_button_style: crate::settings::ActionButtonStyle,
+    adaptive_difficulty: Res<harmonicon_platform::settings::AdaptiveDifficultyEnabled>,
+    fullscreen: Res<harmonicon_platform::settings::FullscreenEnabled>,
+    colorblind_palette: Res<harmonicon_platform::settings::ColorblindPalette>,
+    action_button_style: harmonicon_platform::settings::ActionButtonStyle,
     ui_scale: f32,
 ) {
     spawn_mic_banner(commands, parent, &mic_status, loc);
@@ -376,7 +378,7 @@ fn spawn_note_numbers_toggle(
 /// directly by the pause menu's own toggle for an immediate mid-song effect.
 fn set_adaptive_difficulty(
     ev: On<ValueChange<bool>>,
-    mut enabled: ResMut<crate::settings::AdaptiveDifficultyEnabled>,
+    mut enabled: ResMut<harmonicon_platform::settings::AdaptiveDifficultyEnabled>,
 ) {
     enabled.0 = ev.value;
 }
@@ -406,7 +408,7 @@ fn spawn_adaptive_difficulty_toggle(
 /// resulting `FullscreenEnabled` onto the primary window's `WindowMode`.
 fn set_fullscreen(
     ev: On<ValueChange<bool>>,
-    mut fullscreen: ResMut<crate::settings::FullscreenEnabled>,
+    mut fullscreen: ResMut<harmonicon_platform::settings::FullscreenEnabled>,
 ) {
     fullscreen.0 = ev.value;
 }
@@ -539,9 +541,9 @@ fn spawn_action_button_style_combobox(
     parent: Entity,
     page_root: Entity,
     loc: &Localization,
-    current: crate::settings::ActionButtonStyle,
+    current: harmonicon_platform::settings::ActionButtonStyle,
 ) {
-    let options: Vec<String> = crate::settings::ActionButtonStyle::all()
+    let options: Vec<String> = harmonicon_platform::settings::ActionButtonStyle::all()
         .iter()
         .map(|s| String::from(loc.msg(s.loc_key())))
         .collect();
@@ -562,9 +564,10 @@ fn spawn_action_button_style_combobox(
 fn on_action_button_style_selected(
     ev: On<combobox::ComboboxSelect>,
     loc: Res<Localization>,
-    mut style: ResMut<crate::settings::ActionButtonStyle>,
+    mut style: ResMut<harmonicon_platform::settings::ActionButtonStyle>,
 ) {
-    if let Some(picked) = crate::settings::ActionButtonStyle::from_localized_label(&loc, &ev.value)
+    if let Some(picked) =
+        harmonicon_platform::settings::ActionButtonStyle::from_localized_label(&loc, &ev.value)
     {
         *style = picked;
     }
@@ -593,7 +596,7 @@ fn sync_zoom_slider_from_ui_scale(
 /// `settings::ColorblindPalette`'s doc comment.
 fn set_colorblind_palette(
     ev: On<ValueChange<bool>>,
-    mut enabled: ResMut<crate::settings::ColorblindPalette>,
+    mut enabled: ResMut<harmonicon_platform::settings::ColorblindPalette>,
 ) {
     enabled.0 = ev.value;
 }

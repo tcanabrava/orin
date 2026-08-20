@@ -274,7 +274,7 @@ fn scan_note_themes(
 /// SMP whole/half note glyphs aren't in any sans font, so those durations show a
 /// word instead — see `dur_symbol`.) Embedded so it's ready at startup.
 fn override_default_font(mut fonts: ResMut<Assets<Font>>) {
-    const BYTES: &[u8] = include_bytes!("../../assets/fonts/FreeSans.otf");
+    const BYTES: &[u8] = include_bytes!("../../../../assets/fonts/FreeSans.otf");
     if let Err(err) = fonts.insert(&Handle::<Font>::default(), Font::from_bytes(BYTES.to_vec())) {
         warn!("Could not install default font: {err}");
     }

@@ -37,7 +37,7 @@ use crate::dialogs::page_chrome::{header_scene, heading_scene, title_column_scen
 // need them too (see `dialogs::page_chrome`).
 pub(crate) use crate::dialogs::page_chrome::spawn_back_button;
 use crate::dialogs::scroll_area::spawn_scroll_area;
-use crate::theme::LoadedTheme;
+use harmonicon_platform::theme::LoadedTheme;
 
 /// Scrollbar track/thumb colors for every menu page's content area — plain
 /// constants, not theme-driven, matching this file's existing

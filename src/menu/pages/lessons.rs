@@ -17,12 +17,12 @@ use crate::lessons::{
     AvailableLessons, LessonContext, LessonEntry, LessonsRescanned, PassCriteria, group_by_unit,
     is_unlocked,
 };
-use crate::localization::LocalizationExt;
 use crate::profile::{PlayerProfile, record_lesson, save_profile};
 use crate::song::SongManifest;
-use crate::theme::LoadedTheme;
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Position, Progression};
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::LoadedTheme;
 
 use crate::app::{
     AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, SelectedSong,

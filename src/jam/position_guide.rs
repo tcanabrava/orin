@@ -26,11 +26,11 @@ use bevy_fluent::Localization;
 use crate::app::{JamPositionCycle, JamScale, SelectedSong};
 use crate::dialogs::circle_of_fifths::spawn_circle_of_fifths;
 use crate::gameplay::AbsoluteBar;
-use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
-use crate::theme::{CircleOfFifthsColors, LoadedTheme};
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::Position;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::{CircleOfFifthsColors, LoadedTheme};
 
 use super::session::JamHoleGuide;
 

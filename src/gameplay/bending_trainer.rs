@@ -32,13 +32,13 @@ use crate::dialogs::button::BaseButtonColor;
 use crate::dialogs::combobox;
 use crate::dialogs::combobox::ComboboxSelect;
 use crate::dialogs::tooltip::Tooltip;
-use crate::localization::LocalizationExt;
 use crate::profile::{DrillRecord, PlayerProfile};
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use harmonicon_core::harmonica::{Harmonica, HoleNotes, hole_notes, richter_harp};
 use harmonicon_core::midi::NOTE_NAMES;
 use harmonicon_core::wav::encode_wav;
+use harmonicon_platform::localization::LocalizationExt;
 
 use std::collections::HashSet;
 

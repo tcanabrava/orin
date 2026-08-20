@@ -2,7 +2,7 @@
 
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
-use harmonicon::assets_management::HarmonicaModelConfig;
+use harmonicon_platform::assets_management::HarmonicaModelConfig;
 
 #[derive(Resource)]
 struct EditorState {

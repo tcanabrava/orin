@@ -14,12 +14,12 @@ use crate::app::GeneratedJamSession;
 use crate::dialogs::combobox;
 use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
 use crate::jam::backing::{Genre, JamGenre, build_generated_manifest};
-use crate::localization::LocalizationExt;
 use crate::song::SongManifest;
-use crate::theme::LoadedTheme;
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Position, Progression};
 use harmonicon_core::midi::NOTE_NAMES;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::LoadedTheme;
 
 use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 use crate::menu::routing::MenuPage;

@@ -107,7 +107,7 @@ const MIN_NOTE_MARKER_FRAC: f32 = 0.003;
 const NOTE_MARKER_BLOW_FALLBACK: Color = Color::srgba(0.50, 0.75, 1.00, 0.9);
 const NOTE_MARKER_DRAW_FALLBACK: Color = Color::srgba(1.00, 0.62, 0.35, 0.9);
 
-/// Alpha applied to whichever blow/draw [`crate::theme::NoteColors`] a note
+/// Alpha applied to whichever blow/draw [`harmonicon_platform::theme::NoteColors`] a note
 /// marker resolves to (the theme colors themselves carry no alpha of their
 /// own) — matches the old hardcoded markers' opacity.
 const NOTE_MARKER_ALPHA: f32 = 0.9;
@@ -281,7 +281,7 @@ pub fn spawn_song_progress(
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(crate::theme::HUD_PANEL_BG),
+            BackgroundColor(harmonicon_platform::theme::HUD_PANEL_BG),
             GlobalZIndex(BAR_Z_INDEX),
             GameplayRoot,
             Button,
@@ -812,7 +812,7 @@ fn sync_phrase_overlay_visibility(
 /// Keeps every note-marker rect's color matching whatever the active theme
 /// (or, with `ColorblindPalette` on, the fixed colorblind pair) currently
 /// uses for blow/draw — the same source `gameplay_2d::spawn_visible_notes`
-/// tints the falling notes from, via the same `crate::theme::
+/// tints the falling notes from, via the same `harmonicon_platform::theme::
 /// effective_note_colors`, so the bar's markers never drift from what the
 /// rest of the screen shows. Runs unconditionally each frame (cheap — a
 /// song has at most a few dozen markers visible at once) rather than
@@ -821,11 +821,12 @@ fn sync_phrase_overlay_visibility(
 /// systems use, which sidesteps needing an `Added`-vs-`Changed` split to
 /// catch both a fresh song's new markers and a live theme/setting change.
 fn sync_note_marker_colors(
-    theme: Res<crate::theme::LoadedTheme>,
-    colorblind: Res<crate::settings::ColorblindPalette>,
+    theme: Res<harmonicon_platform::theme::LoadedTheme>,
+    colorblind: Res<harmonicon_platform::settings::ColorblindPalette>,
     mut markers: Query<(&NoteMarkerRect, &mut BackgroundColor)>,
 ) {
-    let colors = crate::theme::effective_note_colors(theme.note_colors(), colorblind.0);
+    let colors =
+        harmonicon_platform::theme::effective_note_colors(theme.note_colors(), colorblind.0);
     for (marker, mut color) in &mut markers {
         let base = if marker.is_blow {
             colors.blow

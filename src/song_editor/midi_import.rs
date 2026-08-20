@@ -24,7 +24,6 @@ use super::{MIDI_PURPOSE, TICKS_PER_BEAT};
 use crate::dialogs::combobox::{ComboboxSelect, spawn_combobox};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::dialogs::tooltip::Tooltip;
-use crate::localization::LocalizationExt;
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::{TempoPoint, seconds_to_tick};
 use harmonicon_core::midi_file::{
@@ -32,6 +31,7 @@ use harmonicon_core::midi_file::{
     ticks_per_quarter, track_name_of,
 };
 use harmonicon_core::synth::render_pcm;
+use harmonicon_platform::localization::LocalizationExt;
 
 // ── Resource ──────────────────────────────────────────────────────────────────
 

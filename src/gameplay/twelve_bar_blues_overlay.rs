@@ -8,8 +8,8 @@ use crate::{
         SongManifest,
         harmonica::{Progression, progression_bars, semitone},
     },
-    theme::{LoadedTheme, TwelveBarColors},
 };
+use harmonicon_platform::theme::{LoadedTheme, TwelveBarColors};
 
 use super::{BarChanged, CurrentBar, GameplayLogic, Paused};
 

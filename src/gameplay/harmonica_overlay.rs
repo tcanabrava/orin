@@ -14,10 +14,10 @@ use bevy::picking::events::{Click, Pointer};
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
-use crate::localization::LocalizationExt;
 use harmonicon_core::chart::Action;
 use harmonicon_core::harmonica::{Harmonica, HoleNotes, hole_notes, valid_note};
 use harmonicon_core::midi::note_to_midi;
+use harmonicon_platform::localization::LocalizationExt;
 
 use super::ActivePitches;
 

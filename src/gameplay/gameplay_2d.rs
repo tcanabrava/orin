@@ -2,15 +2,14 @@
 
 use std::collections::HashSet;
 
-use crate::{
-    app::SelectedSong, localization::LocalizationExt, song::NoteThemeConfig, song::SongManifest,
-};
+use crate::{app::SelectedSong, song::NoteThemeConfig, song::SongManifest};
 use bevy::asset::AssetPath;
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
 use bevy_fluent::Localization;
 use harmonicon_core::chart::{Action, Modifier};
 use harmonicon_core::harmonica::twelve_bar;
+use harmonicon_platform::localization::LocalizationExt;
 
 use crate::music_score::{self, BravuraFont};
 
@@ -28,7 +27,7 @@ use super::{
     HoleState, LOOKAHEAD, MusicStarted, NoteVisual, ScheduledNote, ScoreText, SongNotes,
     ValidHarpNotes,
 };
-use crate::theme::{LoadedTheme, NoteColors, effective_note_colors};
+use harmonicon_platform::theme::{LoadedTheme, NoteColors, effective_note_colors};
 
 /// Height of the hit line, as a percentage of the play area — the region a
 /// note's leading edge must reach to be judged. Only ever used by the 2D
@@ -58,12 +57,12 @@ pub fn setup(
     mut song_notes: ResMut<SongNotes>,
     mut render_assets: ResMut<NoteRenderAssets>,
     mut shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
-    note_theme: Res<crate::assets_management::SelectedNoteTheme2d>,
-    theme: Res<crate::theme::LoadedTheme>,
+    note_theme: Res<harmonicon_platform::assets_management::SelectedNoteTheme2d>,
+    theme: Res<harmonicon_platform::theme::LoadedTheme>,
     adaptive: Res<AdaptiveDifficulty>,
     loc: Res<Localization>,
     bravura: Option<Res<BravuraFont>>,
-    compact: Res<crate::responsive::CompactLayout>,
+    compact: Res<harmonicon_platform::responsive::CompactLayout>,
 ) {
     let Some(manifest) = manifests.get(&selected.0) else {
         error!("SongManifest not ready when entering Playing state");
@@ -611,9 +610,9 @@ pub fn spawn_visible_notes(
     highway: Query<Entity, With<NoteHighway>>,
     existing: Query<&NoteVisual>,
     mut shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
-    show_numbers: Res<crate::assets_management::ShowNoteNumbers>,
+    show_numbers: Res<harmonicon_platform::assets_management::ShowNoteNumbers>,
     theme: Res<LoadedTheme>,
-    colorblind: Res<crate::settings::ColorblindPalette>,
+    colorblind: Res<harmonicon_platform::settings::ColorblindPalette>,
 ) {
     let (Some(manifest), Ok(highway_entity), Some(head_image), Some(tail_cfg)) = (
         manifests.get(&selected.0),
@@ -987,7 +986,7 @@ pub fn update_note_visuals(
     tails: Query<&MaterialNode<NoteTail2dMaterial>, With<NoteTail>>,
     mut shape_materials: ResMut<Assets<NoteTail2dMaterial>>,
     theme: Res<LoadedTheme>,
-    colorblind: Res<crate::settings::ColorblindPalette>,
+    colorblind: Res<harmonicon_platform::settings::ColorblindPalette>,
 ) {
     let colors = effective_note_colors(theme.note_colors(), colorblind.0);
     for (visual, children) in &notes {
@@ -1196,7 +1195,7 @@ mod tests {
 
     #[test]
     fn note_tint_uses_the_colorblind_palette_when_given_it() {
-        let colors = crate::theme::COLORBLIND_NOTE_COLORS;
+        let colors = harmonicon_platform::theme::COLORBLIND_NOTE_COLORS;
         let (blow_head, _) = note_tint(false, false, true, colors);
         let (r, g, b) = note_rgb(colors, true);
         assert_eq!(blow_head, Color::srgba(r, g, b, 1.0));

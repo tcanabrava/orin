@@ -29,9 +29,9 @@ use super::{LOAD_PURPOSE, SAVE_PURPOSE};
 use crate::dialogs::file_dialog::FileChosen;
 use crate::dialogs::tooltip::Tooltip;
 use crate::lessons::{LessonManifest, PassCriteria, parse_lesson};
-use crate::localization::LocalizationExt;
-use crate::theme::SongEditorColors;
 use bevy_fluent::prelude::Localization;
+use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_platform::theme::SongEditorColors;
 
 // ── Components ────────────────────────────────────────────────────────────────
 // Owned by this module alone (nothing outside it queries these), same
