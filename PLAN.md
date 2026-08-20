@@ -54,6 +54,14 @@ one-line index of what's landed.
   `position_cycle` lesson mechanic that calls a new position every 4 bars,
   reusing the existing `ScaleAdherence` scoring against a moving target
   instead of a fixed one; new lesson `circle-of-fifths-jam`.
+- **Workspace split, first crate** — `crates/harmonicon-core`: the Bevy-free
+  pure logic (harmonica/chart/note_parser, scoring, pitch-MIDI conversion,
+  config_file), ~3.9k lines and 171 tests that now build and run in ~2 s
+  instead of waiting on the engine. Call sites unchanged via re-exports;
+  `build.rs` and `tests/physical_design.rs` now walk every `crates/*/src/`
+  so nothing silently stops being linted. Next crates, bottom-up:
+  `audio_system` → `platform` (localization/settings/profile/theme/
+  assets_management) → `song` → `ui` (dialogs/responsive/music_score).
 - **Acyclic module graph, enforced** — broke every dependency cycle
   (`settings ↔ audio_system`, and the `{gameplay, jam, menu, song_editor}`
   component covering two thirds of the tree) and added

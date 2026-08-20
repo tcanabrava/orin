@@ -42,11 +42,28 @@ Manual testing needs a mic, audio out, and a display.
 
 ## Architecture (load-bearing facts)
 
-- **Crate = lib + bins.** `src/lib.rs` re-exports subsystems so the game and
-  tools share them: `audio_system`, `song`, `gameplay`, `scoring`,
+- **Cargo workspace: `harmonicon` (game lib + bins, at the repo root) plus
+  `crates/harmonicon-core`.** `src/lib.rs` re-exports subsystems so the game
+  and tools share them: `audio_system`, `song`, `gameplay`, `jam`, `scoring`,
   `song_editor`, `lessons`, `menu`, `dialogs`, `music_score`, `responsive`,
   `spectrogram`, `theme`, `localization`, `settings`, `profile`,
   `assets_management`.
+  - **`harmonicon-core` is the Bevy-free pure-logic layer** — `harmonica`,
+    `chart`, `note_parser`, `scoring`, `midi` (pitch conversion),
+    `harmonica_constraints`, `config_file`. Its whole dependency tree is
+    `serde`/`serde_json`, so `cargo test -p harmonicon-core` runs its ~170
+    tests in ~2 s against ~30 s for the workspace. **Keep it Bevy-free**:
+    anything needing `Resource`/`Component`/`App` belongs a level up.
+  - Call sites still use the historical paths — the game re-exports each
+    module where it used to live (`crate::song::chart`,
+    `crate::song::harmonica`, `crate::scoring`, `crate::audio_system::midi`,
+    `crate::config_file`), so moving a module between crates doesn't churn
+    every import.
+  - **The module graph is acyclic and enforced**
+    (`tests/physical_design.rs::no_module_dependency_cycles`, no allowlist —
+    see `docs/physical_design_plan.md`'s level order). A crate boundary makes
+    a cycle *impossible* rather than merely detected, which is the main
+    reason to keep extracting crates.
 - **Audio input path:** cpal callback → mono downmix → 4096-sample chunks
   with 50% overlap (`audio_system/audio_input.rs`) → crossbeam channel →
   `process_audio` in `main.rs` → one FFT per chunk (`pitch_detect::analyze`)
@@ -146,7 +163,8 @@ Manual testing needs a mic, audio out, and a display.
     per-frame update), and `rewind_to(t, sink)` (jumps *and* seeks the sink
     in one call — what `handle_loop_boundary` uses, and what any future A–B
     looping UI or practice-speed feature must use too).
-- **Scoring:** pure functions in top-level `src/scoring.rs` (shared by
+- **Scoring:** pure functions in `harmonicon-core`'s `scoring` (reachable
+  as `crate::scoring`, shared by
   gameplay and the song editor's practice mode), driven by the
   `score_notes` system in `gameplay/judge.rs` (alongside
   `update_active_targets`, `technique_confirmed`, `style_bonus_points`, and
