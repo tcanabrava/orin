@@ -113,26 +113,29 @@ src/
   song_editor/         internal split as today; mod.rs sheds its test blob
 ```
 
-Level order — each level may import only from levels strictly *below* it:
+Level order — now **one crate per level group**, so Cargo enforces it
+rather than convention:
 
 ```
-L0  assets_management / audio_system / config_file / localization /
-    responsive / scoring
-L1  lessons / settings / song / theme
-L2  app / dialogs
-L3  music_score / profile / spectrogram
-L4  gameplay
-L5  jam / song_editor
-L6  menu
-L7  main.rs
+harmonicon-core       pure logic, no Bevy
+harmonicon-audio      capture + pitch detection
+harmonicon-platform   assets, localization, settings, theme, responsive
+harmonicon-song       chart/manifest loading, lessons
+harmonicon-app        state machine, profile
+harmonicon-ui         dialogs, music_score, spectrogram
+harmonicon-gameplay   clock, judging, highways, overlays, bend trainer
+harmonicon-jam        \ both build on gameplay
+harmonicon-editor     /
+harmonicon-menu       pages + routing; registers the editor, reaches jam
+harmonicon (bin)      main.rs + src/bin/*; assets/, build.rs, tests/
 ```
 
-**Peers on the same level may not import each other either.** A level's
-members are unordered, so a sideways import has no defined direction and is
-exactly how a cycle forms — `gameplay ↔ jam` survived for months precisely
-because the earlier wording only forbade importing "back" and said nothing
-about sideways. This list is *derived* from the real graph, not aspirational;
-`no_module_dependency_cycles` is what keeps it true.
+A crate may depend only on ones above it in that list. **Peers may not
+depend on each other** — `jam` and `editor` are siblings and neither
+imports the other. This was prose until the split; a circular crate
+dependency is now simply not expressible, and
+`no_module_dependency_cycles` still catches *module* cycles inside a
+crate, which Rust does allow.
 
 ## Rules to adopt (the part that keeps it fixed)
 
