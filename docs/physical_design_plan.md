@@ -113,10 +113,26 @@ src/
   song_editor/         internal split as today; mod.rs sheds its test blob
 ```
 
-Level order (imports may only point left→right, never back):
-`app.rs` / `scoring.rs` / `song/` / `audio_system/` → `settings` / `profile`
-/ `theme` / `localization` → `lessons/` / `jam/` / `gameplay/` /
-`song_editor/` / `spectrogram/` → `menu/` → `main.rs`.
+Level order — each level may import only from levels strictly *below* it:
+
+```
+L0  assets_management / audio_system / config_file / localization /
+    responsive / scoring
+L1  lessons / settings / song / theme
+L2  app / dialogs
+L3  music_score / profile / spectrogram
+L4  gameplay
+L5  jam / song_editor
+L6  menu
+L7  main.rs
+```
+
+**Peers on the same level may not import each other either.** A level's
+members are unordered, so a sideways import has no defined direction and is
+exactly how a cycle forms — `gameplay ↔ jam` survived for months precisely
+because the earlier wording only forbade importing "back" and said nothing
+about sideways. This list is *derived* from the real graph, not aspirational;
+`no_module_dependency_cycles` is what keeps it true.
 
 ## Rules to adopt (the part that keeps it fixed)
 
@@ -138,10 +154,18 @@ Level order (imports may only point left→right, never back):
    Boy-scout rule: the person touching a file that violates the budget
    splits it *first*, in its own commit, before the feature change.
 6. **Enforce mechanically, in the repo's existing style** (build.rs lint,
-   `locales_define_the_same_keys`): add a `tests/physical_design.rs` that
-   walks `src/`, fails on any file whose non-test line count exceeds the
-   budget, with an explicit, shrinking allowlist for the current offenders.
-   New violations can't land silently; the allowlist is the burndown chart.
+   `locales_define_the_same_keys`): `tests/physical_design.rs` walks
+   `src/` and enforces *both* rules above.
+   - **Size** — fails on any file whose non-test line count exceeds the
+     budget, with an explicit, shrinking allowlist for the current
+     offenders. New violations can't land silently; the allowlist is the
+     burndown chart.
+   - **Acyclicity** — `no_module_dependency_cycles` builds the top-level
+     module graph from every `use crate::X` (comments stripped: several doc
+     comments name modules they don't import) and fails on any strongly
+     connected component. **No allowlist here, deliberately** — the size
+     budget burns down gradually, but the graph started clean and has to
+     stay clean, so there is no exemption mechanism to erode.
 
 ## Phases
 
@@ -215,15 +239,29 @@ vs UI). No dedicated push: rule 5 handles these as they're next touched.
 Listed so the allowlist in the physical-design test can name them with a
 destination.
 
-### Explicitly deferred: workspace/crate split
+### Workspace/crate split — unblocked, in progress
 
-Lakos-style physical design would eventually pull the pure logic
-(`song/`, `scoring.rs`, `audio_system`'s DSP) into a `harmonicon-core`
-crate with no Bevy dependency — better incremental compiles, enforced
-layering. Deferred because it changes every import path at once and its
-payoff is compile time, not analysis time; the in-crate levelization above
-gets ~all the navigability benefit. Revisit if `cargo check` latency
-becomes the complaint.
+Lakos-style physical design pulls the pure logic (`scoring.rs`,
+`song/chart.rs`, `song/harmonica.rs`, `config_file.rs` — all already
+Bevy-free) into a `harmonicon-core` crate, then the rest bottom-up along
+the levels above. This was deferred on the grounds that its payoff is
+compile time rather than analysis time; two things changed that.
+
+First, **Cargo cannot express a circular crate dependency**, so a crate
+boundary doesn't merely *detect* a cycle, it makes one impossible. That
+makes the split the strongest available enforcement of rule 2, not just a
+compile-time optimisation.
+
+Second, the split was blocked anyway: `{gameplay, jam, menu, song_editor}`
+formed one strongly connected component spanning two thirds of the
+codebase. That is now broken (see `no_module_dependency_cycles`), which is
+the hard prerequisite. What remains is mechanical but not small — the
+tooling assumes a single package at the repo root: `build.rs`'s
+`#[derive(Message)]` check unions declarations and registrations across the
+*whole* tree, eight `include_str!`/`include_bytes!` paths are written
+relative to their source file, `tests/physical_design.rs`'s allowlist holds
+`src/…` strings, and `[profile.*]`/`[lints.clippy]` only apply from a
+workspace root.
 
 ## Verification, per commit
 

@@ -54,6 +54,12 @@ one-line index of what's landed.
   `position_cycle` lesson mechanic that calls a new position every 4 bars,
   reusing the existing `ScaleAdherence` scoring against a moving target
   instead of a fixed one; new lesson `circle-of-fifths-jam`.
+- **Acyclic module graph, enforced** — broke every dependency cycle
+  (`settings ↔ audio_system`, and the `{gameplay, jam, menu, song_editor}`
+  component covering two thirds of the tree) and added
+  `no_module_dependency_cycles` to `tests/physical_design.rs` to keep it
+  that way, with no allowlist. Prerequisite for the workspace split, since
+  Cargo cannot express a circular crate dependency.
 - **Physical-design restructuring** — layering fixes, inline tests evicted
   to `tests.rs` files, `gameplay`/`menu`/`lessons` split into their target
   layouts, `jam` gathered into `src/jam/`, a file-size budget test.
