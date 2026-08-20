@@ -1,0 +1,16 @@
+[package]
+name = "harmonicon-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+# Deliberately no Bevy. This is the pure-logic layer — music theory, chart
+# types, scoring maths, MIDI/pitch conversion — so it compiles and tests in
+# a couple of seconds instead of waiting on the engine. Keep it that way:
+# anything needing `Resource`, `Component` or an `App` belongs a level up.
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

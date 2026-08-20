@@ -110,14 +110,33 @@ const LOOKAHEAD_LINES: usize = 6;
 
 fn build() {
     println!("cargo:rerun-if-changed=src");
+    println!("cargo:rerun-if-changed=crates");
 
-    let dir = Path::new("src");
-    if !dir.exists() {
-        return;
+    // Every workspace member, not just this package: the `#[derive(Message)]`
+    // check unions declarations and `.add_message::<T>()` calls across the
+    // *whole* tree, so a type declared in `crates/harmonicon-core` and
+    // registered here has to be seen in one pass. Missing a root would make
+    // both lints silently weaker rather than fail, so an absent `src/` is an
+    // error rather than an early return.
+    let mut roots = vec![std::path::PathBuf::from("src")];
+    if let Ok(entries) = std::fs::read_dir("crates") {
+        for entry in entries.flatten() {
+            let member = entry.path().join("src");
+            if member.is_dir() {
+                roots.push(member);
+            }
+        }
     }
+    assert!(
+        roots[0].is_dir(),
+        "build.rs: no src/ — the source lints would silently pass"
+    );
+    roots.sort();
 
     let mut rs_files: Vec<std::path::PathBuf> = Vec::new();
-    collect_rs_files(dir, &mut rs_files);
+    for dir in &roots {
+        collect_rs_files(dir, &mut rs_files);
+    }
     let sources: Vec<(String, String)> = rs_files
         .iter()
         .map(|p| {

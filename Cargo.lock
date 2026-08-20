@@ -3273,6 +3273,7 @@ dependencies = [
  "fluent_content",
  "getrandom 0.3.4",
  "getrandom 0.4.3",
+ "harmonicon-core",
  "image",
  "jsonschema",
  "midly",
@@ -3288,6 +3289,14 @@ dependencies = [
  "thiserror 2.0.20",
  "unic-langid",
  "winit",
+]
+
+[[package]]
+name = "harmonicon-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

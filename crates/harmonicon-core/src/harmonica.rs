@@ -2,11 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::song::chart::{Action, BendingProfile, Scale};
+use crate::chart::{Action, BendingProfile, Scale};
 
-use crate::song::chart::{ChromaticLayout, DiatonicLayout};
+use crate::chart::{ChromaticLayout, DiatonicLayout};
 
-use crate::audio_system::midi::{NOTE_NAMES, midi_to_freq_hz, midi_to_note, note_to_midi};
+use crate::midi::{NOTE_NAMES, midi_to_freq_hz, midi_to_note, note_to_midi};
 
 use std::collections::HashSet;
 
@@ -176,7 +176,7 @@ fn transpose(s: &str, semis: i32) -> Option<String> {
 /// `pub(crate)` so callers building their own per-technique note lookups
 /// (the harmonica overlay's chromatic diagram) can filter the same way
 /// [`hole_notes`] does, without re-deriving it.
-pub(crate) fn valid_note(s: String) -> Option<String> {
+pub fn valid_note(s: String) -> Option<String> {
     note_to_midi(&s).map(|_| s)
 }
 
@@ -375,7 +375,7 @@ impl Position {
     /// 2, and so on. `dialogs::circle_of_fifths` reads this directly (hence
     /// `pub(crate)`, not private) to know how many steps clockwise from the
     /// reference harp key to highlight for a given position.
-    pub(crate) fn interval_below_jam_key(self) -> i32 {
+    pub fn interval_below_jam_key(self) -> i32 {
         match self {
             Position::First => 0,
             Position::Second => 7,
@@ -545,7 +545,7 @@ pub fn progression_bars(key: &str, progression: Progression) -> [(String, ChordQ
 /// Richter diatonic's key note) — `None` when it can't be determined (an
 /// unusual/incomplete layout). Shared by [`harp_banner`] and the Jam
 /// Session position compass (`jam::position_guide`).
-pub(crate) fn detected_harp_key(harp: &Harmonica) -> Option<String> {
+pub fn detected_harp_key(harp: &Harmonica) -> Option<String> {
     let blow1 = harp.wind_direction_label(1, &Action::Blow);
     let key = blow1
         .trim_end_matches(|c: char| c.is_ascii_digit())

@@ -21,8 +21,8 @@
 //! chart's `Harmonica` (`note_bench`, and eventually the live gameplay
 //! pitch-gate path) apply this as a separate step instead.
 
-use crate::audio_system::midi::note_to_midi;
-use crate::song::harmonica::{Harmonica, hole_notes};
+use crate::harmonica::{Harmonica, hole_notes};
+use crate::midi::note_to_midi;
 
 fn to_midi_u8(note: &str) -> Option<u8> {
     u8::try_from(note_to_midi(note)?).ok()
@@ -112,7 +112,7 @@ pub fn plausible_notes(harp: &Harmonica, candidates: &[u8]) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::song::harmonica::richter_harp;
+    use crate::harmonica::richter_harp;
 
     // Richter C harp reference (see song::harmonica::{C_BLOW, C_DRAW}):
     // hole 1: blow C4=60, draw D4=62, bend C#4=61 (draw-family), overblow D#4=63 (blow-family)

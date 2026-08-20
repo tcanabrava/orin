@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use super::*;
-use crate::song::chart::HarpChart;
+use crate::chart::HarpChart;
 
 fn test_chart() -> HarpChart {
     serde_json::from_str(r#"{

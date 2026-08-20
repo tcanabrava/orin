@@ -37,6 +37,33 @@ const ALLOWLIST: &[&str] = &[
     "src/menu/pages/options.rs",       // split: one section per file
 ];
 
+/// Every workspace member's `src/`: this package's own, plus each crate
+/// under `crates/`. Both rules below must cover the whole tree — a file
+/// that moves into a new crate mustn't silently stop being checked.
+fn source_roots() -> Vec<PathBuf> {
+    let mut roots = vec![PathBuf::from("src")];
+    if let Ok(entries) = std::fs::read_dir("crates") {
+        for entry in entries.flatten() {
+            let member = entry.path().join("src");
+            if member.is_dir() {
+                roots.push(member);
+            }
+        }
+    }
+    roots.sort();
+    roots
+}
+
+/// Every `.rs` file under all of [`source_roots`], sorted for a stable report.
+fn all_rust_files() -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for root in source_roots() {
+        out.extend(rust_files(&root));
+    }
+    out.sort();
+    out
+}
+
 /// Every `.rs` file under `root`, recursively, sorted for a stable report.
 fn rust_files(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
@@ -75,11 +102,13 @@ fn non_test_line_count(contents: &str) -> usize {
 
 #[test]
 fn no_file_exceeds_the_line_budget_unless_allowlisted() {
-    let root = Path::new("src");
-    assert!(root.is_dir(), "missing src/ — run from the crate root");
+    assert!(
+        Path::new("src").is_dir(),
+        "missing src/ — run from the workspace root"
+    );
 
     let mut violations = Vec::new();
-    for path in rust_files(root) {
+    for path in all_rust_files() {
         if path.file_name().and_then(|n| n.to_str()) == Some("tests.rs") {
             continue;
         }
@@ -243,8 +272,11 @@ fn crate_refs(contents: &str) -> Vec<(usize, String)> {
 
 #[test]
 fn no_module_dependency_cycles() {
-    let files = rust_files(Path::new("src"));
-    assert!(!files.is_empty(), "missing src/ — run from the crate root");
+    let files = all_rust_files();
+    assert!(
+        !files.is_empty(),
+        "missing src/ — run from the workspace root"
+    );
 
     // module -> what it imports, each edge remembering one witness so a
     // failure names the line to go delete rather than just the cycle.

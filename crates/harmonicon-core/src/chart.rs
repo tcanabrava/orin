@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::song::harmonica::Harmonica;
+use crate::harmonica::Harmonica;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
