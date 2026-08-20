@@ -34,7 +34,7 @@ const ALLOWLIST: &[&str] = &[
     "crates/harmonicon-gameplay/src/gameplay/bending_trainer.rs", // split: drill logic vs UI
     "crates/harmonicon-gameplay/src/gameplay/gameplay_2d.rs", // split: scene setup vs note spawn/despawn vs tails
     "crates/harmonicon-gameplay/src/gameplay/gameplay_3d.rs", // split: scene setup vs note spawn/despawn vs tails
-    "src/menu/pages/options.rs",                              // split: one section per file
+    "crates/harmonicon-menu/src/menu/pages/options.rs",       // split: one section per file
 ];
 
 /// Every workspace member's `src/`: this package's own, plus each crate

@@ -3275,10 +3275,12 @@ dependencies = [
  "getrandom 0.4.3",
  "harmonicon-app",
  "harmonicon-audio",
+ "harmonicon-bench",
  "harmonicon-core",
  "harmonicon-editor",
  "harmonicon-gameplay",
  "harmonicon-jam",
+ "harmonicon-menu",
  "harmonicon-platform",
  "harmonicon-song",
  "harmonicon-ui",
@@ -3286,7 +3288,6 @@ dependencies = [
  "jsonschema",
  "midly",
  "notify-debouncer-full",
- "pulldown-cmark",
  "rand",
  "regex",
  "rodio",
@@ -3325,6 +3326,22 @@ dependencies = [
  "rodio",
  "rustfft",
  "serde",
+]
+
+[[package]]
+name = "harmonicon-bench"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-gameplay",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "midly",
+ "rand",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3390,6 +3407,30 @@ dependencies = [
  "harmonicon-ui",
  "jsonschema",
  "midly",
+ "rand",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "harmonicon-menu"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_fluent",
+ "dirs",
+ "harmonicon-app",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-editor",
+ "harmonicon-gameplay",
+ "harmonicon-jam",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "harmonicon-ui",
+ "jsonschema",
+ "midly",
+ "pulldown-cmark",
  "rand",
  "serde",
  "serde_json",
