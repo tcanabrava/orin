@@ -10,7 +10,7 @@
 use std::f32::consts::TAU;
 
 /// CD-quality mono output used by every consumer of this synth.
-pub(crate) const SAMPLE_RATE: u32 = 44_100;
+pub const SAMPLE_RATE: u32 = 44_100;
 
 /// The tick grid every [`PhraseNote`] list is scheduled on — one beat split
 /// into this many ticks. Shared vocabulary between the Song Editor's own
@@ -28,7 +28,7 @@ pub(crate) const SAMPLE_RATE: u32 = 44_100;
 /// tick/time conversion (`song::chart::tick_to_seconds`/`seconds_to_tick`)
 /// already takes it as an explicit parameter, so existing bundled charts
 /// (still at `resolution: 4`) need no migration.
-pub(crate) const TICKS_PER_BEAT: usize = 12;
+pub const TICKS_PER_BEAT: usize = 12;
 
 // ── Synthesis parameters ─────────────────────────────────────────────────────
 
@@ -99,7 +99,7 @@ const LCG_INC: u32 = 1_013_904_223;
 /// per-note tag drives both the editor's live preview and any other phrase
 /// this synth renders.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(crate) enum Expr {
+pub enum Expr {
     None,
     Wah(f32),
     Vibrato(f32),
@@ -130,7 +130,7 @@ fn harmonica_wave_muffled(freq: f32, t: f32, phase_mod: f32) -> f32 {
     (TAU * freq * t + phase_mod).sin()
 }
 
-pub(crate) fn envelope(i: usize, dur: usize) -> f32 {
+pub fn envelope(i: usize, dur: usize) -> f32 {
     let attack = (SAMPLE_RATE as f32 * ATTACK_SECS) as usize;
     let release = (SAMPLE_RATE as f32 * RELEASE_SECS) as usize;
     let atk = if attack > 0 && i < attack {
@@ -156,14 +156,14 @@ pub(crate) fn envelope(i: usize, dur: usize) -> f32 {
 /// `gameplay::call_response`). `freq: None` means a hole/technique
 /// combination that can't be produced — silently skipped.
 #[derive(Clone, Copy)]
-pub(crate) struct PhraseNote {
-    pub(crate) tick: usize,
-    pub(crate) len: usize,
-    pub(crate) freq: Option<f32>,
-    pub(crate) expr: Expr,
+pub struct PhraseNote {
+    pub tick: usize,
+    pub len: usize,
+    pub freq: Option<f32>,
+    pub expr: Expr,
 }
 
-pub(crate) fn render_pcm(notes: &[PhraseNote], secs_per_tick: f32) -> Vec<f32> {
+pub fn render_pcm(notes: &[PhraseNote], secs_per_tick: f32) -> Vec<f32> {
     let end_tick = notes.iter().map(|n| n.tick + n.len).max().unwrap_or(0);
     let total =
         ((end_tick as f32 * secs_per_tick + TAIL_SECS) * SAMPLE_RATE as f32).ceil() as usize;

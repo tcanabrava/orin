@@ -46,7 +46,6 @@ mod pitch_map;
 mod ranges;
 mod save_feedback;
 mod scroll;
-mod snap;
 // `pub(crate)`, not private like its neighbours: `gameplay::call_response`
 // shares this module's synth (`PhraseNote`/`render_pcm`/`encode_wav`) for
 // the call-and-response lesson feature's audio cue.
@@ -91,6 +90,7 @@ const HANDLE_W: f32 = 8.0;
 // phrases into the ticks `render_pcm` expects); re-exported here under its
 // established name for this module's own grid/UI math.
 pub(crate) use crate::audio_system::synth::TICKS_PER_BEAT;
+pub(crate) use harmonicon_core::snap;
 const TICK_W: f32 = BEAT_W / TICKS_PER_BEAT as f32;
 // The silence track: a summary row below the hole lanes showing the gap, in
 // seconds, between consecutive notes — see `ranges::silence_gaps`. Shorter

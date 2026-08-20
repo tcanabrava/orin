@@ -10,8 +10,8 @@
 use midly::{MetaMessage, MidiMessage, Smf, Timing, TrackEventKind};
 use std::collections::HashMap;
 
-use crate::audio_system::midi::midi_to_freq_hz;
-use crate::audio_system::synth::{Expr, PhraseNote, TICKS_PER_BEAT, render_pcm};
+use crate::midi::midi_to_freq_hz;
+use crate::synth::{Expr, PhraseNote, TICKS_PER_BEAT, render_pcm};
 
 pub const DEFAULT_TEMPO_US: u32 = 500_000; // 120 BPM if the file specifies none
 
@@ -123,7 +123,7 @@ pub fn extract_notes(track: &[midly::TrackEvent]) -> Vec<RawNote> {
 /// (`secs_per_tick` seconds per tick) — shared by [`render_track_pcm`]
 /// below and `song_editor::midi_import::render_backing_pcm`, so both
 /// convert raw MIDI timing into synth phrase notes exactly the same way.
-pub(crate) fn notes_to_phrase(
+pub fn notes_to_phrase(
     notes: &[RawNote],
     tpq: u32,
     tempo: &[(u64, u32)],
@@ -155,7 +155,7 @@ pub(crate) fn notes_to_phrase(
 /// by the caller and shared across every track's render rather than
 /// re-derived per call. `None` for a track with no notes — nothing to
 /// render, and an all-silent stem would be pointless to play/mute.
-pub(crate) fn render_track_pcm(
+pub fn render_track_pcm(
     track: &[midly::TrackEvent],
     tpq: u32,
     tempo: &[(u64, u32)],
@@ -176,7 +176,7 @@ pub(crate) fn render_track_pcm(
 // same fake MIDI byte streams), hence `pub` and module-level rather than
 // nested in `mod tests` below.
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn meta(delta: u32, kind: MetaMessage<'static>) -> midly::TrackEvent<'static> {
     midly::TrackEvent {
         delta: midly::num::u28::from(delta),
@@ -184,7 +184,7 @@ pub fn meta(delta: u32, kind: MetaMessage<'static>) -> midly::TrackEvent<'static
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn note_on(delta: u32, key: u8, vel: u8) -> midly::TrackEvent<'static> {
     midly::TrackEvent {
         delta: midly::num::u28::from(delta),
@@ -198,7 +198,7 @@ pub fn note_on(delta: u32, key: u8, vel: u8) -> midly::TrackEvent<'static> {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn note_off(delta: u32, key: u8) -> midly::TrackEvent<'static> {
     midly::TrackEvent {
         delta: midly::num::u28::from(delta),
@@ -212,7 +212,7 @@ pub fn note_off(delta: u32, key: u8) -> midly::TrackEvent<'static> {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn smf_bytes(tracks: Vec<Vec<midly::TrackEvent<'static>>>) -> Vec<u8> {
     let smf = Smf {
         header: midly::Header {

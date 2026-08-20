@@ -5,14 +5,14 @@
 //! (`docs/physical_design_plan.md`), not because this is a separate feature
 //! area; `EditorState::snap_mode` is still state.rs's own field.
 
-use super::TICKS_PER_BEAT;
+use crate::synth::TICKS_PER_BEAT;
 
 /// `TICKS_PER_BEAT` (12) is the lowest resolution divisible by both 4
 /// (straight 16ths) and 3 (triplets), so every mode's positions below are
 /// exact integer ticks — no rounding error the way a true triplet would
 /// have had on the old 4-ticks-per-beat grid. See [`SnapMode::grid_points`].
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub(super) enum SnapMode {
+pub enum SnapMode {
     /// Straight 16th notes — ticks 0, 3, 6, 9. What every click already
     /// snapped to before this mode existed (all 4 of `TICKS_PER_BEAT`'s old
     /// positions, just expressed at the new finer resolution).
@@ -29,7 +29,7 @@ pub(super) enum SnapMode {
 impl SnapMode {
     /// The tick offsets (0..`TICKS_PER_BEAT`) this mode allows landing a new
     /// note on, within a single beat.
-    pub(super) fn grid_points(self) -> &'static [usize] {
+    pub fn grid_points(self) -> &'static [usize] {
         match self {
             SnapMode::Sixteenth => &[0, 3, 6, 9],
             SnapMode::Shuffle => &[0, 8],
@@ -37,7 +37,7 @@ impl SnapMode {
         }
     }
 
-    pub(super) fn label_key(self) -> &'static str {
+    pub fn label_key(self) -> &'static str {
         match self {
             SnapMode::Sixteenth => "editor-snap-mode-sixteenth",
             SnapMode::Shuffle => "editor-snap-mode-shuffle",
@@ -45,7 +45,7 @@ impl SnapMode {
         }
     }
 
-    pub(super) fn next(self) -> SnapMode {
+    pub fn next(self) -> SnapMode {
         match self {
             SnapMode::Sixteenth => SnapMode::Shuffle,
             SnapMode::Shuffle => SnapMode::Triplet,
@@ -57,7 +57,7 @@ impl SnapMode {
 /// Snaps a fractional position within a beat (`0.0..1.0`, e.g. a click's
 /// normalized offset across a beat cell) to the nearest tick `mode` allows.
 /// Pure so it's unit-testable without spinning up a grid click.
-pub(super) fn snap_tick_in_beat(frac: f32, mode: SnapMode) -> usize {
+pub fn snap_tick_in_beat(frac: f32, mode: SnapMode) -> usize {
     let raw = frac.clamp(0.0, 0.999) * TICKS_PER_BEAT as f32;
     mode.grid_points()
         .iter()
@@ -78,7 +78,7 @@ pub(super) fn snap_tick_in_beat(frac: f32, mode: SnapMode) -> usize {
 /// one can. `grid_points()` always includes 0, so the current beat's own
 /// points plus the *next* beat's tick 0 are the only candidates that
 /// matter.
-pub(super) fn snap_absolute_tick(tick: usize, mode: SnapMode) -> usize {
+pub fn snap_absolute_tick(tick: usize, mode: SnapMode) -> usize {
     let beat = tick / TICKS_PER_BEAT;
     let mut best = beat * TICKS_PER_BEAT;
     let mut best_dist = tick - best;

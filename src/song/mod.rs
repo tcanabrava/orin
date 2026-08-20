@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pub mod midi;
-
 mod loader;
 
 // The chart/harmonica/note types are pure logic and live in
 // `harmonicon-core`; re-exported here so `crate::song::chart::…` and
 // friends keep resolving unchanged across the tree.
+pub use harmonicon_core::midi_file as midi;
 pub use harmonicon_core::{chart, harmonica, harmonica_constraints, note_parser};
 
 use std::path::PathBuf;

@@ -11,6 +11,13 @@ license = "MIT"
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
+midly = { workspace = true }
+
+# Small MIDI-event constructors used by tests on both sides of the crate
+# boundary. `#[cfg(test)]` only applies when *this* crate is the test target,
+# so the game's tests need them switched on explicitly (as a dev-dependency).
+[features]
+test-support = []
 
 [lints]
 workspace = true

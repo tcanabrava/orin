@@ -16,6 +16,7 @@ members = ["crates/*"]
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+midly = "0.5"
 
 # Shared by every member, so binaries and integration tests are held to the
 # same set as each library.
@@ -38,7 +39,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 jsonschema = { version = "0.49", default-features = false }
 thiserror = "2"
-midly = "0.5"
+midly = { workspace = true }
 figment = { version = "0.10", features = ["json"] }
 dirs = "5"
 pulldown-cmark = { version = "0.12", default-features = false }
@@ -110,3 +111,7 @@ opt-level = 3
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
 getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+
+[dev-dependencies]
+# Switches on the shared MIDI test constructors; see harmonicon-core's Cargo.toml.
+harmonicon-core = { path = "crates/harmonicon-core", features = ["test-support"] }
