@@ -10,10 +10,10 @@
 
 use bevy::prelude::*;
 
-use crate::gameplay::Paused;
-use crate::gameplay::pause_menu::{FinishLessonRequested, apply_quit};
 use harmonicon_app::app::{AppState, ReturnToSongList};
 use harmonicon_app::profile::{PlayerProfile, record_lesson, save_profile};
+use harmonicon_gameplay::gameplay::Paused;
+use harmonicon_gameplay::gameplay::pause_menu::{FinishLessonRequested, apply_quit};
 use harmonicon_song::lessons::{LessonContext, PassCriteria, lesson_passed};
 
 use super::improv::ImprovStats;

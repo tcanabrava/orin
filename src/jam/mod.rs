@@ -16,9 +16,9 @@
 
 use bevy::prelude::*;
 
-use crate::gameplay::Paused;
-use crate::gameplay::plugin::GameplayLogic;
 use harmonicon_app::app::{AppState, GameplayMode, GeneratedJamSession};
+use harmonicon_gameplay::gameplay::Paused;
+use harmonicon_gameplay::gameplay::plugin::GameplayLogic;
 
 pub mod backing;
 pub mod call_response;
@@ -119,7 +119,7 @@ impl Plugin for JamPlugin {
             .add_systems(
                 Update,
                 jam_midi_tracks::apply_midi_track_mute
-                    .after(crate::gameplay::lifecycle::apply_music_volume)
+                    .after(harmonicon_gameplay::gameplay::plugin::MusicVolumeSet)
                     .run_if(
                         in_state(AppState::Playing)
                             .and_then(|m: Res<GameplayMode>| *m == GameplayMode::JamSession),

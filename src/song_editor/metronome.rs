@@ -20,11 +20,11 @@
 use bevy::audio::AudioSource;
 use bevy::prelude::*;
 
-use crate::gameplay::metronome_overlay::{
-    MetronomeFeel, MetronomeMuted, MetronomeSounds, MetronomeTempo, play_click_if_due,
-};
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::PitchRange;
+use harmonicon_gameplay::gameplay::metronome_overlay::{
+    MetronomeFeel, MetronomeMuted, MetronomeSounds, MetronomeTempo, play_click_if_due,
+};
 
 use super::playback::{EditorAudio, PendingMusicSeek, Playhead, secs_per_tick};
 use super::record::{RecordState, start_record};

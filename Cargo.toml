@@ -31,6 +31,7 @@ figment = { version = "0.10", features = ["json"] }
 dirs = "5"
 thiserror = "2"
 notify-debouncer-full = { version = "0.7", features = ["crossbeam-channel"] }
+rand = "0.10"
 image = { version = "0.25", default-features = false, features = ["png"] }
 jsonschema = { version = "0.49", default-features = false }
 
@@ -47,6 +48,7 @@ harmonicon-platform = { path = "crates/harmonicon-platform" }
 harmonicon-song = { path = "crates/harmonicon-song" }
 harmonicon-app = { path = "crates/harmonicon-app" }
 harmonicon-ui = { path = "crates/harmonicon-ui" }
+harmonicon-gameplay = { path = "crates/harmonicon-gameplay" }
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
 # its Play button (and user-supplied .wav background tracks).
 bevy = { workspace = true }
@@ -78,7 +80,7 @@ unic-langid = { workspace = true }
 # Detect the OS UI language so the game starts in the player's locale.
 sys-locale = { workspace = true }
 regex = "1.13.1"
-rand = "0.10"
+rand = { workspace = true }
 clap = { version = "4.6.6", features = ["derive"] }
 # Watches ~/Harmonicon (songs/, themes/) so drop-in content is picked up
 # live instead of needing a manual refresh or restart. crossbeam-channel
@@ -100,6 +102,7 @@ dev = [
     "harmonicon-song/dev",
     "harmonicon-app/dev",
     "harmonicon-ui/dev",
+    "harmonicon-gameplay/dev",
 ]
 # Streams Bevy's built-in ECS/render/asset spans plus this crate's own
 # manual spans (audio capture, pitch detection) to a running Tracy client
@@ -109,7 +112,7 @@ dev = [
 # `cargo run --release --features trace_tracy` with the Tracy UI already
 # listening; see main.rs for the accompanying LogPlugin filter change this
 # needs (spans below `info` are dropped before any backend sees them).
-trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy", "harmonicon-platform/trace_tracy", "harmonicon-song/trace_tracy", "harmonicon-app/trace_tracy", "harmonicon-ui/trace_tracy"]
+trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy", "harmonicon-platform/trace_tracy", "harmonicon-song/trace_tracy", "harmonicon-app/trace_tracy", "harmonicon-ui/trace_tracy", "harmonicon-gameplay/trace_tracy"]
 
 [lints]
 workspace = true

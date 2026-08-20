@@ -12,13 +12,13 @@ use bevy::prelude::*;
 /// it. On X11/Windows/macOS the pixel icon set in `set_window_icon` is used.
 const APP_ID: &str = "io.github.tcanabrava.Harmonicon";
 
-use harmonicon::gameplay::GameplayPlugin;
 use harmonicon::jam::JamPlugin;
 use harmonicon::menu::MenuPlugin;
 use harmonicon_app::app::AppState;
 use harmonicon_app::profile::ProfilePlugin;
 use harmonicon_audio::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
 use harmonicon_audio::{audio_input, pipeline};
+use harmonicon_gameplay::gameplay::GameplayPlugin;
 use harmonicon_platform::assets_management::AssetsManagementPlugin;
 use harmonicon_platform::localization::LocalizationPlugin;
 use harmonicon_platform::responsive::ResponsivePlugin;

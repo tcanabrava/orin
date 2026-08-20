@@ -34,6 +34,14 @@ pub struct GameplayPlugin;
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 struct OverlaySet;
 
+/// The pass that applies the live music-volume setting to every playing
+/// sink. Anything that adjusts an individual sink's volume — jam's
+/// per-track mute, say — orders itself `.after` this set, so a global
+/// volume change can never undo it. Published as a set rather than a
+/// system so the system itself stays private.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MusicVolumeSet;
+
 /// The shared per-frame gameplay logic (clock tick, scoring, loop handling).
 /// Clock readers — note movement, hole/bar/metronome displays — must be ordered
 /// after this set so they never sample a stale clock and stutter.
@@ -181,6 +189,7 @@ impl Plugin for GameplayPlugin {
         .add_systems(
             Update,
             lifecycle::apply_music_volume
+                .in_set(MusicVolumeSet)
                 .run_if(in_state(AppState::Playing).and_then(resource_changed::<AudioSettings>)),
         )
         // The Wait-for-Note toggle lives on the pause overlay itself, so its

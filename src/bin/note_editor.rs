@@ -26,9 +26,9 @@
 use bevy::{
     asset::AssetPath, input::ButtonInput, prelude::*, ui_render::prelude::UiMaterialPlugin,
 };
-use harmonicon::gameplay::note_tail_2d::{NoteTail2dMaterial, tail_params};
-use harmonicon::gameplay::note_visual_2d::{NoteChildConfig, spawn_note_children};
-use harmonicon::gameplay::{HIT_H_PCT, LOOKAHEAD};
+use harmonicon_gameplay::gameplay::note_tail_2d::{NoteTail2dMaterial, tail_params};
+use harmonicon_gameplay::gameplay::note_visual_2d::{NoteChildConfig, spawn_note_children};
+use harmonicon_gameplay::gameplay::{HIT_H_PCT, LOOKAHEAD};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 

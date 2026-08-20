@@ -15,8 +15,8 @@ use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 use bevy_fluent::Localization;
 
-use crate::gameplay::MidiTrackPlayer;
 use harmonicon_audio::AudioSettings;
+use harmonicon_gameplay::gameplay::MidiTrackPlayer;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_song::song::MidiTrackAudio;
 use harmonicon_ui::dialogs::tooltip::Tooltip;

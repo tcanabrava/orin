@@ -23,10 +23,10 @@
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
-use crate::gameplay::AbsoluteBar;
 use harmonicon_app::app::{JamPositionCycle, JamScale, SelectedSong};
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::Position;
+use harmonicon_gameplay::gameplay::AbsoluteBar;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::{CircleOfFifthsColors, LoadedTheme};
 use harmonicon_song::song::SongManifest;

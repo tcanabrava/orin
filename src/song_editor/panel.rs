@@ -200,7 +200,7 @@ pub(super) fn update_undo_redo_buttons(
 /// [`update_undo_redo_buttons`], though here the click is never actually a
 /// no-op (it always flips `MetronomeMuted`).
 pub(super) fn update_metronome_toggle_button(
-    muted: Res<crate::gameplay::metronome_overlay::MetronomeMuted>,
+    muted: Res<harmonicon_gameplay::gameplay::metronome_overlay::MetronomeMuted>,
     theme: Res<LoadedTheme>,
     mut buttons: Query<&mut BaseButtonColor, With<super::ui::MetronomeToggleButton>>,
 ) {

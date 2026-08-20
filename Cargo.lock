@@ -3276,6 +3276,7 @@ dependencies = [
  "harmonicon-app",
  "harmonicon-audio",
  "harmonicon-core",
+ "harmonicon-gameplay",
  "harmonicon-platform",
  "harmonicon-song",
  "harmonicon-ui",
@@ -3329,6 +3330,23 @@ name = "harmonicon-core"
 version = "0.1.0"
 dependencies = [
  "midly",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "harmonicon-gameplay"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_fluent",
+ "harmonicon-app",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "harmonicon-ui",
+ "rand",
  "serde",
  "serde_json",
 ]

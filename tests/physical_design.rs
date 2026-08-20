@@ -31,10 +31,10 @@ const BUDGET: usize = 1000;
 /// fails the build if one lingers past that point.
 const ALLOWLIST: &[&str] = &[
     // Phase 6 targets named explicitly by the plan, with a destination:
-    "src/gameplay/bending_trainer.rs", // split: drill logic vs UI
-    "src/gameplay/gameplay_2d.rs",     // split: scene setup vs note spawn/despawn vs tails
-    "src/gameplay/gameplay_3d.rs",     // split: scene setup vs note spawn/despawn vs tails
-    "src/menu/pages/options.rs",       // split: one section per file
+    "crates/harmonicon-gameplay/src/gameplay/bending_trainer.rs", // split: drill logic vs UI
+    "crates/harmonicon-gameplay/src/gameplay/gameplay_2d.rs", // split: scene setup vs note spawn/despawn vs tails
+    "crates/harmonicon-gameplay/src/gameplay/gameplay_3d.rs", // split: scene setup vs note spawn/despawn vs tails
+    "src/menu/pages/options.rs",                              // split: one section per file
 ];
 
 /// Every workspace member's `src/`: this package's own, plus each crate

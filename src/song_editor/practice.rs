@@ -64,7 +64,7 @@ pub(super) struct PracticeState {
     /// Notes (keyed by schedule index) consumed by the current sustained
     /// breath. An index is released once that note's expected frequency
     /// stops being detected, re-arming it for the next articulation. Shared
-    /// re-attack logic with `crate::gameplay::PitchGate` — see
+    /// re-attack logic with `harmonicon_gameplay::gameplay::PitchGate` — see
     /// `harmonicon_core::scoring::AttackGate`.
     consumed: AttackGate<usize>,
     pub score: u32,

@@ -808,7 +808,7 @@ fn apply_restart(paused: &mut Paused, next_state: &mut NextState<AppState>, targ
     next_state.set(target);
 }
 
-pub(crate) fn apply_quit(
+pub fn apply_quit(
     paused: &mut Paused,
     next_state: &mut NextState<AppState>,
     return_to_song_list: &mut ReturnToSongList,

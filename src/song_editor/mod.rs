@@ -221,7 +221,9 @@ impl Plugin for SongEditor2Plugin {
                                 .or_else(resource_changed::<LoadedTheme>),
                         ),
                         panel::update_metronome_toggle_button.run_if(
-                            resource_changed::<crate::gameplay::metronome_overlay::MetronomeMuted>
+                            resource_changed::<
+                                harmonicon_gameplay::gameplay::metronome_overlay::MetronomeMuted,
+                            >
                                 .or_else(resource_changed::<LoadedTheme>),
                         ),
                     ),

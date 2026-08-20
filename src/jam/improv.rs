@@ -10,7 +10,7 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 
-use crate::gameplay::{AbsoluteBar, ActivePitches, CurrentBar};
+use harmonicon_gameplay::gameplay::{AbsoluteBar, ActivePitches, CurrentBar};
 
 use super::session::JamHoleGuide;
 

@@ -22,10 +22,10 @@ use super::{
     BEAT_W, BEATS_PER_BAR, HANDLE_W, HEADER_H, ROW_H, SILENCE_ROW_H, TICK_W, TICKS_PER_BEAT,
     WAVEFORM_H, WAVEFORM_TOP, grid_height, silence_row_top,
 };
-use crate::gameplay::twelve_bar_blues_overlay::bar_bg;
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::harmonica::Harmonica;
 use harmonicon_core::midi::{freq_to_midi, midi_to_note};
+use harmonicon_gameplay::gameplay::twelve_bar_blues_overlay::bar_bg;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 use std::collections::HashSet;

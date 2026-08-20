@@ -297,7 +297,9 @@ pub(super) fn spawn_mod_panel(
                     style,
                     colors.btn_bg,
                     |_: On<Activate>,
-                     mut muted: ResMut<crate::gameplay::metronome_overlay::MetronomeMuted>| {
+                     mut muted: ResMut<
+                        harmonicon_gameplay::gameplay::metronome_overlay::MetronomeMuted,
+                    >| {
                         muted.0 = !muted.0;
                     },
                 )
