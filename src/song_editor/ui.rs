@@ -332,7 +332,7 @@ pub(super) fn setup(
     theme: Res<LoadedTheme>,
     state: Res<EditorState>,
     audio: Res<AudioSettings>,
-    bravura: Option<Res<crate::music_score::BravuraFont>>,
+    bravura: Option<Res<harmonicon_ui::music_score::BravuraFont>>,
     compact: Res<harmonicon_platform::responsive::CompactLayout>,
     action_button_style: Res<ActionButtonStyle>,
 ) {
@@ -449,7 +449,7 @@ fn spawn_fixed_chrome(
     hole_count: u8,
     editor_root: Entity,
     algorithm: PitchAlgorithm,
-    bravura: Option<&crate::music_score::BravuraFont>,
+    bravura: Option<&harmonicon_ui::music_score::BravuraFont>,
     action_button_style: ActionButtonStyle,
 ) {
     root.spawn((
@@ -585,7 +585,7 @@ fn spawn_fixed_chrome(
             ..default()
         })
         .with_children(|row| {
-            crate::music_score::spawn_music_score(row, bravura);
+            harmonicon_ui::music_score::spawn_music_score(row, bravura);
         });
     }
 

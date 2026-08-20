@@ -12,12 +12,12 @@ use bevy_fluent::Localization;
 
 use super::adaptive_difficulty::AdaptiveDifficulty;
 use super::{GameplayRoot, LoopConfig, MusicPlayer, Paused};
-use crate::app::{AppState, GameplayMode, ReturnToSongList, SelectedSong};
-use crate::dialogs::button;
-use crate::profile::PlayerProfile;
+use harmonicon_app::app::{AppState, GameplayMode, ReturnToSongList, SelectedSong};
+use harmonicon_app::profile::PlayerProfile;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_song::lessons::LessonContext;
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::dialogs::button;
 
 /// Root of the pause overlay; toggled between hidden/visible.
 #[derive(Component, Default, Clone)]
@@ -388,7 +388,7 @@ fn set_selected_phrase_learned(
     {
         record.phrase_learned.insert(section_key.clone(), value);
     }
-    crate::profile::save_profile(profile);
+    harmonicon_app::profile::save_profile(profile);
 }
 
 fn on_phrase_learned_slider_change(
@@ -756,7 +756,7 @@ fn on_restart(
     _: On<Activate>,
     mut paused: ResMut<Paused>,
     mut next_state: ResMut<NextState<AppState>>,
-    generated_jam: Option<Res<crate::app::GeneratedJamSession>>,
+    generated_jam: Option<Res<harmonicon_app::app::GeneratedJamSession>>,
 ) {
     // A generated jam's `SelectedSong` was built by `Assets::add`, not
     // `AssetServer::load` — it has no tracked `LoadState`, so routing

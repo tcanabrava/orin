@@ -16,9 +16,9 @@
 
 use bevy::prelude::*;
 
-use crate::app::{AppState, GameplayMode, GeneratedJamSession};
 use crate::gameplay::Paused;
 use crate::gameplay::plugin::GameplayLogic;
+use harmonicon_app::app::{AppState, GameplayMode, GeneratedJamSession};
 
 pub mod backing;
 pub mod call_response;

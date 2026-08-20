@@ -7,8 +7,7 @@ use bevy_fluent::Localization;
 use harmonicon_core::chart::{Action, HarpChart};
 use harmonicon_core::harmonica::twelve_bar;
 
-use crate::app::SelectedSong;
-use crate::music_score::{self, BravuraFont};
+use harmonicon_app::app::SelectedSong;
 use harmonicon_platform::assets_management::{
     HarmonicaModelConfig, HoleConfig, SelectedHarmonicaModel, SelectedNoteTheme3d, ShowNoteNumbers,
 };
@@ -16,6 +15,7 @@ use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::{LoadedTheme, NoteColors, TwelveBarColors, effective_note_colors};
 use harmonicon_song::song::NoteCube3dConfig;
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::music_score::{self, BravuraFont};
 
 use super::adaptive_difficulty::AdaptiveDifficulty;
 use super::countdown_overlay::spawn_countdown;

@@ -47,8 +47,8 @@ use super::state::{
     toggle_tempo_point,
 };
 use super::{BEAT_W, BEATS_PER_BAR, TICK_W, TICKS_PER_BEAT};
-use crate::dialogs::confirm_dialog::{ConfirmChosen, DialogId, OpenConfirmDialog};
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_ui::dialogs::confirm_dialog::{ConfirmChosen, DialogId, OpenConfirmDialog};
 
 pub(super) const TIMELINE_CONFIRM_PURPOSE: DialogId = DialogId("song_editor_2_timeline_confirm");
 

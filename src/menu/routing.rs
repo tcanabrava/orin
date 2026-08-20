@@ -7,7 +7,7 @@
 
 use bevy::prelude::*;
 
-use crate::app::{
+use harmonicon_app::app::{
     AppState, GameplayMode, ReturnToHelpAbout, ReturnToOptions, ReturnToPlay, ReturnToSongList,
     SelectedSong,
 };
@@ -101,7 +101,7 @@ pub(crate) fn check_loading(
 pub(crate) fn route_menu_entry(
     tour: Option<Res<tutorial::TutorialTour>>,
     lesson: Option<Res<harmonicon_song::lessons::LessonContext>>,
-    generated_jam: Option<Res<crate::app::GeneratedJamSession>>,
+    generated_jam: Option<Res<harmonicon_app::app::GeneratedJamSession>>,
     mut ret_song: ResMut<ReturnToSongList>,
     mut ret_opts: ResMut<ReturnToOptions>,
     mut ret_play: ResMut<ReturnToPlay>,
@@ -130,7 +130,7 @@ pub(crate) fn route_menu_entry(
         ret_song.0 = false;
         next_page.set(MenuPage::Lessons);
     } else if generated_jam.is_some() {
-        commands.remove_resource::<crate::app::GeneratedJamSession>();
+        commands.remove_resource::<harmonicon_app::app::GeneratedJamSession>();
         // Same reasoning as the lesson branch above: a generated jam never
         // went through the song list, so land back on its own setup page
         // instead (ready to jam again with one click).

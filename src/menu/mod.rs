@@ -6,12 +6,12 @@
 
 use bevy::prelude::*;
 
-use crate::app::{
+use crate::jam::backing::JamGenre;
+use crate::song_editor;
+use harmonicon_app::app::{
     AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, ReturnToHelpAbout,
     ReturnToOptions, ReturnToPlay, ReturnToSongList, SelectedArtist, TourActive,
 };
-use crate::jam::backing::JamGenre;
-use crate::song_editor;
 
 mod pages;
 pub(crate) mod routing;
@@ -145,8 +145,10 @@ impl Plugin for MenuPlugin {
             .add_systems(
                 Update,
                 routing::handle_menu_escape
-                    .after(super::dialogs::combobox::close_open_comboboxes_on_escape)
-                    .run_if(in_state(AppState::Menu).and_then(not(crate::app::tour_active))),
+                    .after(harmonicon_ui::dialogs::combobox::ComboboxEscapeSet)
+                    .run_if(
+                        in_state(AppState::Menu).and_then(not(harmonicon_app::app::tour_active)),
+                    ),
             );
     }
 }

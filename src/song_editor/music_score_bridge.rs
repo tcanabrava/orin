@@ -10,7 +10,9 @@
 
 use bevy::prelude::*;
 
-use crate::music_score::{MusicScoreNotes, MusicScorePlayhead, NotationNote, split_at_bar_lines};
+use harmonicon_ui::music_score::{
+    MusicScoreNotes, MusicScorePlayhead, NotationNote, split_at_bar_lines,
+};
 
 use super::TICKS_PER_BEAT;
 use super::playback::{Playhead, build_harp, note_midi};

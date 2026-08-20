@@ -19,12 +19,12 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::dialogs::button;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::dialogs::button;
 
-use crate::app::{AppState, GameplayMode, SelectedSong};
 use crate::menu::routing::MenuPage;
+use harmonicon_app::app::{AppState, GameplayMode, SelectedSong};
 
 /// The bundled song a live-gameplay tour step plays a few seconds of. Long
 /// enough (well over two minutes) that no tour step could ever run it to
@@ -163,7 +163,7 @@ pub(crate) struct TutorialTour {
 pub(crate) struct TutorialOverlayRoot;
 
 /// Mirrors [`TutorialTour`]'s presence into the app-level
-/// `crate::app::TourActive` gate, which every screen the tour drives
+/// `harmonicon_app::app::TourActive` gate, which every screen the tour drives
 /// through reads to suspend its own Escape/pause handling for the duration
 /// (see that resource's doc comment for why the flag lives down in `app`).
 ///
@@ -172,7 +172,7 @@ pub(crate) struct TutorialOverlayRoot;
 /// in two files could drift apart. Mirroring can't.
 pub(crate) fn sync_tour_active(
     tour: Option<Res<TutorialTour>>,
-    mut active: ResMut<crate::app::TourActive>,
+    mut active: ResMut<harmonicon_app::app::TourActive>,
 ) {
     let running = tour.is_some();
     if active.0 != running {

@@ -6,7 +6,7 @@
 
 use bevy::prelude::*;
 
-use crate::app::SelectedSong;
+use harmonicon_app::app::SelectedSong;
 use harmonicon_song::song::SongManifest;
 
 use super::clock::GameplayClock;

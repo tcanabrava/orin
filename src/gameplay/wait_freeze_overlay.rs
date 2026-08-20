@@ -7,7 +7,7 @@
 
 use bevy::prelude::*;
 
-use crate::app::AppState;
+use harmonicon_app::app::AppState;
 
 use super::{GameplayRoot, SongNotes};
 

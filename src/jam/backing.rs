@@ -112,7 +112,7 @@ impl Genre {
 /// for wrapping types from *lower* layers (`song::`) that a higher one
 /// like `jam::` reads — putting `Genre` there would mean `app::` importing
 /// from `jam::`, inverting the "dependencies point downward" rule `jam`
-/// itself already relies on (`jam::session` imports `crate::app::
+/// itself already relies on (`jam::session` imports `harmonicon_app::app::
 /// JamProgression`/`JamScale`, not the other way around).
 ///
 /// Set on Start by `menu::pages::jam_generate` (alongside `JamProgression`/

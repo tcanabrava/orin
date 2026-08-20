@@ -7,7 +7,7 @@
 use bevy::audio::Volume;
 use bevy::prelude::*;
 
-use crate::app::{AppState, GameplayMode, SelectedSong};
+use harmonicon_app::app::{AppState, GameplayMode, SelectedSong};
 use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use harmonicon_song::song::SongManifest;
 

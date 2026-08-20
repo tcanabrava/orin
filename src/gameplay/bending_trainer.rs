@@ -2,7 +2,7 @@
 
 //! Standalone Bending Trainer: the Let's Bend-style harmonica bend diagram +
 //! the metronome, with a directly pickable key and adjustable tempo — no
-//! song. Its own [`AppState::BendingTrainer`](crate::app::AppState), driving
+//! song. Its own [`AppState::BendingTrainer`](harmonicon_app::app::AppState), driving
 //! the decoupled [`MetronomeTempo`] and its own copy of the gameplay clock
 //! so the metronome ticks with nothing loaded. The harp is synthesised for
 //! the chosen key (transposed Richter layout), rebuilding the diagram
@@ -25,20 +25,20 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::app::AppState;
-use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
-use crate::dialogs::button;
-use crate::dialogs::button::BaseButtonColor;
-use crate::dialogs::combobox;
-use crate::dialogs::combobox::ComboboxSelect;
-use crate::dialogs::tooltip::Tooltip;
-use crate::profile::{DrillRecord, PlayerProfile};
+use harmonicon_app::app::AppState;
+use harmonicon_app::profile::{DrillRecord, PlayerProfile};
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use harmonicon_core::harmonica::{Harmonica, HoleNotes, hole_notes, richter_harp};
 use harmonicon_core::midi::NOTE_NAMES;
 use harmonicon_core::wav::encode_wav;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_ui::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
+use harmonicon_ui::dialogs::button;
+use harmonicon_ui::dialogs::button::BaseButtonColor;
+use harmonicon_ui::dialogs::combobox;
+use harmonicon_ui::dialogs::combobox::ComboboxSelect;
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 use std::collections::HashSet;
 
@@ -47,7 +47,7 @@ use super::harmonica_overlay::{
 };
 use super::metronome_overlay::{MetronomeTempo, spawn_metronome};
 use super::{ActivePitches, GameplayClock, GameplayRoot};
-use crate::dialogs::page_chrome::{header_scene, spawn_back_button, title_column_scene};
+use harmonicon_ui::dialogs::page_chrome::{header_scene, spawn_back_button, title_column_scene};
 
 const MIN_BPM: f32 = 40.0;
 const MAX_BPM: f32 = 220.0;
@@ -612,7 +612,7 @@ pub fn setup(
         &loc.msg("back"),
         |_: On<Activate>,
          mut next_state: ResMut<NextState<AppState>>,
-         mut ret_play: ResMut<crate::app::ReturnToPlay>| {
+         mut ret_play: ResMut<harmonicon_app::app::ReturnToPlay>| {
             ret_play.0 = true;
             next_state.set(AppState::Menu);
         },
@@ -952,7 +952,7 @@ pub fn update_pitch_range(key: Res<TrainerKey>, mut pitch_range: ResMut<PitchRan
 pub fn handle_escape(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut ret_play: ResMut<crate::app::ReturnToPlay>,
+    mut ret_play: ResMut<harmonicon_app::app::ReturnToPlay>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         ret_play.0 = true;
@@ -1137,7 +1137,7 @@ pub fn drill_update(
 /// bests (see `profile.rs`'s module doc comment).
 pub fn save_drill_progress(drill: Res<DrillState>, mut profile: ResMut<PlayerProfile>) {
     profile.drills = stats_to_profile(&drill.stats);
-    crate::profile::save_profile(&profile);
+    harmonicon_app::profile::save_profile(&profile);
 }
 
 /// Keeps the "Drill: ..." readout in step with on/off state and streak.

@@ -17,7 +17,7 @@
 //!
 //! Register [`ComboboxPlugin`] once per app. If some other Escape handler
 //! should only fire when no dropdown was open to close, order it
-//! `.after(close_open_comboboxes_on_escape)`.
+//! `.after(ComboboxEscapeSet)`.
 //!
 //! The dropdown list's on-screen position is managed by `bevy::ui_widgets`'
 //! [`Popover`] component, not a fixed `top`/`left` — it opens below the
@@ -83,8 +83,8 @@ pub struct ComboboxValue(pub String);
 /// Links a combobox root to its overlay list and backdrop, so the toggle/
 /// backdrop/item observers can find the rest of their own widget instance
 /// instead of relying on a global singleton query — why multiple comboboxes
-/// can coexist on one page. `pub(crate)` only because it appears in
-/// `close_open_comboboxes_on_escape`'s signature, needed for `.after(...)`
+/// can coexist on one page. Private: callers order against
+/// [`ComboboxEscapeSet`] rather than naming the system, so this stays an
 /// ordering elsewhere.
 ///
 /// `list` is the whole bordered popover panel (what gets shown/hidden);
@@ -590,7 +590,7 @@ fn sync_combobox_visuals(
 /// actually open, so Escape still reaches that other handler otherwise.
 /// `pub(crate)` since only same-crate code orders against it directly
 /// (external callers just add [`ComboboxPlugin`], which registers it).
-pub(crate) fn close_open_comboboxes_on_escape(
+fn close_open_comboboxes_on_escape(
     mut keyboard: ResMut<ButtonInput<KeyCode>>,
     all_links: Query<&ComboboxLinks>,
     mut nodes: Query<&mut Node>,
@@ -627,6 +627,13 @@ pub(crate) fn close_open_comboboxes_on_escape(
 }
 
 /// Registers the always-on reactive systems every combobox needs
+/// The Escape-to-close pass. Another Escape handler that should only fire
+/// when no dropdown was open to close orders itself `.after` this set —
+/// an ordering point the widget publishes deliberately, so its systems and
+/// their parameter types stay private.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ComboboxEscapeSet;
+
 /// (visual sync + Escape-to-close). Add once per app.
 pub struct ComboboxPlugin;
 
@@ -634,7 +641,10 @@ impl Plugin for ComboboxPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (sync_combobox_visuals, close_open_comboboxes_on_escape),
+            (
+                sync_combobox_visuals,
+                close_open_comboboxes_on_escape.in_set(ComboboxEscapeSet),
+            ),
         );
     }
 }

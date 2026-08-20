@@ -535,9 +535,18 @@ impl Plugin for FileDialogsPlugin {
 mod tests {
     use super::*;
 
+    /// `assets/` sits at the workspace root, but cargo runs a test binary
+    /// with the *package* root as its working directory — so these reach
+    /// for it explicitly rather than relying on CWD.
+    fn asset_root(rel: &str) -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join(rel)
+    }
+
     #[test]
     fn list_dir_splits_and_filters() {
-        let (dirs, files) = list_dir(std::path::Path::new("assets/songs"), &["ogg".into()]);
+        let (dirs, files) = list_dir(&asset_root("assets/songs"), &["ogg".into()]);
         assert!(!dirs.is_empty(), "expected artist subfolders");
         assert!(
             files
@@ -548,7 +557,7 @@ mod tests {
 
     #[test]
     fn list_dir_filter_is_case_insensitive_and_skips_hidden() {
-        let (dirs, _) = list_dir(std::path::Path::new("assets"), &[]);
+        let (dirs, _) = list_dir(&asset_root("assets"), &[]);
         assert!(dirs.iter().all(|d| !file_name(d).starts_with('.')));
     }
 }

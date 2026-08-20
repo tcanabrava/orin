@@ -332,20 +332,20 @@ pub fn build_scheduled_notes(
 }
 
 /// Converts scored notes' real-time `time`/`duration` into the beat-based
-/// [`crate::music_score::NotationNote`]s the shared score overlay draws
+/// [`harmonicon_ui::music_score::NotationNote`]s the shared score overlay draws
 /// (that module never touches a tempo map itself — see its own doc
 /// comment). `resolution`/`tempo_map` are the chart's own, so this stays
 /// correct across a mid-song tempo change. A note with no resolvable
 /// `expected_pitch` has nothing to draw and is skipped, same as it already
 /// can never be hit. `beats_per_bar` feeds
-/// [`crate::music_score::split_at_bar_lines`] so a note crossing bar lines
+/// [`harmonicon_ui::music_score::split_at_bar_lines`] so a note crossing bar lines
 /// becomes tied segments instead of one oversized notehead.
 pub fn notes_to_notation(
     notes: &[ScheduledNote],
     resolution: u32,
     tempo_map: &[harmonicon_core::chart::TempoPoint],
     beats_per_bar: f64,
-) -> Vec<crate::music_score::NotationNote> {
+) -> Vec<harmonicon_ui::music_score::NotationNote> {
     notes
         .iter()
         .filter_map(|n| {
@@ -353,7 +353,7 @@ pub fn notes_to_notation(
             let start_tick = harmonicon_core::chart::seconds_to_tick(n.time, resolution, tempo_map);
             let end_tick =
                 harmonicon_core::chart::seconds_to_tick(n.time + n.duration, resolution, tempo_map);
-            Some(crate::music_score::NotationNote {
+            Some(harmonicon_ui::music_score::NotationNote {
                 start_beat: start_tick as f64 / resolution as f64,
                 duration_beats: (end_tick.saturating_sub(start_tick)).max(1) as f64
                     / resolution as f64,
@@ -361,7 +361,7 @@ pub fn notes_to_notation(
                 tied_from_previous: false,
             })
         })
-        .flat_map(|note| crate::music_score::split_at_bar_lines(note, beats_per_bar))
+        .flat_map(|note| harmonicon_ui::music_score::split_at_bar_lines(note, beats_per_bar))
         .collect()
 }
 

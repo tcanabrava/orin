@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use crate::app::{AppState, GameplayMode, JamProgression, SelectedSong};
+use harmonicon_app::app::{AppState, GameplayMode, JamProgression, SelectedSong};
 use harmonicon_platform::theme::{LoadedTheme, TwelveBarColors};
 use harmonicon_song::song::{
     SongManifest,

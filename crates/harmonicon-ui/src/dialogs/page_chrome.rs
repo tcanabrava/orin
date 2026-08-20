@@ -17,7 +17,7 @@ use bevy::ui_widgets::Activate;
 use super::button;
 use super::tooltip::Tooltip;
 
-pub(crate) fn heading_scene(text: String, size: f32, color: Color) -> impl Scene {
+pub fn heading_scene(text: String, size: f32, color: Color) -> impl Scene {
     bsn! {
         Text({text})
         TextFont { font_size: {FontSize::Px(size)} }

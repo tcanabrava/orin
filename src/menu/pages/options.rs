@@ -32,17 +32,17 @@ use harmonicon_platform::localization::LocalizationExt;
 
 use harmonicon_platform::theme::LoadedTheme;
 
-use crate::app::AppState;
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{
     MenuRoot, cleanup_menu, spawn_back_button, spawn_button, spawn_menu_root,
 };
+use harmonicon_app::app::AppState;
 
-use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
-use crate::dialogs::button;
-use crate::dialogs::checkbox;
-use crate::dialogs::combobox;
-use crate::dialogs::tooltip::Tooltip;
+use harmonicon_ui::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
+use harmonicon_ui::dialogs::button;
+use harmonicon_ui::dialogs::checkbox;
+use harmonicon_ui::dialogs::combobox;
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 /// Owns the Options page: builds it on entry, tears it down on exit, and runs
 /// the slider/preview interaction systems while it's open.
@@ -453,7 +453,7 @@ fn zoom_label_text(loc: &Localization, scale: f32) -> String {
 /// as a `0.0..=1.0` fraction — shared by the slider's initial spawn position
 /// and its live fill width.
 fn zoom_fraction(scale: f32) -> f32 {
-    use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+    use harmonicon_ui::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
     ((scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)).clamp(0.0, 1.0)
 }
 
@@ -476,7 +476,7 @@ fn set_zoom(ev: On<ValueChange<f32>>, mut ui_scale: ResMut<UiScale>) {
 /// Arrow Up/Down keyboard shortcut was removed because it conflicted with
 /// Tab/arrow-key UI navigation.
 fn spawn_zoom_slider(commands: &mut Commands, parent: Entity, scale: f32, loc: &Localization) {
-    use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+    use harmonicon_ui::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
 
     let label = String::from(loc.msg("options-zoom"));
     let tooltip = String::from(loc.msg("options-zoom-tooltip"));
@@ -1263,7 +1263,7 @@ mod tests {
 
     #[test]
     fn zoom_fraction_spans_min_to_max() {
-        use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+        use harmonicon_ui::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
         assert_eq!(zoom_fraction(MIN_SCALE), 0.0);
         assert_eq!(zoom_fraction(MAX_SCALE), 1.0);
         assert!((zoom_fraction((MIN_SCALE + MAX_SCALE) / 2.0) - 0.5).abs() < 1e-6);
@@ -1271,7 +1271,7 @@ mod tests {
 
     #[test]
     fn zoom_fraction_clamps_outside_the_range() {
-        use crate::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
+        use harmonicon_ui::dialogs::ui_scale::{MAX_SCALE, MIN_SCALE};
         assert_eq!(zoom_fraction(MIN_SCALE - 5.0), 0.0);
         assert_eq!(zoom_fraction(MAX_SCALE + 5.0), 1.0);
     }

@@ -7,8 +7,8 @@
 
 use bevy::prelude::*;
 
-use crate::app::tour_active;
-use crate::app::{AppState, GameplayMode};
+use harmonicon_app::app::tour_active;
+use harmonicon_app::app::{AppState, GameplayMode};
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::PitchRange;
 

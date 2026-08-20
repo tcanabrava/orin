@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use bevy::prelude::*;
 
-use crate::app::GameplayMode;
+use harmonicon_app::app::GameplayMode;
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::{AudioFrame, PitchInfo, PitchRange};
 use harmonicon_core::chart::Modifier;

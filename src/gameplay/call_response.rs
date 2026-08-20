@@ -19,7 +19,7 @@
 use bevy::audio::{AudioPlayer, AudioSource, PlaybackSettings, Volume};
 use bevy::prelude::*;
 
-use crate::app::SelectedSong;
+use harmonicon_app::app::SelectedSong;
 use harmonicon_audio::AudioSettings;
 use harmonicon_core::chart::{HarpChart, Modifier, TrackItem};
 use harmonicon_core::midi::midi_to_freq_hz;

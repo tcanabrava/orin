@@ -23,14 +23,14 @@
 use bevy::prelude::*;
 use bevy_fluent::Localization;
 
-use crate::app::{JamPositionCycle, JamScale, SelectedSong};
-use crate::dialogs::circle_of_fifths::spawn_circle_of_fifths;
 use crate::gameplay::AbsoluteBar;
+use harmonicon_app::app::{JamPositionCycle, JamScale, SelectedSong};
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::Position;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::{CircleOfFifthsColors, LoadedTheme};
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::dialogs::circle_of_fifths::spawn_circle_of_fifths;
 
 use super::session::JamHoleGuide;
 

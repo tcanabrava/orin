@@ -21,9 +21,6 @@ use super::pitch_map::{map_pitch, suggest_key};
 use super::playback::build_harp;
 use super::state::{EditorState, Expr, GridNote, HarmonicaKind};
 use super::{MIDI_PURPOSE, TICKS_PER_BEAT};
-use crate::dialogs::combobox::{ComboboxSelect, spawn_combobox};
-use crate::dialogs::file_dialog::FileChosen;
-use crate::dialogs::tooltip::Tooltip;
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::{TempoPoint, seconds_to_tick};
 use harmonicon_core::midi_file::{
@@ -32,6 +29,9 @@ use harmonicon_core::midi_file::{
 };
 use harmonicon_core::synth::render_pcm;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_ui::dialogs::combobox::{ComboboxSelect, spawn_combobox};
+use harmonicon_ui::dialogs::file_dialog::FileChosen;
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 // ── Resource ──────────────────────────────────────────────────────────────────
 

@@ -47,7 +47,7 @@ use bevy::prelude::*;
 use bevy::ui::RelativeCursorPosition;
 use bevy::ui_render::prelude::MaterialNode;
 
-use crate::app::AppState;
+use harmonicon_app::app::AppState;
 
 use super::adaptive_difficulty::{AdaptiveDifficulty, PhraseSection};
 use super::pause_menu::SelectedPhraseIndex;

@@ -14,7 +14,7 @@
 
 use bevy::prelude::*;
 
-use crate::app::GameplayMode;
+use harmonicon_app::app::GameplayMode;
 
 use super::notes::{SongNotes, loop_reset_range, wait_freeze_index};
 use super::pause_menu;

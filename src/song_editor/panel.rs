@@ -13,10 +13,10 @@ use super::ui::{
     SnapModeText, StatusMsg, TimelineToolButton, UndoRedoButton,
 };
 use super::undo::UndoHistory;
-use crate::dialogs::button::BaseButtonColor;
 use bevy_fluent::prelude::Localization;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
+use harmonicon_ui::dialogs::button::BaseButtonColor;
 
 /// Whether `kind`'s button should read as "on" for a note carrying `dir`/
 /// `pitch`/`expr` — shared by the selected-note case (an existing

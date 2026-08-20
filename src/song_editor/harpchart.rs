@@ -8,7 +8,6 @@ use super::state::{
     Dir, EditorState, Expr, GridNote, HARP_KEYS, HarmonicaKind, POSITIONS, Pitch, Scroll,
 };
 use super::{LOAD_PURPOSE, MUSIC_PURPOSE, SAVE_PURPOSE, TICKS_PER_BEAT};
-use crate::dialogs::file_dialog::FileChosen;
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::{
     Action, CURRENT_FORMAT_VERSION, Scale, TempoPoint, seconds_to_tick, tick_to_seconds,
@@ -16,6 +15,7 @@ use harmonicon_core::chart::{
 use harmonicon_core::harmonica::{Harmonica, hole_notes};
 use harmonicon_core::midi::{midi_to_note, note_to_midi};
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_ui::dialogs::file_dialog::FileChosen;
 
 // ── Serialisation ────────────────────────────────────────────────────────────
 

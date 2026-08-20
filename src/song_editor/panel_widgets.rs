@@ -19,13 +19,13 @@ use super::ranges::normalize_range;
 use super::state::{EditorState, TimelineDrag, TimelineSelection, TimelineTool};
 use super::timeline::request_confirm;
 use super::ui::{BendDot, ModButton, ModButtonLabel, ModeButton, TimelineToolButton};
-use crate::dialogs::button::make_interactive;
-use crate::dialogs::confirm_dialog::OpenConfirmDialog;
-use crate::dialogs::tooltip::Tooltip;
 use bevy_fluent::prelude::Localization;
 use harmonicon_platform::localization::LocalizedStr;
 use harmonicon_platform::settings::ActionButtonStyle;
 use harmonicon_platform::theme::SongEditorColors;
+use harmonicon_ui::dialogs::button::make_interactive;
+use harmonicon_ui::dialogs::confirm_dialog::OpenConfirmDialog;
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 /// The display text for an action button under `style` — icon alone, icon
 /// beside the label, or the label alone. Shared by every button shape in

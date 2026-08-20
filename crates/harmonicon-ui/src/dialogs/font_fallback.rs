@@ -96,9 +96,9 @@ impl FallbackFonts {
 }
 
 fn load_fallback_fonts(mut fonts: ResMut<Assets<Font>>, mut commands: Commands) {
-    const EMOJI_BYTES: &[u8] = include_bytes!("../../assets/fonts/fallback_emoji.ttf");
-    const SYMBOLS_BYTES: &[u8] = include_bytes!("../../assets/fonts/fallback_symbols.ttf");
-    const ARROWS_BYTES: &[u8] = include_bytes!("../../assets/fonts/fallback_arrows.ttf");
+    const EMOJI_BYTES: &[u8] = include_bytes!("../../../../assets/fonts/fallback_emoji.ttf");
+    const SYMBOLS_BYTES: &[u8] = include_bytes!("../../../../assets/fonts/fallback_symbols.ttf");
+    const ARROWS_BYTES: &[u8] = include_bytes!("../../../../assets/fonts/fallback_arrows.ttf");
     commands.insert_resource(FallbackFonts {
         emoji: fonts.add(Font::from_bytes(EMOJI_BYTES.to_vec())),
         symbols: fonts.add(Font::from_bytes(SYMBOLS_BYTES.to_vec())),

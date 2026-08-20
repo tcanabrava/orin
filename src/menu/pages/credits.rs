@@ -16,8 +16,8 @@ use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use harmonicon_platform::assets_management::SelectedHarmonicaModel;
 use harmonicon_platform::localization::LocalizationExt;
 
-use crate::app::AppState;
 use crate::menu::scene::spawn_back_button;
+use harmonicon_app::app::AppState;
 
 // The credits 3D scene lives on its own render layer so it never touches the
 // gameplay or options-preview layers.
@@ -244,7 +244,7 @@ fn spawn_ui(commands: &mut Commands, loc: &Localization) {
         &loc.msg("credits-back-to-menu"),
         |_: On<Activate>,
          mut next_state: ResMut<NextState<AppState>>,
-         mut ret_help: ResMut<crate::app::ReturnToHelpAbout>| {
+         mut ret_help: ResMut<harmonicon_app::app::ReturnToHelpAbout>| {
             ret_help.0 = true;
             next_state.set(AppState::Menu);
         },
@@ -466,7 +466,7 @@ fn propagate_scene_layers(
 fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut ret_help: ResMut<crate::app::ReturnToHelpAbout>,
+    mut ret_help: ResMut<harmonicon_app::app::ReturnToHelpAbout>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         ret_help.0 = true;

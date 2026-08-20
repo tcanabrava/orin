@@ -24,15 +24,15 @@ use super::ui::{
     MetaFieldText, MidiTrackComboboxSlot, ScaleComboboxSlot, SnapModeText,
 };
 use super::{HEADER_H, MIDI_PURPOSE, MUSIC_PURPOSE, ROW_H, SILENCE_ROW_H, grid_height};
-use crate::dialogs::button::make_interactive;
-use crate::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
-use crate::dialogs::file_dialog::{DialogMode, OpenFileDialog};
-use crate::dialogs::text_input::{TextInputCommitted, spawn_text_input};
-use crate::dialogs::tooltip::Tooltip;
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::Scale;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::SongEditorColors;
+use harmonicon_ui::dialogs::button::make_interactive;
+use harmonicon_ui::dialogs::combobox::{ComboboxSelect, ComboboxValue, spawn_combobox};
+use harmonicon_ui::dialogs::file_dialog::{DialogMode, OpenFileDialog};
+use harmonicon_ui::dialogs::text_input::{TextInputCommitted, spawn_text_input};
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 pub(super) fn spawn_hole_column(
     row: &mut ChildSpawnerCommands,

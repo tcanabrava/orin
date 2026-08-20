@@ -12,14 +12,9 @@
 pub use harmonicon_core::config_file;
 pub use harmonicon_core::scoring;
 
-pub mod app;
-pub mod dialogs;
 pub mod gameplay;
 pub mod jam;
 pub mod menu;
-pub mod music_score;
 pub mod note_bench;
-pub mod profile;
 pub mod song_editor;
-pub mod spectrogram;
 pub mod synthetic_dataset;

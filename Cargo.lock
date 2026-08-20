@@ -3273,10 +3273,12 @@ dependencies = [
  "fluent_content",
  "getrandom 0.3.4",
  "getrandom 0.4.3",
+ "harmonicon-app",
  "harmonicon-audio",
  "harmonicon-core",
  "harmonicon-platform",
  "harmonicon-song",
+ "harmonicon-ui",
  "image",
  "jsonschema",
  "midly",
@@ -3292,6 +3294,21 @@ dependencies = [
  "thiserror 2.0.20",
  "unic-langid",
  "winit",
+]
+
+[[package]]
+name = "harmonicon-app"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "dirs",
+ "figment",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3352,6 +3369,22 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "harmonicon-ui"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_fluent",
+ "dirs",
+ "harmonicon-app",
+ "harmonicon-audio",
+ "harmonicon-core",
+ "harmonicon-platform",
+ "harmonicon-song",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

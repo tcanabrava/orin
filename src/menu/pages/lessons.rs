@@ -10,10 +10,7 @@ use bevy::prelude::*;
 use bevy::ui_widgets::{Activate, ScrollArea};
 use bevy_fluent::Localization;
 
-use crate::dialogs::button;
-use crate::dialogs::circle_of_fifths::spawn_circle_of_fifths;
-use crate::dialogs::tab_bar::{TabSelect, spawn_tab_bar};
-use crate::profile::{PlayerProfile, record_lesson, save_profile};
+use harmonicon_app::profile::{PlayerProfile, record_lesson, save_profile};
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Position, Progression};
 use harmonicon_platform::localization::LocalizationExt;
@@ -23,12 +20,15 @@ use harmonicon_song::lessons::{
     is_unlocked,
 };
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::dialogs::button;
+use harmonicon_ui::dialogs::circle_of_fifths::spawn_circle_of_fifths;
+use harmonicon_ui::dialogs::tab_bar::{TabSelect, spawn_tab_bar};
 
-use crate::app::{
-    AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, SelectedSong,
-};
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root, spawn_menu_root_plain};
+use harmonicon_app::app::{
+    AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, SelectedSong,
+};
 
 /// The lesson the reader page shows — set by the list page's buttons right
 /// before switching to [`MenuPage::LessonReader`].

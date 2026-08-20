@@ -22,13 +22,13 @@ use super::transport::{spawn_file_buttons, spawn_playback_buttons, spawn_record_
 use super::ui::{
     EditModeGroup, ModButton, ModeButton, PlayModeGroup, RecordModeGroup, TimelineToolButton,
 };
-use crate::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
-use crate::dialogs::combobox;
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::pitch_detect::{PitchAlgorithm, PitchRange};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::settings::ActionButtonStyle;
 use harmonicon_platform::theme::SongEditorColors;
+use harmonicon_ui::dialogs::algo_picker::{algo_labels, attach_algo_tooltip, on_algo_selected};
+use harmonicon_ui::dialogs::combobox;
 
 /// The mod panel: a short, fixed global-transport strip (Back / Edit /
 /// Perform / Lock / Save / Load — always the same regardless of mode), then
@@ -78,7 +78,7 @@ pub(super) fn spawn_mod_panel(
                     colors.transport_back,
                     |_: On<Activate>,
                      mut next: ResMut<NextState<AppState>>,
-                     mut ret_play: ResMut<crate::app::ReturnToPlay>| {
+                     mut ret_play: ResMut<harmonicon_app::app::ReturnToPlay>| {
                         ret_play.0 = true;
                         next.set(AppState::Menu);
                     },

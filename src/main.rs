@@ -12,13 +12,11 @@ use bevy::prelude::*;
 /// it. On X11/Windows/macOS the pixel icon set in `set_window_icon` is used.
 const APP_ID: &str = "io.github.tcanabrava.Harmonicon";
 
-use harmonicon::app::AppState;
 use harmonicon::gameplay::GameplayPlugin;
 use harmonicon::jam::JamPlugin;
 use harmonicon::menu::MenuPlugin;
-use harmonicon::music_score::MusicScorePlugin;
-use harmonicon::profile::ProfilePlugin;
-use harmonicon::spectrogram::SpectrogramPlugin;
+use harmonicon_app::app::AppState;
+use harmonicon_app::profile::ProfilePlugin;
 use harmonicon_audio::pitch_detect::{AudioFrame, PitchEvent, PitchRange};
 use harmonicon_audio::{audio_input, pipeline};
 use harmonicon_platform::assets_management::AssetsManagementPlugin;
@@ -28,6 +26,8 @@ use harmonicon_platform::settings::SettingsPlugin;
 use harmonicon_platform::theme::ThemePlugin;
 use harmonicon_song::lessons::LessonsPlugin;
 use harmonicon_song::song::SongPlugin;
+use harmonicon_ui::music_score::MusicScorePlugin;
+use harmonicon_ui::spectrogram::SpectrogramPlugin;
 
 /// A raw debug binary lives under `target/debug`, while the assets remain in
 /// the checkout root. Cargo supplies `CARGO_MANIFEST_DIR` to `cargo run`, but
@@ -142,18 +142,18 @@ fn main() {
         ResponsivePlugin,
     ))
     .add_plugins((
-        harmonicon::dialogs::algo_picker::AlgoPickerPlugin,
-        harmonicon::dialogs::button::ButtonVisualsPlugin,
-        harmonicon::dialogs::checkbox::CheckboxPlugin,
-        harmonicon::dialogs::combobox::ComboboxPlugin,
-        harmonicon::dialogs::confirm_dialog::ConfirmDialogPlugin,
-        harmonicon::dialogs::file_dialog::FileDialogsPlugin,
-        harmonicon::dialogs::font_fallback::FontFallbackPlugin,
-        harmonicon::dialogs::keyboard_nav::KeyboardNavPlugin,
-        harmonicon::dialogs::scroll_area::ScrollAreaPlugin,
-        harmonicon::dialogs::tab_bar::TabBarPlugin,
-        harmonicon::dialogs::text_input::TextInputPlugin,
-        harmonicon::dialogs::tooltip::TooltipPlugin,
+        harmonicon_ui::dialogs::algo_picker::AlgoPickerPlugin,
+        harmonicon_ui::dialogs::button::ButtonVisualsPlugin,
+        harmonicon_ui::dialogs::checkbox::CheckboxPlugin,
+        harmonicon_ui::dialogs::combobox::ComboboxPlugin,
+        harmonicon_ui::dialogs::confirm_dialog::ConfirmDialogPlugin,
+        harmonicon_ui::dialogs::file_dialog::FileDialogsPlugin,
+        harmonicon_ui::dialogs::font_fallback::FontFallbackPlugin,
+        harmonicon_ui::dialogs::keyboard_nav::KeyboardNavPlugin,
+        harmonicon_ui::dialogs::scroll_area::ScrollAreaPlugin,
+        harmonicon_ui::dialogs::tab_bar::TabBarPlugin,
+        harmonicon_ui::dialogs::text_input::TextInputPlugin,
+        harmonicon_ui::dialogs::tooltip::TooltipPlugin,
     ));
 
     app.add_message::<PitchEvent>()

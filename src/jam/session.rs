@@ -17,32 +17,30 @@ use harmonicon_core::harmonica::{
     harp_banner, progression_bars, semitone,
 };
 
-use crate::{
-    app::{JamProgression, JamScale, SelectedSong},
-    dialogs::button,
-    gameplay::{
-        ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
-        MusicPlayer, MusicStarted, resolve_item_time,
-    },
+use crate::gameplay::{
+    ActivePitches, COUNTDOWN, CurrentBar, GameplayClock, GameplayRoot, MidiTrackPlayer,
+    MusicPlayer, MusicStarted, resolve_item_time,
 };
+use harmonicon_app::app::{JamProgression, JamScale, SelectedSong};
 use harmonicon_audio::AudioSettings;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::dialogs::button;
 
 use crate::gameplay::countdown_overlay::spawn_countdown;
 use crate::gameplay::harmonica_overlay::spawn_harmonica_overlay;
 use crate::gameplay::metronome_overlay::spawn_metronome;
 use crate::gameplay::song_progress_overlay::{BAR_HEIGHT, NoteMarker, spawn_song_progress};
 use crate::gameplay::twelve_bar_blues_overlay::{GridConfig, spawn_12_bar_grid};
-use crate::spectrogram::{OscMaterial, SpectrogramStyle, spawn_spectrogram};
+use harmonicon_ui::spectrogram::{OscMaterial, SpectrogramStyle, spawn_spectrogram};
 
 use super::backing::JamGenre;
 use super::improv::classify_note_fit;
 use super::midi_tracks::{JamMidiMute, spawn_midi_track_row};
 use super::position_guide::spawn_position_compass;
 use super::rhythm_guide::spawn_rhythm_guide;
-use crate::app::GeneratedJamSession;
+use harmonicon_app::app::GeneratedJamSession;
 
 /// Free-play screen, two columns: left has everything but the harmonica
 /// itself (title, loop toggle, 12-bar chart, metronome, spectrogram); right
@@ -271,7 +269,11 @@ pub fn setup(
                         if generated.is_some() {
                             spawn_rhythm_guide(left, &loc, jam_genre.0);
                         }
-                        crate::spectrogram::spawn_style_toggle(left, *spectrogram_style, &loc);
+                        harmonicon_ui::spectrogram::spawn_style_toggle(
+                            left,
+                            *spectrogram_style,
+                            &loc,
+                        );
                         left.spawn(Node {
                             width: Val::Percent(100.0),
                             flex_grow: 1.0,

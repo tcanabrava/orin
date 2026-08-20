@@ -55,12 +55,12 @@ use super::state::{
     pitch_compatible, pitch_forced_dir,
 };
 use super::ui::{ExpectedNotesGroup, GridContent, ModButton, ModeButton};
-use crate::app::AppState;
-use crate::dialogs::tooltip::Tooltip;
 use bevy_fluent::prelude::Localization;
+use harmonicon_app::app::AppState;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::settings::ActionButtonStyle;
 use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 // ── EditorState accessors ────────────────────────────────────────────────────
 //
@@ -324,7 +324,7 @@ fn spawn_expected_mod_button(
         BorderColor::all(Color::srgb(0.30, 0.30, 0.40)),
         Tooltip(String::from(tooltip)),
     ));
-    crate::dialogs::button::make_interactive(&mut ec, colors.btn_bg);
+    harmonicon_ui::dialogs::button::make_interactive(&mut ec, colors.btn_bg);
     ec.observe(move |_: On<Activate>, mut state: ResMut<EditorState>| {
         apply_expected_modifier(&mut state, kind);
     })

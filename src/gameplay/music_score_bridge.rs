@@ -10,10 +10,10 @@
 
 use bevy::prelude::*;
 
-use crate::app::{AppState, GameplayMode, SelectedSong};
-use crate::music_score::{MusicScoreNotes, MusicScorePlayhead};
+use harmonicon_app::app::{AppState, GameplayMode, SelectedSong};
 use harmonicon_core::chart::seconds_to_tick;
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::music_score::{MusicScoreNotes, MusicScorePlayhead};
 
 use super::{GameplayClock, GameplayLogic, SongNotes, notes_to_notation};
 

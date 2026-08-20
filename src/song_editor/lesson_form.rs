@@ -26,12 +26,12 @@ use bevy::ui_widgets::Button as WidgetButton;
 
 use super::state::{ContentKind, EditorState, Field, LESSON_FIELDS, Scroll};
 use super::{LOAD_PURPOSE, SAVE_PURPOSE};
-use crate::dialogs::file_dialog::FileChosen;
-use crate::dialogs::tooltip::Tooltip;
 use bevy_fluent::prelude::Localization;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::SongEditorColors;
 use harmonicon_song::lessons::{LessonManifest, PassCriteria, parse_lesson};
+use harmonicon_ui::dialogs::file_dialog::FileChosen;
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 // ── Components ────────────────────────────────────────────────────────────────
 // Owned by this module alone (nothing outside it queries these), same

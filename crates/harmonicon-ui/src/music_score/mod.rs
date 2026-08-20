@@ -419,7 +419,7 @@ impl Plugin for MusicScorePlugin {
 }
 
 fn load_bravura_font(mut fonts: ResMut<Assets<Font>>, mut commands: Commands) {
-    const BYTES: &[u8] = include_bytes!("../../assets/fonts/Bravura.otf");
+    const BYTES: &[u8] = include_bytes!("../../../../assets/fonts/Bravura.otf");
     commands.insert_resource(BravuraFont(fonts.add(Font::from_bytes(BYTES.to_vec()))));
 }
 

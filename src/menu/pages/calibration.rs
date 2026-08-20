@@ -29,12 +29,12 @@ use bevy::{
 };
 use bevy_fluent::Localization;
 
-use crate::dialogs::button;
 use harmonicon_audio::AudioSettings;
 use harmonicon_audio::pitch_detect::PitchEvent;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_ui::dialogs::button;
 
-use crate::app::{AppState, ReturnToOptions};
+use harmonicon_app::app::{AppState, ReturnToOptions};
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

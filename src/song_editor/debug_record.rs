@@ -38,10 +38,8 @@ use bevy::ui::Checked;
 use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::{Checkbox, checkbox_self_update};
 
-use crate::app::AppState;
-use crate::dialogs::file_dialog::FileChosen;
-use crate::dialogs::tooltip::Tooltip;
 use bevy_fluent::prelude::Localization;
+use harmonicon_app::app::AppState;
 use harmonicon_audio::audio_input::{CHUNK_SIZE, HOP_SIZE};
 use harmonicon_audio::pipeline::RawCaptureBuffer;
 use harmonicon_audio::pitch_detect::WINDOW_FUNCTION;
@@ -50,6 +48,8 @@ use harmonicon_core::wav::{encode_wav, resample_linear};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::settings::ActionButtonStyle;
 use harmonicon_platform::theme::SongEditorColors;
+use harmonicon_ui::dialogs::file_dialog::FileChosen;
+use harmonicon_ui::dialogs::tooltip::Tooltip;
 
 use super::HOLE_COL_W;
 use super::SAVE_PURPOSE;

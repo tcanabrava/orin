@@ -15,8 +15,8 @@
 
 use bevy::prelude::*;
 
-use crate::app::AppState;
-use crate::app::tour_active;
+use harmonicon_app::app::AppState;
+use harmonicon_app::app::tour_active;
 use harmonicon_platform::theme::LoadedTheme;
 
 mod audition;
@@ -62,7 +62,7 @@ mod waveform;
 
 // ── Dialog purposes ───────────────────────────────────────────────────────────
 
-use crate::dialogs::file_dialog::DialogId;
+use harmonicon_ui::dialogs::file_dialog::DialogId;
 
 const SAVE_PURPOSE: DialogId = DialogId("song_editor_2_save");
 const LOAD_PURPOSE: DialogId = DialogId("song_editor_2_load");

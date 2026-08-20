@@ -10,20 +10,20 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::app::GeneratedJamSession;
-use crate::dialogs::combobox;
-use crate::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
 use crate::jam::backing::{Genre, JamGenre, build_generated_manifest};
+use harmonicon_app::app::GeneratedJamSession;
 use harmonicon_core::chart::Scale;
 use harmonicon_core::harmonica::{Position, Progression};
 use harmonicon_core::midi::NOTE_NAMES;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
 use harmonicon_song::song::SongManifest;
+use harmonicon_ui::dialogs::combobox;
+use harmonicon_ui::dialogs::text_input::{NumericInputCommitted, spawn_numeric_input};
 
-use crate::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{spawn_back_button, spawn_button, spawn_menu_root_plain};
+use harmonicon_app::app::{AppState, GameplayMode, JamProgression, JamScale, SelectedSong};
 
 const MIN_BPM: f32 = 60.0;
 const MAX_BPM: f32 = 160.0;

@@ -20,10 +20,10 @@ use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 use bevy_fluent::Localization;
 
-use crate::dialogs::button;
 use harmonicon_platform::assets_management::{AvailableThemes, SelectedTheme, ThemesRescanned};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::{LoadedTheme, theme_source_prefix};
+use harmonicon_ui::dialogs::button;
 
 use crate::menu::routing::MenuPage;
 use crate::menu::scene::{cleanup_menu, spawn_back_button, spawn_menu_root};

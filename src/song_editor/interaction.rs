@@ -25,8 +25,8 @@ use super::ui::{
     ModButton, MoveGhost, NoteView,
 };
 use super::{AppState, BEAT_W, HEADER_H, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
-use crate::dialogs::file_dialog::FileDialog;
 use harmonicon_platform::theme::LoadedTheme;
+use harmonicon_ui::dialogs::file_dialog::FileDialog;
 
 // ── Note interaction ─────────────────────────────────────────────────────────
 
@@ -368,7 +368,7 @@ pub(super) fn grid_keys(
     mut sel: ResMut<TimelineSelection>,
     file_dialog: Res<FileDialog>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut ret_play: ResMut<crate::app::ReturnToPlay>,
+    mut ret_play: ResMut<harmonicon_app::app::ReturnToPlay>,
     focus: Res<InputFocus>,
     fields: Query<(), With<EditableText>>,
 ) {

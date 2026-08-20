@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use crate::app::{GameplayMode, SelectedArtist};
+use harmonicon_app::app::{GameplayMode, SelectedArtist};
 use harmonicon_platform::assets_management::{AvailableSongs, SongsRescanned};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;

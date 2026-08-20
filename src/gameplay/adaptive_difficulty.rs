@@ -16,8 +16,8 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-use crate::app::SelectedSong;
-use crate::profile::PlayerProfile;
+use harmonicon_app::app::SelectedSong;
+use harmonicon_app::profile::PlayerProfile;
 use harmonicon_core::chart::{Timing, TrackItem};
 use harmonicon_song::song::SongManifest;
 

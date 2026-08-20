@@ -30,14 +30,14 @@ use bevy::input_focus::tab_navigation::TabGroup;
 use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 
-use crate::dialogs::button;
-use crate::dialogs::page_chrome::{header_scene, heading_scene, title_column_scene};
+use harmonicon_ui::dialogs::button;
+use harmonicon_ui::dialogs::page_chrome::{header_scene, heading_scene, title_column_scene};
 // Re-exported so this module stays the one place a *menu page* reaches for
 // page chrome; the definitions live in `dialogs` because non-menu screens
 // need them too (see `dialogs::page_chrome`).
-pub(crate) use crate::dialogs::page_chrome::spawn_back_button;
-use crate::dialogs::scroll_area::spawn_scroll_area;
 use harmonicon_platform::theme::LoadedTheme;
+pub(crate) use harmonicon_ui::dialogs::page_chrome::spawn_back_button;
+use harmonicon_ui::dialogs::scroll_area::spawn_scroll_area;
 
 /// Scrollbar track/thumb colors for every menu page's content area — plain
 /// constants, not theme-driven, matching this file's existing
