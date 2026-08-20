@@ -162,15 +162,22 @@ pub(crate) struct TutorialTour {
 #[derive(Component)]
 pub(crate) struct TutorialOverlayRoot;
 
-/// True while a tour is running — the gate every screen the tour can drive
-/// through (gameplay's pause menu, the Bending Trainer, the Song Editor,
-/// and `menu::mod`'s own page-back handler) uses to suspend its own
-/// Escape/pause handling for the duration, so the tour's click-blocking
-/// overlay isn't the only thing standing between the player and
-/// accidentally steering the tour off course. "Skip Tutorial" (in the
-/// overlay itself) is the one deliberate way out.
-pub(crate) fn tour_active(tour: Option<Res<TutorialTour>>) -> bool {
-    tour.is_some()
+/// Mirrors [`TutorialTour`]'s presence into the app-level
+/// `crate::app::TourActive` gate, which every screen the tour drives
+/// through reads to suspend its own Escape/pause handling for the duration
+/// (see that resource's doc comment for why the flag lives down in `app`).
+///
+/// Derived every frame rather than set by hand: the tour is inserted in
+/// this file but removed in `menu::routing`, so two hand-maintained writes
+/// in two files could drift apart. Mirroring can't.
+pub(crate) fn sync_tour_active(
+    tour: Option<Res<TutorialTour>>,
+    mut active: ResMut<crate::app::TourActive>,
+) {
+    let running = tour.is_some();
+    if active.0 != running {
+        active.0 = running;
+    }
 }
 
 /// The `MenuPage` `route_menu_entry` should land on for the tour's current

@@ -4,9 +4,9 @@
 //! gameplay mode selector ([`GameplayMode`]), the currently-selected
 //! song/artist, and the cross-state `ReturnTo*` routing flags.
 //!
-//! Pure data, no systems — every feature (gameplay, song editor,
-//! spectrogram, profile, menu) shares this level; nothing here imports a
-//! feature.
+//! Pure data plus the trivial run conditions over it — every feature
+//! (gameplay, song editor, spectrogram, profile, menu) shares this level;
+//! nothing here imports a feature.
 
 use bevy::prelude::*;
 
@@ -78,6 +78,26 @@ pub struct JamScale(pub Scale);
 /// can't leak into an ordinary jam.
 #[derive(Resource, Default)]
 pub struct JamPositionCycle(pub bool);
+
+/// Set while the guided tutorial tour (`menu::pages::tutorial`) is driving
+/// the app automatically. Every screen the tour passes through
+/// (`gameplay::pause_menu`, the Bending Trainer, the Song Editor's grid
+/// keys) gates its own Escape/pause handling on this, so the tour's
+/// click-blocking overlay isn't the only thing keeping the player from
+/// steering it off course — "Skip Tutorial" is the one deliberate way out.
+///
+/// The tour's real state (`TutorialTour`: step, timer, return page) stays in
+/// `menu`, which is the only writer; this flag is *derived* from it every
+/// frame by `menu::pages::tutorial::sync_tour_active`. It lives down here
+/// because `gameplay` and `song_editor` sit below `menu` and may not import
+/// upward (`docs/physical_design_plan.md` rule 2).
+#[derive(Resource, Default)]
+pub struct TourActive(pub bool);
+
+/// True while a guided tour is running — see [`TourActive`].
+pub fn tour_active(tour: Res<TourActive>) -> bool {
+    tour.0
+}
 
 // ── Selection resources ───────────────────────────────────────────────────────
 

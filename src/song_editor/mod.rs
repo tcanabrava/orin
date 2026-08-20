@@ -16,7 +16,7 @@
 use bevy::prelude::*;
 
 use crate::app::AppState;
-use crate::menu::tutorial::tour_active;
+use crate::app::tour_active;
 use crate::theme::LoadedTheme;
 
 mod audition;

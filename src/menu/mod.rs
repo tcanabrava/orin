@@ -8,7 +8,7 @@ use bevy::prelude::*;
 
 use crate::app::{
     AppState, GameplayMode, JamPositionCycle, JamProgression, JamScale, ReturnToHelpAbout,
-    ReturnToOptions, ReturnToPlay, ReturnToSongList, SelectedArtist,
+    ReturnToOptions, ReturnToPlay, ReturnToSongList, SelectedArtist, TourActive,
 };
 use crate::jam::backing::JamGenre;
 use crate::song_editor;
@@ -40,6 +40,7 @@ impl Plugin for MenuPlugin {
             .init_resource::<ReturnToOptions>()
             .init_resource::<ReturnToPlay>()
             .init_resource::<ReturnToHelpAbout>()
+            .init_resource::<TourActive>()
             // The Options, Calibration, Credits, and Theme pages own their own lifecycles.
             .add_plugins(pages::options::OptionsPlugin)
             .add_plugins(pages::calibration::CalibrationPlugin)
@@ -129,6 +130,7 @@ impl Plugin for MenuPlugin {
             .add_systems(
                 Update,
                 (
+                    tutorial::sync_tour_active,
                     tutorial::advance_tutorial_tour,
                     tutorial::sync_tutorial_overlay,
                 )
@@ -144,7 +146,7 @@ impl Plugin for MenuPlugin {
                 Update,
                 routing::handle_menu_escape
                     .after(super::dialogs::combobox::close_open_comboboxes_on_escape)
-                    .run_if(in_state(AppState::Menu).and_then(not(tutorial::tour_active))),
+                    .run_if(in_state(AppState::Menu).and_then(not(crate::app::tour_active))),
             );
     }
 }

@@ -47,7 +47,7 @@ use super::harmonica_overlay::{
 };
 use super::metronome_overlay::{MetronomeTempo, spawn_metronome};
 use super::{ActivePitches, GameplayClock, GameplayRoot};
-use crate::menu::scene::{header_scene, spawn_back_button, title_column_scene};
+use crate::dialogs::page_chrome::{header_scene, spawn_back_button, title_column_scene};
 
 const MIN_BPM: f32 = 40.0;
 const MAX_BPM: f32 = 220.0;
