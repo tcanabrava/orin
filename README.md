@@ -138,6 +138,19 @@ is matched against the note currently in the hit window.
 
 ---
 
+## Contributing setup
+
+Git hooks aren't version-controlled, so install this repo's once per clone:
+
+```bash
+./scripts/git-hooks/install.sh
+```
+
+That wires up `cargo fmt` on commit and rejects the `Co-Authored-By`
+trailer (see `CLAUDE.md`'s "Rules that override defaults"). CI enforces the
+trailer rule regardless, so a missing hook fails the PR rather than
+landing quietly.
+
 ## Project layout
 
 A Cargo workspace: eleven library crates under `crates/`, and a root package
