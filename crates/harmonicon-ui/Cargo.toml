@@ -3,13 +3,14 @@ name = "harmonicon-ui"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+publish = false
 
 [dependencies]
-harmonicon-core = { path = "../harmonicon-core" }
-harmonicon-audio = { path = "../harmonicon-audio" }
-harmonicon-platform = { path = "../harmonicon-platform" }
-harmonicon-song = { path = "../harmonicon-song" }
-harmonicon-app = { path = "../harmonicon-app" }
+harmonicon-core = { path = "../harmonicon-core", version = "*" }
+harmonicon-audio = { path = "../harmonicon-audio", version = "*" }
+harmonicon-platform = { path = "../harmonicon-platform", version = "*" }
+harmonicon-song = { path = "../harmonicon-song", version = "*" }
+harmonicon-app = { path = "../harmonicon-app", version = "*" }
 bevy_fluent = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

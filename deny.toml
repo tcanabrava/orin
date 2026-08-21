@@ -38,6 +38,10 @@ unmaintained = "workspace"
 # none ours to fix, so this only warns.
 multiple-versions = "warn"
 wildcards = "deny"
+allow-wildcard-paths = true 
+
+[graph]
+exclude-unpublished = true
 
 [sources]
 unknown-registry = "deny"

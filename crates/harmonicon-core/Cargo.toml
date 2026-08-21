@@ -3,6 +3,7 @@ name = "harmonicon-core"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+publish = false
 
 # Deliberately no Bevy. This is the pure-logic layer — music theory, chart
 # types, scoring maths, MIDI/pitch conversion — so it compiles and tests in

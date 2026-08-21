@@ -3,12 +3,13 @@ name = "harmonicon-audio"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+publish = false
 
 # Microphone capture and pitch detection. Sits directly above
 # harmonicon-core (which owns the pure pitch/MIDI maths) and below
 # everything else — it knows nothing about songs, scoring or UI.
 [dependencies]
-harmonicon-core = { path = "../harmonicon-core" }
+harmonicon-core = { path = "../harmonicon-core", version = "*" }
 serde = { workspace = true }
 bevy = { workspace = true }
 cpal = { workspace = true }

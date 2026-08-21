@@ -3,10 +3,11 @@ name = "harmonicon-platform"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+publish = false
 
 [dependencies]
-harmonicon-core = { path = "../harmonicon-core" }
-harmonicon-audio = { path = "../harmonicon-audio" }
+harmonicon-core = { path = "../harmonicon-core", version = "*" }
+harmonicon-audio = { path = "../harmonicon-audio", version = "*" }
 bevy = { workspace = true }
 bevy_fluent = { workspace = true }
 fluent = { workspace = true }

@@ -3,12 +3,13 @@ name = "harmonicon-app"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+publish = false
 
 [dependencies]
-harmonicon-core = { path = "../harmonicon-core" }
-harmonicon-audio = { path = "../harmonicon-audio" }
-harmonicon-platform = { path = "../harmonicon-platform" }
-harmonicon-song = { path = "../harmonicon-song" }
+harmonicon-core = { path = "../harmonicon-core", version = "*" }
+harmonicon-audio = { path = "../harmonicon-audio", version = "*" }
+harmonicon-platform = { path = "../harmonicon-platform", version = "*" }
+harmonicon-song = { path = "../harmonicon-song", version = "*" }
 figment = { workspace = true }
 dirs = { workspace = true }
 serde = { workspace = true }

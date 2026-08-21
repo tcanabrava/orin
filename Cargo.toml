@@ -7,6 +7,7 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT"
 default-run = "harmonicon"
+publish = false
 
 # The root package is also the workspace root: members are added under
 # crates/ as the pure-logic layers get extracted (see
@@ -46,17 +47,17 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [dependencies]
-harmonicon-core = { path = "crates/harmonicon-core" }
-harmonicon-audio = { path = "crates/harmonicon-audio" }
-harmonicon-platform = { path = "crates/harmonicon-platform" }
-harmonicon-song = { path = "crates/harmonicon-song" }
-harmonicon-app = { path = "crates/harmonicon-app" }
-harmonicon-ui = { path = "crates/harmonicon-ui" }
-harmonicon-gameplay = { path = "crates/harmonicon-gameplay" }
-harmonicon-jam = { path = "crates/harmonicon-jam" }
-harmonicon-editor = { path = "crates/harmonicon-editor" }
-harmonicon-menu = { path = "crates/harmonicon-menu" }
-harmonicon-bench = { path = "crates/harmonicon-bench" }
+harmonicon-core = { path = "crates/harmonicon-core", version = "*"}
+harmonicon-audio = { path = "crates/harmonicon-audio", version = "*" }
+harmonicon-platform = { path = "crates/harmonicon-platform", version = "*" }
+harmonicon-song = { path = "crates/harmonicon-song", version = "*" }
+harmonicon-app = { path = "crates/harmonicon-app", version = "*" }
+harmonicon-ui = { path = "crates/harmonicon-ui", version = "*" }
+harmonicon-gameplay = { path = "crates/harmonicon-gameplay", version = "*" }
+harmonicon-jam = { path = "crates/harmonicon-jam", version = "*" }
+harmonicon-editor = { path = "crates/harmonicon-editor", version = "*" }
+harmonicon-menu = { path = "crates/harmonicon-menu", version = "*" }
+harmonicon-bench = { path = "crates/harmonicon-bench", version = "*" }
 # `wav` lets bevy_audio decode the in-memory WAV the song editor synthesises for
 # its Play button (and user-supplied .wav background tracks).
 bevy = { workspace = true }
