@@ -29,3 +29,10 @@ trace_tracy = ["bevy/trace_tracy", "harmonicon-gameplay/trace_tracy"]
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# midi_import's tests build SMF fixtures with core's shared constructors,
+# which are feature-gated (see harmonicon-core's Cargo.toml). The root
+# package enabling it is not enough — `cargo test -p harmonicon-editor`
+# resolves this crate's own dev-dependencies, not the root's.
+harmonicon-core = { path = "../harmonicon-core", features = ["test-support"] }

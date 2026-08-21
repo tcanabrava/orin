@@ -30,206 +30,12 @@ use bevy::prelude::*;
 use bevy::ui::ComputedNode;
 use bevy::ui_render::prelude::MaterialNode;
 
-use harmonicon_core::midi::midi_to_note;
-
 mod tie_material;
 use tie_material::{TieMaterialHandle, TieMaterialPlugin};
 
-// ── SMuFL glyphs (Bravura) ──────────────────────────────────────────────
-//
-// Codepoints are standardized by the SMuFL specification itself (every
-// conformant SMuFL font, not just Bravura, uses the same ones) — see
-// https://w3c.github.io/smufl/latest/tables/ or `glyphnames.json` in the
-// https://github.com/w3c/smufl repo.
-
-mod glyph {
-    pub const G_CLEF: &str = "\u{E050}";
-    pub const NOTEHEAD_WHOLE: &str = "\u{E0A2}";
-    pub const NOTEHEAD_HALF: &str = "\u{E0A3}";
-    pub const NOTEHEAD_BLACK: &str = "\u{E0A4}";
-    pub const ACCIDENTAL_SHARP: &str = "\u{E262}";
-    pub const FLAG_8TH_UP: &str = "\u{E240}";
-    pub const FLAG_8TH_DOWN: &str = "\u{E241}";
-}
-
-// ── Pure notation logic ──────────────────────────────────────────────────
-
-/// One note to draw on the staff. `start_beat`/`duration_beats` are in
-/// quarter-note units — deliberately *not* ticks or seconds, so this
-/// module never needs to know about a chart's tempo map or an editor's own
-/// tick resolution; every caller converts its own time representation into
-/// beats before handing notes over (see each call site: `song_editor`'s
-/// ticks are already tempo-independent multiples of a beat; gameplay's
-/// `ScheduledNote::time` in seconds goes through `song::chart::
-/// seconds_to_tick` first). `midi` is the actual sounded pitch (bends/
-/// overblow/overdraw/slide already resolved) — the same identity every
-/// other pitch comparison in the codebase uses.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct NotationNote {
-    pub start_beat: f64,
-    pub duration_beats: f64,
-    pub midi: u8,
-    /// True for every segment after the first when [`split_at_bar_lines`]
-    /// split a longer note across a bar line — [`spawn_note_glyphs`] draws
-    /// a short tie mark connecting it back to the segment immediately
-    /// before it (always the note's own preceding beats, since a split
-    /// segment starts exactly where the previous one ended). `false` for a
-    /// note that was never split, and for a split note's own first segment.
-    pub tied_from_previous: bool,
-}
-
-/// Splits `note` into one segment per bar it spans, so a note that would
-/// otherwise be drawn as a single oversized notehead with no indication of
-/// its true length instead becomes a run of bar-sized segments tied
-/// together (see [`NotationNote::tied_from_previous`]). A note entirely
-/// within one bar comes back unchanged (a one-element `Vec`). Splits only
-/// at bar lines, not at every beat — this module's engraving is
-/// deliberately coarse (see the module doc comment), so a note that starts
-/// off the beat within a single bar still draws as one slightly-
-/// mispositioned notehead.
-pub fn split_at_bar_lines(note: NotationNote, beats_per_bar: f64) -> Vec<NotationNote> {
-    if beats_per_bar <= 0.0 || note.duration_beats <= 0.0 {
-        return vec![note];
-    }
-    let end = note.start_beat + note.duration_beats;
-    let mut segments = Vec::new();
-    let mut pos = note.start_beat;
-    while pos < end {
-        let bar_index = (pos / beats_per_bar).floor();
-        let next_bar_start = (bar_index + 1.0) * beats_per_bar;
-        let seg_end = next_bar_start.min(end);
-        segments.push(NotationNote {
-            start_beat: pos,
-            duration_beats: seg_end - pos,
-            midi: note.midi,
-            tied_from_previous: !segments.is_empty(),
-        });
-        pos = seg_end;
-    }
-    segments
-}
-
-/// Diatonic staff step for `midi`, treble clef, where E4 (the staff's
-/// bottom line) is step 0 and each step is one staff position (a line or a
-/// space) — *not* one semitone. This is what makes a sharp share its
-/// natural neighbor's step, distinguished only by an accidental glyph (see
-/// [`needs_sharp`]): staff position is decided by the note's *letter
-/// name*, not its exact pitch.
-pub fn staff_step(midi: u8) -> i32 {
-    let name = midi_to_note(midi as i32); // sharp-only spelling, e.g. "C#4", "E4"
-    let bytes = name.as_bytes();
-    let has_sharp = bytes.get(1) == Some(&b'#');
-    let letter = bytes[0] as char;
-    let octave: i32 = name[if has_sharp { 2 } else { 1 }..].parse().unwrap_or(4);
-    let letter_index = match letter {
-        'C' => 0,
-        'D' => 1,
-        'E' => 2,
-        'F' => 3,
-        'G' => 4,
-        'A' => 5,
-        'B' => 6,
-        _ => 2,
-    };
-    (octave * 7 + letter_index) - (4 * 7 + 2) // relative to E4
-}
-
-/// Whether `midi` needs a sharp accidental drawn before its notehead. This
-/// codebase spells every accidental as a sharp, never a flat (see
-/// `audio_system::midi::midi_to_note`'s own doc comment), so a sharp is the
-/// only accidental glyph the staff ever needs to draw.
-pub fn needs_sharp(midi: u8) -> bool {
-    midi_to_note(midi as i32).as_bytes().get(1) == Some(&b'#')
-}
-
-/// The staff steps (see [`staff_step`]) a ledger line is drawn at for a
-/// note at `step` — empty while `step` is within the staff (`0..=8`).
-/// Ledger lines fall at every *even* step from the staff's own edge out to
-/// (and including, if even) `step` itself; a note sitting in the
-/// intervening odd step (a space just outside the staff, e.g. D4 just
-/// below the staff, or G5 just above it) needs none at all — the classic
-/// "middle C gets one ledger line, the note in the space just below it
-/// still reads against that same line" rule.
-pub fn ledger_line_steps(step: i32) -> Vec<i32> {
-    let mut out = Vec::new();
-    if step < 0 {
-        let mut s = -2;
-        while s >= step {
-            out.push(s);
-            s -= 2;
-        }
-    } else if step > 8 {
-        let mut s = 10;
-        while s <= step {
-            out.push(s);
-            s += 2;
-        }
-    }
-    out
-}
-
-/// Which notehead shape a note's duration gets. Deliberately coarse — see
-/// the module doc comment on engraving scope: quarter notes and anything
-/// shorter all get the same filled notehead + plain stem, with no flags or
-/// beaming to distinguish an eighth from a quarter. Thresholds sit at the
-/// midpoint between adjacent standard durations (2 and 4 beats) so a
-/// slightly-off recorded/quantized duration still classifies as intended.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum NoteheadKind {
-    Whole,
-    Half,
-    Filled,
-}
-
-impl NoteheadKind {
-    fn glyph(self) -> &'static str {
-        match self {
-            NoteheadKind::Whole => glyph::NOTEHEAD_WHOLE,
-            NoteheadKind::Half => glyph::NOTEHEAD_HALF,
-            NoteheadKind::Filled => glyph::NOTEHEAD_BLACK,
-        }
-    }
-
-    /// A whole note conventionally draws no stem at all.
-    fn has_stem(self) -> bool {
-        self != NoteheadKind::Whole
-    }
-
-    /// Notehead width, in staff spaces — `bravura_metadata.json`'s own
-    /// `glyphBBoxes` (`noteheadWhole`/`noteheadHalf`/`noteheadBlack`).
-    fn width_sp(self) -> f32 {
-        match self {
-            NoteheadKind::Whole => 1.688,
-            NoteheadKind::Half | NoteheadKind::Filled => 1.18,
-        }
-    }
-}
-
-pub fn notehead_kind(duration_beats: f64) -> NoteheadKind {
-    if duration_beats >= 3.0 {
-        NoteheadKind::Whole
-    } else if duration_beats >= 1.5 {
-        NoteheadKind::Half
-    } else {
-        NoteheadKind::Filled
-    }
-}
-
-/// Midpoint between a quarter note (1.0 beat) and an eighth (0.5) — same
-/// "midpoint between adjacent standard durations" philosophy
-/// [`notehead_kind`] already uses for its own thresholds.
-const EIGHTH_FLAG_THRESHOLD_BEATS: f64 = 0.75;
-
-/// Whether a note gets a single eighth-note flag drawn at its stem tip.
-/// Deliberately coarse per this module's "eighth notes only" scope (see the
-/// module doc comment): anything shorter than an eighth still gets exactly
-/// one flag, not two — there's no sixteenth-note (or shorter) flag tier.
-/// Only meaningful for a note that already has a stem at all
-/// (`NoteheadKind::Filled` — `Half`/`Whole` are always `>= 1.5` beats, well
-/// above this threshold, so they never qualify regardless).
-pub fn has_eighth_flag(duration_beats: f64) -> bool {
-    duration_beats < EIGHTH_FLAG_THRESHOLD_BEATS
-}
+mod notation;
+use notation::glyph;
+pub use notation::*;
 
 // ── Layout constants ──────────────────────────────────────────────────────
 
@@ -317,14 +123,13 @@ const TIE_MIN_WIDTH_PX: f32 = 4.0;
 const ACCIDENTAL_SHARP_WIDTH_SP: f32 = 0.996;
 const ACCIDENTAL_GAP_SP: f32 = 0.2;
 
-/// The staff step the gClef glyph's own SMuFL origin is anchored on — the
-/// G4 line, i.e. the second line from the bottom of a treble-clef staff
-/// (this is *why* it's called a G clef: the glyph's curl circles that
-/// line). Not the same as [`staff_step`]'s numbering by coincidence — it's
-/// the same "E4 = 0, one integer per staff position" scheme throughout.
-const GCLEF_ANCHOR_STEP: i32 = 2;
-
 const CLEF_X: f32 = 8.0;
+/// Where the time signature sits, clear of the clef glyph's own width.
+const TIME_SIG_X: f32 = CLEF_X + 26.0;
+/// The two digits straddle the middle line: numerator centred on the 4th
+/// step, denominator on the 2nd, the conventional upper/lower placement.
+const TIME_SIG_NUMERATOR_STEP: i32 = 6;
+const TIME_SIG_DENOMINATOR_STEP: i32 = 2;
 /// Where the "now" reference line sits, and where a note at the current
 /// playhead position draws — notes scroll right to left through it, the
 /// same "things move toward a fixed reference line" language the falling-
@@ -372,6 +177,54 @@ pub struct BravuraFont(pub Handle<Font>);
 #[derive(Resource, Default)]
 pub struct MusicScoreNotes(pub Vec<NotationNote>);
 
+/// The staff's meter: what the time signature at the head reads, and how
+/// often a bar line falls. Written by whichever bridge is driving the
+/// staff; [`Default`] is 4/4, matching what every caller assumed back when
+/// the module had no meter at all.
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Debug)]
+pub struct MusicScoreMeter {
+    pub numerator: u8,
+    pub denominator: u8,
+}
+
+impl Default for MusicScoreMeter {
+    fn default() -> Self {
+        Self {
+            numerator: 4,
+            denominator: 4,
+        }
+    }
+}
+
+impl MusicScoreMeter {
+    /// Quarter-note beats per bar — the unit [`NotationNote::start_beat`]
+    /// counts in, so a 6/8 bar is 3 quarter-note beats, not 6.
+    pub fn beats_per_bar(self) -> f64 {
+        self.numerator as f64 * 4.0 / self.denominator.max(1) as f64
+    }
+}
+
+/// Parses `"6/8"` into its two halves.
+///
+/// The denominator matters here and nowhere else yet: every other reader
+/// of this field (`gameplay::bars::parse_beats`, both music-score bridges)
+/// takes `split('/').next()` and throws it away, because all they wanted
+/// was a bar length in quarter notes. A drawn time signature needs both
+/// digits. Anything unparseable falls back to 4/4 rather than failing —
+/// a malformed signature should cost a wrong staff head, not a crash.
+pub fn parse_time_signature(s: &str) -> MusicScoreMeter {
+    let mut parts = s.split('/');
+    let numerator = parts.next().and_then(|n| n.trim().parse().ok());
+    let denominator = parts.next().and_then(|d| d.trim().parse().ok());
+    match (numerator, denominator) {
+        (Some(n), Some(d)) if n > 0 && d > 0 => MusicScoreMeter {
+            numerator: n,
+            denominator: d,
+        },
+        _ => MusicScoreMeter::default(),
+    }
+}
+
 /// The current "now" position, in the same beat units as
 /// [`MusicScoreNotes`] — updated every frame by whichever caller is
 /// currently active (the Song Editor's own playhead, or the gameplay
@@ -392,6 +245,18 @@ struct MusicScorePanel;
 #[derive(Component)]
 struct MusicScoreNotesLayer;
 
+/// The clef glyph, so [`rebuild_score_notes`] can swap it when
+/// [`choose_clef`] picks a different one for the newly loaded notes.
+#[derive(Component)]
+struct MusicScoreClef;
+
+/// The two time-signature digits at the staff head, updated alongside the
+/// clef. `numerator: true` is the upper digit.
+#[derive(Component)]
+struct MusicScoreTimeSig {
+    numerator: bool,
+}
+
 /// Tags every entity [`rebuild_score_notes`] spawns, so the next rebuild
 /// knows what to despawn first.
 #[derive(Component)]
@@ -406,11 +271,13 @@ impl Plugin for MusicScorePlugin {
         app.add_plugins(TieMaterialPlugin)
             .init_resource::<MusicScoreNotes>()
             .init_resource::<MusicScorePlayhead>()
+            .init_resource::<MusicScoreMeter>()
             .add_systems(Startup, load_bravura_font)
             .add_systems(
                 Update,
                 rebuild_score_notes.run_if(
                     resource_changed::<MusicScoreNotes>
+                        .or_else(resource_changed::<MusicScoreMeter>)
                         .or_else(resource_changed::<MusicScorePlayhead>)
                         .or_else(panel_width_changed),
                 ),
@@ -471,15 +338,19 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
                 BackgroundColor(Color::srgba(0.75, 0.75, 0.80, 0.6)),
             ));
         }
-        // Clef — its own SMuFL origin sits on the G4 line (GCLEF_ANCHOR_STEP).
+        // Clef — its glyph's own SMuFL origin sits on the line it names
+        // (see `Clef::anchor_step`). Spawned as treble and re-pointed by
+        // `rebuild_score_notes` once there are notes to judge the range by.
+        let clef = Clef::default();
         panel.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 left: Val::Px(CLEF_X),
-                top: Val::Px(y_for_step(GCLEF_ANCHOR_STEP) - GLYPH_BASELINE_CORRECTION),
+                top: Val::Px(y_for_step(clef.anchor_step()) - GLYPH_BASELINE_CORRECTION),
                 ..default()
             },
-            Text::new(glyph::G_CLEF),
+            MusicScoreClef,
+            Text::new(clef.glyph()),
             TextFont {
                 font: FontSource::Handle(bravura.0.clone()),
                 font_size: FontSize::Px(GLYPH_FONT_PX),
@@ -488,6 +359,32 @@ pub fn spawn_music_score(parent: &mut ChildSpawnerCommands, bravura: &BravuraFon
             TextColor(Color::WHITE),
             crate::dialogs::font_fallback::SkipFontFallback,
         ));
+        // Time signature, beside the clef. Both digits are re-texted by
+        // `rebuild_score_notes` when the meter changes; 4/4 to begin with,
+        // matching `MusicScoreMeter::default`.
+        let meter = MusicScoreMeter::default();
+        for (numerator, step, digit) in [
+            (true, TIME_SIG_NUMERATOR_STEP, meter.numerator),
+            (false, TIME_SIG_DENOMINATOR_STEP, meter.denominator),
+        ] {
+            panel.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(TIME_SIG_X),
+                    top: Val::Px(y_for_step(step) - GLYPH_BASELINE_CORRECTION),
+                    ..default()
+                },
+                MusicScoreTimeSig { numerator },
+                Text::new(time_sig_glyphs(digit)),
+                TextFont {
+                    font: FontSource::Handle(bravura.0.clone()),
+                    font_size: FontSize::Px(GLYPH_FONT_PX),
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                crate::dialogs::font_fallback::SkipFontFallback,
+            ));
+        }
         // "Now" reference line — notes scroll toward/through this the same
         // way the falling-note highway approaches its own hit line.
         panel.spawn((
@@ -540,6 +437,9 @@ fn rebuild_score_notes(
     panels: Query<&ComputedNode, With<MusicScorePanel>>,
     layers: Query<Entity, With<MusicScoreNotesLayer>>,
     existing: Query<Entity, With<MusicScoreNoteGlyph>>,
+    meter: Res<MusicScoreMeter>,
+    mut clefs: Query<(&mut Text, &mut Node), With<MusicScoreClef>>,
+    mut time_sigs: Query<(&MusicScoreTimeSig, &mut Text), Without<MusicScoreClef>>,
 ) {
     let Some(bravura) = bravura else { return };
     let Some(tie_material) = tie_material else {
@@ -561,6 +461,28 @@ fn rebuild_score_notes(
     else {
         return;
     };
+    // One clef for the whole song, from its own range — see `choose_clef`.
+    let clef = choose_clef(&notes.0);
+    for (mut text, mut node) in &mut clefs {
+        let glyph = clef.glyph();
+        if text.0 != glyph {
+            text.0 = glyph.to_string();
+            node.top = Val::Px(y_for_step(clef.anchor_step()) - GLYPH_BASELINE_CORRECTION);
+        }
+    }
+
+    for (slot, mut text) in &mut time_sigs {
+        let digit = if slot.numerator {
+            meter.numerator
+        } else {
+            meter.denominator
+        };
+        let glyphs = time_sig_glyphs(digit);
+        if text.0 != glyphs {
+            text.0 = glyphs;
+        }
+    }
+
     let (beats_behind, beats_ahead) = visible_beats(panel_width);
     for glyph in &existing {
         commands.entity(glyph).despawn();
@@ -575,12 +497,33 @@ fn rebuild_score_notes(
             // this is reliably "the segment `note` was tied from" whenever
             // `note.tied_from_previous` is set, even if that segment itself
             // scrolled out of the visible window and wasn't spawned.
+            // Bar lines first, so a notehead always paints over one
+            // rather than under it.
+            for beat in bar_line_beats(now - beats_behind, now + beats_ahead, meter.beats_per_bar())
+            {
+                let x = ((beat - now) * PIXELS_PER_BEAT as f64) as f32;
+                parent.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(x),
+                        top: Val::Px(y_for_step(8)),
+                        width: Val::Px(1.0),
+                        // Top line to bottom line: 8 steps, i.e. the four
+                        // spaces between the five staff lines.
+                        height: Val::Px(8.0 * STEP_PX),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.75, 0.75, 0.80, 0.45)),
+                    MusicScoreNoteGlyph,
+                ));
+            }
+
             let mut prev: Option<&NotationNote> = None;
             for note in &notes.0 {
                 let visible = note.start_beat + note.duration_beats >= now - beats_behind
                     && note.start_beat <= now + beats_ahead;
                 if visible {
-                    spawn_note_glyphs(parent, &bravura, &tie_material, note, prev, now);
+                    spawn_note_glyphs(parent, &bravura, &tie_material, note, prev, now, clef);
                 }
                 prev = Some(note);
             }
@@ -595,9 +538,10 @@ fn spawn_note_glyphs(
     note: &NotationNote,
     prev: Option<&NotationNote>,
     now: f64,
+    clef: Clef,
 ) {
     let x = ((note.start_beat - now) * PIXELS_PER_BEAT as f64) as f32;
-    let step = staff_step(note.midi);
+    let step = staff_step(note.midi, clef);
     let kind = notehead_kind(note.duration_beats);
     let notehead_y = y_for_step(step);
 
@@ -759,6 +703,31 @@ fn spawn_note_glyphs(
 mod tests {
     use super::*;
 
+    // These cover this half's own layout constants and the Bevy-bound
+    // `MusicScoreMeter`; the pure notation maths is tested in `notation`.
+    #[test]
+    fn parse_time_signature_keeps_the_denominator_other_callers_discard() {
+        let m = parse_time_signature("6/8");
+        assert_eq!((m.numerator, m.denominator), (6, 8));
+    }
+    #[test]
+    fn parse_time_signature_falls_back_to_four_four_when_malformed() {
+        for bad in ["", "4", "x/y", "4/0", "0/4", "//"] {
+            assert_eq!(
+                parse_time_signature(bad),
+                MusicScoreMeter::default(),
+                "{bad:?}"
+            );
+        }
+    }
+    #[test]
+    fn beats_per_bar_counts_quarter_notes_not_signature_beats() {
+        // A 6/8 bar is six *eighths* — three quarter-note beats, which is
+        // the unit NotationNote::start_beat is in.
+        assert_eq!(parse_time_signature("6/8").beats_per_bar(), 3.0);
+        assert_eq!(parse_time_signature("4/4").beats_per_bar(), 4.0);
+        assert_eq!(parse_time_signature("3/4").beats_per_bar(), 3.0);
+    }
     #[test]
     fn visible_beats_ahead_scales_with_panel_width() {
         let (_, narrow_ahead) = visible_beats(200.0);
@@ -768,13 +737,11 @@ mod tests {
             "a much wider panel should show proportionally more beats ahead"
         );
     }
-
     #[test]
     fn visible_beats_ahead_never_goes_negative_for_a_panel_narrower_than_playhead_x() {
         let (_, ahead) = visible_beats(10.0); // narrower than PLAYHEAD_X itself
         assert!(ahead >= 0.0);
     }
-
     #[test]
     fn visible_beats_behind_is_independent_of_panel_width() {
         // The space behind the playhead is bounded by PLAYHEAD_X, which is
@@ -782,168 +749,5 @@ mod tests {
         let (behind_narrow, _) = visible_beats(200.0);
         let (behind_wide, _) = visible_beats(2000.0);
         assert_eq!(behind_narrow, behind_wide);
-    }
-
-    #[test]
-    fn staff_step_places_e4_at_the_bottom_line() {
-        assert_eq!(staff_step(64), 0); // E4 = MIDI 64
-    }
-
-    #[test]
-    fn staff_step_places_middle_c_two_steps_below_the_staff() {
-        assert_eq!(staff_step(60), -2); // C4 = MIDI 60
-    }
-
-    #[test]
-    fn staff_step_places_f5_at_the_top_line() {
-        assert_eq!(staff_step(77), 8); // F5 = MIDI 77
-    }
-
-    #[test]
-    fn staff_step_shares_the_same_step_as_its_sharp() {
-        // C4 and C#4 sit on the same staff position; only the accidental differs.
-        assert_eq!(staff_step(60), staff_step(61));
-    }
-
-    #[test]
-    fn needs_sharp_is_true_only_for_a_sharp_spelling() {
-        assert!(!needs_sharp(60)); // C4
-        assert!(needs_sharp(61)); // C#4
-        assert!(!needs_sharp(64)); // E4
-    }
-
-    #[test]
-    fn ledger_line_steps_is_empty_within_the_staff() {
-        assert!(ledger_line_steps(0).is_empty());
-        assert!(ledger_line_steps(4).is_empty());
-        assert!(ledger_line_steps(8).is_empty());
-    }
-
-    #[test]
-    fn ledger_line_steps_middle_c_gets_exactly_one() {
-        assert_eq!(ledger_line_steps(-2), vec![-2]);
-    }
-
-    #[test]
-    fn ledger_line_steps_the_space_just_outside_the_staff_needs_none() {
-        // D4 (step -1, the space directly below the bottom line) and G5
-        // (step 9, the space directly above the top line) both sit closer
-        // to the staff than any ledger line would be.
-        assert!(ledger_line_steps(-1).is_empty());
-        assert!(ledger_line_steps(9).is_empty());
-    }
-
-    #[test]
-    fn ledger_line_steps_a_note_in_the_gap_beyond_the_first_ledger_still_gets_it() {
-        // B3 (step -3, a space) is one step further than middle C (-2) —
-        // it still reads against that same first ledger line.
-        assert_eq!(ledger_line_steps(-3), vec![-2]);
-        // A3 (step -4, on a line) needs two.
-        assert_eq!(ledger_line_steps(-4), vec![-2, -4]);
-    }
-
-    #[test]
-    fn ledger_line_steps_above_the_staff_mirrors_below() {
-        assert_eq!(ledger_line_steps(10), vec![10]); // A5
-        assert_eq!(ledger_line_steps(11), vec![10]); // B5, a space
-        assert_eq!(ledger_line_steps(12), vec![10, 12]); // C6
-    }
-
-    #[test]
-    fn notehead_kind_classifies_by_duration() {
-        assert_eq!(notehead_kind(4.0), NoteheadKind::Whole);
-        assert_eq!(notehead_kind(3.0), NoteheadKind::Whole);
-        assert_eq!(notehead_kind(2.0), NoteheadKind::Half);
-        assert_eq!(notehead_kind(1.5), NoteheadKind::Half);
-        assert_eq!(notehead_kind(1.0), NoteheadKind::Filled);
-        assert_eq!(notehead_kind(0.25), NoteheadKind::Filled);
-    }
-
-    #[test]
-    fn whole_notes_have_no_stem() {
-        assert!(!NoteheadKind::Whole.has_stem());
-        assert!(NoteheadKind::Half.has_stem());
-        assert!(NoteheadKind::Filled.has_stem());
-    }
-
-    #[test]
-    fn has_eighth_flag_is_true_only_below_the_quarter_eighth_midpoint() {
-        assert!(!has_eighth_flag(1.0)); // quarter note
-        assert!(!has_eighth_flag(0.75)); // exactly the midpoint: rounds up to quarter
-        assert!(has_eighth_flag(0.5)); // eighth note
-        assert!(has_eighth_flag(0.25)); // sixteenth: still rounds to one flag
-    }
-
-    #[test]
-    fn has_eighth_flag_never_applies_to_half_or_whole_notes() {
-        // Half/whole are always well above the flag threshold, so a note
-        // long enough to have no stem at all never picks one up either.
-        assert!(!has_eighth_flag(2.0));
-        assert!(!has_eighth_flag(4.0));
-    }
-
-    fn note(start_beat: f64, duration_beats: f64) -> NotationNote {
-        NotationNote {
-            start_beat,
-            duration_beats,
-            midi: 60,
-            tied_from_previous: false,
-        }
-    }
-
-    #[test]
-    fn split_at_bar_lines_leaves_a_note_within_one_bar_untouched() {
-        let segments = split_at_bar_lines(note(1.0, 2.0), 4.0);
-        assert_eq!(segments, vec![note(1.0, 2.0)]);
-        assert!(!segments[0].tied_from_previous);
-    }
-
-    #[test]
-    fn split_at_bar_lines_splits_a_note_crossing_one_bar_line() {
-        // Starts at beat 2 of bar 0 (4 beats/bar), lasts 4 beats: ends at
-        // beat 6, i.e. beat 2 of bar 1. Splits into [2, 4) and [4, 6).
-        let segments = split_at_bar_lines(note(2.0, 4.0), 4.0);
-        assert_eq!(segments.len(), 2);
-        assert_eq!(segments[0].start_beat, 2.0);
-        assert_eq!(segments[0].duration_beats, 2.0);
-        assert!(!segments[0].tied_from_previous);
-        assert_eq!(segments[1].start_beat, 4.0);
-        assert_eq!(segments[1].duration_beats, 2.0);
-        assert!(segments[1].tied_from_previous);
-    }
-
-    #[test]
-    fn split_at_bar_lines_splits_a_note_spanning_several_bars() {
-        // Starts at beat 3 of bar 0, lasts 10 beats: ends at beat 13
-        // (beat 1 of bar 3). Segments: [3,4), [4,8), [8,12), [12,13).
-        let segments = split_at_bar_lines(note(3.0, 10.0), 4.0);
-        let expected: Vec<(f64, f64)> = vec![(3.0, 1.0), (4.0, 4.0), (8.0, 4.0), (12.0, 1.0)];
-        let actual: Vec<(f64, f64)> = segments
-            .iter()
-            .map(|s| (s.start_beat, s.duration_beats))
-            .collect();
-        assert_eq!(actual, expected);
-        assert!(!segments[0].tied_from_previous);
-        assert!(segments[1..].iter().all(|s| s.tied_from_previous));
-    }
-
-    #[test]
-    fn split_at_bar_lines_preserves_midi() {
-        let segments = split_at_bar_lines(
-            NotationNote {
-                start_beat: 2.0,
-                duration_beats: 4.0,
-                midi: 67,
-                tied_from_previous: false,
-            },
-            4.0,
-        );
-        assert!(segments.iter().all(|s| s.midi == 67));
-    }
-
-    #[test]
-    fn split_at_bar_lines_on_a_note_starting_exactly_on_a_bar_line_needs_no_split() {
-        let segments = split_at_bar_lines(note(4.0, 4.0), 4.0);
-        assert_eq!(segments, vec![note(4.0, 4.0)]);
     }
 }

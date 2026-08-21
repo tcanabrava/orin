@@ -1,0 +1,599 @@
+// SPDX-License-Identifier: MIT
+
+//! The staff's decisions, with no Bevy in them: which clef the music wants,
+//! where a pitch sits on that clef, which notehead a duration takes, where
+//! bar lines fall, and which notes beam together.
+//!
+//! Split out from `mod.rs` when that file crossed the size budget
+//! (`docs/physical_design_plan.md` rule 1). The split is also the module's
+//! own testing seam — everything here is a pure function with unit tests,
+//! and `mod.rs` is left as the translation of these answers into UI nodes.
+
+use harmonicon_core::midi::midi_to_note;
+
+// ── SMuFL glyphs (Bravura) ──────────────────────────────────────────────
+//
+// Codepoints are standardized by the SMuFL specification itself (every
+// conformant SMuFL font, not just Bravura, uses the same ones) — see
+// https://w3c.github.io/smufl/latest/tables/ or `glyphnames.json` in the
+// https://github.com/w3c/smufl repo.
+
+pub(super) mod glyph {
+    pub const G_CLEF: &str = "\u{E050}";
+    /// Treble clef with an "8" above it: notes sound an octave *higher*
+    /// than written, which is how a 3.5-octave harmonica's top register
+    /// stays near the staff instead of eleven ledger lines above it.
+    pub const G_CLEF_8VA: &str = "\u{E053}";
+    pub const F_CLEF: &str = "\u{E062}";
+    /// `timeSig0`..`timeSig9` are consecutive, so a digit is this + n.
+    pub const TIME_SIG_0: u32 = 0xE080;
+    pub const NOTEHEAD_WHOLE: &str = "\u{E0A2}";
+    pub const NOTEHEAD_HALF: &str = "\u{E0A3}";
+    pub const NOTEHEAD_BLACK: &str = "\u{E0A4}";
+    pub const ACCIDENTAL_SHARP: &str = "\u{E262}";
+    pub const FLAG_8TH_UP: &str = "\u{E240}";
+    pub const FLAG_8TH_DOWN: &str = "\u{E241}";
+}
+
+// ── Pure notation logic ──────────────────────────────────────────────────
+
+/// One note to draw on the staff. `start_beat`/`duration_beats` are in
+/// quarter-note units — deliberately *not* ticks or seconds, so this
+/// module never needs to know about a chart's tempo map or an editor's own
+/// tick resolution; every caller converts its own time representation into
+/// beats before handing notes over (see each call site: `song_editor`'s
+/// ticks are already tempo-independent multiples of a beat; gameplay's
+/// `ScheduledNote::time` in seconds goes through `song::chart::
+/// seconds_to_tick` first). `midi` is the actual sounded pitch (bends/
+/// overblow/overdraw/slide already resolved) — the same identity every
+/// other pitch comparison in the codebase uses.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NotationNote {
+    pub start_beat: f64,
+    pub duration_beats: f64,
+    pub midi: u8,
+    /// True for every segment after the first when [`split_at_bar_lines`]
+    /// split a longer note across a bar line — [`spawn_note_glyphs`] draws
+    /// a short tie mark connecting it back to the segment immediately
+    /// before it (always the note's own preceding beats, since a split
+    /// segment starts exactly where the previous one ended). `false` for a
+    /// note that was never split, and for a split note's own first segment.
+    pub tied_from_previous: bool,
+}
+
+/// Splits `note` into one segment per bar it spans, so a note that would
+/// otherwise be drawn as a single oversized notehead with no indication of
+/// its true length instead becomes a run of bar-sized segments tied
+/// together (see [`NotationNote::tied_from_previous`]). A note entirely
+/// within one bar comes back unchanged (a one-element `Vec`). Splits only
+/// at bar lines, not at every beat — this module's engraving is
+/// deliberately coarse (see the module doc comment), so a note that starts
+/// off the beat within a single bar still draws as one slightly-
+/// mispositioned notehead.
+pub fn split_at_bar_lines(note: NotationNote, beats_per_bar: f64) -> Vec<NotationNote> {
+    if beats_per_bar <= 0.0 || note.duration_beats <= 0.0 {
+        return vec![note];
+    }
+    let end = note.start_beat + note.duration_beats;
+    let mut segments = Vec::new();
+    let mut pos = note.start_beat;
+    while pos < end {
+        let bar_index = (pos / beats_per_bar).floor();
+        let next_bar_start = (bar_index + 1.0) * beats_per_bar;
+        let seg_end = next_bar_start.min(end);
+        segments.push(NotationNote {
+            start_beat: pos,
+            duration_beats: seg_end - pos,
+            midi: note.midi,
+            tied_from_previous: !segments.is_empty(),
+        });
+        pos = seg_end;
+    }
+    segments
+}
+
+/// Which clef the staff is drawn in. Chosen once per song by
+/// [`choose_clef`] from the music's own range, never mid-scroll — a clef
+/// that changed under a moving playhead would be unreadable.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum Clef {
+    /// Ordinary treble. Bottom line E4.
+    #[default]
+    Treble,
+    /// Treble with an octave-up indicator: everything draws an octave
+    /// lower than it sounds, so the bottom line reads as E5. The harmonica
+    /// register that would otherwise sit far above the staff.
+    Treble8va,
+    /// Bass. Bottom line G2 — for low harps and the bass harmonica.
+    Bass,
+}
+
+impl Clef {
+    /// The staff step (see [`staff_step`]) of this clef's own bottom line,
+    /// as a MIDI note. The single place each clef's vertical base lives:
+    /// [`staff_step`] subtracts it, and everything downstream
+    /// ([`y_for_step`], [`ledger_line_steps`]) then works in
+    /// already-clef-relative steps and needs no clef of its own.
+    fn base_midi(self) -> u8 {
+        match self {
+            Clef::Treble => 64,    // E4
+            Clef::Treble8va => 76, // E5 — drawn an octave below its sound
+            Clef::Bass => 43,      // G2
+        }
+    }
+
+    /// The SMuFL glyph to draw.
+    pub fn glyph(self) -> &'static str {
+        match self {
+            Clef::Treble => glyph::G_CLEF,
+            Clef::Treble8va => glyph::G_CLEF_8VA,
+            Clef::Bass => glyph::F_CLEF,
+        }
+    }
+
+    /// The staff step this glyph's own SMuFL origin is anchored on. A G
+    /// clef's curl circles the G line (step 2 in its own staff); an F
+    /// clef's two dots straddle the F line, the 4th line up (step 6).
+    pub fn anchor_step(self) -> i32 {
+        match self {
+            Clef::Treble | Clef::Treble8va => 2,
+            Clef::Bass => 6,
+        }
+    }
+}
+
+/// Diatonic staff step for `midi` in `clef`, where the staff's bottom line
+/// is step 0 and each step is one staff position (a line or a space) —
+/// *not* one semitone. This is what makes a sharp share its natural
+/// neighbor's step, distinguished only by an accidental glyph (see
+/// [`needs_sharp`]): staff position is decided by the note's *letter
+/// name*, not its exact pitch.
+pub fn staff_step(midi: u8, clef: Clef) -> i32 {
+    let name = midi_to_note(midi as i32); // sharp-only spelling, e.g. "C#4", "E4"
+    let bytes = name.as_bytes();
+    let has_sharp = bytes.get(1) == Some(&b'#');
+    let letter = bytes[0] as char;
+    let octave: i32 = name[if has_sharp { 2 } else { 1 }..].parse().unwrap_or(4);
+    let letter_index = match letter {
+        'C' => 0,
+        'D' => 1,
+        'E' => 2,
+        'F' => 3,
+        'G' => 4,
+        'A' => 5,
+        'B' => 6,
+        _ => 2,
+    };
+    let base = midi_to_note(clef.base_midi() as i32);
+    let base_bytes = base.as_bytes();
+    let base_sharp = base_bytes.get(1) == Some(&b'#');
+    let base_octave: i32 = base[if base_sharp { 2 } else { 1 }..].parse().unwrap_or(4);
+    let base_letter = match base_bytes[0] as char {
+        'C' => 0,
+        'D' => 1,
+        'E' => 2,
+        'F' => 3,
+        'G' => 4,
+        'A' => 5,
+        _ => 6,
+    };
+    (octave * 7 + letter_index) - (base_octave * 7 + base_letter)
+}
+
+/// Picks the clef whose staff the music sits most comfortably inside.
+///
+/// Driven by the *median* pitch rather than the extremes, so one stray
+/// high or low note can't drag the whole staff. The thresholds are fixed
+/// (no hysteresis), so a given set of notes always yields the same clef.
+/// Empty input keeps [`Clef::Treble`], the historical default.
+pub fn choose_clef(notes: &[NotationNote]) -> Clef {
+    if notes.is_empty() {
+        return Clef::Treble;
+    }
+    let mut pitches: Vec<u8> = notes.iter().map(|n| n.midi).collect();
+    pitches.sort_unstable();
+    let median = pitches[pitches.len() / 2];
+    match median {
+        // At or above the treble staff's top line (F5 = 77) the music is
+        // spending its time in ledger lines; read it an octave down.
+        m if m >= 77 => Clef::Treble8va,
+        // Below middle C the bass staff centres it better than treble does.
+        m if m < 60 => Clef::Bass,
+        _ => Clef::Treble,
+    }
+}
+
+/// Whether `midi` needs a sharp accidental drawn before its notehead. This
+/// codebase spells every accidental as a sharp, never a flat (see
+/// `audio_system::midi::midi_to_note`'s own doc comment), so a sharp is the
+/// only accidental glyph the staff ever needs to draw.
+pub fn needs_sharp(midi: u8) -> bool {
+    midi_to_note(midi as i32).as_bytes().get(1) == Some(&b'#')
+}
+
+/// The staff steps (see [`staff_step`]) a ledger line is drawn at for a
+/// note at `step` — empty while `step` is within the staff (`0..=8`).
+/// Ledger lines fall at every *even* step from the staff's own edge out to
+/// (and including, if even) `step` itself; a note sitting in the
+/// intervening odd step (a space just outside the staff, e.g. D4 just
+/// below the staff, or G5 just above it) needs none at all — the classic
+/// "middle C gets one ledger line, the note in the space just below it
+/// still reads against that same line" rule.
+pub fn ledger_line_steps(step: i32) -> Vec<i32> {
+    let mut out = Vec::new();
+    if step < 0 {
+        let mut s = -2;
+        while s >= step {
+            out.push(s);
+            s -= 2;
+        }
+    } else if step > 8 {
+        let mut s = 10;
+        while s <= step {
+            out.push(s);
+            s += 2;
+        }
+    }
+    out
+}
+
+/// Which notehead shape a note's duration gets. Deliberately coarse — see
+/// the module doc comment on engraving scope: quarter notes and anything
+/// shorter all get the same filled notehead + plain stem, with no flags or
+/// beaming to distinguish an eighth from a quarter. Thresholds sit at the
+/// midpoint between adjacent standard durations (2 and 4 beats) so a
+/// slightly-off recorded/quantized duration still classifies as intended.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum NoteheadKind {
+    Whole,
+    Half,
+    Filled,
+}
+
+impl NoteheadKind {
+    pub(super) fn glyph(self) -> &'static str {
+        match self {
+            NoteheadKind::Whole => glyph::NOTEHEAD_WHOLE,
+            NoteheadKind::Half => glyph::NOTEHEAD_HALF,
+            NoteheadKind::Filled => glyph::NOTEHEAD_BLACK,
+        }
+    }
+
+    /// A whole note conventionally draws no stem at all.
+    pub(super) fn has_stem(self) -> bool {
+        self != NoteheadKind::Whole
+    }
+
+    /// Notehead width, in staff spaces — `bravura_metadata.json`'s own
+    /// `glyphBBoxes` (`noteheadWhole`/`noteheadHalf`/`noteheadBlack`).
+    pub(super) fn width_sp(self) -> f32 {
+        match self {
+            NoteheadKind::Whole => 1.688,
+            NoteheadKind::Half | NoteheadKind::Filled => 1.18,
+        }
+    }
+}
+
+pub fn notehead_kind(duration_beats: f64) -> NoteheadKind {
+    if duration_beats >= 3.0 {
+        NoteheadKind::Whole
+    } else if duration_beats >= 1.5 {
+        NoteheadKind::Half
+    } else {
+        NoteheadKind::Filled
+    }
+}
+
+/// Midpoint between a quarter note (1.0 beat) and an eighth (0.5) — same
+/// "midpoint between adjacent standard durations" philosophy
+/// [`notehead_kind`] already uses for its own thresholds.
+const EIGHTH_FLAG_THRESHOLD_BEATS: f64 = 0.75;
+
+/// Whether a note gets a single eighth-note flag drawn at its stem tip.
+/// Deliberately coarse per this module's "eighth notes only" scope (see the
+/// module doc comment): anything shorter than an eighth still gets exactly
+/// one flag, not two — there's no sixteenth-note (or shorter) flag tier.
+/// Only meaningful for a note that already has a stem at all
+/// (`NoteheadKind::Filled` — `Half`/`Whole` are always `>= 1.5` beats, well
+/// above this threshold, so they never qualify regardless).
+pub fn has_eighth_flag(duration_beats: f64) -> bool {
+    duration_beats < EIGHTH_FLAG_THRESHOLD_BEATS
+}
+
+/// The SMuFL glyphs spelling `n` — `timeSig0`..`timeSig9` are consecutive
+/// codepoints, so each decimal digit maps straight onto one. Multi-digit
+/// numerators (7/8, 12/8) therefore just concatenate.
+pub(super) fn time_sig_glyphs(n: u8) -> String {
+    n.to_string()
+        .chars()
+        .filter_map(|c| c.to_digit(10))
+        .filter_map(|d| char::from_u32(glyph::TIME_SIG_0 + d))
+        .collect()
+}
+
+/// Every bar-line position (in beats) strictly inside `from..=to`.
+///
+/// Beat 0 is a bar line but never drawn — it's the start of the piece, not
+/// a division within it, and drawing it would put a line through the clef
+/// on the first frame.
+pub fn bar_line_beats(from_beat: f64, to_beat: f64, beats_per_bar: f64) -> Vec<f64> {
+    if beats_per_bar <= 0.0 || to_beat < from_beat {
+        return Vec::new();
+    }
+    let first = (from_beat / beats_per_bar).ceil().max(1.0) as i64;
+    let last = (to_beat / beats_per_bar).floor() as i64;
+    (first..=last).map(|b| b as f64 * beats_per_bar).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn staff_step_places_e4_at_the_bottom_line() {
+        assert_eq!(staff_step(64, Clef::Treble), 0); // E4 = MIDI 64
+    }
+
+    #[test]
+    fn staff_step_places_middle_c_two_steps_below_the_staff() {
+        assert_eq!(staff_step(60, Clef::Treble), -2); // C4 = MIDI 60
+    }
+
+    #[test]
+    fn staff_step_places_f5_at_the_top_line() {
+        assert_eq!(staff_step(77, Clef::Treble), 8); // F5 = MIDI 77
+    }
+
+    #[test]
+    fn staff_step_shares_the_same_step_as_its_sharp() {
+        // C4 and C#4 sit on the same staff position; only the accidental differs.
+        assert_eq!(staff_step(60, Clef::Treble), staff_step(61, Clef::Treble));
+    }
+
+    #[test]
+    fn each_clef_puts_its_own_bottom_line_at_step_zero() {
+        assert_eq!(staff_step(64, Clef::Treble), 0); // E4, treble bottom line
+        assert_eq!(staff_step(76, Clef::Treble8va), 0); // E5, drawn an octave down
+        assert_eq!(staff_step(43, Clef::Bass), 0); // G2, bass bottom line
+    }
+
+    #[test]
+    fn the_8va_clef_draws_a_note_an_octave_lower_than_treble_would() {
+        // C7 is six ledger lines above the treble staff; under 8va it
+        // lands on the same step C6 would in plain treble.
+        assert_eq!(
+            staff_step(96, Clef::Treble8va),
+            staff_step(84, Clef::Treble)
+        );
+    }
+
+    #[test]
+    fn bass_clef_pulls_a_low_note_back_onto_the_staff() {
+        // G3 is three ledger lines below the treble staff, and the second
+        // line from the top in bass.
+        assert!(staff_step(55, Clef::Treble) < 0);
+        assert_eq!(staff_step(55, Clef::Bass), 7);
+    }
+
+    #[test]
+    fn choose_clef_reads_the_median_not_the_extremes() {
+        // One stray high note must not drag the whole staff up.
+        let mut ns: Vec<NotationNote> = (0..9).map(|i| note_at(60 + i, 0.0)).collect();
+        ns.push(note_at(100, 0.0));
+        assert_eq!(choose_clef(&ns), Clef::Treble);
+    }
+
+    #[test]
+    fn choose_clef_picks_8va_for_the_shipped_harmonica_range() {
+        // Measured median across the bundled charts is F5 (MIDI 77) —
+        // exactly the treble top line, i.e. half the music in ledger lines.
+        let ns = vec![note_at(72, 0.0), note_at(77, 0.0), note_at(88, 0.0)];
+        assert_eq!(choose_clef(&ns), Clef::Treble8va);
+    }
+
+    #[test]
+    fn choose_clef_picks_bass_below_middle_c_and_treble_otherwise() {
+        assert_eq!(
+            choose_clef(&[note_at(50, 0.0), note_at(55, 0.0), note_at(57, 0.0)]),
+            Clef::Bass
+        );
+        assert_eq!(
+            choose_clef(&[note_at(64, 0.0), note_at(67, 0.0), note_at(71, 0.0)]),
+            Clef::Treble
+        );
+    }
+
+    #[test]
+    fn choose_clef_falls_back_to_treble_with_nothing_to_judge() {
+        assert_eq!(choose_clef(&[]), Clef::Treble);
+    }
+
+    // ── time signature / bar lines ───────────────────────────────────────
+
+    #[test]
+    fn time_sig_glyphs_maps_each_digit_and_handles_two_of_them() {
+        assert_eq!(time_sig_glyphs(4), "\u{E084}");
+        assert_eq!(time_sig_glyphs(12), "\u{E081}\u{E082}");
+    }
+
+    #[test]
+    fn bar_line_beats_lands_on_every_bar_boundary_in_the_window() {
+        assert_eq!(bar_line_beats(0.0, 9.0, 4.0), vec![4.0, 8.0]);
+    }
+
+    #[test]
+    fn bar_line_beats_skips_beat_zero() {
+        // Beat 0 starts the piece rather than dividing it, and a line
+        // there would cut through the clef.
+        assert!(!bar_line_beats(0.0, 4.0, 4.0).contains(&0.0));
+    }
+
+    #[test]
+    fn bar_line_beats_includes_a_boundary_exactly_at_either_end() {
+        assert_eq!(bar_line_beats(4.0, 8.0, 4.0), vec![4.0, 8.0]);
+    }
+
+    #[test]
+    fn bar_line_beats_is_empty_for_a_window_inside_one_bar() {
+        assert!(bar_line_beats(4.5, 7.5, 4.0).is_empty());
+    }
+
+    #[test]
+    fn bar_line_beats_is_empty_rather_than_looping_on_a_degenerate_meter() {
+        assert!(bar_line_beats(0.0, 100.0, 0.0).is_empty());
+        assert!(bar_line_beats(9.0, 0.0, 4.0).is_empty());
+    }
+
+    #[test]
+    fn needs_sharp_is_true_only_for_a_sharp_spelling() {
+        assert!(!needs_sharp(60)); // C4
+        assert!(needs_sharp(61)); // C#4
+        assert!(!needs_sharp(64)); // E4
+    }
+
+    #[test]
+    fn ledger_line_steps_is_empty_within_the_staff() {
+        assert!(ledger_line_steps(0).is_empty());
+        assert!(ledger_line_steps(4).is_empty());
+        assert!(ledger_line_steps(8).is_empty());
+    }
+
+    #[test]
+    fn ledger_line_steps_middle_c_gets_exactly_one() {
+        assert_eq!(ledger_line_steps(-2), vec![-2]);
+    }
+
+    #[test]
+    fn ledger_line_steps_the_space_just_outside_the_staff_needs_none() {
+        // D4 (step -1, the space directly below the bottom line) and G5
+        // (step 9, the space directly above the top line) both sit closer
+        // to the staff than any ledger line would be.
+        assert!(ledger_line_steps(-1).is_empty());
+        assert!(ledger_line_steps(9).is_empty());
+    }
+
+    #[test]
+    fn ledger_line_steps_a_note_in_the_gap_beyond_the_first_ledger_still_gets_it() {
+        // B3 (step -3, a space) is one step further than middle C (-2) —
+        // it still reads against that same first ledger line.
+        assert_eq!(ledger_line_steps(-3), vec![-2]);
+        // A3 (step -4, on a line) needs two.
+        assert_eq!(ledger_line_steps(-4), vec![-2, -4]);
+    }
+
+    #[test]
+    fn ledger_line_steps_above_the_staff_mirrors_below() {
+        assert_eq!(ledger_line_steps(10), vec![10]); // A5
+        assert_eq!(ledger_line_steps(11), vec![10]); // B5, a space
+        assert_eq!(ledger_line_steps(12), vec![10, 12]); // C6
+    }
+
+    #[test]
+    fn notehead_kind_classifies_by_duration() {
+        assert_eq!(notehead_kind(4.0), NoteheadKind::Whole);
+        assert_eq!(notehead_kind(3.0), NoteheadKind::Whole);
+        assert_eq!(notehead_kind(2.0), NoteheadKind::Half);
+        assert_eq!(notehead_kind(1.5), NoteheadKind::Half);
+        assert_eq!(notehead_kind(1.0), NoteheadKind::Filled);
+        assert_eq!(notehead_kind(0.25), NoteheadKind::Filled);
+    }
+
+    #[test]
+    fn whole_notes_have_no_stem() {
+        assert!(!NoteheadKind::Whole.has_stem());
+        assert!(NoteheadKind::Half.has_stem());
+        assert!(NoteheadKind::Filled.has_stem());
+    }
+
+    #[test]
+    fn has_eighth_flag_is_true_only_below_the_quarter_eighth_midpoint() {
+        assert!(!has_eighth_flag(1.0)); // quarter note
+        assert!(!has_eighth_flag(0.75)); // exactly the midpoint: rounds up to quarter
+        assert!(has_eighth_flag(0.5)); // eighth note
+        assert!(has_eighth_flag(0.25)); // sixteenth: still rounds to one flag
+    }
+
+    #[test]
+    fn has_eighth_flag_never_applies_to_half_or_whole_notes() {
+        // Half/whole are always well above the flag threshold, so a note
+        // long enough to have no stem at all never picks one up either.
+        assert!(!has_eighth_flag(2.0));
+        assert!(!has_eighth_flag(4.0));
+    }
+
+    /// A note at a given pitch, for the clef/beam tests (the `note`
+    /// helper below fixes MIDI 60 because its own tests only vary time).
+    fn note_at(midi: u8, start_beat: f64) -> NotationNote {
+        NotationNote {
+            start_beat,
+            duration_beats: 0.5,
+            midi,
+            tied_from_previous: false,
+        }
+    }
+
+    fn note(start_beat: f64, duration_beats: f64) -> NotationNote {
+        NotationNote {
+            start_beat,
+            duration_beats,
+            midi: 60,
+            tied_from_previous: false,
+        }
+    }
+
+    #[test]
+    fn split_at_bar_lines_leaves_a_note_within_one_bar_untouched() {
+        let segments = split_at_bar_lines(note(1.0, 2.0), 4.0);
+        assert_eq!(segments, vec![note(1.0, 2.0)]);
+        assert!(!segments[0].tied_from_previous);
+    }
+
+    #[test]
+    fn split_at_bar_lines_splits_a_note_crossing_one_bar_line() {
+        // Starts at beat 2 of bar 0 (4 beats/bar), lasts 4 beats: ends at
+        // beat 6, i.e. beat 2 of bar 1. Splits into [2, 4) and [4, 6).
+        let segments = split_at_bar_lines(note(2.0, 4.0), 4.0);
+        assert_eq!(segments.len(), 2);
+        assert_eq!(segments[0].start_beat, 2.0);
+        assert_eq!(segments[0].duration_beats, 2.0);
+        assert!(!segments[0].tied_from_previous);
+        assert_eq!(segments[1].start_beat, 4.0);
+        assert_eq!(segments[1].duration_beats, 2.0);
+        assert!(segments[1].tied_from_previous);
+    }
+
+    #[test]
+    fn split_at_bar_lines_splits_a_note_spanning_several_bars() {
+        // Starts at beat 3 of bar 0, lasts 10 beats: ends at beat 13
+        // (beat 1 of bar 3). Segments: [3,4), [4,8), [8,12), [12,13).
+        let segments = split_at_bar_lines(note(3.0, 10.0), 4.0);
+        let expected: Vec<(f64, f64)> = vec![(3.0, 1.0), (4.0, 4.0), (8.0, 4.0), (12.0, 1.0)];
+        let actual: Vec<(f64, f64)> = segments
+            .iter()
+            .map(|s| (s.start_beat, s.duration_beats))
+            .collect();
+        assert_eq!(actual, expected);
+        assert!(!segments[0].tied_from_previous);
+        assert!(segments[1..].iter().all(|s| s.tied_from_previous));
+    }
+
+    #[test]
+    fn split_at_bar_lines_preserves_midi() {
+        let segments = split_at_bar_lines(
+            NotationNote {
+                start_beat: 2.0,
+                duration_beats: 4.0,
+                midi: 67,
+                tied_from_previous: false,
+            },
+            4.0,
+        );
+        assert!(segments.iter().all(|s| s.midi == 67));
+    }
+
+    #[test]
+    fn split_at_bar_lines_on_a_note_starting_exactly_on_a_bar_line_needs_no_split() {
+        let segments = split_at_bar_lines(note(4.0, 4.0), 4.0);
+        assert_eq!(segments, vec![note(4.0, 4.0)]);
+    }
+}
