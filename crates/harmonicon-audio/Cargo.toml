@@ -18,7 +18,8 @@ crossbeam-channel = { workspace = true }
 rodio = { workspace = true }
 
 [features]
-dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug"]
+dev = ["bevy/dev", "bevy/debug"]
+dynamic_linking = ["bevy/dynamic_linking"]
 trace_tracy = ["bevy/trace_tracy"]
 
 [lints]

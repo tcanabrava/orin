@@ -19,7 +19,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 [features]
-dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug", "harmonicon-ui/dev", "harmonicon-song/dev"]
+dev = ["bevy/dev", "bevy/debug", "harmonicon-ui/dev", "harmonicon-song/dev"]
+dynamic_linking = ["bevy/dynamic_linking", "harmonicon-ui/dynamic_linking", "harmonicon-song/dynamic_linking"]
 trace_tracy = ["bevy/trace_tracy", "harmonicon-ui/trace_tracy", "harmonicon-song/trace_tracy"]
 
 [lints]

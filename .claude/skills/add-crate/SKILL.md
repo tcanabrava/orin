@@ -31,14 +31,17 @@ its own lib.
    `{ workspace = true }` in members. Note the trap: inside
    `[workspace.dependencies]` the entry needs the real version, *not*
    `workspace = true`.
-3. **Forward the features** or Bevy gets built twice with different
+3. **Forward all three features** or Bevy gets built twice with different
    features:
    ```toml
    [features]
-   dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug", "harmonicon-x/dev"]
+   dev = ["bevy/dev", "bevy/debug", "harmonicon-x/dev"]
+   dynamic_linking = ["bevy/dynamic_linking", "harmonicon-x/dynamic_linking"]
    trace_tracy = ["bevy/trace_tracy", "harmonicon-x/trace_tracy"]
    ```
-   Add the new crate to the root's `dev`/`trace_tracy` lists too.
+   Add the new crate to all three of the root's lists too. `dynamic_linking`
+   is deliberately separate from `dev`: it makes doctests unable to load the
+   stdlib, so folding it back into `dev` would break `cargo test`.
 4. Rewrite call sites to name the crate: `harmonicon_x::module::Item`.
    **Do not add a re-export facade** — it hides which crate code comes
    from, which is the whole point of the boundary.

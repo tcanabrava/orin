@@ -28,16 +28,22 @@ than accumulating history (git log/commit messages are the historical record):
 ## Commands
 
 ```bash
-cargo run --features dev        # local iteration (dynamic linking + asset watcher)
-cargo run --release             # playable build; never ship the dev feature
-cargo test                      # 1106 tests, whole workspace, incl. doctests
-cargo test --features dev --all-targets   # dev-feature loop; skips doctests
+cargo run --features dev,dynamic_linking   # local iteration; ~7s relink
+cargo run --release             # playable build; never ship dev/dynamic_linking
+cargo test --features dev       # 1106 tests, whole workspace, incl. doctests
 
-# Why the second form needs --all-targets: `dev` turns on
-# bevy/dynamic_linking, and rustdoc's doctest binary then can't load the
-# dynamically-linked stdlib ("libstd-*.so: cannot open shared object
-# file"). --all-targets covers lib/bins/tests and leaves doctests out;
-# plain `cargo test` (what CI runs) is what actually checks them.
+# The two loops want different things, which is why dynamic_linking is its
+# own feature rather than part of `dev`:
+#   - running wants it: it drops a relink after a main.rs edit from ~91s to
+#     ~7s, which dominates the edit/run cycle.
+#   - testing cannot have it: rustdoc's doctest binary then fails to load
+#     the dynamically-linked stdlib ("libstd-*.so: cannot open shared
+#     object file") and every doctest errors.
+# Never ship either — dynamic_linking needs libbevy_dylib*.so beside the
+# binary, which packaged builds (e.g. the flatpak) don't bundle.
+
+# Working on pure logic? Skip the engine entirely — seconds, not a minute:
+cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
 cargo clippy --all-targets -- -D warnings               # what CI runs
 
 # Working on pure logic? Skip the engine entirely — seconds, not a minute:

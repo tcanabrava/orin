@@ -23,7 +23,8 @@ crossbeam-channel = { workspace = true }
 notify-debouncer-full = { workspace = true }
 
 [features]
-dev = ["bevy/dev", "bevy/dynamic_linking", "bevy/debug", "harmonicon-audio/dev"]
+dev = ["bevy/dev", "bevy/debug", "harmonicon-audio/dev"]
+dynamic_linking = ["bevy/dynamic_linking", "harmonicon-audio/dynamic_linking"]
 trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy"]
 
 [lints]

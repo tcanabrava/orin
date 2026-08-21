@@ -102,13 +102,17 @@ clap = { version = "4.6.6", features = ["derive"] }
 notify-debouncer-full = { workspace = true }
 
 [features]
-# Fast local iteration: dynamic-links Bevy and enables its dev tools + asset
-# file watcher. Never ship this — dynamic_linking needs libbevy_dylib*.so
-# alongside the binary, which packaged builds (e.g. the flatpak) don't bundle.
+# Local iteration: Bevy's dev tools + asset file watcher. Never ship it.
 # Local dev: `cargo run --features dev`.
+#
+# Deliberately does *not* pull in dynamic_linking. That lives in its own
+# feature below, because enabling it breaks `cargo test`: rustdoc's doctest
+# binary cannot load the dynamically-linked stdlib
+# ("libstd-*.so: cannot open shared object file"), so every doctest fails.
+# Keeping the two apart means one command — `cargo test --features dev` —
+# runs the whole suite, doctests included.
 dev = [
     "bevy/dev",
-    "bevy/dynamic_linking",
     "bevy/debug",
     "harmonicon-audio/dev",
     "harmonicon-platform/dev",
@@ -119,6 +123,23 @@ dev = [
     "harmonicon-jam/dev",
     "harmonicon-editor/dev",
     "harmonicon-menu/dev",
+]
+# Dynamic-links Bevy for faster local link times. Opt in on top of `dev`
+# when iterating on the game itself (`cargo run --features dev,dynamic_linking`);
+# leave it off for `cargo test`, which cannot run doctests with it on, and
+# never ship it — it needs libbevy_dylib*.so beside the binary, which
+# packaged builds (e.g. the flatpak) don't bundle.
+dynamic_linking = [
+    "bevy/dynamic_linking",
+    "harmonicon-audio/dynamic_linking",
+    "harmonicon-platform/dynamic_linking",
+    "harmonicon-song/dynamic_linking",
+    "harmonicon-app/dynamic_linking",
+    "harmonicon-ui/dynamic_linking",
+    "harmonicon-gameplay/dynamic_linking",
+    "harmonicon-jam/dynamic_linking",
+    "harmonicon-editor/dynamic_linking",
+    "harmonicon-menu/dynamic_linking",
 ]
 # Streams Bevy's built-in ECS/render/asset spans plus this crate's own
 # manual spans (audio capture, pitch detection) to a running Tracy client
