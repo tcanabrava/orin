@@ -16,6 +16,11 @@ publish = false
 # put, so the split lands one crate at a time instead of all at once.
 [workspace]
 members = ["crates/*"]
+# Without this, a bare `cargo test` at the root selects only the root
+# package — which is the binary and owns almost no tests — and cheerfully
+# reports success having run ~3% of the suite. default-members makes the
+# unqualified commands mean the whole workspace.
+default-members = [".", "crates/*"]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }

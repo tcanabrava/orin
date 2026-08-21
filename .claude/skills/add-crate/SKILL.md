@@ -74,11 +74,16 @@ When a caller can't reach something any more, ask *why* it was reaching:
 ## Verify
 
 ```bash
-cargo build --workspace --features dev
-cargo test --workspace --features dev     # count must not drop
-cargo clippy --workspace --all-targets -- -D warnings
+cargo build --features dev
+cargo test --features dev     # count must not drop
+cargo clippy --all-targets -- -D warnings
 cargo check --lib --target wasm32-unknown-unknown
 ```
+
+These cover every member because the workspace sets `default-members`.
+A new crate under `crates/` is picked up by the `crates/*` glob
+automatically — but if you add one *outside* that glob, add it to both
+`members` and `default-members`, or its tests silently stop running.
 
 Sum `test result:` lines including `FAILED` — counting only `ok` makes a
 failure look like tests going missing.

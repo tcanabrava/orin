@@ -30,8 +30,8 @@ than accumulating history (git log/commit messages are the historical record):
 ```bash
 cargo run --features dev        # local iteration (dynamic linking + asset watcher)
 cargo run --release             # playable build; never ship the dev feature
-cargo test --workspace          # ~1100 tests; safe headless
-cargo clippy --workspace --all-targets -- -D warnings   # what CI runs
+cargo test                      # ~1100 tests, whole workspace; safe headless
+cargo clippy --all-targets -- -D warnings               # what CI runs
 
 # Working on pure logic? Skip the engine entirely — seconds, not a minute:
 cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
