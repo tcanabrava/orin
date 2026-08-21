@@ -4,9 +4,13 @@
 //! typically) and a small floating label follows the cursor near it while
 //! the pointer stays over that entity, showing the tooltip's text.
 //!
-//! ```ignore
-//! use crate::dialogs::tooltip::Tooltip;
-//! parent.spawn((Button, /* ... */, Tooltip(String::from(loc.msg("some-key")))));
+//! ```no_run
+//! # use bevy::prelude::*;
+//! # use bevy::ui_widgets::Button as WidgetButton;
+//! # use harmonicon_ui::dialogs::tooltip::Tooltip;
+//! # fn example(parent: &mut ChildSpawnerCommands, label: String) {
+//! parent.spawn((WidgetButton, Tooltip(label)));
+//! # }
 //! ```
 
 use bevy::picking::Pickable;

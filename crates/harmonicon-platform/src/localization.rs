@@ -16,9 +16,12 @@
 //!
 //! Call sites fetch strings through [`LocalizationExt::msg`]:
 //!
-//! ```ignore
-//! use crate::localization::LocalizationExt;
+//! ```no_run
+//! # use bevy_fluent::prelude::Localization;
+//! # use harmonicon_platform::localization::LocalizationExt;
+//! # fn example(localization: &Localization) {
 //! let label = localization.msg("menu-play");
+//! # }
 //! ```
 //!
 //! [Fluent]: https://projectfluent.org/
@@ -258,8 +261,19 @@ pub trait LocalizationExt {
     /// practice-done = Done — {$hits}/{$total} notes · {$score} pts
     /// ```
     /// Call site:
-    /// ```ignore
-    /// loc.msg_args("practice-done", &[("hits", hits.to_string()), ...])
+    /// ```no_run
+    /// # use bevy_fluent::prelude::Localization;
+    /// # use harmonicon_platform::localization::LocalizationExt;
+    /// # fn example(loc: &Localization, hits: u32, total: u32, score: u32) {
+    /// loc.msg_args(
+    ///     "practice-done",
+    ///     &[
+    ///         ("hits", hits.to_string()),
+    ///         ("total", total.to_string()),
+    ///         ("score", score.to_string()),
+    ///     ],
+    /// );
+    /// # }
     /// ```
     fn msg_args(&self, key: &str, args: &[(&str, String)]) -> LocalizedStr;
 }

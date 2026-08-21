@@ -6,8 +6,16 @@
 //! the on/off readout — see `menu::pages::options`'s four Options-page
 //! toggles for the motivating case.
 //!
-//! ```ignore
-//! checkbox::spawn_checkbox(&mut commands, parent, "Fullscreen", enabled, on_change);
+//! ```no_run
+//! # use bevy::prelude::*;
+//! # use bevy::ui_widgets::ValueChange;
+//! # use harmonicon_ui::dialogs::checkbox;
+//! # fn example(commands: &mut Commands, parent: Entity, enabled: bool) {
+//! checkbox::spawn_checkbox(commands, parent, "Fullscreen", enabled, on_change);
+//! # }
+//! fn on_change(ev: On<ValueChange<bool>>, mut commands: Commands) {
+//!     commands.entity(ev.source).insert(bevy::ui::Checked);
+//! }
 //! ```
 //!
 //! Register [`CheckboxPlugin`] once per app.
