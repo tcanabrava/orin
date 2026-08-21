@@ -99,46 +99,12 @@ Manual testing needs a mic, audio out, and a display.
   - **A new crate must forward the `dev`/`trace_tracy` features** to its own
     `bevy` (`"harmonicon-x/dev"`), or feature unification breaks and the
     tree ends up with two differently-configured Bevy builds.
-- **Profiling/tracing is Tracy-based** (`cargo run --release --features
-  trace_tracy`, per the Commands section above). `trace_tracy` (`Cargo.toml`)
-  just forwards to `bevy/trace_tracy`, which already wraps every ECS system
-  call in its own `info_span!("system", name = ..)` — most of what shows up
-  in Tracy needs no manual instrumentation at all. Two things this crate adds
-  on top:
-  - `main.rs`'s `LogPlugin` is feature-gated: the everyday filter
-    (`"warn,bevy_render::camera=error"`) sets the *default* level below
-    `info`, which silently drops every span (Bevy's own and ours) before any
-    backend — Tracy included — ever sees them (see
-    `docs/profiling.md`/`LogPlugin::build_filter_layer`, which folds
-    `filter`'s own bare directives over `level`). A `trace_tracy` build swaps
-    in a filter with no bare-level directive below `info`, so the configured
-    `Level::INFO` default actually holds.
-  - Manual spans cover the paths automatic per-system instrumentation can't
-    reach — anything that isn't itself a system call. Two categories so far:
-    - **Off the ECS schedule entirely:** the cpal capture callback
-      (`audio_input::push_chunks`) runs on its own real-time thread; the only
-      custom `AssetLoader` (`song::loader::SongChartLoader::load`) runs as a
-      future on the AssetServer's IO task pool. Both get a manual span for
-      the same reason — Bevy's per-system spans only wrap systems the
-      schedule itself calls, so anything running elsewhere (another thread,
-      another executor) is otherwise invisible no matter how expensive it
-      is. A span held across an `.await` needs `tracing::Instrument` (via
-      `bevy::log::tracing::Instrument`) rather than a plain `.entered()`
-      guard — an `EnteredSpan` isn't `Send`, which the loader's returned
-      future must be; `SongChartLoader::load` is a thin wrapper that
-      instruments a `load_inner` for exactly this reason.
-    - **A hot inner loop worth breaking out of its system's own total time:**
-      `pipeline::process_audio`'s per-chunk work; `pitch_detect::analyze`'s
-      FFT transform and per-algorithm dispatch; `build_nmf_dict` (the
-      priciest one-off, rebuilt only when the NMF dictionary goes stale);
-      `waveform::analyze_ogg_waveform`/`analyze_wav_waveform` (a whole-file
-      decode — also called from the off-schedule asset loader above, so it
-      carries both reasons at once).
-    Add spans the same way for any other code that runs off the main
-    schedule (more asset loaders, decode threads, the asset watcher — though
-    `assets_management::watch`'s debouncer thread runs only
-    `notify-debouncer-full`'s own code, nothing of ours, so there's nothing
-    to instrument there) or burns real time inside a single system call.
+- **Profiling is Tracy-based** — see `docs/profiling.md` for the whole
+  story (why the `LogPlugin` filter is feature-gated, and which paths need
+  a manual span because Bevy's per-system instrumentation can't reach
+  them). Add a span for anything running off the main schedule (another
+  thread, an asset loader, a decode task) or burning real time inside one
+  system call.
 - **Per-crate architecture notes live in `crates/<name>/CLAUDE.md`.** Each
   crate documents its own load-bearing facts; they load when you're working
   in that crate rather than all at once. Start there for anything
@@ -157,6 +123,20 @@ Manual testing needs a mic, audio out, and a display.
   | `harmonicon-editor` | the whole Song Editor (record, MIDI import, undo, timeline tools, tempo map) |
   | `harmonicon-menu` | the guided tutorial tour, menu page scrolling |
   | `harmonicon-bench` | benchmark-first pitch-detection workflow |
+
+## Procedural workflows
+
+Three recurring jobs have their steps (and their traps) written up as
+skills in `.claude/skills/`, loaded on demand rather than living here:
+
+- **`add-lesson`** — authoring `assets/lessons/<unit>/<lesson>/`: manifest
+  schema, pass criteria, prerequisites, what's honestly scoreable.
+- **`add-crate`** — adding or extracting a workspace crate: extract
+  bottom-up, forward the features, and what breaks on a move
+  (`include_str!` depth, `CARGO_MANIFEST_DIR`, `OUT_DIR`, the budget
+  allowlist).
+- **`add-locale-string`** — the three-locale parity rule and Fluent's
+  `{$var}` syntax.
 
 ## Conventions (enforced or established)
 
@@ -299,98 +279,3 @@ Manual testing needs a mic, audio out, and a display.
   `App` + `StatesPlugin` (see `menu/mod.rs`, `gameplay/tests.rs`).
 - **Commits:** no `Co-Authored-By` trailer. Chart schema changes must stay
   backward compatible (new fields optional); bump `metadata.format_version`.
-
-## Known open items
-
-- Content: besides the Example Artist gameplay demos, bundled songs now
-  include public-domain melodies (Greensleeves on a G harp, Jesu Joy and
-  the Toccata in D minor on C harps, Für Elise on a C chromatic,
-  "O Pulo da Gaita" transcribed from the Mr. Dirsom harmonica tab score,
-  Amazing Grace, the Hallelujah chorus from Handel's Messiah on a D harp,
-  and Mulher Rendeira). `tests/asset_layout.rs` schema-validates every
-  bundled song chart. Deliberately skipped as still under copyright:
-  Feira de Mangaio (Sivuca/Glorinha Gadelha) and Asa Branca (Luiz
-  Gonzaga/Humberto Teixeira) — chart those yourself via Record mode
-  instead of bundling a transcription.
-- **Song editor color legend**: a third meta-form column
-  (`meta_form::spawn_color_legend`) explains every color the editor uses,
-  grouped by where it appears — note technique colors in the grid
-  (`state::pitch_color`; direction is the ↑/↓ arrow glyph, not a color),
-  the out-of-scale red tint, the selected-note border, drag-ghost valid/
-  invalid, and the timeline/scrollbar colors — deliberately calling out
-  that the scrollbar minimap's blue/orange means blow/draw
-  (`interaction::SCROLLBAR_BLOW_COLOR`/`SCROLLBAR_DRAW_COLOR`), a
-  different meaning than the grid note's blue (which means the Normal
-  technique, regardless of blow/draw). Several colors that were private
-  `const`s or local `let` bindings (`grid::OUT_OF_SCALE_TINT`/
-  `TEMPO_MARKER_COLOR`, `timeline_overlay::SPLIT_LINE_COLOR`/
-  `RANGE_HIGHLIGHT_COLOR`) were widened to `pub(super)` so the legend
-  reuses the exact values instead of duplicating literals that could
-  drift out of sync.
-- **Song editor: selectable scale** (`song::chart::Scale`, a new chart
-  field): the grid's out-of-scale red tint used to always mean "outside
-  the blues scale rooted on the harp key" unconditionally
-  (`blues_scale_classes(&state.key)`); it's now `state.scale.classes(&state.
-  key)`, `state.scale` picked via a combobox (`meta_form::
-  spawn_scale_combobox`) — six options: 1st/2nd/3rd position (the blues
-  hexatonic, same shape as everywhere else, just rooted at the harp key
-  \+0/+7/+2 semitones — the same offsets `Position::interval_below_jam_key`
-  uses for Jam Session's harp-picking, just applied upward from the harp's
-  own key instead of downward from a separate jam key, since a chart has
-  no jam key distinct from its harp) and Major/Minor Pentatonic/Country
-  (alternative *shapes*, always rooted on the harp key — for melodies that
-  aren't blues-vocabulary at all; "Country" = major pentatonic, the
-  scale 2nd-position cross-harp playing reaches without bending, per
-  harmonica-pedagogy convention). `FirstPosition` (the default, used when
-  a chart doesn't set `scale` at all) reproduces the old unconditional-
-  blues behavior exactly — `first_position_matches_blues_scale_classes_
-  exactly` pins this down. `harmonica.scale` is a new, schema-`enum`-
-  validated field (unlike its free-string `position` sibling), added to
-  both `Harmonica::Diatonic`/`::Chromatic`; `CURRENT_FORMAT_VERSION`
-  bumped to 1.2.0 since an older build's stricter schema would otherwise
-  reject a chart that actually sets it with a confusing raw validation
-  error instead of the intended "needs a newer Harmonicon" message — a
-  chart that never sets `scale` needs no version bump, unaffected either
-  way. The combobox itself is spawned once into a reserved
-  `ScaleComboboxSlot` (`spawn_scale_combobox`, a `Without<Children>`
-  spawn-once gate, unlike the MIDI track combobox's rebuild-on-message
-  pattern, since `Scale::all()`'s option list never changes at runtime);
-  Load pushes a different value into the already-spawned combobox by
-  writing `ComboboxValue` directly (`sync_scale_combobox_value`) — the
-  widget's own documented escape hatch for exactly this, `dialogs::
-  combobox`'s always-on `sync_combobox_visuals` picks the change up from
-  there. No existing bundled chart sets `harmonica.scale` — all keep
-  reading as 1st position, i.e. unchanged from before this feature.
-  **`ScaleComboboxSlot` lives in the fixed chrome** (`ui::
-  spawn_fixed_chrome`, above the mod panel — not the scrollable meta form
-  the rest of the fields are in), a deliberate, load-bearing placement:
-  `bevy_ui_widgets::Popover`'s dropdown list must be a literal ECS child of
-  its toggle to compute its own position, and Bevy's UI overflow clipping
-  follows that same ancestry rather than the popover's computed screen
-  position — a combobox nested inside the form's `Overflow::scroll_y()`
-  `ScrollArea` gets its open dropdown clipped to that scroll viewport no
-  matter how high its `GlobalZIndex` is, rendering behind (and stealing
-  clicks from) whatever's in the unclipped fixed chrome instead. The MIDI
-  track combobox has this same latent constraint (it's also inside that
-  `ScrollArea`) but hasn't surfaced as a visible bug yet — if it ever does,
-  the fix is the same: move its slot out of the scrollable area too.
-  **Fixing the clipping surfaced a second, separate bug in `dialogs::
-  combobox` itself, affecting every combobox, not just Scale's**:
-  `Pointer<Click>` auto-propagates up the entity hierarchy (every
-  `bevy_picking` pointer event does, `#[entity_event(propagate =
-  PointerTraversal, auto_propagate)]`) — clicking a dropdown item bubbled
-  the same click up to the toggle button (`list`'s ancestor), whose own
-  `toggle_click` observer then saw the popup `item_click` had *just* closed
-  and immediately reopened it, so picking an item never visually closed
-  the dropdown. Fixed by calling `ev.propagate(false)` in all three of the
-  widget's own click observers (`toggle_click`/`backdrop_click`/
-  `item_click`) — a modal widget shouldn't leak its own clicks to whatever
-  it happens to be nested inside, regardless of this specific bug.
-- **Lessons**: engine, all five primitives, and the full wave 1 + wave 2
-  content pass (Units 1–3, 19 lessons) are shipped — see
-  `docs/lessons_plan.md`. Unit 4 "jazz"'s engine prerequisites are also done
-  (`song::harmonica::ii_v_i_chords`, `ChordQuality::{Major7,
-  HalfDiminished7,Dominant7Alt}`, `Progression::JazzBlues`); what's left is
-  content only, the same rights/judgment-sensitive gap as blues content
-  (`TODO.md`).
-- Remaining 0.4 work (recorded backing loops) — see `ROADMAP.md`/`PLAN.md`.
