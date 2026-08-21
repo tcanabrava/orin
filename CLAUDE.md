@@ -277,5 +277,32 @@ skills in `.claude/skills/`, loaded on demand rather than living here:
   ECS systems second. Scoring/chart/pitch logic all have dense test modules —
   match that. ECS behaviour is tested with minimal `World` + `Schedule` or
   `App` + `StatesPlugin` (see `menu/mod.rs`, `gameplay/tests.rs`).
-- **Commits:** no `Co-Authored-By` trailer. Chart schema changes must stay
-  backward compatible (new fields optional); bump `metadata.format_version`.
+- **Commits:** no `Co-Authored-By` trailer (see "Rules that override
+  defaults" below — this one is hook- and CI-enforced). Chart schema changes
+  must stay backward compatible (new fields optional); bump
+  `metadata.format_version`.
+
+## Rules that override defaults
+
+Most conventions above describe how this codebase already works, so
+following them is the path of least resistance. The ones below instead
+*contradict* a common default, which means they have to win on every single
+occurrence — and that is exactly the kind of rule that erodes silently. The
+`Co-Authored-By` one was violated 19 commits in a row before anyone noticed,
+because prose is not a check.
+
+| Rule | The default it overrides | Enforced by |
+|---|---|---|
+| No `Co-Authored-By` trailer on commits | most tooling and assistants add one automatically | `scripts/git-hooks/commit-msg` + the `commit_messages` CI job |
+| Click handlers are `On<Activate>`, never `On<Pointer<Click>>` | `Pointer<Click>` is the obvious Bevy reflex, and compiles fine — it just never fires | nothing yet; a genuine gap |
+| `WorldAssetRoot`, not `SceneRoot`, for GLB/scene assets | `SceneRoot` is what Bevy examples show | nothing yet |
+| Vibrato integrates frequency over time, never `freq × t` | the naive form looks right and drifts pitch upward | nothing yet |
+
+**If you add a rule to this table, add a check with it.** Anything here
+without one is a known liability, not a settled convention.
+
+Install the hooks once per clone:
+
+```bash
+./scripts/git-hooks/install.sh
+```

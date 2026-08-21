@@ -10,6 +10,30 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Enforce the Commits convention (CLAUDE.md) on *new* commits only.
+  # pull_request-only and scoped to the PR's own range: existing history
+  # carries the trailer and is deliberately not being rewritten.
+  commit_messages:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject the Co-Authored-By trailer
+        run: |
+          range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          bad=$(git log --format='%H %s%n%b' "$range" | grep -i '^Co-Authored-By:' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::CLAUDE.md forbids the Co-Authored-By trailer; found it in this PR:"
+            git log --format='  %h %s' "$range" --grep='^Co-Authored-By:' -i
+            exit 1
+          fi
+          echo "no Co-Authored-By trailers in $range"
+
   # Run cargo test
   test:
     name: Test Suite

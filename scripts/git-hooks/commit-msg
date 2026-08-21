@@ -1,0 +1,20 @@
+#!/bin/sh
+# Rejects the `Co-Authored-By` trailer, which CLAUDE.md's Commits convention
+# forbids.
+#
+# This exists because that rule contradicts a common default (several tools
+# and assistants add the trailer automatically), and a project rule that has
+# to beat a default on *every* commit is the kind that quietly erodes — it
+# was violated 19 times in a row before anyone noticed. Prose in CLAUDE.md
+# was not enough; this is.
+#
+# Install: scripts/git-hooks/install.sh   (hooks are not version-controlled,
+# so a fresh clone has to opt in — CI enforces the same rule regardless).
+set -e
+
+if grep -qi '^Co-Authored-By:' "$1"; then
+    echo "commit-msg: refusing the Co-Authored-By trailer." >&2
+    echo "  CLAUDE.md, Conventions -> Commits: \"no Co-Authored-By trailer\"." >&2
+    echo "  Remove it and commit again." >&2
+    exit 1
+fi
