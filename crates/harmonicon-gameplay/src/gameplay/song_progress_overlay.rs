@@ -841,6 +841,9 @@ fn sync_note_marker_colors(
 /// rectangle here, not prev/next buttons — see `pause_menu::
 /// SelectedPhraseIndex`'s doc comment. Only while paused, matching every
 /// other interactive behaviour this bar has (dragging a loop range).
+// not-a-widget-button: phrase rects are drawn segments of the progress bar,
+// sized to the phrase rather than to a hit target; the keyboard route to a
+// phrase is the pause menu's phrase list.
 fn on_phrase_rect_click(
     ev: On<Pointer<Click>>,
     rects: Query<&PhraseSectionRect>,

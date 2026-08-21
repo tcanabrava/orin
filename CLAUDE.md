@@ -294,7 +294,7 @@ because prose is not a check.
 | Rule | The default it overrides | Enforced by |
 |---|---|---|
 | No `Co-Authored-By` trailer on commits | most tooling and assistants add one automatically | `scripts/git-hooks/commit-msg` + the `commit_messages` CI job |
-| Click handlers are `On<Activate>`, never `On<Pointer<Click>>` | `Pointer<Click>` is the obvious Bevy reflex, and compiles fine — it just never fires | nothing yet; a genuine gap |
+| Click handlers are `On<Activate>`, never `On<Pointer<Click>>` | `Pointer<Click>` is the obvious Bevy reflex, and compiles fine — it just skips keyboard users | `build.rs` (`pointer_click_violations`); a genuinely non-button surface opts out with a `not-a-widget-button:` comment |
 | `WorldAssetRoot`, not `SceneRoot`, for GLB/scene assets | `SceneRoot` is what Bevy examples show | nothing yet |
 | Vibrato integrates frequency over time, never `freq × t` | the naive form looks right and drifts pitch upward | nothing yet |
 

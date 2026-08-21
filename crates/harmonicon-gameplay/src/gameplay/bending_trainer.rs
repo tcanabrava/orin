@@ -201,6 +201,9 @@ fn row_to_technique(row: Row) -> Option<Technique> {
 /// Shared across every selectable cell (see `spawn_harmonica_overlay_selectable`);
 /// looks up which cell fired via `DiagramCellTarget` on the clicked entity
 /// rather than a per-cell closure.
+// not-a-widget-button: harmonica-diagram cells are plain Nodes in a grid,
+// not buttons — the keyboard path to a cell is the trainer's own key
+// handling, not Tab focus.
 fn on_diagram_cell_clicked(
     ev: On<Pointer<Click>>,
     cells: Query<&DiagramCellTarget>,

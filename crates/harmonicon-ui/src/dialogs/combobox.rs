@@ -472,6 +472,9 @@ fn toggle_click(
 
 /// Clicking the backdrop means clicking outside the dropdown — close it
 /// without touching `ComboboxValue`.
+// not-a-widget-button: the backdrop is a bare full-screen Node whose only
+// job is catching clicks outside the dropdown; it has no Button and is not
+// keyboard-reachable by design (Escape closes the dropdown instead).
 fn backdrop_click(
     mut ev: On<Pointer<Click>>,
     backdrops: Query<&ComboboxRoot>,

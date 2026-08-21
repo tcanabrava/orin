@@ -175,6 +175,8 @@ fn hovered_tick(
 /// about a drag span at all; the module doc's "`Click`/`DragEnd` race" only
 /// matters for tools that read `EditorState::timeline_drag`, which this one
 /// doesn't touch.
+// not-a-widget-button: the timeline is a continuous drag surface, so the
+// click position itself is the input; there is no discrete Button to focus.
 pub(super) fn on_timeline_click_tempo(
     ev: On<Pointer<Click>>,
     geoms: Query<&TimelineSurfaceGeometry>,
@@ -198,6 +200,8 @@ pub(super) fn on_timeline_click_tempo(
 /// already stops the transport, so the armed state can't leak into
 /// Play/Edit. Ignored while a take is actually running — the playhead is
 /// the recording's own cursor then.
+// not-a-widget-button: same continuous drag surface as the tempo handler
+// above — the seek target is the x position, not a focusable control.
 pub(super) fn on_timeline_click_seek(
     ev: On<Pointer<Click>>,
     geoms: Query<&TimelineSurfaceGeometry>,

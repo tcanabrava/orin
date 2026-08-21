@@ -186,9 +186,91 @@ fn build() {
         eprintln!();
     }
 
-    if !violations.is_empty() || !message_violations.is_empty() {
+    let click_violations = pointer_click_violations(&sources);
+    if !click_violations.is_empty() {
+        eprintln!();
+        eprintln!("────────────────────────────────────────────────────────────");
+        eprintln!("  Click-handler enforcement: On<Pointer<Click>> without a reason");
+        eprintln!("────────────────────────────────────────────────────────────");
+        for v in &click_violations {
+            eprintln!("  {v}");
+        }
+        eprintln!();
+        eprintln!("  A `bevy_ui_widgets::Button` fires `Activate` for both a real");
+        eprintln!("  click and a focused Enter/Space, so a button's handler must take");
+        eprintln!("  `On<Activate>` — `On<Pointer<Click>>` compiles but skips keyboard");
+        eprintln!("  users entirely.");
+        eprintln!();
+        eprintln!("  If the entity genuinely has no Button on it (a drag surface, a");
+        eprintln!("  diagram cell, a dropdown backdrop), say so in a comment above");
+        eprintln!("  the handler:");
+        eprintln!();
+        eprintln!("    // {NOT_A_BUTTON} <why this entity has no Button>");
+        eprintln!("────────────────────────────────────────────────────────────");
+        eprintln!();
+    }
+
+    if !violations.is_empty() || !message_violations.is_empty() || !click_violations.is_empty() {
         std::process::exit(1);
     }
+}
+
+/// The opt-out marker a legitimate `On<Pointer<Click>>` handler must carry.
+const NOT_A_BUTTON: &str = "not-a-widget-button:";
+
+/// Flags `On<Pointer<Click>>` handlers that haven't declared themselves as
+/// non-button surfaces.
+///
+/// `bevy_ui_widgets::Button` fires `Activate` for a real click *and* for a
+/// focused Enter/Space, so a button's handler must take `On<Activate>` to be
+/// keyboard-reachable — `On<Pointer<Click>>` compiles fine and simply skips
+/// keyboard users. The reverse is worse: `On<Activate>` on a plain `Node`
+/// also compiles and then never fires at all.
+///
+/// A build script only sees text, so it cannot tell which entity a handler
+/// is observing. It therefore flags *every* use and makes the legitimate
+/// ones — drag surfaces, diagram cells, a dropdown backdrop — say so:
+///
+/// ```ignore
+/// // not-a-widget-button: the backdrop is a plain Node, no Button on it
+/// fn backdrop_click(ev: On<Pointer<Click>>, ...)
+/// ```
+///
+/// That keeps the exception explicit and reviewable instead of letting a
+/// genuine mistake hide among the valid uses.
+fn pointer_click_violations(sources: &[(String, String)]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (path, source) in sources {
+        let lines: Vec<&str> = source.lines().collect();
+        for (i, line) in lines.iter().enumerate() {
+            // A doc/line comment discussing the rule isn't a handler.
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") || !line.contains("On<Pointer<Click>>") {
+                continue;
+            }
+            // Walk back over the signature (the parameter can sit several
+            // lines below `fn foo(`), then over the contiguous comment block
+            // above it, and look for the marker there. Bounded so a handler
+            // with no comment block can't scan the whole file.
+            let is_comment = |l: &str| {
+                let t = l.trim_start();
+                t.starts_with("//") || t.starts_with("#[")
+            };
+            let mut k = i;
+            while k > 0 && i - k < 30 && !is_comment(lines[k - 1]) {
+                k -= 1;
+            }
+            let excused = lines[..k]
+                .iter()
+                .rev()
+                .take_while(|l| is_comment(l) || l.trim().is_empty())
+                .any(|l| l.contains(NOT_A_BUTTON));
+            if !excused {
+                out.push(format!("{path}:{}: `On<Pointer<Click>>`", i + 1));
+            }
+        }
+    }
+    out
 }
 
 /// Recursively collects every `.rs` file under `dir` into `out`.
