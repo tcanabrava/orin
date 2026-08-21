@@ -303,6 +303,98 @@ pub fn has_eighth_flag(duration_beats: f64) -> bool {
 /// The SMuFL glyphs spelling `n` — `timeSig0`..`timeSig9` are consecutive
 /// codepoints, so each decimal digit maps straight onto one. Multi-digit
 /// numerators (7/8, 12/8) therefore just concatenate.
+/// Where one note sits inside a beam group, and the group's shared
+/// decisions. Computed once per group by [`beam_groups`] so the per-note
+/// spawn code stays a translation step: it never re-decides direction or
+/// length, it just draws what it is handed.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct BeamPlacement {
+    /// Shared by every note in the group — a beam with stems going both
+    /// ways is not a beam.
+    pub stem_up: bool,
+    /// Staff step the beam sits at. Every stem in the group is drawn to
+    /// this, which is what makes the beam a single straight line.
+    pub beam_step: i32,
+    /// True for the first note of the group, which is the one that draws
+    /// the beam itself (spanning to the last note's stem).
+    pub is_first: bool,
+    /// Beats from this note's stem to the group's last one — the beam's
+    /// own width. Zero for every note but the first.
+    pub span_beats: f64,
+}
+
+/// The staff's middle line, in steps — the pivot stem direction turns on:
+/// a note below it takes an up stem, above it a down stem, so stems point
+/// back toward the staff instead of running off it.
+pub(super) const MIDDLE_LINE_STEP: i32 = 4;
+
+/// How far a stem reaches past its notehead, in staff steps — 3.5 staff
+/// spaces is the conventional length, and a staff space is 2 steps.
+const STEM_LENGTH_STEPS: i32 = 7;
+
+/// Groups consecutive notes into beams, returning one entry per input note
+/// (`None` where the note is not beamed).
+///
+/// Beams a maximal run that is all flag-worthy ([`has_eighth_flag`]),
+/// gapless (each note starting where the last ended), and inside one beat
+/// — the ordinary rule that keeps the beat visible when reading. A run of
+/// one keeps its flag instead, since a beam needs two stems to span.
+///
+/// Direction follows the standard rule: whichever note of the group sits
+/// furthest from the middle line decides for all of them, so the beam
+/// leans away from the staff rather than through it.
+pub fn beam_groups(notes: &[NotationNote], clef: Clef) -> Vec<Option<BeamPlacement>> {
+    let mut out: Vec<Option<BeamPlacement>> = vec![None; notes.len()];
+    let mut i = 0;
+    while i < notes.len() {
+        if !has_eighth_flag(notes[i].duration_beats) {
+            i += 1;
+            continue;
+        }
+        // Extend while the next note continues this beat without a gap.
+        let mut j = i;
+        while j + 1 < notes.len() {
+            let cur = &notes[j];
+            let next = &notes[j + 1];
+            let contiguous = (next.start_beat - (cur.start_beat + cur.duration_beats)).abs() < 1e-6;
+            let same_beat = cur.start_beat.floor() == next.start_beat.floor();
+            if !has_eighth_flag(next.duration_beats) || !contiguous || !same_beat {
+                break;
+            }
+            j += 1;
+        }
+        if j > i {
+            let group = &notes[i..=j];
+            let steps: Vec<i32> = group.iter().map(|n| staff_step(n.midi, clef)).collect();
+            // Furthest from the middle line (step 4) decides for the group.
+            let extreme = *steps
+                .iter()
+                .max_by_key(|s| (*s - MIDDLE_LINE_STEP).abs())
+                .unwrap_or(&MIDDLE_LINE_STEP);
+            let stem_up = extreme < MIDDLE_LINE_STEP;
+            // A horizontal beam has to clear the group's own extreme note,
+            // so measure from whichever stem would be longest.
+            let beam_step = if stem_up {
+                steps.iter().max().unwrap_or(&0) + STEM_LENGTH_STEPS
+            } else {
+                steps.iter().min().unwrap_or(&0) - STEM_LENGTH_STEPS
+            };
+            let last = &notes[j];
+            let span_beats = last.start_beat - notes[i].start_beat;
+            for (k, slot) in out[i..=j].iter_mut().enumerate() {
+                *slot = Some(BeamPlacement {
+                    stem_up,
+                    beam_step,
+                    is_first: k == 0,
+                    span_beats: if k == 0 { span_beats } else { 0.0 },
+                });
+            }
+        }
+        i = j + 1;
+    }
+    out
+}
+
 pub(super) fn time_sig_glyphs(n: u8) -> String {
     n.to_string()
         .chars()
@@ -442,6 +534,109 @@ mod tests {
     fn bar_line_beats_is_empty_rather_than_looping_on_a_degenerate_meter() {
         assert!(bar_line_beats(0.0, 100.0, 0.0).is_empty());
         assert!(bar_line_beats(9.0, 0.0, 4.0).is_empty());
+    }
+
+    // ── beaming ──────────────────────────────────────────────────────────
+
+    /// An eighth note (0.5 beats) at a pitch and time.
+    fn eighth(midi: u8, start_beat: f64) -> NotationNote {
+        NotationNote {
+            start_beat,
+            duration_beats: 0.5,
+            midi,
+            tied_from_previous: false,
+        }
+    }
+
+    #[test]
+    fn two_eighths_in_one_beat_are_beamed_together() {
+        let ns = [eighth(64, 0.0), eighth(65, 0.5)];
+        let b = beam_groups(&ns, Clef::Treble);
+        assert!(b[0].is_some() && b[1].is_some());
+        assert!(b[0].unwrap().is_first);
+        assert!(!b[1].unwrap().is_first);
+    }
+
+    #[test]
+    fn a_beam_group_never_crosses_a_beat_boundary() {
+        // Four eighths: 0.0/0.5 share beat 0, 1.0/1.5 share beat 1. That
+        // is two beams of two, not one of four — the point of beaming is
+        // to keep the beat visible.
+        let ns = [
+            eighth(64, 0.0),
+            eighth(64, 0.5),
+            eighth(64, 1.0),
+            eighth(64, 1.5),
+        ];
+        let b = beam_groups(&ns, Clef::Treble);
+        assert!(b[0].unwrap().is_first);
+        assert!(!b[1].unwrap().is_first);
+        assert!(b[2].unwrap().is_first, "a new beat starts a new beam");
+        assert!(!b[3].unwrap().is_first);
+    }
+
+    #[test]
+    fn a_gap_between_notes_breaks_the_beam() {
+        // Second eighth starts half a beat late, so they are not adjacent.
+        let ns = [eighth(64, 0.0), eighth(64, 0.75)];
+        assert_eq!(beam_groups(&ns, Clef::Treble), vec![None, None]);
+    }
+
+    #[test]
+    fn a_lone_short_note_keeps_its_flag_instead_of_a_beam() {
+        let ns = [eighth(64, 0.0), note(1.0, 1.0)];
+        assert!(beam_groups(&ns, Clef::Treble)[0].is_none());
+    }
+
+    #[test]
+    fn a_quarter_note_is_never_beamed() {
+        let ns = [note(0.0, 1.0), note(1.0, 1.0)];
+        assert_eq!(beam_groups(&ns, Clef::Treble), vec![None, None]);
+    }
+
+    #[test]
+    fn the_note_furthest_from_the_middle_line_sets_the_groups_stem_direction() {
+        // C4 sits far below the middle line, G4 just below it: the group
+        // follows C4 and stems up, even though they average out close.
+        let low = beam_groups(&[eighth(60, 0.0), eighth(67, 0.5)], Clef::Treble);
+        assert!(low[0].unwrap().stem_up);
+
+        // A5 is far above the middle line, so the same pairing flips.
+        let high = beam_groups(&[eighth(81, 0.0), eighth(71, 0.5)], Clef::Treble);
+        assert!(!high[0].unwrap().stem_up);
+    }
+
+    #[test]
+    fn every_note_in_a_group_shares_one_direction_and_beam_line() {
+        let ns = [eighth(60, 0.0), eighth(67, 0.5)];
+        let b = beam_groups(&ns, Clef::Treble);
+        let (first, second) = (b[0].unwrap(), b[1].unwrap());
+        assert_eq!(first.stem_up, second.stem_up);
+        assert_eq!(first.beam_step, second.beam_step);
+    }
+
+    #[test]
+    fn the_beam_clears_the_groups_own_extreme_note() {
+        // Stems up: the beam must sit above the *highest* notehead, or the
+        // tallest stem would poke through it.
+        let ns = [eighth(60, 0.0), eighth(67, 0.5)];
+        let b = beam_groups(&ns, Clef::Treble)[0].unwrap();
+        assert!(b.stem_up);
+        assert!(b.beam_step > staff_step(67, Clef::Treble));
+    }
+
+    #[test]
+    fn only_the_first_note_carries_the_span_to_draw() {
+        let ns = [eighth(64, 0.0), eighth(64, 0.5)];
+        let b = beam_groups(&ns, Clef::Treble);
+        assert_eq!(b[0].unwrap().span_beats, 0.5);
+        assert_eq!(b[1].unwrap().span_beats, 0.0);
+    }
+
+    #[test]
+    fn beam_groups_returns_one_slot_per_note() {
+        let ns = [eighth(64, 0.0), eighth(64, 0.5), note(1.0, 2.0)];
+        assert_eq!(beam_groups(&ns, Clef::Treble).len(), ns.len());
     }
 
     #[test]

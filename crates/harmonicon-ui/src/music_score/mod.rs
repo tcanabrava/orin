@@ -6,12 +6,19 @@
 //! spawn [`spawn_music_score`] wherever their own layout calls for it and
 //! drive it by writing [`MusicScoreNotes`]/[`MusicScorePlayhead`].
 //!
-//! Deliberately not full music engraving: noteheads (whole/half/filled by
-//! duration), stems, ledger lines, sharp accidentals, ties across a bar
-//! line ([`split_at_bar_lines`]), and a single eighth-note flag
-//! ([`has_eighth_flag`]) only — no beaming, no sixteenth-or-shorter flag
-//! tier (anything shorter than an eighth still rounds up to one flag), no
-//! dotted durations, single treble clef only. This is a supplementary
+//! Deliberately not full music engraving. It does draw: noteheads
+//! (whole/half/filled by duration), stems, ledger lines, sharp
+//! accidentals, ties across a bar line ([`split_at_bar_lines`]), bar lines
+//! and a time signature ([`MusicScoreMeter`]), one of three clefs picked
+//! from the music's own range ([`choose_clef`]), and beams joining short
+//! notes within a beat ([`beam_groups`]).
+//!
+//! It does not: slant a beam (they are horizontal, with every stem in a
+//! group drawn to one shared line), draw a second beam or flag tier
+//! (anything shorter than an eighth still rounds up to one), handle dotted
+//! durations, or change clef or meter mid-piece — both are chosen once for
+//! the whole song, because either changing under a moving playhead would
+//! be unreadable. This is a supplementary
 //! visual, not a sight-reading tool (the Song Editor's own tab readout
 //! already exists for players who want exact rhythm) — see
 //! `docs/lessons_plan.md`'s framing of the tab readout for the same
@@ -87,6 +94,8 @@ const STEM_DOWN_ANCHOR_SP: (f32, f32) = (0.0, -0.168);
 /// the conventional default length for an ordinary stem).
 const STEM_LENGTH_SP: f32 = 3.5;
 const STEM_THICKNESS_SP: f32 = 0.12; // engravingDefaults.stemThickness
+/// engravingDefaults.beamThickness is 0.5 staff spaces.
+const BEAM_THICKNESS_PX: f32 = 0.5 * STAFF_LINE_SPACING;
 
 /// How far a ledger line extends beyond the notehead on each side, and how
 /// thick it is — both `bravura_metadata.json`'s own `engravingDefaults`
@@ -483,6 +492,10 @@ fn rebuild_score_notes(
         }
     }
 
+    // Over every note, not just the visible ones: a group that straddles
+    // the window edge must still agree on one direction and beam line.
+    let beams = beam_groups(&notes.0, clef);
+
     let (beats_behind, beats_ahead) = visible_beats(panel_width);
     for glyph in &existing {
         commands.entity(glyph).despawn();
@@ -519,11 +532,20 @@ fn rebuild_score_notes(
             }
 
             let mut prev: Option<&NotationNote> = None;
-            for note in &notes.0 {
+            for (i, note) in notes.0.iter().enumerate() {
                 let visible = note.start_beat + note.duration_beats >= now - beats_behind
                     && note.start_beat <= now + beats_ahead;
                 if visible {
-                    spawn_note_glyphs(parent, &bravura, &tie_material, note, prev, now, clef);
+                    spawn_note_glyphs(
+                        parent,
+                        &bravura,
+                        &tie_material,
+                        note,
+                        prev,
+                        now,
+                        clef,
+                        beams[i],
+                    );
                 }
                 prev = Some(note);
             }
@@ -539,6 +561,7 @@ fn spawn_note_glyphs(
     prev: Option<&NotationNote>,
     now: f64,
     clef: Clef,
+    beam: Option<BeamPlacement>,
 ) {
     let x = ((note.start_beat - now) * PIXELS_PER_BEAT as f64) as f32;
     let step = staff_step(note.midi, clef);
@@ -614,7 +637,7 @@ fn spawn_note_glyphs(
     }
 
     if kind.has_stem() {
-        let stem_up = step < 4; // below the middle line (B4) -> stem up
+        let stem_up = beam.map_or(step < MIDDLE_LINE_STEP, |b| b.stem_up);
         let (anchor_x_sp, anchor_y_sp) = if stem_up {
             STEM_UP_ANCHOR_SP
         } else {
@@ -622,7 +645,13 @@ fn spawn_note_glyphs(
         };
         let stem_x = x + anchor_x_sp * STAFF_LINE_SPACING;
         let stem_notehead_y = notehead_y - anchor_y_sp * STAFF_LINE_SPACING;
-        let stem_len_px = STEM_LENGTH_SP * STAFF_LINE_SPACING;
+        // A beamed stem stops at its group's shared beam line instead of
+        // its own default length — that common tip is what lets one
+        // straight beam join them.
+        let stem_len_px = match beam {
+            Some(b) => (stem_notehead_y - y_for_step(b.beam_step)).abs(),
+            None => STEM_LENGTH_SP * STAFF_LINE_SPACING,
+        };
         let stem_top = if stem_up {
             stem_notehead_y - stem_len_px
         } else {
@@ -641,7 +670,34 @@ fn spawn_note_glyphs(
             MusicScoreNoteGlyph,
         ));
 
-        if has_eighth_flag(note.duration_beats) {
+        // The first note of a beam group draws the beam itself, spanning
+        // to the last stem in the group.
+        if let Some(b) = beam.filter(|b| b.is_first) {
+            let beam_y = y_for_step(b.beam_step);
+            let width = (b.span_beats * PIXELS_PER_BEAT as f64) as f32;
+            parent.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(stem_x - STEM_THICKNESS_SP * STAFF_LINE_SPACING * 0.5),
+                    // Sits just inside the tip so it reads as joining the
+                    // stems rather than capping them.
+                    top: Val::Px(if b.stem_up {
+                        beam_y
+                    } else {
+                        beam_y - BEAM_THICKNESS_PX
+                    }),
+                    width: Val::Px(width + STEM_THICKNESS_SP * STAFF_LINE_SPACING),
+                    height: Val::Px(BEAM_THICKNESS_PX),
+                    ..default()
+                },
+                BackgroundColor(Color::WHITE),
+                MusicScoreNoteGlyph,
+            ));
+        }
+
+        // A beamed note takes the beam instead of a flag — drawing both
+        // would be a double rhythm marking.
+        if beam.is_none() && has_eighth_flag(note.duration_beats) {
             // The flag attaches at the stem's tip, the end away from the
             // notehead — `stem_top` itself for an up-stem (the rect's own
             // top edge), or `stem_top + stem_len_px` for a down-stem (its

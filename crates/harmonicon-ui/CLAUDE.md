@@ -17,9 +17,24 @@ load-bearing about *this* crate.
   used by Play 2D/3D, below the song-progress bar, and by the Song Editor,
   in its own fixed chrome below the grid). Deliberately coarse, not a
   sight-reading tool: noteheads (whole/half/filled by duration), stems,
-  ledger lines, sharp accidentals, ties across a bar line, and a single
-  eighth-note flag — no beaming, no sixteenth-or-shorter flag tier, no
-  dotted durations, single treble clef only. `assets/fonts/Bravura.otf`
+  ledger lines, sharp accidentals, ties across a bar line, bar lines and a
+  time signature, and beams joining short notes inside a beat — but no
+  slanted beams (they are horizontal, every stem in a group drawn to one
+  shared line), no sixteenth-or-shorter flag tier, no dotted durations.
+  - **The clef is chosen from the music, not fixed** (`choose_clef`):
+    treble, treble-8va or bass, by *median* pitch so one stray note can't
+    drag the staff. 8va is the common case here — measured across the
+    bundled charts the median is F5, the treble staff's own top line, so
+    reading everything in plain treble put half the music in ledger lines
+    (eleven of them for the highest note). Clef and meter are both picked
+    once per song, never mid-scroll.
+  - **`Clef::base_midi` is the single place a staff's vertical origin
+    lives.** `staff_step` subtracts it; `y_for_step`/`ledger_line_steps`
+    then work in clef-relative steps and need no clef of their own.
+  - **The pure notation maths lives in `music_score/notation.rs`**, Bevy-free
+    and unit-tested (clef choice, beam grouping, bar-line positions, time
+    signature parsing); `mod.rs` is the translation of those answers into
+    UI nodes and is not itself test-covered. `assets/fonts/Bravura.otf`
   (SIL OFL, `Bravura-OFL.txt` alongside it) is bundled and loaded the same
   `Font::from_bytes` way as `dialogs::font_fallback`'s small icon fonts;
   every glyph codepoint and every relative measurement (notehead width,
