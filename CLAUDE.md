@@ -308,11 +308,12 @@ because prose is not a check.
 |---|---|---|
 | No `Co-Authored-By` trailer on commits | most tooling and assistants add one automatically | `scripts/git-hooks/commit-msg` + the `commit_messages` CI job |
 | Click handlers are `On<Activate>`, never `On<Pointer<Click>>` | `Pointer<Click>` is the obvious Bevy reflex, and compiles fine — it just skips keyboard users | `build.rs` (`pointer_click_violations`); a genuinely non-button surface opts out with a `not-a-widget-button:` comment |
-| `WorldAssetRoot`, not `SceneRoot`, for GLB/scene assets | `SceneRoot` is what Bevy examples show | nothing yet |
-| Vibrato integrates frequency over time, never `freq × t` | the naive form looks right and drifts pitch upward | nothing yet |
+| `WorldAssetRoot`, not `SceneRoot`, for GLB/scene assets | `SceneRoot` is what Bevy examples show, and it compiles — it just renders nothing | `build.rs` (`scene_root_violations`) |
+| Vibrato integrates frequency over time, never `freq × t` | the naive form looks right and drifts pitch upward | `synth::vibrato_phase_mod` + its boundedness test |
 
 **If you add a rule to this table, add a check with it.** Anything here
-without one is a known liability, not a settled convention.
+without one is a known liability, not a settled convention — every rule
+listed here now has one.
 
 Install the hooks once per clone:
 

@@ -186,6 +186,23 @@ fn build() {
         eprintln!();
     }
 
+    let scene_violations = scene_root_violations(&sources);
+    if !scene_violations.is_empty() {
+        eprintln!();
+        eprintln!("────────────────────────────────────────────────────────────");
+        eprintln!("  Scene-spawn enforcement: SceneRoot instead of WorldAssetRoot");
+        eprintln!("────────────────────────────────────────────────────────────");
+        for v in &scene_violations {
+            eprintln!("  {v}");
+        }
+        eprintln!();
+        eprintln!("  Spawn GLB/scene assets with `WorldAssetRoot(handle)`.");
+        eprintln!("  `SceneRoot` is what Bevy's examples show, and it compiles");
+        eprintln!("  here — it just renders nothing.");
+        eprintln!("────────────────────────────────────────────────────────────");
+        eprintln!();
+    }
+
     let click_violations = pointer_click_violations(&sources);
     if !click_violations.is_empty() {
         eprintln!();
@@ -210,7 +227,11 @@ fn build() {
         eprintln!();
     }
 
-    if !violations.is_empty() || !message_violations.is_empty() || !click_violations.is_empty() {
+    if !violations.is_empty()
+        || !message_violations.is_empty()
+        || !click_violations.is_empty()
+        || !scene_violations.is_empty()
+    {
         std::process::exit(1);
     }
 }
@@ -267,6 +288,29 @@ fn pointer_click_violations(sources: &[(String, String)]) -> Vec<String> {
                 .any(|l| l.contains(NOT_A_BUTTON));
             if !excused {
                 out.push(format!("{path}:{}: `On<Pointer<Click>>`", i + 1));
+            }
+        }
+    }
+    out
+}
+
+/// Flags `SceneRoot`, which this codebase never uses.
+///
+/// Bevy's own examples spawn a GLB with `SceneRoot`, so it is the obvious
+/// reflex; this codebase uses `WorldAssetRoot` instead (see CLAUDE.md's
+/// "Rules that override defaults"). Getting it wrong compiles and then
+/// silently renders nothing, which no test catches — hence a source check.
+fn scene_root_violations(sources: &[(String, String)]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (path, source) in sources {
+        for (i, line) in source.lines().enumerate() {
+            if line.trim_start().starts_with("//") {
+                continue;
+            }
+            // `WorldAssetRoot` contains no `SceneRoot` substring, so a
+            // plain search can't confuse the two.
+            if line.contains("SceneRoot") {
+                out.push(format!("{path}:{}: `SceneRoot`", i + 1));
             }
         }
     }

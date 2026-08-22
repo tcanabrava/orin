@@ -163,6 +163,24 @@ pub struct PhraseNote {
     pub expr: Expr,
 }
 
+/// Vibrato's phase deviation Δφ at time `t` — the integral of the
+/// instantaneous frequency, *not* a modulated frequency multiplied by `t`.
+///
+/// With f(t) = freq · (1 + depth · sin(2π·rate·t)), integrating gives
+/// φ(t) = 2π·freq·t + (freq·depth/rate)·(1 − cos(2π·rate·t)), and this is
+/// that second term. It is **bounded** — it oscillates in
+/// `0 ..= 2·freq·depth/rate` forever — which is the whole point: the naive
+/// `modulated_freq × t` form grows without bound and slides the pitch
+/// sharp over a long note. See CLAUDE.md's "Rules that override defaults".
+pub fn vibrato_phase_mod(freq: f32, rate: f32, t: f32) -> f32 {
+    freq * VIBRATO_DEPTH / rate * (1.0 - (TAU * rate * t).cos())
+}
+
+/// The largest phase deviation [`vibrato_phase_mod`] may ever reach.
+pub fn vibrato_phase_bound(freq: f32, rate: f32) -> f32 {
+    2.0 * freq * VIBRATO_DEPTH / rate
+}
+
 pub fn render_pcm(notes: &[PhraseNote], secs_per_tick: f32) -> Vec<f32> {
     let end_tick = notes.iter().map(|n| n.tick + n.len).max().unwrap_or(0);
     let total =
@@ -207,7 +225,7 @@ pub fn render_pcm(notes: &[PhraseNote], secs_per_tick: f32) -> Vec<f32> {
             // oscillates symmetrically between 0 and 2*freq*depth/rate, so the
             // pitch wobbles evenly above and below the base frequency.
             let phase_mod = match n.expr {
-                Expr::Vibrato(rate) => freq * VIBRATO_DEPTH / rate * (1.0 - (TAU * rate * t).cos()),
+                Expr::Vibrato(rate) => vibrato_phase_mod(freq, rate, t),
                 _ => 0.0,
             };
 
@@ -249,4 +267,73 @@ pub fn render_pcm(notes: &[PhraseNote], secs_per_tick: f32) -> Vec<f32> {
         }
     }
     buf
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Guards the FM rule in CLAUDE.md's "Rules that override defaults":
+    /// vibrato must integrate frequency over time, never multiply a
+    /// modulated frequency by `t`.
+    ///
+    /// Both forms look and sound close over a short note — the naive one's
+    /// error grows with `t`, so it only shows up as the pitch sliding
+    /// sharp across a long one. The invariant that separates them is
+    /// boundedness: the correct phase deviation oscillates inside a fixed
+    /// window forever, the naive one grows without limit.
+    #[test]
+    fn vibrato_phase_deviation_stays_bounded_however_long_the_note() {
+        let (freq, rate) = (440.0, 5.0);
+        let bound = vibrato_phase_bound(freq, rate);
+        // Ten seconds is far longer than any charted note; the naive form
+        // would be an order of magnitude past the bound well before here.
+        for i in 0..100_000 {
+            let t = i as f32 / 10_000.0;
+            let phase = vibrato_phase_mod(freq, rate, t);
+            assert!(
+                (0.0..=bound + 1e-3).contains(&phase),
+                "phase deviation {phase} escaped 0..={bound} at t={t}s — \
+                 vibrato must integrate frequency over time"
+            );
+        }
+    }
+
+    #[test]
+    fn vibrato_phase_deviation_returns_to_zero_every_lfo_cycle() {
+        // A wobble around a steady centre, not a one-way slide: Δφ is back
+        // at zero after each full LFO period, so successive cycles start
+        // from the same pitch.
+        let (freq, rate) = (440.0, 5.0);
+        for cycle in 0..20 {
+            let t = cycle as f32 / rate;
+            assert!(vibrato_phase_mod(freq, rate, t).abs() < 1e-3);
+        }
+    }
+
+    #[test]
+    fn vibrato_actually_modulates_rather_than_holding_a_flat_pitch() {
+        // The drift test above would also pass if vibrato did nothing at
+        // all, so pin that the modulation is really there: a vibrato note
+        // and a plain one must not be sample-identical.
+        let note = |expr| {
+            render_pcm(
+                &[PhraseNote {
+                    tick: 0,
+                    len: 500,
+                    freq: Some(440.0),
+                    expr,
+                }],
+                0.001,
+            )
+        };
+        let plain = note(Expr::None);
+        let vib = note(Expr::Vibrato(5.0));
+        let diff = plain
+            .iter()
+            .zip(&vib)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(diff > 0.01, "vibrato left the waveform unchanged");
+    }
 }
