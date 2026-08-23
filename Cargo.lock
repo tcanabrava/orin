@@ -3277,6 +3277,7 @@ dependencies = [
  "harmonicon-audio",
  "harmonicon-bench",
  "harmonicon-core",
+ "harmonicon-dsp",
  "harmonicon-editor",
  "harmonicon-gameplay",
  "harmonicon-jam",
@@ -3323,6 +3324,7 @@ dependencies = [
  "cpal",
  "crossbeam-channel",
  "harmonicon-core",
+ "harmonicon-dsp",
  "rodio",
  "rustfft",
  "serde",
@@ -3332,15 +3334,8 @@ dependencies = [
 name = "harmonicon-bench"
 version = "0.1.0"
 dependencies = [
- "bevy",
- "harmonicon-audio",
  "harmonicon-core",
- "harmonicon-gameplay",
- "harmonicon-platform",
- "harmonicon-song",
- "midly",
- "rand",
- "serde",
+ "harmonicon-dsp",
  "serde_json",
 ]
 
@@ -3351,6 +3346,15 @@ dependencies = [
  "midly",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "harmonicon-dsp"
+version = "0.1.0"
+dependencies = [
+ "harmonicon-core",
+ "rustfft",
+ "serde",
 ]
 
 [[package]]

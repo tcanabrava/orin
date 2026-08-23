@@ -26,12 +26,12 @@
 //! take needs this at all: it's never going to line up sample-accurately,
 //! and this benchmark measures pitch detection, not rhythm).
 
-use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchAlgorithm, PitchRange};
 use harmonicon_bench::note_bench::{
     DEFAULT_TIMING_TOLERANCE_SECS, apply_constraints, compare, expected_notes_from_chart,
     run_algorithm,
 };
 use harmonicon_core::wav::decode_wav_pcm16;
+use harmonicon_dsp::{PITCH_RANGE_MARGIN_SEMITONES, PitchAlgorithm, PitchRange};
 use harmonicon_song::song::chart::HarpChart;
 use std::path::{Path, PathBuf};
 

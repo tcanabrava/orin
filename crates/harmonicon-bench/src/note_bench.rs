@@ -15,12 +15,13 @@
 
 use std::collections::HashMap;
 
-use harmonicon_audio::audio_input::{CHUNK_SIZE, HOP_SIZE};
-use harmonicon_audio::pitch_detect::{self, FftState, PitchAlgorithm, PitchRange};
 use harmonicon_core::chart::{Action, HarpChart, tick_to_seconds};
 use harmonicon_core::harmonica::Harmonica;
 use harmonicon_core::harmonica_constraints::plausible_notes;
 use harmonicon_core::midi::note_to_midi;
+use harmonicon_dsp::{
+    self as pitch_detect, CHUNK_SIZE, FftState, HOP_SIZE, PitchAlgorithm, PitchRange,
+};
 
 // ── Ground truth ─────────────────────────────────────────────────────────────
 

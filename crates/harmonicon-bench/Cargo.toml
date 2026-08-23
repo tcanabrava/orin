@@ -3,24 +3,18 @@ name = "harmonicon-bench"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-publish = false
 
+# Developer tooling, not shipped game code: replays recordings through every
+# detection algorithm and scores hits/misses/phantoms, plus the synthetic
+# dataset generator that stands in until real recordings exist.
+#
+# Bevy-free on purpose. Improving detection quality means running this loop
+# over and over, and it is worth having in seconds rather than behind an
+# engine build.
 [dependencies]
-harmonicon-core = { path = "../harmonicon-core", version = "*" }
-harmonicon-audio = { path = "../harmonicon-audio", version = "*" }
-harmonicon-platform = { path = "../harmonicon-platform", version = "*" }
-harmonicon-song = { path = "../harmonicon-song", version = "*" }
-harmonicon-gameplay = { path = "../harmonicon-gameplay", version = "*" }
-bevy = { workspace = true }
-rand = { workspace = true }
-serde = { workspace = true }
+harmonicon-core = { path = "../harmonicon-core" }
+harmonicon-dsp = { path = "../harmonicon-dsp" }
 serde_json = { workspace = true }
-midly = { workspace = true }
-
-[features]
-dev = ["bevy/dev", "bevy/debug", "harmonicon-gameplay/dev"]
-dynamic_linking = ["bevy/dynamic_linking", "harmonicon-gameplay/dynamic_linking"]
-trace_tracy = ["bevy/trace_tracy", "harmonicon-gameplay/trace_tracy"]
 
 [lints]
 workspace = true

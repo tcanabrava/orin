@@ -1,0 +1,18 @@
+[package]
+name = "harmonicon-dsp"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+# Deliberately no Bevy: pitch detection is signal processing, and keeping
+# it engine-free means the algorithms can be iterated on and benchmarked in
+# seconds rather than waiting on the renderer to build. The ECS-facing
+# wrappers (PitchRange as a Resource, PitchEvent as a Message) live in
+# harmonicon-audio.
+[dependencies]
+harmonicon-core = { path = "../harmonicon-core" }
+rustfft = { workspace = true }
+serde = { workspace = true }
+
+[lints]
+workspace = true

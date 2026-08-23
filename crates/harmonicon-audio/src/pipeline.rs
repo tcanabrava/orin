@@ -64,7 +64,7 @@ pub fn process_audio(
             capture.sample_rate,
             &mut fft,
             settings.pitch_algorithm,
-            *range,
+            **range,
         );
         // Placed before `analysis.pitches` moves into the `PitchEvent` below
         // — this needs to read it first.

@@ -8,11 +8,11 @@ use crossbeam_channel::{Receiver, Sender, bounded};
 
 use crate::AudioSettings;
 
-pub const CHUNK_SIZE: usize = 4096;
-
-/// Consecutive chunks overlap by this many samples (50%, see `push_chunks`)
-/// — the number of genuinely *new* samples each chunk contributes.
-pub const HOP_SIZE: usize = CHUNK_SIZE / 2;
+// The analysis window itself belongs with the analysis: re-exported from
+// `harmonicon-dsp` so an offline run (`harmonicon-bench`) chunks audio
+// exactly as the live mic path does, without depending on cpal or Bevy to
+// learn the numbers.
+pub use harmonicon_dsp::{CHUNK_SIZE, HOP_SIZE};
 
 /// How many chunk buffers circulate between the real-time audio callback and
 /// the consumer (`process_audio`). Comfortably more than one in flight at a
