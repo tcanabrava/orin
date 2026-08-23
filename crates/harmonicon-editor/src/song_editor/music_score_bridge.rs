@@ -10,8 +10,9 @@
 
 use bevy::prelude::*;
 
+use harmonicon_ui::music_score::MusicScoreMeter;
 use harmonicon_ui::music_score::{
-    MusicScoreMeter, MusicScoreNotes, MusicScorePlayhead, NotationNote, split_at_bar_lines,
+    MusicScoreNotes, MusicScorePlayhead, NotationNote, parse_time_signature, split_at_bar_lines,
 };
 
 use super::TICKS_PER_BEAT;
@@ -30,15 +31,7 @@ pub(super) fn sync_music_score(
     mut notes: ResMut<MusicScoreNotes>,
     mut meter: ResMut<MusicScoreMeter>,
 ) {
-    // The editor has no time-signature field of its own — its grid is
-    // fixed at `BEATS_PER_BAR` and `harpchart::serialize` writes a literal
-    // "4/4" on save. Kept in step with that here rather than letting the
-    // staff show a meter the grid doesn't honour; the day EditorState
-    // gains a real signature, this is the one line to change.
-    let editor_meter = MusicScoreMeter {
-        numerator: super::BEATS_PER_BAR as u8,
-        denominator: 4,
-    };
+    let editor_meter = parse_time_signature(&state.time_signature);
     if *meter != editor_meter {
         *meter = editor_meter;
     }
@@ -55,7 +48,7 @@ pub(super) fn sync_music_score(
                 tied_from_previous: false,
             })
         })
-        .flat_map(|note| split_at_bar_lines(note, super::BEATS_PER_BAR as f64))
+        .flat_map(|note| split_at_bar_lines(note, editor_meter.beats_per_bar()))
         .collect();
 }
 

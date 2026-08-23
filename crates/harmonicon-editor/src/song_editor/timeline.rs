@@ -46,7 +46,7 @@ use super::state::{
     EditorState, Mode, Scroll, Side, TimelineDrag, TimelineSelection, TimelineTool,
     toggle_tempo_point,
 };
-use super::{BEAT_W, BEATS_PER_BAR, TICK_W, TICKS_PER_BEAT};
+use super::{BEAT_W, TICK_W, TICKS_PER_BEAT};
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_ui::dialogs::confirm_dialog::{ConfirmChosen, DialogId, OpenConfirmDialog};
 
@@ -118,10 +118,11 @@ pub(super) fn sync_timeline_surface(
 
 /// A tick as "bar.beat" (1-indexed), matching the numbers already shown on
 /// the ruler — used in the confirm dialog's message.
-fn describe_tick(tick: usize) -> String {
+fn describe_tick(tick: usize, beats_per_bar: usize) -> String {
     let beat = tick / TICKS_PER_BEAT;
-    let bar = beat / BEATS_PER_BAR + 1;
-    let beat_in_bar = beat % BEATS_PER_BAR + 1;
+    let beats_per_bar = beats_per_bar.max(1);
+    let bar = beat / beats_per_bar + 1;
+    let beat_in_bar = beat % beats_per_bar + 1;
     format!("{bar}.{beat_in_bar}")
 }
 
@@ -142,11 +143,15 @@ pub(super) fn request_confirm(
         // through the confirm-dialog path this function drives.
         TimelineTool::Tempo => return,
     };
+    let bpb = state.beats_per_bar();
     state.pending_timeline_op = Some((tool, start, end));
     let message = loc
         .msg_args(
             key,
-            &[("from", describe_tick(start)), ("to", describe_tick(end))],
+            &[
+                ("from", describe_tick(start, bpb)),
+                ("to", describe_tick(end, bpb)),
+            ],
         )
         .to_string();
     open.write(OpenConfirmDialog {

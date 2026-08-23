@@ -49,6 +49,7 @@ mod scroll;
 // `pub(crate)`, not private like its neighbours: `gameplay::call_response`
 // shares this module's synth (`PhraseNote`/`render_pcm`/`encode_wav`) for
 // the call-and-response lesson feature's audio cue.
+mod note_model;
 pub(crate) mod playback;
 mod practice;
 mod record;
@@ -82,7 +83,6 @@ const WAVEFORM_H: f32 = 36.0;
 const HEADER_H: f32 = WAVEFORM_TOP + WAVEFORM_H + 4.0;
 const ROW_H: f32 = 34.0;
 const BEAT_W: f32 = 60.0;
-const BEATS_PER_BAR: usize = 4;
 const NOTE_PAD: f32 = 4.0;
 const HANDLE_W: f32 = 8.0;
 // Defined in `audio_system::synth` (shared tick-grid vocabulary: the same

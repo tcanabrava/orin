@@ -220,7 +220,7 @@ pub(super) fn serialize_harpchart_notes(state: &EditorState, notes: &[GridNote])
             "artist": artist,
             "tempo_bpm": bpm,
             "key": state.key,
-            "time_signature": "4/4",
+            "time_signature": state.time_signature,
             "difficulty": "intermediate"
         },
         "timing": {
@@ -303,6 +303,14 @@ pub(super) fn load_harpchart(v: &serde_json::Value, state: &mut EditorState, scr
             && HARP_KEYS.contains(&k)
         {
             state.key = k.to_string();
+        }
+        // Round-trips whatever the chart declares. Not validated here: an
+        // unparseable value falls back to 4/4 wherever it's *read*
+        // (`EditorState::beats_per_bar`), so loading a chart with an odd
+        // signature shows the author what it actually says rather than
+        // silently rewriting it to 4/4 on the next save.
+        if let Some(ts) = song["time_signature"].as_str() {
+            state.time_signature = ts.to_string();
         }
     }
     if let Some(p) = v["harmonica"]["position"].as_str()

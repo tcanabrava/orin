@@ -2277,3 +2277,42 @@ fn undo_skips_recording_while_a_take_is_active() {
     assert_eq!(state.notes[0].len, 4);
     assert!(!history.can_undo());
 }
+
+// ── time signature ────────────────────────────────────────────────────────
+
+#[test]
+fn beats_per_bar_reads_the_chart_meter_not_a_fixed_four() {
+    let mut s = EditorState::default();
+    assert_eq!(s.beats_per_bar(), 4); // the 4/4 default
+    s.time_signature = "3/4".into();
+    assert_eq!(s.beats_per_bar(), 3);
+    // 6/8 is six eighths — three quarter-note beats, which is the unit
+    // the grid and the staff both count in.
+    s.time_signature = "6/8".into();
+    assert_eq!(s.beats_per_bar(), 3);
+}
+
+#[test]
+fn beats_per_bar_survives_a_half_typed_signature() {
+    // The field is free text, so it is mid-edit garbage for a keystroke or
+    // two; that must not wedge the grid or divide by zero.
+    let mut s = EditorState::default();
+    for partial in ["", "3", "3/", "3/0", "x/y"] {
+        s.time_signature = partial.into();
+        assert!(s.beats_per_bar() >= 1, "{partial:?}");
+    }
+}
+
+#[test]
+fn a_time_signature_round_trips_through_save_and_load() {
+    let s = EditorState {
+        time_signature: "6/8".into(),
+        ..Default::default()
+    };
+    let v: serde_json::Value = serde_json::from_str(&serialize_harpchart(&s)).unwrap();
+    let mut loaded = EditorState::default();
+    let mut scroll = Scroll::default();
+    load_harpchart(&v, &mut loaded, &mut scroll);
+    assert_eq!(loaded.time_signature, "6/8");
+    assert_eq!(loaded.beats_per_bar(), 3);
+}

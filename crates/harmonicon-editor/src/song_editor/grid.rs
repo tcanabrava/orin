@@ -19,8 +19,8 @@ use super::state::{
 };
 use super::ui::{GridContent, GridItem, NoteView};
 use super::{
-    BEAT_W, BEATS_PER_BAR, HANDLE_W, HEADER_H, ROW_H, SILENCE_ROW_H, TICK_W, TICKS_PER_BEAT,
-    WAVEFORM_H, WAVEFORM_TOP, grid_height, silence_row_top,
+    BEAT_W, HANDLE_W, HEADER_H, ROW_H, SILENCE_ROW_H, TICK_W, TICKS_PER_BEAT, WAVEFORM_H,
+    WAVEFORM_TOP, grid_height, silence_row_top,
 };
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::harmonica::Harmonica;
@@ -129,16 +129,17 @@ pub(super) fn rebuild_grid(
     };
     let win_w = windows.iter().next().map(|w| w.width()).unwrap_or(1280.0);
     let cols = visible_beats(win_w);
+    let beats_per_bar = state.beats_per_bar();
     let mut items: Vec<Entity> = Vec::new();
 
     for col in 0..=cols {
         let beat = state.scroll_beat + col;
         let x = beat as f32 * BEAT_W;
-        let is_bar = beat.is_multiple_of(BEATS_PER_BAR);
+        let is_bar = beat.is_multiple_of(beats_per_bar);
         // Tiles the standard 12-bar-blues form indefinitely as the user
         // scrolls, so the grid reads as harmonic function (I/IV/V) even for
         // charts longer than 12 bars.
-        let bar_index = (beat / BEATS_PER_BAR) % 12;
+        let bar_index = (beat / beats_per_bar) % 12;
         let bar_tint = bar_bg(
             bar_index,
             &state.key,
@@ -146,7 +147,7 @@ pub(super) fn rebuild_grid(
             bar_colors,
         );
 
-        let in_bar = beat % BEATS_PER_BAR + 1;
+        let in_bar = beat % beats_per_bar + 1;
         items.push(
             commands
                 .spawn((

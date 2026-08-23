@@ -129,6 +129,7 @@ editor-tool-tempo = Tempo
 
 # Song Editor 2 — meta-form field labels
 editor-field-tempo = Music Tempo
+editor-field-time-signature = Time Signature
 editor-field-key = Harp Key
 editor-field-position = Position
 editor-field-harmonica = Harmonica

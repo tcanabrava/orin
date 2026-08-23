@@ -127,6 +127,7 @@ editor-tool-tempo = Tempo
 
 # Song Editor 2 — etiquetas de los campos de metadatos
 editor-field-tempo = Tempo de la Música
+editor-field-time-signature = Compás
 editor-field-key = Tono de la Armónica
 editor-field-position = Posición
 editor-field-harmonica = Armónica

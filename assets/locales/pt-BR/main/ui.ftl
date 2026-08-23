@@ -127,6 +127,7 @@ editor-tool-tempo = Tempo
 
 # Editor de Músicas 2 — rótulos dos campos de metadados
 editor-field-tempo = Andamento da Música
+editor-field-time-signature = Fórmula de Compasso
 editor-field-key = Tom do Gaita
 editor-field-position = Posição
 editor-field-harmonica = Gaita

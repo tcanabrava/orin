@@ -26,10 +26,10 @@ use harmonicon_gameplay::gameplay::metronome_overlay::{
     MetronomeFeel, MetronomeMuted, MetronomeSounds, MetronomeTempo, play_click_if_due,
 };
 
+use super::TICKS_PER_BEAT;
 use super::playback::{EditorAudio, PendingMusicSeek, Playhead, secs_per_tick};
 use super::record::{RecordState, start_record};
 use super::state::EditorState;
-use super::{BEATS_PER_BAR, TICKS_PER_BEAT};
 
 /// The last click tick played this editing session — the editor's own
 /// counterpart to `metronome_overlay::LastClickedTick`, kept separate so
@@ -80,11 +80,11 @@ impl CountIn {
     }
 }
 
-/// Seconds of count-in for one bar at `bpm` — `BEATS_PER_BAR` beats,
-/// converted the same way any other beat-to-seconds figure in this crate
-/// is.
-pub(super) fn count_in_secs(bpm: f32) -> f32 {
-    BEATS_PER_BAR as f32 * 60.0 / bpm.max(1.0)
+/// Seconds of count-in for one bar at `bpm` — one bar of the chart's own
+/// meter, converted the same way any other beat-to-seconds figure in this
+/// crate is. A 3/4 chart counts in three beats, not four.
+pub(super) fn count_in_secs(bpm: f32, beats_per_bar: usize) -> f32 {
+    beats_per_bar as f32 * 60.0 / bpm.max(1.0)
 }
 
 /// `EditorState::tempo`'s flat nominal BPM, recovered from `playback::
@@ -98,7 +98,7 @@ pub(super) fn tempo_bpm(state: &EditorState) -> f32 {
 /// button instead of `record::start_record` directly when there's no take
 /// already in flight to resume. See [`CountIn`]'s own doc comment.
 pub(super) fn begin_count_in(state: &EditorState, count_in: &mut CountIn) {
-    count_in.start(count_in_secs(tempo_bpm(state)));
+    count_in.start(count_in_secs(tempo_bpm(state), state.beats_per_bar()));
 }
 
 /// Keeps `MetronomeTempo` in step with the chart currently being edited —
@@ -110,7 +110,7 @@ pub(super) fn begin_count_in(state: &EditorState, count_in: &mut CountIn) {
 /// shared resource — whichever context is entered next reseeds it.
 pub(super) fn sync_tempo(state: Res<EditorState>, mut tempo: ResMut<MetronomeTempo>) {
     tempo.bpm = tempo_bpm(&state);
-    tempo.beats_per_bar = BEATS_PER_BAR;
+    tempo.beats_per_bar = state.beats_per_bar();
 }
 
 /// Plays the metronome clicks for the editor's own clock (`Playhead`)
@@ -256,21 +256,27 @@ mod tests {
     #[test]
     fn count_in_secs_is_one_bar_at_the_given_bpm() {
         // 4 beats at 120bpm (0.5s/beat) = 2.0s.
-        assert_eq!(count_in_secs(120.0), 2.0);
+        assert_eq!(count_in_secs(120.0, 4), 2.0);
     }
 
     #[test]
     fn count_in_secs_scales_inversely_with_bpm() {
-        assert_eq!(count_in_secs(60.0), 4.0);
-        assert_eq!(count_in_secs(240.0), 1.0);
+        assert_eq!(count_in_secs(60.0, 4), 4.0);
+        assert_eq!(count_in_secs(240.0, 4), 1.0);
+    }
+
+    #[test]
+    fn count_in_secs_counts_one_bar_of_the_charts_own_meter() {
+        // A 3/4 chart counts in three beats, not four.
+        assert_eq!(count_in_secs(120.0, 3), 1.5);
     }
 
     #[test]
     fn count_in_secs_clamps_a_nonpositive_bpm() {
         // Falls back to treating bpm as 1, rather than dividing by zero or
         // going negative.
-        assert_eq!(count_in_secs(0.0), count_in_secs(1.0));
-        assert_eq!(count_in_secs(-10.0), count_in_secs(1.0));
+        assert_eq!(count_in_secs(0.0, 4), count_in_secs(1.0, 4));
+        assert_eq!(count_in_secs(-10.0, 4), count_in_secs(1.0, 4));
     }
 
     // ── tempo_bpm ─────────────────────────────────────────────────────────
