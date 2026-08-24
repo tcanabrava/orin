@@ -42,9 +42,19 @@ cargo test --features dev       # 1106 tests, whole workspace, incl. doctests
 # Never ship either — dynamic_linking needs libbevy_dylib*.so beside the
 # binary, which packaged builds (e.g. the flatpak) don't bundle.
 
+# `dev` is not just a speed switch: `#[cfg(feature = "dev")]` modules
+# (song_editor::debug_record, the expected-notes layer) are *not compiled
+# at all* without it. A bare `cargo test` will happily pass with those
+# broken — check the dev build before claiming a change is clean.
+
 # Working on pure logic? Skip the engine entirely — seconds, not a minute:
 cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
 cargo clippy --all-targets -- -D warnings               # what CI runs
+
+# `dev` is not just a speed switch: `#[cfg(feature = "dev")]` modules
+# (song_editor::debug_record, the expected-notes layer) are *not compiled
+# at all* without it. A bare `cargo test` will happily pass with those
+# broken — check the dev build before claiming a change is clean.
 
 # Working on pure logic? Skip the engine entirely — seconds, not a minute:
 cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
