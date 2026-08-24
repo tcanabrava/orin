@@ -3,6 +3,7 @@ name = "harmonicon-dsp"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+publish = false
 
 # Deliberately no Bevy: pitch detection is signal processing, and keeping
 # it engine-free means the algorithms can be iterated on and benchmarked in
