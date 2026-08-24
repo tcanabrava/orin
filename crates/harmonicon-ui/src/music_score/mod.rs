@@ -13,12 +13,16 @@
 //! from the music's own range ([`choose_clef`]), and beams joining short
 //! notes within a beat ([`beam_groups`]).
 //!
+//! Durations round to the nearest standard value and are spelled with the
+//! dots and flags that value actually takes ([`note_rhythm`]) — down to a
+//! sixteenth, which is the shortest tier.
+//!
 //! It does not: slant a beam (they are horizontal, with every stem in a
-//! group drawn to one shared line), draw a second beam or flag tier
-//! (anything shorter than an eighth still rounds up to one), handle dotted
-//! durations, or change clef or meter mid-piece — both are chosen once for
-//! the whole song, because either changing under a moving playhead would
-//! be unreadable. This is a supplementary
+//! group drawn to one shared line), draw a partial beam where a group
+//! mixes durations (the whole group takes its shortest note's beam count),
+//! spell anything shorter than a sixteenth or double-dotted, or change
+//! clef or meter mid-piece — both are chosen once for the whole song,
+//! because either changing under a moving playhead would be unreadable. This is a supplementary
 //! visual, not a sight-reading tool (the Song Editor's own tab readout
 //! already exists for players who want exact rhythm) — see
 //! `docs/lessons_plan.md`'s framing of the tab readout for the same
@@ -96,6 +100,10 @@ const STEM_LENGTH_SP: f32 = 3.5;
 const STEM_THICKNESS_SP: f32 = 0.12; // engravingDefaults.stemThickness
 /// engravingDefaults.beamThickness is 0.5 staff spaces.
 const BEAM_THICKNESS_PX: f32 = 0.5 * STAFF_LINE_SPACING;
+/// engravingDefaults.beamSpacing is 0.25 staff spaces.
+const BEAM_GAP_PX: f32 = 0.25 * STAFF_LINE_SPACING;
+/// Gap between a notehead's right edge and its augmentation dot.
+const DOT_GAP_SP: f32 = 0.3;
 
 /// How far a ledger line extends beyond the notehead on each side, and how
 /// thick it is — both `bravura_metadata.json`'s own `engravingDefaults`
@@ -565,7 +573,8 @@ fn spawn_note_glyphs(
 ) {
     let x = ((note.start_beat - now) * PIXELS_PER_BEAT as f64) as f32;
     let step = staff_step(note.midi, clef);
-    let kind = notehead_kind(note.duration_beats);
+    let rhythm = note_rhythm(note.duration_beats);
+    let kind = rhythm.head;
     let notehead_y = y_for_step(step);
 
     // A tied continuation is the same sounded pitch as the segment before
@@ -636,6 +645,27 @@ fn spawn_note_glyphs(
         ));
     }
 
+    // Augmentation dot — right of the notehead, always in a space.
+    if rhythm.dots > 0 {
+        parent.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(x + (kind.width_sp() + DOT_GAP_SP) * STAFF_LINE_SPACING),
+                top: Val::Px(y_for_step(dot_step(step)) - GLYPH_BASELINE_CORRECTION),
+                ..default()
+            },
+            Text::new(glyph::AUGMENTATION_DOT),
+            TextFont {
+                font: FontSource::Handle(bravura.0.clone()),
+                font_size: FontSize::Px(GLYPH_FONT_PX),
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            MusicScoreNoteGlyph,
+            crate::dialogs::font_fallback::SkipFontFallback,
+        ));
+    }
+
     if kind.has_stem() {
         let stem_up = beam.map_or(step < MIDDLE_LINE_STEP, |b| b.stem_up);
         let (anchor_x_sp, anchor_y_sp) = if stem_up {
@@ -675,29 +705,34 @@ fn spawn_note_glyphs(
         if let Some(b) = beam.filter(|b| b.is_first) {
             let beam_y = y_for_step(b.beam_step);
             let width = (b.span_beats * PIXELS_PER_BEAT as f64) as f32;
-            parent.spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(stem_x - STEM_THICKNESS_SP * STAFF_LINE_SPACING * 0.5),
-                    // Sits just inside the tip so it reads as joining the
-                    // stems rather than capping them.
-                    top: Val::Px(if b.stem_up {
-                        beam_y
-                    } else {
-                        beam_y - BEAM_THICKNESS_PX
-                    }),
-                    width: Val::Px(width + STEM_THICKNESS_SP * STAFF_LINE_SPACING),
-                    height: Val::Px(BEAM_THICKNESS_PX),
-                    ..default()
-                },
-                BackgroundColor(Color::WHITE),
-                MusicScoreNoteGlyph,
-            ));
+            // One beam per flag the group's notes would otherwise carry —
+            // a second for sixteenths, stacked inward from the stem tip so
+            // the outermost always sits at the tip itself.
+            for i in 0..b.beams.max(1) {
+                let offset = i as f32 * (BEAM_THICKNESS_PX + BEAM_GAP_PX);
+                let top = if b.stem_up {
+                    beam_y + offset
+                } else {
+                    beam_y - BEAM_THICKNESS_PX - offset
+                };
+                parent.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(stem_x - STEM_THICKNESS_SP * STAFF_LINE_SPACING * 0.5),
+                        top: Val::Px(top),
+                        width: Val::Px(width + STEM_THICKNESS_SP * STAFF_LINE_SPACING),
+                        height: Val::Px(BEAM_THICKNESS_PX),
+                        ..default()
+                    },
+                    BackgroundColor(Color::WHITE),
+                    MusicScoreNoteGlyph,
+                ));
+            }
         }
 
         // A beamed note takes the beam instead of a flag — drawing both
         // would be a double rhythm marking.
-        if beam.is_none() && has_eighth_flag(note.duration_beats) {
+        if beam.is_none() && rhythm.flags > 0 {
             // The flag attaches at the stem's tip, the end away from the
             // notehead — `stem_top` itself for an up-stem (the rect's own
             // top edge), or `stem_top + stem_len_px` for a down-stem (its
@@ -712,10 +747,14 @@ fn spawn_note_glyphs(
             } else {
                 stem_top + stem_len_px
             };
-            let flag_glyph = if stem_up {
-                glyph::FLAG_8TH_UP
-            } else {
-                glyph::FLAG_8TH_DOWN
+            // A sixteenth takes the two-flag glyph rather than two copies
+            // of the eighth's — Bravura draws the pair as one shape with
+            // the correct spacing between them.
+            let flag_glyph = match (rhythm.flags, stem_up) {
+                (1, true) => glyph::FLAG_8TH_UP,
+                (1, false) => glyph::FLAG_8TH_DOWN,
+                (_, true) => glyph::FLAG_16TH_UP,
+                (_, false) => glyph::FLAG_16TH_DOWN,
             };
             parent.spawn((
                 Node {

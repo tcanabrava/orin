@@ -18,9 +18,11 @@ load-bearing about *this* crate.
   in its own fixed chrome below the grid). Deliberately coarse, not a
   sight-reading tool: noteheads (whole/half/filled by duration), stems,
   ledger lines, sharp accidentals, ties across a bar line, bar lines and a
-  time signature, and beams joining short notes inside a beat — but no
-  slanted beams (they are horizontal, every stem in a group drawn to one
-  shared line), no sixteenth-or-shorter flag tier, no dotted durations.
+  time signature, beams joining short notes inside a beat, and durations
+  spelled with the dots and flags they actually take, down to a sixteenth
+  — but no slanted beams (they are horizontal, every stem in a group drawn
+  to one shared line), no partial beams in a mixed group, nothing shorter
+  than a sixteenth, and no double dots.
   - **The clef is chosen from the music, not fixed** (`choose_clef`):
     treble, treble-8va or bass, by *median* pitch so one stray note can't
     drag the staff. 8va is the common case here — measured across the

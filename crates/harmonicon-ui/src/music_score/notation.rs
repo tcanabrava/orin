@@ -33,6 +33,9 @@ pub(super) mod glyph {
     pub const ACCIDENTAL_SHARP: &str = "\u{E262}";
     pub const FLAG_8TH_UP: &str = "\u{E240}";
     pub const FLAG_8TH_DOWN: &str = "\u{E241}";
+    pub const FLAG_16TH_UP: &str = "\u{E242}";
+    pub const FLAG_16TH_DOWN: &str = "\u{E243}";
+    pub const AUGMENTATION_DOT: &str = "\u{E1E7}";
 }
 
 // ── Pure notation logic ──────────────────────────────────────────────────
@@ -274,20 +277,63 @@ impl NoteheadKind {
     }
 }
 
-pub fn notehead_kind(duration_beats: f64) -> NoteheadKind {
-    if duration_beats >= 3.0 {
-        NoteheadKind::Whole
-    } else if duration_beats >= 1.5 {
-        NoteheadKind::Half
+/// What a duration is actually drawn as: which notehead, how many
+/// augmentation dots, and how many flags (or beams) it carries.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Rhythm {
+    pub head: NoteheadKind,
+    /// 0 or 1 — this module doesn't spell double-dotted durations.
+    pub dots: u8,
+    /// 0 (quarter or longer), 1 (eighth), or 2 (sixteenth or shorter).
+    pub flags: u8,
+}
+
+/// Rounds `duration_beats` to the nearest standard note value and reports
+/// how to draw it.
+///
+/// Each threshold is the midpoint between two adjacent standard durations,
+/// the same rule the notehead choice already used, extended to cover the
+/// dotted values and the sixteenth. Getting this wrong misinforms rather
+/// than merely looks plain: before dots existed a dotted quarter (1.5)
+/// drew as a half note, which *reads* as two beats, and a sixteenth drew
+/// the eighth's single flag.
+pub fn note_rhythm(duration_beats: f64) -> Rhythm {
+    let (head, dots, flags) = if duration_beats >= 3.5 {
+        (NoteheadKind::Whole, 0, 0) // whole
+    } else if duration_beats >= 2.5 {
+        (NoteheadKind::Half, 1, 0) // dotted half
+    } else if duration_beats >= 1.75 {
+        (NoteheadKind::Half, 0, 0) // half
+    } else if duration_beats >= 1.25 {
+        (NoteheadKind::Filled, 1, 0) // dotted quarter
+    } else if duration_beats >= 0.875 {
+        (NoteheadKind::Filled, 0, 0) // quarter
+    } else if duration_beats >= 0.625 {
+        (NoteheadKind::Filled, 1, 1) // dotted eighth
+    } else if duration_beats >= 0.375 {
+        (NoteheadKind::Filled, 0, 1) // eighth
     } else {
-        NoteheadKind::Filled
+        (NoteheadKind::Filled, 0, 2) // sixteenth and shorter
+    };
+    Rhythm { head, dots, flags }
+}
+
+/// The staff step an augmentation dot sits at for a notehead on `step`.
+///
+/// A dot always goes in a *space*, never on a line: for a notehead already
+/// in a space (odd step) that is its own step, and for one on a line (even
+/// step) it is the space just above.
+pub fn dot_step(step: i32) -> i32 {
+    if step.rem_euclid(2) == 0 {
+        step + 1
+    } else {
+        step
     }
 }
 
-/// Midpoint between a quarter note (1.0 beat) and an eighth (0.5) — same
-/// "midpoint between adjacent standard durations" philosophy
-/// [`notehead_kind`] already uses for its own thresholds.
-const EIGHTH_FLAG_THRESHOLD_BEATS: f64 = 0.75;
+pub fn notehead_kind(duration_beats: f64) -> NoteheadKind {
+    note_rhythm(duration_beats).head
+}
 
 /// Whether a note gets a single eighth-note flag drawn at its stem tip.
 /// Deliberately coarse per this module's "eighth notes only" scope (see the
@@ -297,7 +343,7 @@ const EIGHTH_FLAG_THRESHOLD_BEATS: f64 = 0.75;
 /// (`NoteheadKind::Filled` — `Half`/`Whole` are always `>= 1.5` beats, well
 /// above this threshold, so they never qualify regardless).
 pub fn has_eighth_flag(duration_beats: f64) -> bool {
-    duration_beats < EIGHTH_FLAG_THRESHOLD_BEATS
+    note_rhythm(duration_beats).flags > 0
 }
 
 /// The SMuFL glyphs spelling `n` — `timeSig0`..`timeSig9` are consecutive
@@ -321,6 +367,9 @@ pub struct BeamPlacement {
     /// Beats from this note's stem to the group's last one — the beam's
     /// own width. Zero for every note but the first.
     pub span_beats: f64,
+    /// How many beams to stack: the most flags any note in the group would
+    /// have carried, so a group containing a sixteenth gets two.
+    pub beams: u8,
 }
 
 /// The staff's middle line, in steps — the pivot stem direction turns on:
@@ -381,12 +430,22 @@ pub fn beam_groups(notes: &[NotationNote], clef: Clef) -> Vec<Option<BeamPlaceme
             };
             let last = &notes[j];
             let span_beats = last.start_beat - notes[i].start_beat;
+            // The group is drawn with as many beams as its shortest note
+            // needs; a plain eighth beside a sixteenth still gets one beam
+            // through it, which is the ordinary simplification here (real
+            // engraving would use a partial second beam).
+            let beams = group
+                .iter()
+                .map(|n| note_rhythm(n.duration_beats).flags)
+                .max()
+                .unwrap_or(1);
             for (k, slot) in out[i..=j].iter_mut().enumerate() {
                 *slot = Some(BeamPlacement {
                     stem_up,
                     beam_step,
                     is_first: k == 0,
                     span_beats: if k == 0 { span_beats } else { 0.0 },
+                    beams,
                 });
             }
         }
@@ -626,6 +685,38 @@ mod tests {
     }
 
     #[test]
+    fn a_group_of_sixteenths_gets_two_beams() {
+        let sixteenth = |start: f64| NotationNote {
+            start_beat: start,
+            duration_beats: 0.25,
+            midi: 64,
+            tied_from_previous: false,
+        };
+        let b = beam_groups(&[sixteenth(0.0), sixteenth(0.25)], Clef::Treble);
+        assert_eq!(b[0].unwrap().beams, 2);
+    }
+
+    #[test]
+    fn a_group_of_eighths_gets_one_beam() {
+        let b = beam_groups(&[eighth(64, 0.0), eighth(64, 0.5)], Clef::Treble);
+        assert_eq!(b[0].unwrap().beams, 1);
+    }
+
+    #[test]
+    fn a_mixed_group_takes_its_shortest_notes_beam_count() {
+        let ns = [
+            eighth(64, 0.0),
+            NotationNote {
+                start_beat: 0.5,
+                duration_beats: 0.25,
+                midi: 64,
+                tied_from_previous: false,
+            },
+        ];
+        assert_eq!(beam_groups(&ns, Clef::Treble)[0].unwrap().beams, 2);
+    }
+
+    #[test]
     fn only_the_first_note_carries_the_span_to_draw() {
         let ns = [eighth(64, 0.0), eighth(64, 0.5)];
         let b = beam_groups(&ns, Clef::Treble);
@@ -686,9 +777,11 @@ mod tests {
     #[test]
     fn notehead_kind_classifies_by_duration() {
         assert_eq!(notehead_kind(4.0), NoteheadKind::Whole);
-        assert_eq!(notehead_kind(3.0), NoteheadKind::Whole);
+        // 3 beats is a *dotted half*, not a whole — a whole note is 4.
+        assert_eq!(notehead_kind(3.0), NoteheadKind::Half);
         assert_eq!(notehead_kind(2.0), NoteheadKind::Half);
-        assert_eq!(notehead_kind(1.5), NoteheadKind::Half);
+        // Likewise 1.5 is a dotted quarter, not a half.
+        assert_eq!(notehead_kind(1.5), NoteheadKind::Filled);
         assert_eq!(notehead_kind(1.0), NoteheadKind::Filled);
         assert_eq!(notehead_kind(0.25), NoteheadKind::Filled);
     }
@@ -701,11 +794,55 @@ mod tests {
     }
 
     #[test]
-    fn has_eighth_flag_is_true_only_below_the_quarter_eighth_midpoint() {
+    fn has_eighth_flag_is_true_for_anything_shorter_than_a_quarter() {
         assert!(!has_eighth_flag(1.0)); // quarter note
-        assert!(!has_eighth_flag(0.75)); // exactly the midpoint: rounds up to quarter
+        assert!(has_eighth_flag(0.75)); // dotted eighth — one flag and a dot
         assert!(has_eighth_flag(0.5)); // eighth note
-        assert!(has_eighth_flag(0.25)); // sixteenth: still rounds to one flag
+        assert!(has_eighth_flag(0.25)); // sixteenth — two flags now
+    }
+
+    #[test]
+    fn note_rhythm_spells_the_dotted_durations() {
+        // These are the cases the old thresholds got wrong: both used to
+        // draw as the *next longer* undotted value, which reads as more
+        // beats than the note actually lasts.
+        let dotted_half = note_rhythm(3.0);
+        assert_eq!(dotted_half.head, NoteheadKind::Half);
+        assert_eq!(dotted_half.dots, 1);
+
+        let dotted_quarter = note_rhythm(1.5);
+        assert_eq!(dotted_quarter.head, NoteheadKind::Filled);
+        assert_eq!(dotted_quarter.dots, 1);
+        assert_eq!(dotted_quarter.flags, 0);
+
+        let dotted_eighth = note_rhythm(0.75);
+        assert_eq!(dotted_eighth.dots, 1);
+        assert_eq!(dotted_eighth.flags, 1);
+    }
+
+    #[test]
+    fn note_rhythm_gives_a_sixteenth_its_second_flag() {
+        assert_eq!(note_rhythm(0.5).flags, 1);
+        assert_eq!(note_rhythm(0.25).flags, 2);
+        // Shorter than a sixteenth still rounds up to two — this module
+        // has no thirty-second tier.
+        assert_eq!(note_rhythm(0.1).flags, 2);
+    }
+
+    #[test]
+    fn note_rhythm_leaves_the_plain_durations_undotted() {
+        for beats in [4.0, 2.0, 1.0, 0.5, 0.25] {
+            assert_eq!(note_rhythm(beats).dots, 0, "{beats} beats");
+        }
+    }
+
+    #[test]
+    fn a_dot_always_sits_in_a_space_never_on_a_line() {
+        // Even steps are lines, odd are spaces.
+        assert_eq!(dot_step(0), 1); // bottom line -> space above
+        assert_eq!(dot_step(4), 5); // middle line -> space above
+        assert_eq!(dot_step(3), 3); // already a space -> stays
+        assert_eq!(dot_step(-2), -1); // below the staff, same rule
     }
 
     #[test]
