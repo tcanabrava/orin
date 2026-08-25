@@ -24,8 +24,20 @@ load-bearing about *this* crate.
   inaudible/invisible and doesn't bias every judged offset by a constant
   amount) and snaps outright past 0.5 s of drift (a stall/seek, not
   ordinary jitter). Free-runs on frame deltas during countdown, pause, and
-  Jam Session. Two invariants, the second enforced by the type rather than
-  just documented:
+  Jam Session — **and always under wasm** (`SINK_POSITION_IS_RELIABLE`).
+  Anchoring assumes the sink position is effectively a *hardware* clock,
+  advanced by the audio device's own callback no matter how busy the game
+  is; that's true natively and false in a browser, where cpal's WebAudio
+  backend pulls samples from rodio inside **main-thread** callbacks
+  (`setTimeout` to prime it, then each `AudioBufferSourceNode`'s `ended`
+  event) and schedules them ahead onto the WebAudio timeline. A Bevy frame
+  loop saturates that same thread, so the counter slips behind wall-clock
+  while the audio itself plays on — and once it slips past the 0.5 s
+  threshold, `advance_clock` reads it as a stall/seek and snaps the clock
+  *backwards* to meet it, so the song visibly rewinds ~half a second, over
+  and over. Anchoring defends against slow drift; it is not worth a
+  repeated backwards jump. Two invariants, the second enforced by the type
+  rather than just documented:
   - Every clock-reading system must be ordered `.after(GameplayLogic)` or
     notes stutter (see the SystemSet docs in `gameplay/plugin.rs`).
   - **Anything that jumps the clock must also seek the music sink or suspend

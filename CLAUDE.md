@@ -65,13 +65,18 @@ cargo run --release --features trace_tracy
 
 Binaries: main game (`src/main.rs`), plus `hole-editor`, `note_editor`,
 `note_bench`, `gen_synthetic_dataset` (in `src/bin/`). The root package is
-*only* the binary — every library lives in `crates/`.
+the binaries **plus one library**: `src/lib.rs`, the composition root, whose
+`run()` assembles every plugin. That library exists because Android never
+calls a `main` — it loads a shared object and calls `android_main`
+(`crates/harmonicon-android`), so both entry points had to become thin
+wrappers around one shared `run()`. Everything *else* still lives in
+`crates/`; `src/lib.rs` is assembly only, not logic.
 Manual testing needs a mic, audio out, and a display.
 
 ## Architecture (load-bearing facts)
-- **Cargo workspace — eleven library crates plus a binary-only root
-  package.** A crate may depend only on ones *earlier* in this list, and
-  **peers may not depend on each other**:
+- **Cargo workspace — twelve library crates plus a root package holding the
+  binaries and the composition root.** A crate may depend only on ones
+  *earlier* in this list, and **peers may not depend on each other**:
 
   | Crate | Holds | Bevy? |
   |---|---|---|
@@ -85,7 +90,8 @@ Manual testing needs a mic, audio out, and a display.
   | `harmonicon-jam` / `harmonicon-editor` | Jam Session / Song Editor — **siblings**, neither imports the other | yes |
   | `harmonicon-menu` | page state machine, routing, one file per screen | yes |
   | `harmonicon-bench` | pitch-detection benchmark + dataset generator (dev tooling) | yes |
-  | `harmonicon` (root) | `main.rs` + `src/bin/*`; owns `assets/`, `build.rs`, `tests/` | yes |
+  | `harmonicon` (root) | `lib.rs` (composition root) + `main.rs` + `src/bin/*`; owns `assets/`, `build.rs`, `tests/` | yes |
+  | `harmonicon-android` | `android_main` only — the one crate *above* the root, and the only cdylib | yes |
 
   - **Keep `harmonicon-core` Bevy-free.** Its whole dependency tree is
     `serde`/`serde_json`/`midly`, which is why its ~200 tests run in
@@ -128,6 +134,22 @@ Manual testing needs a mic, audio out, and a display.
   them). Add a span for anything running off the main schedule (another
   thread, an asset loader, a decode task) or burning real time inside one
   system call.
+- **Android compiles but has never been run** — `docs/android.md` has the
+  whole story, and is the file to read before touching anything mobile.
+  The short version: `cargo check --target aarch64-linux-android` type-checks
+  the workspace and CI's `android_check` job keeps it that way, but no APK
+  has ever been built (that needs an NDK/SDK/JDK), so everything under
+  `[package.metadata.android]` is unverified. The NDK-free check works only
+  because `blake3` is pinned to its pure-Rust backend for that target, and
+  because the `native-activity` backend was chosen over `game-activity`
+  (which compiles C++ from the NDK) — a choice worth revisiting, since
+  GameActivity handles soft-keyboard/IME far better and the Song Editor has
+  text fields. Two workspace-shaped consequences: the Android-only `bevy`
+  and `blake3` feature selections sit on the **root package**, so an Android
+  check must be whole-workspace (`-p <crate>` drops the root and breaks
+  feature unification); and `harmonicon-android` keeps its dependency on the
+  game target-gated, so on every other target it builds as an empty cdylib
+  instead of relinking the whole Bevy app on each desktop `cargo build`.
 - **Per-crate architecture notes live in `crates/<name>/CLAUDE.md`.** Each
   crate documents its own load-bearing facts; they load when you're working
   in that crate rather than all at once. Start there for anything
@@ -146,6 +168,7 @@ Manual testing needs a mic, audio out, and a display.
   | `harmonicon-editor` | the whole Song Editor (record, MIDI import, undo, timeline tools, tempo map) |
   | `harmonicon-menu` | the guided tutorial tour, menu page scrolling |
   | `harmonicon-bench` | benchmark-first pitch-detection workflow |
+  | `harmonicon-android` | (no separate file — `docs/android.md` covers the whole port) |
 
 ## Procedural workflows
 
@@ -249,24 +272,46 @@ skills in `.claude/skills/`, loaded on demand rather than living here:
   `scan_ui_themes`) takes the build-time-manifest approach instead: each is
   now two `#[cfg]`-gated implementations under the same name — the original
   `std::fs::read_dir`-based body, unchanged, behind
-  `#[cfg(not(target_arch = "wasm32"))]` (this is what keeps native dynamic:
+  `#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]` (this is
+  what keeps native dynamic:
   a player can still drop a new song into `assets/songs/` or
   `~/Harmonicon/songs/` with no rebuild — a fixed manifest like
   localization's `LOCALES` isn't an option here, unlike the fixed set of
-  three shipped locales), and a `#[cfg(target_arch = "wasm32")]` sibling
+  three shipped locales), and a
+  `#[cfg(any(target_arch = "wasm32", target_os = "android"))]` sibling
   that reads a `build.rs`-generated manifest instead
-  (`generate_wasm_asset_manifest`, `assets_management::manifest`'s
-  `include!(concat!(env!("OUT_DIR"), "/asset_manifest.rs"))`). Generating
+  (`generate_bundled_asset_manifest`, `assets_management::manifest`'s
+  `include!(concat!(env!("OUT_DIR"), "/asset_manifest.rs"))`). **The cfg
+  predicate is "this target's `assets/` is not a readable local directory",
+  not "this target is not desktop"** — wasm has no filesystem, and Android's
+  assets live inside the APK, reachable only through the JNI
+  `AssetManager`; **iOS is deliberately excluded**, because an app bundle's
+  Resources directory reads like any other and iOS therefore keeps the
+  runtime scan. Generating
   that manifest at build time — rather than runtime — works specifically
   because a build script always runs on the native host and can do a real
   `std::fs::read_dir` walk of `assets/` regardless of the crate's own
-  `--target`; `build.rs`'s `generate_wasm_asset_manifest` mirrors each scan
+  `--target`; `generate_bundled_asset_manifest` mirrors each scan
   function's discovery rule exactly (e.g. the first `*.harpchart` file
   directly under a song's `song/` subfolder) so the two implementations
-  can't drift. The `~/Harmonicon` external-folder equivalent has no wasm
-  version at all — no home directory concept in a browser — which the
+  can't drift — and its own guard must stay in step with the `#[cfg]` on the
+  `manifest` module, since a mismatch is a missing-file build error rather
+  than a silent fallback. **Lessons need the same treatment but a different
+  manifest**: `lessons::catalog` reads each `lesson.json`'s *bytes* directly
+  instead of going through `AssetServer`, so
+  `crates/harmonicon-song/build.rs` embeds the JSON text with `include_str!`
+  rather than just directory names (and has to be its own build script, for
+  the same per-package `OUT_DIR` reason the platform one does). That module
+  had no manifest path at all until the Android port added one, so the
+  Lessons menu was silently empty on wasm too. The `~/Harmonicon`
+  external-folder equivalent has no manifest-backed
+  version at all — no home directory concept in a browser, and an Android
+  app can only reach its own sandbox — which the
   native functions already handle gracefully (`dirs::home_dir()` returning
-  `None`), so nothing wasm-specific was needed there. UI *theme* content
+  `None`), so nothing target-specific was needed there beyond skipping the
+  `external://` asset-source registration in `lib.rs` (on Android
+  `AssetSource::get_default_reader` yields the *APK* reader, so registering
+  it would silently resolve against the bundle instead of the path given). UI *theme* content
   (not just names) also loads under wasm now: `theme::load_theme` used to
   read `theme.json`'s contents via a raw `std::fs::read_to_string`, which
   can't work under wasm either (a different mechanism than a directory

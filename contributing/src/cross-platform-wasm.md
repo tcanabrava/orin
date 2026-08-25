@@ -38,10 +38,33 @@ build from `index.html` and `Trunk.toml` at the repository root — it
 compiles the crate for `wasm32-unknown-unknown`, runs `wasm-bindgen` to
 generate the JS glue, and copies `assets/` alongside the output. The
 `<canvas id="bevy-canvas">` element `index.html` declares is wired up in
-`main.rs`'s `WindowPlugin` (`canvas: Some("#bevy-canvas".into())`,
+`lib.rs`'s `WindowPlugin` (`canvas: Some("#bevy-canvas".into())`,
 `fit_canvas_to_parent: true`, `prevent_default_event_handling: true`) —
 all three fields are documented no-ops on native, so no `#[cfg]` is
 needed around setting them unconditionally.
+
+### Two `trunk serve` traps, both fixed in `Trunk.toml`
+
+Both produced a *blank page with a working build*, so neither points at
+itself. Both are configuration, not code — `trunk build --release` plus any
+static file server was unaffected the whole time, which is what makes them
+so slow to find.
+
+- **`[serve] no_spa = true`.** Trunk's SPA fallback answers every missing
+  path with `index.html` and a `200`. Bevy's `AssetServer` probes for an
+  optional `<asset>.meta` sidecar next to each asset; none exist here, so
+  instead of the `404` it expects (meaning "no meta, use defaults") it gets
+  HTML with a success status, fails to deserialize it as meta, and marks the
+  *asset* failed. Localization is the fatal one — `localization_ready` never
+  flips, so the app sits in `AppState::Startup`, which draws nothing but the
+  clear colour. The tell is `Failed to deserialize meta for asset ...` in the
+  browser console.
+- **`[watch] watch = [...]`.** Trunk otherwise recursively watches the whole
+  repo root. `target-flatpak/var/run` is a symlink to the real `/run`, so
+  the walk descends into root-only directories like `/run/udisks2` and
+  `trunk serve` aborts *before building anything* with `failed to watch ...
+  Permission denied`. Listing the source paths explicitly keeps the watcher
+  out of every build-output tree.
 
 ## Getting it to compile at all: two dependency conflicts
 

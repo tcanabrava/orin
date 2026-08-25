@@ -32,11 +32,17 @@ export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/<version>
 cargo apk run -p harmonicon-android
 ```
 
-`cargo-apk` is unmaintained but is what matches the `native-activity`
-backend chosen below. If it proves to be a dead end, the alternatives are
-`xbuild` or `cargo-ndk` driving a hand-written Gradle project — both of which
-would replace `[package.metadata.android]` with their own configuration and
-leave every Rust-side change here untouched.
+`cargo-apk` is what matches the `native-activity` backend chosen below, and
+it is what `[package.metadata.android]` is written for — but it is
+**explicitly deprecated, and cannot produce a Play Store AAB**, only an APK.
+It is fine for sideloading onto a device to answer the open questions above;
+it is not a release path.
+
+For an actual store release the alternatives are `xbuild` or `cargo-ndk`
+driving a hand-written Gradle project. Either would replace
+`[package.metadata.android]` with its own configuration and leave every
+Rust-side change described below untouched — so picking one is deferred until
+someone actually wants a release, not a blocker on the port.
 
 ## Why the code is shaped the way it is
 

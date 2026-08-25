@@ -111,14 +111,26 @@ one-line index of what's landed.
   equivalents for every keyboard-only action found (UI zoom, the Song
   Editor's Delete/Copy/Paste, the spectrogram's style cycle), plus
   `MicStatus::AwaitingPermission` groundwork for a future mobile
-  permission-prompt flow. The actual Android/iOS build config
-  (`#[bevy_main]`, `[package.metadata.android]`, an Xcode project) is
-  deliberately deferred — this sandbox has no NDK and can never have
-  Xcode, so writing unverifiable config wasn't worth it yet. See
-  `ROADMAP.md`'s Mobile section (currently still listed as a non-goal —
-  worth revisiting given this) for the full research findings (cpal
-  already has real Android/iOS mic input support; Bevy's own mobile
-  toolchain story is real but immature).
+  permission-prompt flow.
+- **Android port: the Rust side compiles and is CI-guarded; no APK has ever
+  been built.** `docs/android.md` is the full record, including what is and
+  isn't verified. `cargo check --target aarch64-linux-android` type-checks
+  the workspace with **no NDK** (blake3 pinned to its pure-Rust backend for
+  that target), and a CI `android_check` job keeps it from rotting. Landed:
+  `crates/harmonicon-android` (a cdylib exporting `android_main`, with the
+  composition root moved to `src/lib.rs`'s `run()` so both entry points
+  share it), manifest-backed asset *and lesson* discovery for targets whose
+  `assets/` isn't a readable directory, a real `RECORD_AUDIO` runtime
+  permission flow over JNI feeding the pre-existing
+  `MicStatus::AwaitingPermission`, and the `external://`/`~/Harmonicon`
+  paths gated off. Still open: the APK itself (needs NDK/SDK/JDK, so
+  `[package.metadata.android]` is unverified), a touch-input/hit-target
+  pass, icon and splash, and confirming the mic actually captures usably on
+  a phone — which for this game is the whole product. iOS is untouched and
+  needs Xcode; the asset-discovery cfgs deliberately exclude it, since an
+  app bundle's Resources directory reads like any other. Fixing Android's
+  lesson discovery also fixed **wasm**, where the Lessons menu had been
+  silently empty.
 
 ## Current work
 

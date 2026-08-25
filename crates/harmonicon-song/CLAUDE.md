@@ -134,3 +134,23 @@ load-bearing about *this* crate.
   reverse (`docs/physical_design_plan.md`). A live rescan fires
   `LessonsRescanned`; `menu::pages::lessons::rebuild_on_lessons_rescanned`
   forces a same-page rebuild if the Lessons list happens to be open.
+
+- **Lesson discovery is `#[cfg]`-split, and this crate has its own
+  `build.rs` because of it.** `scan_lessons_root` walks `assets/lessons`
+  with `std::fs::read_dir` and parses each `lesson.json`'s bytes *directly*,
+  not through `AssetServer` — which means it finds nothing at all on a
+  target whose `assets/` tree isn't a readable local directory (wasm has no
+  filesystem; Android's assets live inside the APK). So
+  `#[cfg(any(target_arch = "wasm32", target_os = "android"))]` selects a
+  sibling `scan_all_lessons` that reads `build.rs`'s generated
+  `BUNDLED_LESSONS` instead. Three things about it:
+  - It embeds the **JSON text** via `include_str!`, unlike
+    `harmonicon-platform`'s manifests which carry only names — because of
+    that direct-bytes read above.
+  - It can't live in `harmonicon-platform`'s build script:
+    `include!(concat!(env!("OUT_DIR"), ...))` reads the *including* crate's
+    `OUT_DIR`, and `OUT_DIR` is per-package.
+  - It has no external-folder half. There's no `~/Harmonicon` to drop a
+    lesson into on either target, which is why it takes no root path.
+  Until the Android port added this, the module had no manifest path at
+  all — so the Lessons menu was silently empty on wasm as well.
