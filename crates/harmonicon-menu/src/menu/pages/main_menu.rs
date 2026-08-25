@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-//! The main menu: Play, Options, Help, Quit.
+//! The main menu: Play, Options, Help, and — everywhere but the browser —
+//! Quit.
 
 use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
@@ -37,6 +38,12 @@ pub(crate) fn setup_main_menu(
         &loc.msg("menu-help"),
         |_: On<Activate>, mut page: ResMut<NextState<MenuPage>>| page.set(MenuPage::HelpAbout),
     );
+    // No Quit in a browser tab: a page can't close itself (`window.close()`
+    // only works for windows script opened), and `AppExit` under wasm just
+    // stops Bevy's loop — leaving a frozen canvas with no way back short of
+    // a reload, which is worse than not offering the button. Android keeps
+    // it: `AppExit` there finishes the activity, which is a real exit.
+    #[cfg(not(target_arch = "wasm32"))]
     spawn_button(
         &mut commands,
         root,

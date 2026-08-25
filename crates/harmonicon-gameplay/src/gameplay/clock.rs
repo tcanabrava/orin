@@ -195,14 +195,45 @@ pub(crate) fn tick_clock(
 /// so anchoring to it would make `advance_clock` repeatedly snap the clock
 /// back to that frozen point once real time drifts past
 /// `SNAP_THRESHOLD_SECS` — better to free-run past that point instead.
+///
+/// And always `false` under wasm, via [`SINK_POSITION_IS_RELIABLE`].
 pub(crate) fn should_anchor_to_sink(
     clock: f64,
     music_started: bool,
     mode: &GameplayMode,
     sink_empty: bool,
 ) -> bool {
-    clock >= 0.0 && music_started && *mode != GameplayMode::JamSession && !sink_empty
+    SINK_POSITION_IS_RELIABLE
+        && clock >= 0.0
+        && music_started
+        && *mode != GameplayMode::JamSession
+        && !sink_empty
 }
+
+/// Whether this target's `AudioSink::position()` tracks wall-clock time
+/// closely enough to steer the gameplay clock by.
+///
+/// True everywhere but the browser. On native, that position is effectively
+/// a *hardware* clock: the audio device drives the callback that consumes
+/// samples, so it advances on its own schedule no matter how busy the game
+/// is — exactly the property the whole anchoring design rests on.
+///
+/// Under wasm it is not a clock at all. cpal's WebAudio backend pulls
+/// samples from rodio inside **main-thread** callbacks (a `setTimeout` to
+/// prime it, then each `AudioBufferSourceNode`'s `ended` event) and
+/// schedules them onto the WebAudio timeline ahead of time. The counter
+/// therefore only moves when the main thread gets around to servicing those
+/// events — and a Bevy frame loop saturates precisely that thread. Audio
+/// keeps playing (already-scheduled buffers are the browser's problem, not
+/// ours), while the reported position slips further and further behind real
+/// time. Once it slips past `SNAP_THRESHOLD_SECS`, `advance_clock` takes it
+/// for a stall/seek and snaps the clock *backwards* to meet it: the song
+/// visibly rewinds about half a second, then does it again.
+///
+/// Free-running on frame deltas instead is what Jam Session already does on
+/// every platform. The drift anchoring exists to prevent is real but slow;
+/// a repeated half-second jump backwards is neither.
+const SINK_POSITION_IS_RELIABLE: bool = !cfg!(target_arch = "wasm32");
 
 pub(crate) fn handle_loop_boundary(
     loop_cfg: Res<LoopConfig>,
