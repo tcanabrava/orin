@@ -10,7 +10,31 @@
 target = "index.html"
 dist = "dist"
 
+[serve]
+# Without this, `trunk serve` renders a blank canvas while `trunk build` +
+# any static server works fine — a difference that costs hours to find.
+#
+# Trunk's SPA fallback answers *every* missing path with `index.html` and a
+# 200. Bevy's AssetServer probes for an optional `<asset>.meta` sidecar
+# beside each asset it loads; none of ours exist, so instead of the 404 it
+# expects (meaning "no meta, use defaults") it receives HTML with a success
+# status, fails to deserialize it as meta, and treats the *asset* as failed.
+# Localization is the fatal one: `localization_ready` never flips, so the
+# app sits in `AppState::Startup` forever — which draws nothing but the
+# clear colour.
+no_spa = true
+
 [watch]
+# Watch the source tree explicitly rather than letting Trunk default to
+# recursively watching the whole repo root. That default is not merely
+# wasteful here, it's fatal: `target-flatpak/var/run` is a symlink to the
+# real `/run`, so the recursive walk descends into root-only directories
+# like `/run/udisks2` and `trunk serve` aborts before it builds anything
+# ("failed to watch ... Permission denied"), leaving the browser with
+# nothing to load and no obvious reason why.
+watch = ["src", "crates", "index.html", "Cargo.toml", "Cargo.lock"]
 # Don't rebuild on every asset drop-in — `assets/` is data, not source, and
 # it's a large tree `notify`-based watching would churn on for nothing.
+# Redundant given the explicit `watch` list above, but kept so that list can
+# grow without silently re-enabling asset churn.
 ignore = ["assets", "dist"]
