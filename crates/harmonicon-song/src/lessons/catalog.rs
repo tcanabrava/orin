@@ -3,12 +3,29 @@
 //! Startup discovery of every bundled lesson (`assets/lessons/<unit>/
 //! <lesson>/lesson.json`) and unit grouping for the menu.
 
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 use std::path::Path;
 
 use bevy::prelude::*;
 
 use super::manifest::{LessonManifest, parse_lesson};
 use harmonicon_platform::assets_management::ExternalFolderChanged;
+
+/// Build-time-generated stand-in for the `assets/lessons` directory walk, on
+/// targets where that tree isn't a readable local directory: wasm has no
+/// filesystem, and Android's assets live inside the APK. `build.rs`'s
+/// `generate_bundled_lesson_manifest` embeds each `lesson.json`'s text with
+/// `include_str!` and this `include!()`s the result — it has to carry the
+/// contents, not just the names, because a lesson is discovered by parsing
+/// that JSON directly rather than through `AssetServer`.
+///
+/// Native targets (desktop *and* iOS, whose app bundle reads like any other
+/// directory) don't use this at all — they keep scanning for real, so a
+/// player can drop a lesson into `~/Harmonicon/lessons` without a rebuild.
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
+mod bundled {
+    include!(concat!(env!("OUT_DIR"), "/lesson_manifest.rs"));
+}
 
 /// A discovered lesson: its manifest plus the asset path its chart loads
 /// from (`None` for instructional-only lessons).
@@ -48,6 +65,7 @@ pub fn group_by_unit(lessons: &[LessonEntry]) -> Vec<(&str, Vec<&LessonEntry>)> 
 /// prefix `assets_management::scan_artist_song` uses for external songs; a
 /// temp dir in tests). Invalid manifests are logged and skipped — one bad
 /// lesson must not take down the whole menu.
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_lessons_root(root: &Path, asset_prefix: &str) -> Vec<LessonEntry> {
     let mut entries = Vec::new();
     let mut unit_dirs: Vec<_> = match std::fs::read_dir(root) {
@@ -105,12 +123,45 @@ fn scan_lessons_root(root: &Path, asset_prefix: &str) -> Vec<LessonEntry> {
 /// `assets_management::scan_all_songs`'s bundled+external pattern. Bundled
 /// entries come first, so curriculum ordering/prerequisites among the
 /// shipped lessons are unaffected by whatever a player drops in.
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_all_lessons() -> Vec<LessonEntry> {
     let mut entries = scan_lessons_root(Path::new("assets/lessons"), "lessons");
     if let Some(external_root) = dirs::home_dir().map(|h| h.join("Harmonicon/lessons")) {
         entries.extend(scan_lessons_root(&external_root, "external://lessons"));
     }
     entries
+}
+
+/// Bundled lessons only, parsed from the build-time manifest (see the
+/// `bundled` module above). There is no external drop folder to add: neither
+/// a browser nor an Android app has a `~/Harmonicon` a player could put one
+/// in, which is why this takes no root path at all.
+///
+/// Deliberately mirrors `scan_lessons_root`'s error handling — an invalid
+/// manifest is logged and skipped, never fatal — even though a bad lesson
+/// here would have failed the build's own asset-layout test first.
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
+fn scan_all_lessons() -> Vec<LessonEntry> {
+    bundled::BUNDLED_LESSONS
+        .iter()
+        .filter_map(|(unit, lesson, json)| {
+            let manifest = match parse_lesson(json.as_bytes()) {
+                Ok(m) => m,
+                Err(err) => {
+                    warn!("Skipping invalid lesson {unit}/{lesson}: {err}");
+                    return None;
+                }
+            };
+            let chart_asset_path = manifest
+                .chart
+                .as_ref()
+                .map(|chart| format!("lessons/{unit}/{lesson}/{chart}"));
+            Some(LessonEntry {
+                manifest,
+                chart_asset_path,
+            })
+        })
+        .collect()
 }
 
 fn scan_lessons(mut available: ResMut<AvailableLessons>) {

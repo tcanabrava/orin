@@ -1,0 +1,73 @@
+# The Android artifact: a shared library exporting `android_main`, which is
+# what the platform loads and calls instead of running a `main`.
+#
+# Its dependency on the game is target-gated, and everything in `src/lib.rs`
+# is `#[cfg(target_os = "android")]`, so on every other target this builds as
+# an *empty* cdylib with no dependencies — which links in milliseconds. That
+# matters because the workspace's `default-members` glob includes this crate,
+# so a plain `cargo build`/`cargo test` on desktop builds it too; without the
+# gate, every desktop build would link the entire Bevy app a second time.
+[package]
+name = "harmonicon-android"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+harmonicon = { path = "../..", version = "*" }
+bevy = { workspace = true }
+
+[features]
+# Forwarded to the game exactly as every other crate forwards them, so
+# feature unification doesn't end up with two differently-configured Bevy
+# builds in one tree (root CLAUDE.md, "A new crate must forward...").
+dev = ["harmonicon/dev"]
+trace_tracy = ["harmonicon/trace_tracy"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APK packaging, read by `cargo-apk`. UNVERIFIED — see docs/android.md.
+#
+# Nothing below has been run: producing an APK needs the Android NDK, SDK and
+# a JDK, none of which exist in the environment this was written in, so only
+# the Rust side (`cargo check --target aarch64-linux-android`, and CI's
+# `android_check` job) is actually known to work. Treat these values as a
+# starting point to test on a real machine, not as settled configuration.
+# ─────────────────────────────────────────────────────────────────────────────
+[package.metadata.android]
+package = "io.github.tcanabrava.Harmonicon"
+apk_name = "harmonicon"
+# Relative to this manifest; `assets/` belongs to the root package, two
+# levels up (root CLAUDE.md, "Paths reaching `assets/` from a crate").
+assets = "../../assets"
+build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
+strip = "strip"
+
+[package.metadata.android.sdk]
+# 23 is the floor for the runtime permission API that `permission.rs` calls
+# (`Activity.checkSelfPermission`/`requestPermissions`); 28 is a safer floor
+# for Bevy's wgpu/Vulkan backend on real devices.
+min_sdk_version = 28
+target_sdk_version = 34
+
+# The entire game is microphone input, so this is not optional. Android
+# treats RECORD_AUDIO as "dangerous": declaring it here only makes it
+# *requestable* — it still has to be granted at runtime, which is what
+# `harmonicon-audio`'s `permission` module does.
+[[package.metadata.android.uses_permission]]
+name = "android.permission.RECORD_AUDIO"
+
+[package.metadata.android.application]
+label = "Harmonicon"
+# The scrolling note highway is a wide layout, and every screen was designed
+# against the desktop window; `harmonicon-platform`'s `responsive.rs` compact
+# breakpoint handles narrow, but portrait phone aspect is narrower still.
+[package.metadata.android.application.activity]
+screen_orientation = "sensorLandscape"
+# Without these the activity is destroyed and recreated on rotation or when
+# the soft keyboard appears, which for a Bevy app means losing the renderer
+# mid-song.
+config_changes = "orientation|keyboardHidden|screenSize|screenLayout|density"

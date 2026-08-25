@@ -455,14 +455,14 @@ impl AssetLoader for ThemeJsonLoader {
 /// themes anyway (see `assets_management`'s wasm-only `scan_ui_themes` —
 /// there's no `~/Harmonicon` drop folder inside a browser), so the wasm
 /// sibling below can just always answer "bundled".
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 pub fn theme_source_prefix(theme_name: &str) -> &'static str {
     let bundled = std::path::Path::new("assets/themes").join(theme_name);
     if bundled.is_dir() { "" } else { "external://" }
 }
 
 /// wasm sibling of the native `theme_source_prefix` above.
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
 pub fn theme_source_prefix(_theme_name: &str) -> &'static str {
     ""
 }

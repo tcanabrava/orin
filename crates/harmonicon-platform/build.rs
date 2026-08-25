@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-//! Generates the wasm asset manifest that `assets_management` includes.
+//! Generates the asset manifest that `assets_management` includes on targets
+//! whose `assets/` tree isn't a readable local directory: wasm (no
+//! filesystem — the asset reader talks HTTP) and Android (assets live inside
+//! the APK, reachable only through the JNI `AssetManager`). iOS is *not* one
+//! of these; an app bundle's Resources directory reads like any other, so it
+//! keeps the runtime scan.
 //!
 //! Lives here rather than in the workspace root's build.rs because
 //! `include!(concat!(env!("OUT_DIR"), ...))` reads the *including* crate's
@@ -10,15 +15,22 @@
 use std::path::Path;
 
 fn main() {
-    generate_wasm_asset_manifest();
+    generate_bundled_asset_manifest();
 }
 
-/// Writes `$OUT_DIR/asset_manifest.rs` for the wasm-only scan functions in
-/// `assets_management` to `include!()` — see the module doc comment above
-/// for why. A no-op (and cheap: one env var read) unless the crate is
-/// actually being built for `wasm32`, so native builds pay nothing here.
-fn generate_wasm_asset_manifest() {
-    if std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() != Ok("wasm32") {
+/// Writes `$OUT_DIR/asset_manifest.rs` for the manifest-backed scan
+/// functions in `assets_management` to `include!()` — see the module doc
+/// comment above for why. A no-op (and cheap: two env var reads) unless the
+/// crate is actually being built for one of those targets, so native builds
+/// pay nothing here.
+///
+/// The guard must stay in step with the `#[cfg(any(target_arch = "wasm32",
+/// target_os = "android"))]` on `assets_management`'s `manifest` module —
+/// a mismatch is a missing-file build error, not a silent fallback.
+fn generate_bundled_asset_manifest() {
+    let arch = std::env::var("CARGO_CFG_TARGET_ARCH");
+    let os = std::env::var("CARGO_CFG_TARGET_OS");
+    if arch.as_deref() != Ok("wasm32") && os.as_deref() != Ok("android") {
         return;
     }
 

@@ -94,6 +94,16 @@ fn resolve_device_name(available: &[String], wanted: &str) -> Option<String> {
 /// the startup system and the Options page's "Retry" button / device picker
 /// can trigger it directly (the latter via `Commands::queue`).
 pub fn start_capture(world: &mut World) {
+    // On a platform with a runtime permission model, opening the stream
+    // before the user has granted it fails in a way indistinguishable from a
+    // broken device. Ask first, and park in `AwaitingPermission` until the
+    // answer comes back (see `retry_capture_when_permission_granted`).
+    if !crate::permission::microphone_granted() {
+        crate::permission::request_microphone();
+        world.insert_resource(MicStatus::AwaitingPermission);
+        return;
+    }
+
     let wanted = world.resource::<AudioSettings>().input_device.clone();
     // Skip enumeration entirely for the common case (no preference set) — on
     // Linux, listing input devices makes cpal probe every ALSA/JACK backend,
@@ -123,6 +133,32 @@ pub fn start_capture(world: &mut World) {
             });
         }
     }
+}
+
+/// Polls for the permission dialog being answered, then starts capture for
+/// real.
+///
+/// Only does anything while [`MicStatus::AwaitingPermission`] is the current
+/// status, which off Android is never — [`permission::microphone_granted`]
+/// answers `true` there, so `start_capture` never parks and this system
+/// returns on its first line forever.
+///
+/// A poll rather than a callback because the permission result is delivered
+/// to the Java activity, not to us; see [`permission::request_microphone`].
+/// If the user *denies* it, this simply keeps polling and the status stays
+/// `AwaitingPermission` — which is the truth, and what the Options page
+/// already renders a banner for.
+pub fn retry_capture_when_permission_granted(world: &mut World) {
+    if !matches!(
+        world.get_resource::<MicStatus>(),
+        Some(MicStatus::AwaitingPermission)
+    ) {
+        return;
+    }
+    if !crate::permission::microphone_granted() {
+        return;
+    }
+    start_capture(world);
 }
 
 /// Opens capture on `device_name` (falling back to the system default if

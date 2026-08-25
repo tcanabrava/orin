@@ -10,6 +10,7 @@
 
 pub mod audio_input;
 pub mod config;
+pub mod permission;
 pub mod pipeline;
 pub mod pitch_detect;
 pub mod waveform;

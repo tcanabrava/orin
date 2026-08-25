@@ -3263,6 +3263,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_fluent",
+ "blake3",
  "clap",
  "cpal",
  "crossbeam-channel",
@@ -3301,6 +3302,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonicon-android"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "harmonicon",
+]
+
+[[package]]
 name = "harmonicon-app"
 version = "0.1.0"
 dependencies = [
@@ -3324,6 +3333,8 @@ dependencies = [
  "crossbeam-channel",
  "harmonicon-core",
  "harmonicon-dsp",
+ "jni 0.21.1",
+ "ndk-context",
  "rodio",
  "rustfft",
  "serde",

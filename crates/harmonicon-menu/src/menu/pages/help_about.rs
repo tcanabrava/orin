@@ -32,7 +32,14 @@ fn locate_docs_index() -> Option<std::path::PathBuf> {
             exe.parent()
                 .map(|dir| dir.join("docs/book/book/index.html"))
         }),
-        Some(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/book/book/index.html")),
+        // `CARGO_MANIFEST_DIR` is *this crate's* directory, not the workspace
+        // root — hence the `../..`. The book lives at the repo root alongside
+        // `assets/`, which the root package owns (see `CLAUDE.md`, "Paths
+        // reaching `assets/` from a crate need `../../`").
+        Some(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/book/book/index.html"),
+        ),
     ];
     candidates.into_iter().flatten().find(|p| p.exists())
 }
@@ -57,8 +64,11 @@ fn open_in_default_app(path: &std::path::Path) -> std::io::Result<()> {
             .spawn()?;
     }
 
-    // Anywhere else, meaning wasm, there is no process to spawn: say so
-    // instead of reporting a success that never happened.
+    // Anywhere else — wasm, and Android, which is deliberately not covered by
+    // the `target_os = "linux"` arm above — there is no process to spawn: say
+    // so instead of reporting a success that never happened. (Opening a file
+    // on Android means handing an Intent to the system through JNI, which is
+    // a different mechanism entirely, not a missing `Command`.)
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     return Err(std::io::Error::new(
         std::io::ErrorKind::Unsupported,

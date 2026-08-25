@@ -129,6 +129,41 @@ jobs:
       - name: Run cargo check
         run: cargo check --target wasm32-unknown-unknown
 
+  # Type-checks the Android target. Needs no NDK, and that is deliberate:
+  # blake3 is pinned to its pure-Rust backend for this target (root
+  # Cargo.toml) precisely so the whole tree can be checked without one.
+  # Packaging an actual APK does need the NDK/SDK and is not done here —
+  # see docs/android.md.
+  #
+  # Must be a whole-workspace check, not `-p harmonicon-android`: the
+  # Android-only bevy/blake3 feature selections live on the root package,
+  # and `-p` drops it from the graph, which breaks feature unification.
+  android_check:
+    name: Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-android-${{ hashFiles('**/Cargo.toml') }}
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - name: Install Dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
+      - name: Run cargo check
+        run: cargo check --target aarch64-linux-android
+
   # Run cargo fmt --all -- --check
   format:
     name: Format

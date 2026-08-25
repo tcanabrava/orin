@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 use std::collections::HashMap;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 use std::fs::DirEntry;
 
 mod watch;
@@ -15,7 +15,7 @@ pub use watch::ExternalFolderChanged;
 /// `include!()`s the result. Native builds don't use this at all — they keep
 /// scanning `assets/`/`~/Harmonicon` for real at runtime, so a player can add
 /// content without a rebuild.
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
 mod manifest {
     include!(concat!(env!("OUT_DIR"), "/asset_manifest.rs"));
 }
@@ -212,7 +212,7 @@ fn rescan_on_external_change(
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_note_themes(
     mut available_2d: ResMut<AvailableNoteThemes2d>,
     mut available_3d: ResMut<AvailableNoteThemes3d>,
@@ -226,7 +226,7 @@ fn scan_note_themes(
 }
 
 /// Collects the `<name>` stems of files with `ext` directly under `dir`.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_theme_dir(dir: &str, ext: &str) -> Vec<String> {
     let Ok(entries) = std::fs::read_dir(dir) else {
         warn!("No note themes directory at {dir}/");
@@ -247,7 +247,7 @@ fn scan_theme_dir(dir: &str, ext: &str) -> Vec<String> {
 /// wasm sibling of the native `scan_note_themes` above: reads the build-time
 /// manifest instead of scanning a directory the wasm `AssetReader` can't
 /// list.
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
 fn scan_note_themes(
     mut available_2d: ResMut<AvailableNoteThemes2d>,
     mut available_3d: ResMut<AvailableNoteThemes3d>,
@@ -281,7 +281,7 @@ fn override_default_font(mut fonts: ResMut<Assets<Font>>) {
 }
 
 /// Collects the names of subfolders under `root` that contain a `theme.json`.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_theme_names(root: &std::path::Path) -> Vec<String> {
     let Ok(entries) = std::fs::read_dir(root) else {
         return Vec::new();
@@ -297,7 +297,7 @@ fn scan_theme_names(root: &std::path::Path) -> Vec<String> {
 // Discovers UI themes from the bundled `assets/themes/` directory, plus the
 // external `~/Harmonicon/themes/` drop folder if present (see `load_theme` in
 // `theme.rs`, which does the matching bundled-first resolution when loading).
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_ui_themes(mut available: ResMut<AvailableThemes>) {
     let mut names = scan_theme_names(std::path::Path::new("assets/themes"));
     if names.is_empty() {
@@ -321,7 +321,7 @@ fn scan_ui_themes(mut available: ResMut<AvailableThemes>) {
 /// external-folder equivalent under wasm — there's no home directory concept
 /// in a browser, and `dirs::home_dir()` already returns `None` there, which
 /// the native version already treats as "no external themes" gracefully.
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
 fn scan_ui_themes(mut available: ResMut<AvailableThemes>) {
     let mut names: Vec<String> = manifest::THEMES.iter().map(|s| s.to_string()).collect();
     if names.is_empty() {
@@ -331,7 +331,7 @@ fn scan_ui_themes(mut available: ResMut<AvailableThemes>) {
     available.0 = names;
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_harmonica_models(mut available: ResMut<AvailableHarmonicas>) {
     let root = std::path::Path::new("assets/harmonicas/3d");
     let Ok(entries) = std::fs::read_dir(root) else {
@@ -358,7 +358,7 @@ fn scan_harmonica_models(mut available: ResMut<AvailableHarmonicas>) {
 }
 
 /// wasm sibling of the native `scan_harmonica_models` above.
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
 fn scan_harmonica_models(mut available: ResMut<AvailableHarmonicas>) {
     available.0 = manifest::HARMONICA_MODELS
         .iter()
@@ -371,7 +371,7 @@ fn scan_harmonica_models(mut available: ResMut<AvailableHarmonicas>) {
     );
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn clean_song_path(full_path: &std::path::Path) -> Option<String> {
     let mut ancestor = full_path;
     while let Some(parent) = ancestor.parent() {
@@ -389,7 +389,7 @@ fn clean_song_path(full_path: &std::path::Path) -> Option<String> {
 /// loads from the right [`AssetSource`](bevy::asset::io::AssetSource): empty
 /// for the bundled `assets/` root, or `"external://"` for the `~/Harmonicon`
 /// drop folder registered under that source name in `main.rs`.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 pub fn scan_artist_song(
     artist_dir: &DirEntry,
     available: &mut ResMut<AvailableSongs>,
@@ -447,7 +447,7 @@ pub fn scan_artist_song(
 /// `~/Harmonicon/songs` drop folder) and scans each artist subfolder into
 /// `available`, tagging entries with `source_prefix` so they load from the
 /// matching [`AssetSource`](bevy::asset::io::AssetSource).
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 fn scan_songs_root(
     songs_root: &std::path::Path,
     source_prefix: &str,
@@ -472,7 +472,7 @@ fn scan_songs_root(
 // Clears `available` first, so this is safe to call again at runtime (e.g. a
 // menu "Refresh" button re-scanning after the player drops a song into
 // `~/Harmonicon/songs`), not just once at Startup.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 pub fn scan_all_songs(mut available: ResMut<AvailableSongs>) {
     available.0.clear();
     let bundled_root = std::path::Path::new("assets/songs");
@@ -498,7 +498,7 @@ pub fn scan_all_songs(mut available: ResMut<AvailableSongs>) {
 /// manifest instead of scanning `assets/songs/`, and skips the
 /// `~/Harmonicon/songs` external drop folder entirely — there's no home
 /// directory concept in a browser.
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_os = "android"))]
 pub fn scan_all_songs(mut available: ResMut<AvailableSongs>) {
     available.0.clear();
     for (artist, name, asset_path) in manifest::SONGS {

@@ -18,6 +18,13 @@ rustfft = { workspace = true }
 crossbeam-channel = { workspace = true }
 rodio = { workspace = true }
 
+# Reading `RECORD_AUDIO`'s state means calling into the Java activity, so
+# these are only pulled in where that activity exists. `ndk-context` holds the
+# JavaVM/Activity pointers `android-activity` publishes at startup.
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
+
 [features]
 dev = ["bevy/dev", "bevy/debug"]
 dynamic_linking = ["bevy/dynamic_linking"]

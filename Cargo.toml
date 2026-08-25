@@ -175,6 +175,17 @@ opt-level = 3
 # (not set globally here since RUSTFLAGS isn't expressible from Cargo.toml
 # itself, and `.cargo/config.toml` is this repo's per-machine, gitignored
 # local build config, not something to ship a project-wide setting through).
+# blake3 (via bevy's asset hashing) builds a C SIMD backend by default,
+# which needs the NDK's clang. Its pure-Rust path is slower but needs no C
+# toolchain, so an Android build can be *checked* without one. Scoped to
+# the target so desktop keeps the fast path.
+[target.'cfg(target_os = "android")'.dependencies]
+# Bevy 0.19's default features are just 2d/3d/ui/audio — no activity backend,
+# and android-activity hard-errors at compile time unless exactly one is
+# picked. GameActivity is what bevy's own mobile example uses.
+bevy = { workspace = true, features = ["android-native-activity"] }
+blake3 = { version = "1", features = ["pure"] }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
 getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
