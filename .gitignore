@@ -33,3 +33,12 @@ scripts/.venv/
 # issues, never meant to be committed.
 /assets/debug_songs/
 
+
+# Gradle build output for the Android APK (the source is
+# packaging/android/{settings,build}.gradle.kts + app/). `local.properties`
+# holds this machine's SDK path and must never be committed; the build falls
+# back to $ANDROID_HOME when it's absent.
+/packaging/android/.gradle/
+/packaging/android/build/
+/packaging/android/app/build/
+/packaging/android/local.properties

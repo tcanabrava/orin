@@ -113,14 +113,15 @@ remains:
   based settings/profile persistence and the `~/Harmonicon` external-folder
   watcher (`notify-debouncer-full`), none of which have browser
   equivalents.
-- Android: **the Rust side is done and CI-guarded; the APK is not.** See
-  `docs/android.md` for the full record and `PLAN.md` for what landed. The
-  workspace type-checks for `aarch64-linux-android` with no NDK, so the port
-  can't silently rot, but no APK has been built, installed or run — and in
-  particular nobody has confirmed the mic actually captures usably through a
-  phone, which for this game is the whole product. What's left is a real
-  device and a real toolchain: the APK itself, a touch/hit-target pass, icon
-  and splash, and validating `[package.metadata.android]`.
+- Android: **a real APK builds; it has never been run on a device.** See
+  `docs/android.md` for the full record and `PLAN.md` for what landed.
+  `packaging/android` (Gradle + cargo-ndk) emits a signed, installable APK
+  with verified contents, and CI type-checks the target — so the port can't
+  silently rot. What's left needs a phone in hand: installing and launching
+  it, and above all confirming **the mic actually captures usably**, which
+  for this game is the whole product. Then a touch/hit-target pass, an app
+  icon (there is none yet), more than just arm64-v8a, and a real signing key
+  in place of the debug one.
   - Mic input is *not* blocked the way it is for
     wasm — checked cpal 0.17.3's own source directly, and both Android
     (`host/aaudio`) and iOS (`host/coreaudio/ios`) have real, non-stub

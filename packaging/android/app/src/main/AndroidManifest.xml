@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  There is no Java/Kotlin source in this project at all: the activity class
+  comes from the androidx.games games-activity AAR, and everything the app
+  actually does lives in libharmonicon_android.so's `android_main`.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The entire game is microphone input. Declaring it here only makes it
+         *requestable* — RECORD_AUDIO is a "dangerous" permission, so it must
+         also be granted at runtime, which harmonicon-audio's `permission`
+         module does before opening any cpal stream. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="true" />
+
+    <!-- Deliberately no android:extractNativeLibs: AGP rejects setting it in
+         the manifest at all, and the modern default (false, for minSdk >= 23)
+         is what we want anyway — the ~108 MB cdylib is then mapped straight
+         out of the APK instead of being unpacked into /data as a second copy
+         at install time. -->
+    <application
+        android:label="Harmonicon"
+        android:allowBackup="true"
+        android:supportsRtl="true">
+
+        <activity
+            android:name="com.google.androidgamesdk.GameActivity"
+            android:exported="true"
+            android:label="Harmonicon"
+            android:screenOrientation="sensorLandscape"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|screenLayout|smallestScreenSize|density|uiMode|navigation">
+
+            <!-- Which .so to dlopen and call `android_main` in. Must match the
+                 cdylib name cargo produces for crates/harmonicon-android,
+                 i.e. libharmonicon_android.so with lib/.so stripped. -->
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="harmonicon_android" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

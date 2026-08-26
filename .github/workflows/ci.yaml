@@ -129,15 +129,21 @@ jobs:
       - name: Run cargo check
         run: cargo check --target wasm32-unknown-unknown
 
-  # Type-checks the Android target. Needs no NDK, and that is deliberate:
-  # blake3 is pinned to its pure-Rust backend for this target (root
-  # Cargo.toml) precisely so the whole tree can be checked without one.
-  # Packaging an actual APK does need the NDK/SDK and is not done here —
-  # see docs/android.md.
+  # Type-checks the Android target.
   #
-  # Must be a whole-workspace check, not `-p harmonicon-android`: the
-  # Android-only bevy/blake3 feature selections live on the root package,
-  # and `-p` drops it from the graph, which breaks feature unification.
+  # This needs a real NDK, unlike the wasm job: the GameActivity backend
+  # compiles GameActivity.cpp (vendored in the `android-activity` crate), and
+  # blake3 builds a C SIMD backend. GitHub's ubuntu runners ship an NDK, so
+  # nothing is downloaded here — but the toolchain has to be on PATH with the
+  # right API level, which is exactly what `cargo ndk` sets up. A plain
+  # `cargo check` fails with `ToolNotFound: aarch64-linux-android-clang++`.
+  #
+  # `-p harmonicon-android` is correct *because* the Android-only bevy
+  # feature selection lives in that crate's own Cargo.toml. Move it back to
+  # the root package and this silently loses the activity backend.
+  #
+  # This checks compilation only. Building an actual APK additionally needs
+  # the SDK, a JDK and Gradle — see packaging/android/ and docs/android.md.
   android_check:
     name: Android
     runs-on: ubuntu-latest
@@ -161,8 +167,15 @@ jobs:
           targets: aarch64-linux-android
       - name: Install Dependencies
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
-      - name: Run cargo check
-        run: cargo check --target aarch64-linux-android
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+      # API 28 is not arbitrary: cpal's Android backend links libaaudio, which
+      # only exists in the NDK sysroot from API 26 up. It must stay in step
+      # with minSdk in packaging/android/app/build.gradle.kts.
+      - name: Run cargo ndk check
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: cargo ndk -t arm64-v8a -P 28 check -p harmonicon-android
 
   # Run cargo fmt --all -- --check
   format:

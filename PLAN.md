@@ -112,25 +112,29 @@ one-line index of what's landed.
   Editor's Delete/Copy/Paste, the spectrogram's style cycle), plus
   `MicStatus::AwaitingPermission` groundwork for a future mobile
   permission-prompt flow.
-- **Android port: the Rust side compiles and is CI-guarded; no APK has ever
-  been built.** `docs/android.md` is the full record, including what is and
-  isn't verified. `cargo check --target aarch64-linux-android` type-checks
-  the workspace with **no NDK** (blake3 pinned to its pure-Rust backend for
-  that target), and a CI `android_check` job keeps it from rotting. Landed:
-  `crates/harmonicon-android` (a cdylib exporting `android_main`, with the
-  composition root moved to `src/lib.rs`'s `run()` so both entry points
-  share it), manifest-backed asset *and lesson* discovery for targets whose
-  `assets/` isn't a readable directory, a real `RECORD_AUDIO` runtime
-  permission flow over JNI feeding the pre-existing
+- **Android port: a real APK builds; it has never been run on a device.**
+  `docs/android.md` is the full record, including exactly what is and isn't
+  verified. `packaging/android` (Gradle + cargo-ndk, alongside the existing
+  flatpak/macos/windows packaging) emits a signed 147 MB APK whose contents
+  were inspected rather than assumed — arm64 cdylib exporting `android_main`
+  and `GameActivity_onCreate`, `GameActivity` in `classes.dex`,
+  `RECORD_AUDIO` declared, all 186 asset entries present, dev-only
+  `debug_songs` excluded — and CI's `android_check` job type-checks the
+  target via `cargo ndk`. Landed: `crates/harmonicon-android` (a cdylib
+  exporting `android_main`, with the composition root moved to
+  `src/lib.rs`'s `run()` so both entry points share it), GameActivity over
+  NativeActivity for its IME handling, manifest-backed asset *and lesson*
+  discovery for targets whose `assets/` isn't a readable directory, a real
+  `RECORD_AUDIO` runtime permission flow over JNI feeding the pre-existing
   `MicStatus::AwaitingPermission`, and the `external://`/`~/Harmonicon`
-  paths gated off. Still open: the APK itself (needs NDK/SDK/JDK, so
-  `[package.metadata.android]` is unverified), a touch-input/hit-target
-  pass, icon and splash, and confirming the mic actually captures usably on
-  a phone — which for this game is the whole product. iOS is untouched and
-  needs Xcode; the asset-discovery cfgs deliberately exclude it, since an
-  app bundle's Resources directory reads like any other. Fixing Android's
-  lesson discovery also fixed **wasm**, where the Lessons menu had been
-  silently empty.
+  paths gated off. Still open: **installing and launching it**, and
+  confirming the mic actually captures usably on a phone — which for this
+  game is the whole product — plus a touch/hit-target pass, an app icon
+  (there is none), arm64-only ABI coverage, and replacing the debug signing
+  key. iOS is untouched and needs Xcode; the asset-discovery cfgs
+  deliberately exclude it, since an app bundle's Resources directory reads
+  like any other. Fixing Android's lesson discovery also fixed **wasm**,
+  where the Lessons menu had been silently empty.
 
 ## Current work
 
