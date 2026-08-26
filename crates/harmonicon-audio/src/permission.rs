@@ -93,21 +93,49 @@ const RECORD_AUDIO: &str = "android.permission.RECORD_AUDIO";
 const REQUEST_CODE: i32 = 0;
 
 /// Runs `f` with a JNI environment attached to the current thread and the
-/// app's `Activity` object.
+/// app's **`Activity`** object.
 ///
-/// The VM and activity pointers come from `ndk_context`, which
-/// `android-activity` populates when it hands us `AndroidApp` — the same
-/// globals every other NDK crate reads, rather than a second copy of that
-/// state threaded through from `android_main`.
+/// Deliberately *not* `ndk_context::android_context()`, which is the obvious
+/// route and silently wrong here: `android-activity` registers the
+/// **`Application`** with `ndk_context`, not the Activity (see its
+/// `init.rs`, `initialize_android_context(vm, app_global)`). `Application`
+/// is a `Context`, so `checkSelfPermission` resolves on it and appears to
+/// work — but `requestPermissions` is declared on `Activity`, so it dies
+/// with `NoSuchMethodError: no non-static method
+/// "Landroid/app/Application;.requestPermissions..."` at runtime.
+///
+/// The Activity comes from `AndroidApp::activity_as_ptr`, which Bevy stores
+/// in `ANDROID_APP` when `android_main` hands it over
+/// (`crates/harmonicon-android`).
+///
+/// The returned reference is borrowed, not owned: per `activity_as_ptr`'s
+/// own docs it must not be wrapped in a `Global` or `Auto`, either of which
+/// would try to delete a reference we don't own. A bare `JObject` is inert
+/// on drop, which is what makes this sound.
 #[cfg(target_os = "android")]
 fn with_activity<T>(
     f: impl FnOnce(&mut jni::JNIEnv, &jni::objects::JObject) -> jni::errors::Result<T>,
 ) -> jni::errors::Result<T> {
-    let ctx = ndk_context::android_context();
-    // SAFETY: `ndk_context` hands back the JavaVM and Activity that
-    // `android-activity` registered at startup; both outlive the app.
-    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
-    let activity = unsafe { jni::objects::JObject::from_raw(ctx.context().cast()) };
+    let app = bevy::android::ANDROID_APP
+        .get()
+        .ok_or(jni::errors::Error::NullPtr(
+            "ANDROID_APP is not initialized",
+        ))?;
+    // SAFETY: both pointers belong to the `AndroidApp` the platform handed to
+    // `android_main`, and outlive the process's use of them.
+    let vm = unsafe { jni::JavaVM::from_raw(app.vm_as_ptr().cast()) }?;
+    let activity = unsafe { jni::objects::JObject::from_raw(app.activity_as_ptr().cast()) };
     let mut env = vm.attach_current_thread()?;
-    f(&mut env, &activity)
+    let result = f(&mut env, &activity);
+
+    // A throwing JNI call leaves the exception *pending* on this thread, and
+    // every later call then fails with the same opaque "Java exception was
+    // thrown" — so a single failure poisons the whole polling loop. Describe
+    // it (which dumps the real Throwable and its stack to logcat, the only
+    // way to see what actually went wrong) and clear it before returning.
+    if env.exception_check().unwrap_or(false) {
+        let _ = env.exception_describe();
+        let _ = env.exception_clear();
+    }
+    result
 }

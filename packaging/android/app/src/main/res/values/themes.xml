@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GameActivity extends androidx.appcompat.app.AppCompatActivity, which
+  refuses to start under a plain platform theme ("You need to use a
+  Theme.AppCompat theme (or descendant) with this activity"). So the
+  fullscreen game window has to be built on an AppCompat parent rather than
+  @android:style/Theme.NoTitleBar.Fullscreen.
+-->
+<resources>
+    <style name="HarmoniconTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

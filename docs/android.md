@@ -1,20 +1,46 @@
 # Android
 
-## Status: the APK builds; it has not been run on a device
+## Status: runs on an emulator; never run on real hardware
 
-**Verified.** `packaging/android` produces a real, installable, signed APK
-(147 MB), and its contents have been inspected rather than assumed: the
-arm64 cdylib is present and exports both `android_main` and
-`GameActivity_onCreate`, `com.google.androidgamesdk.GameActivity` is in
-`classes.dex`, `RECORD_AUDIO` is declared, all 186 asset entries are packaged
-(103 lesson files, 21 song files) and the dev-only `debug_songs` corpus is
-excluded. CI's `android_check` job type-checks the target on every push.
+**Verified, by actually running it** on an Android 15 (API 35) x86_64
+emulator:
 
-**Not verified.** Nobody has installed or launched it. In particular **nobody
-has confirmed a phone microphone actually captures usably**, which for this
-game is the whole product. Everything below the build is still unknown:
-touch targets, whether the landscape-only lock is right, real frame rates,
-and whether the Song Editor is usable at all on a phone.
+- It launches, and the main menu renders correctly — background art, fonts,
+  all four buttons.
+- **Assets load out of the APK.** That background is a theme asset, so the
+  build-time manifest path works in a real `AssetManager` environment.
+- **The permission flow works end to end**: the system `GrantPermissionsActivity`
+  dialog appears, and once the permission is granted the polling retry picks
+  it up and opens a capture stream —
+  `Input device : Default Device / Sample rate : 44100 Hz | channels: 2 |
+  format: F32`.
+- The APK's contents were also inspected statically: cdylib exporting
+  `android_main` and `GameActivity_onCreate`, `GameActivity` in
+  `classes.dex`, `RECORD_AUDIO` declared, 186 asset entries, `debug_songs`
+  excluded.
+
+CI's `android_check` job type-checks the target on every push.
+
+**Not verified.** No real device, so: **nobody has played a harmonica into
+it.** An emulator opening a capture stream says the plumbing is connected; it
+says nothing about latency, gain, or whether pitch detection works against a
+phone mic's AGC and noise suppression — which for this game is the whole
+product. Also unknown: touch target sizes, whether landscape-only is right,
+real frame rates, and whether the Song Editor is usable on a phone at all.
+
+Two bugs were found *only* by running it, both since fixed — see
+"Two runtime-only failures" below. Neither was visible at build time.
+
+## Known gap: nothing persists
+
+`dirs::config_dir()` returns `None` on Android, so `settings.rs` logs *"No
+config directory available; settings not saved"* and `profile.rs` does the
+same silently. **Lesson progress, best scores and options are all lost on
+exit.** That makes the Android build effectively demo-only until fixed.
+
+The fix is not hard — `AndroidApp::internal_data_path()` gives the app's
+private directory — but it means threading a platform-supplied path into
+`settings`/`profile`, which currently derive their own location from `dirs`.
 
 ## Building
 
@@ -32,6 +58,56 @@ from the committed wrapper. If your SDK isn't at `$ANDROID_HOME`, put
 
 The Gradle build invokes `cargo ndk` itself — there is no separate Rust step
 to remember. Expect ~6 minutes for a cold Rust release build.
+
+### Other ABIs, and the emulator
+
+Only `arm64-v8a` is built by default: every phone worth targeting is arm64,
+and each extra ABI costs another full Rust build plus ~108 MB of APK. A
+desktop emulator is x86_64, so it needs an override:
+
+```bash
+./gradlew installRelease -Pharmonicon.abis=x86_64
+```
+
+Comma-separate for a fat APK (`-Pharmonicon.abis=arm64-v8a,x86_64`).
+
+## Two runtime-only failures
+
+Both compiled cleanly, packaged cleanly, and passed every static check on the
+APK. Only launching it found them. This is the argument for keeping an
+emulator in the loop.
+
+### `ClassNotFoundException: com.google.androidgamesdk.GameActivity`
+
+The class *was* in `classes.dex` — the real cause was hidden in a
+**suppressed** exception: `NoClassDefFoundError: androidx/appcompat/app/AppCompatActivity`.
+`GameActivity` extends `AppCompatActivity`, but the
+`games-activity-4.4.0.pom` declares **no dependencies at all**, so appcompat
+was never pulled in transitively. It has to be an explicit
+`implementation("androidx.appcompat:appcompat:...")`.
+
+That also forces the theme: `AppCompatActivity` refuses to start under a
+plain platform theme, so `@android:style/Theme.NoTitleBar.Fullscreen` had to
+become a `Theme.AppCompat.NoActionBar` descendant
+(`res/values/themes.xml`).
+
+### `NoSuchMethodError: Landroid/app/Application;.requestPermissions`
+
+`ndk_context::android_context()` is the obvious way to reach the app's
+context from Rust, and it is **wrong for this**: `android-activity` registers
+the **`Application`** there, not the `Activity` (its `init.rs`,
+`initialize_android_context(vm, app_global)`).
+
+`Application` is a `Context`, so `checkSelfPermission` resolves on it and
+appears to work — but `requestPermissions` is declared on `Activity`, so it
+threw. The Activity has to come from `AndroidApp::activity_as_ptr`, which
+Bevy keeps in `ANDROID_APP`.
+
+The failure also cascaded: a throwing JNI call leaves the exception *pending*
+on that thread, so every later call failed with the same opaque "Java
+exception was thrown" — one bad call per frame, and the real cause never
+shown. `with_activity` now calls `exception_describe`/`exception_clear`,
+which is what surfaced the actual `NoSuchMethodError` in logcat.
 
 ## Decisions worth knowing
 

@@ -117,9 +117,13 @@ remains:
   `docs/android.md` for the full record and `PLAN.md` for what landed.
   `packaging/android` (Gradle + cargo-ndk) emits a signed, installable APK
   with verified contents, and CI type-checks the target — so the port can't
-  silently rot. What's left needs a phone in hand: installing and launching
-  it, and above all confirming **the mic actually captures usably**, which
-  for this game is the whole product. Then a touch/hit-target pass, an app
+  silently rot. It has been run on an emulator — it launches, renders, loads assets from
+  the APK and opens a capture stream once RECORD_AUDIO is granted. What's
+  left needs a phone in hand: above all confirming **the mic actually
+  captures usably**, which for this game is the whole product. Before that
+  is worth much, though, **persistence needs fixing** —
+  `dirs::config_dir()` is `None` on Android, so lesson progress, scores and
+  settings are all lost on exit. Then a touch/hit-target pass, an app
   icon (there is none yet), more than just arm64-v8a, and a real signing key
   in place of the debug one.
   - Mic input is *not* blocked the way it is for

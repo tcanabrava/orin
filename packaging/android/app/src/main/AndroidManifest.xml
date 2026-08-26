@@ -32,7 +32,7 @@
             android:screenOrientation="sensorLandscape"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:theme="@style/HarmoniconTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|screenLayout|smallestScreenSize|density|uiMode|navigation">
 
             <!-- Which .so to dlopen and call `android_main` in. Must match the

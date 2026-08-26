@@ -112,7 +112,8 @@ one-line index of what's landed.
   Editor's Delete/Copy/Paste, the spectrogram's style cycle), plus
   `MicStatus::AwaitingPermission` groundwork for a future mobile
   permission-prompt flow.
-- **Android port: a real APK builds; it has never been run on a device.**
+- **Android port: a real APK builds and runs on an emulator; never on real
+  hardware.**
   `docs/android.md` is the full record, including exactly what is and isn't
   verified. `packaging/android` (Gradle + cargo-ndk, alongside the existing
   flatpak/macos/windows packaging) emits a signed 147 MB APK whose contents
@@ -127,9 +128,17 @@ one-line index of what's landed.
   discovery for targets whose `assets/` isn't a readable directory, a real
   `RECORD_AUDIO` runtime permission flow over JNI feeding the pre-existing
   `MicStatus::AwaitingPermission`, and the `external://`/`~/Harmonicon`
-  paths gated off. Still open: **installing and launching it**, and
-  confirming the mic actually captures usably on a phone — which for this
-  game is the whole product — plus a touch/hit-target pass, an app icon
+  paths gated off. It has since been **run on an Android 15 emulator**: it launches, the
+  menu renders, assets load out of the APK, and granting RECORD_AUDIO opens
+  a 44.1 kHz capture stream. Two bugs were found only by running it — the
+  games-activity POM declares no dependencies, so `androidx.appcompat` (its
+  own superclass) had to be added explicitly along with an AppCompat theme;
+  and `ndk_context` hands back the *Application*, not the Activity, so
+  `requestPermissions` threw `NoSuchMethodError`. Still open: **a real
+  phone** — nobody has played a harmonica into it, and an emulator says
+  nothing about mic latency or AGC — plus **nothing persists on Android**
+  (`dirs::config_dir()` is `None`, so progress and settings are lost on
+  exit) — plus a touch/hit-target pass, an app icon
   (there is none), arm64-only ABI coverage, and replacing the debug signing
   key. iOS is untouched and needs Xcode; the asset-discovery cfgs
   deliberately exclude it, since an app bundle's Resources directory reads

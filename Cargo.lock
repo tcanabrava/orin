@@ -3334,7 +3334,6 @@ dependencies = [
  "harmonicon-core",
  "harmonicon-dsp",
  "jni 0.21.1",
- "ndk-context",
  "rodio",
  "rustfft",
  "serde",

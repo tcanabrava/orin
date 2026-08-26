@@ -18,6 +18,19 @@ val rustJniLibs: File = layout.buildDirectory.dir("rustJniLibs").get().asFile
 val minSdkVersion = 28
 val ndkVersionUsed = "28.2.13676358"
 
+// Which ABIs to build. Defaults to arm64-v8a alone — every phone worth
+// targeting is arm64, and each extra ABI means another full Rust build plus
+// ~108 MB of APK. Override for the emulator, which is x86_64 on a desktop:
+//
+//     ./gradlew installDebug -Pharmonicon.abis=x86_64
+//
+// Comma-separated for more than one.
+val abis: List<String> =
+    (findProperty("harmonicon.abis") as String? ?: "arm64-v8a")
+        .split(",")
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+
 /** SDK location, the way AGP itself resolves it. `android.sdkDirectory` was
  *  removed in AGP 9, so read local.properties then fall back to the env. */
 val sdkDir: File = run {
@@ -45,6 +58,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        ndk { abiFilters.addAll(abis) }
     }
 
     sourceSets.named("main") {
@@ -83,6 +97,14 @@ dependencies {
     // A mismatch fails at *runtime* (RegisterNatives aborts), not at build
     // time, so re-check those defines before bumping android-activity.
     implementation("androidx.games:games-activity:4.4.0")
+    // NOT transitive, and its absence is invisible until launch: the
+    // games-activity POM declares no dependencies at all, yet GameActivity
+    // extends androidx.appcompat.app.AppCompatActivity. Without this the
+    // class is present in classes.dex but cannot resolve, and the app dies
+    // with ClassNotFoundException for GameActivity itself — the real cause
+    // only showing up as a *suppressed* NoClassDefFoundError for
+    // AppCompatActivity.
+    implementation("androidx.appcompat:appcompat:1.7.1")
 }
 
 /**
@@ -102,12 +124,14 @@ val cargoNdkBuild = tasks.register<Exec>("cargoNdkBuild") {
     workingDir = repoRoot
     environment("ANDROID_NDK_HOME", File(sdkDir, "ndk/$ndkVersionUsed").absolutePath)
     commandLine(
-        "cargo", "ndk",
-        "-t", "arm64-v8a",
-        "-P", minSdkVersion.toString(),
-        "-o", rustJniLibs.absolutePath,
-        "build", "--release",
-        "-p", "harmonicon-android",
+        buildList {
+            add("cargo"); add("ndk")
+            abis.forEach { add("-t"); add(it) }
+            add("-P"); add(minSdkVersion.toString())
+            add("-o"); add(rustJniLibs.absolutePath)
+            add("build"); add("--release")
+            add("-p"); add("harmonicon-android")
+        }
     )
 }
 
