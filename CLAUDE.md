@@ -134,22 +134,31 @@ Manual testing needs a mic, audio out, and a display.
   them). Add a span for anything running off the main schedule (another
   thread, an asset loader, a decode task) or burning real time inside one
   system call.
-- **Android compiles but has never been run** — `docs/android.md` has the
-  whole story, and is the file to read before touching anything mobile.
-  The short version: `cargo check --target aarch64-linux-android` type-checks
-  the workspace and CI's `android_check` job keeps it that way, but no APK
-  has ever been built (that needs an NDK/SDK/JDK), so everything under
-  `[package.metadata.android]` is unverified. The NDK-free check works only
-  because `blake3` is pinned to its pure-Rust backend for that target, and
-  because the `native-activity` backend was chosen over `game-activity`
-  (which compiles C++ from the NDK) — a choice worth revisiting, since
-  GameActivity handles soft-keyboard/IME far better and the Song Editor has
-  text fields. Two workspace-shaped consequences: the Android-only `bevy`
-  and `blake3` feature selections sit on the **root package**, so an Android
-  check must be whole-workspace (`-p <crate>` drops the root and breaks
-  feature unification); and `harmonicon-android` keeps its dependency on the
-  game target-gated, so on every other target it builds as an empty cdylib
-  instead of relinking the whole Bevy app on each desktop `cargo build`.
+- **Android's APK builds but has never been run on a device** —
+  `docs/android.md` has the whole story, and is the file to read before
+  touching anything mobile. `packaging/android` (Gradle + cargo-ndk, matching
+  `packaging/{flatpak,macos,windows}`) produces a signed installable APK, and
+  CI's `android_check` job type-checks the target. Nobody has launched it, and
+  **nobody has confirmed a phone mic captures usably** — which for this game
+  is the whole product. Four facts that bite:
+  - **The GameActivity AAR version is pinned to the Rust crate's vendored
+    C++.** `android-activity`'s `GameActivity.h` declares version 4.4.0, so
+    Gradle pins `androidx.games:games-activity:4.4.0`. A mismatch aborts at
+    *runtime* in `RegisterNatives`, not at build time.
+  - **API 28 is a hard floor.** cpal links `libaaudio`, which only exists in
+    the NDK sysroot from API 26 up; below it the link fails with a bare
+    `unable to find library -laaudio`. `minSdk`, cargo-ndk's `-P` and CI must
+    agree. (cargo-ndk spells platform `-P`; `-p` is cargo's package flag.)
+  - **The Android-only `bevy` feature selection lives in
+    `harmonicon-android`'s own Cargo.toml**, not the root package, so
+    `cargo ndk -p harmonicon-android` keeps it. Moving it back silently drops
+    the activity backend.
+  - **GameActivity compiles C++ from the NDK**, so a plain
+    `cargo check --target aarch64-linux-android` fails with `ToolNotFound`;
+    it must go through `cargo ndk`. `harmonicon-android` still keeps its
+    dependency on the game target-gated, so on every other target it builds
+    as an empty cdylib (4.2 MB, zero Bevy symbols) instead of relinking the
+    whole app on each desktop `cargo build`.
 - **Per-crate architecture notes live in `crates/<name>/CLAUDE.md`.** Each
   crate documents its own load-bearing facts; they load when you're working
   in that crate rather than all at once. Start there for anything

@@ -71,6 +71,50 @@ desktop emulator is x86_64, so it needs an override:
 
 Comma-separate for a fat APK (`-Pharmonicon.abis=arm64-v8a,x86_64`).
 
+### Running it on the emulator
+
+One-time setup, if the AVD doesn't exist yet:
+
+```bash
+sdkmanager "emulator" "system-images;android-35;google_apis;x86_64"
+avdmanager create avd -n harmonicon-test \
+    -k "system-images;android-35;google_apis;x86_64" -d pixel_6
+```
+
+Then, each time:
+
+```bash
+export ANDROID_HOME="$HOME/Android/Sdk"
+export JAVA_HOME=/opt/android-studio/jbr          # or any JDK 17+
+export PATH="$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+
+emulator -avd harmonicon-test &                   # add -gpu host if it's slow
+adb wait-for-device
+
+cd packaging/android
+./gradlew installRelease -Pharmonicon.abis=x86_64
+
+adb shell am start -n \
+    io.github.tcanabrava.harmonicon/com.google.androidgamesdk.GameActivity
+```
+
+Tap **Allow** on the microphone prompt (or `adb shell pm grant
+io.github.tcanabrava.harmonicon android.permission.RECORD_AUDIO` — the
+polling retry picks either up within a frame or two).
+
+Do **not** pass `-no-audio` if you want to test the mic: the emulator
+forwards the host's input device, which is how the capture stream gets a
+real signal. Headless (`-no-window`) is fine for checking it boots.
+
+Watch the game's own output with:
+
+```bash
+adb logcat | grep -E "RustStdoutStderr|harmonicon"
+```
+
+Bevy's `LogPlugin` filter is `warn` by default, so `info!` lines don't
+appear; `println!` does, via `RustStdoutStderr`.
+
 ## Two runtime-only failures
 
 Both compiled cleanly, packaged cleanly, and passed every static check on the
