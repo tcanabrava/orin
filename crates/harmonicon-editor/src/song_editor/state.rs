@@ -490,11 +490,27 @@ impl EditorState {
     }
 }
 
-/// Continuous horizontal scroll in pixels. Kept separate from [`EditorState`]
+/// Continuous view offset in pixels. Kept separate from [`EditorState`]
 /// so scrolling doesn't trigger a grid rebuild.
 #[derive(Resource, Default)]
 pub(super) struct Scroll {
+    /// Horizontal scroll *within the grid* — applied to `GridContent`, so
+    /// the hole column and chrome stay put while the notes move.
     pub(super) px: f32,
+    /// Vertical offset of the **whole editor**, applied to `EditorRoot`
+    /// itself rather than any inner scroll area.
+    ///
+    /// It has to be the root, because what overflows on a short screen is
+    /// the *fixed chrome* — the grid plus the mod panel — which is
+    /// deliberately outside the form's `ScrollArea` (see `ui::setup`). On a
+    /// phone the grid alone can exceed the viewport: `grid_height` is
+    /// ~424 logical px for a 10-hole harp, against roughly 400 available in
+    /// landscape at typical Android DPI, which leaves the mod panel, status
+    /// bar and form entirely off-screen and unreachable.
+    ///
+    /// Only ever moved by [`interaction::pan_touch`](super::interaction::
+    /// pan_touch); on desktop it stays 0 and this costs nothing.
+    pub(super) y_px: f32,
 }
 
 /// The timeline Select tool's span: the in-progress drag gesture while the

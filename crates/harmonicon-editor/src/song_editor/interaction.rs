@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use bevy::input::mouse::MouseWheel;
+use bevy::input::touch::{Touch, Touches};
 use bevy::input_focus::InputFocus;
 use bevy::picking::Pickable;
 use bevy::picking::events::{Drag, Pointer};
@@ -21,8 +22,8 @@ use super::state::{
     pitch_forced_dir,
 };
 use super::ui::{
-    GridArea, GridContent, GridScrollMarker, GridScrollThumb, GridScrollTrack, GroupMoveGhost,
-    ModButton, MoveGhost, NoteView,
+    EditorRoot, GridArea, GridContent, GridScrollMarker, GridScrollThumb, GridScrollTrack,
+    GroupMoveGhost, ModButton, MoveGhost, NoteView,
 };
 use super::{AppState, BEAT_W, HEADER_H, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
 use harmonicon_platform::theme::LoadedTheme;
@@ -504,13 +505,102 @@ pub(super) fn pan_wheel(
     }
 }
 
+/// The pan a two-finger gesture asks for this frame, given every active
+/// touch's per-frame movement — or `None` when the gesture isn't two fingers.
+///
+/// Two fingers rather than one because one finger is already spoken for
+/// everywhere in the grid: placing a note, dragging one, resizing it, or
+/// dragging a timeline span. Two is the only unambiguous "move the view"
+/// gesture left, and it's what every drawing/DAW app on a tablet uses.
+///
+/// Averaging the two movements (rather than taking one finger's, or the
+/// larger) is what makes this survive alongside a future pinch-zoom: fingers
+/// moving *apart* have near-opposite deltas that average to roughly zero, so
+/// a pinch barely pans, while a genuine two-finger drag has both fingers
+/// moving together and averages to their shared motion.
+pub(super) fn two_finger_pan_delta(touch_deltas: &[Vec2]) -> Option<Vec2> {
+    match touch_deltas {
+        [a, b] => Some((*a + *b) / 2.0),
+        _ => None,
+    }
+}
+
+/// How far the editor can be panned up before its last child's bottom edge
+/// reaches the bottom of the viewport — `0.0` when everything already fits,
+/// so the gesture is inert on a screen with room to spare.
+pub(super) fn vertical_overflow_px(viewport_h: f32, child_heights: &[f32]) -> f32 {
+    (child_heights.iter().sum::<f32>() - viewport_h).max(0.0)
+}
+
+/// Pans the editor with a two-finger drag — the touch equivalent of
+/// [`pan_wheel`], and the only way to reach the mod panel on a phone.
+///
+/// Two axes, and they move different things, because the editor has two
+/// unrelated overflows:
+/// - **x** scrolls within the grid ([`Scroll::px`]), like [`pan_wheel`].
+/// - **y** moves the *whole editor* ([`Scroll::y_px`]). What's off-screen
+///   vertically is the fixed chrome — grid plus mod panel — which sits
+///   outside the form's `ScrollArea` by design, so no inner scroll can
+///   reach it. See [`Scroll::y_px`].
+///
+/// Unlike [`pan_wheel`] this is *not* gated on the grid being hovered. That
+/// gate exists because one wheel gesture would otherwise both scroll the
+/// meta form and pan the grid; a two-finger drag has no such conflict, since
+/// nothing else in the editor responds to two fingers. It also avoids
+/// depending on hover semantics for touch pointers, which only exist for the
+/// duration of the touch itself.
+pub(super) fn pan_touch(
+    touches: Res<Touches>,
+    ui_scale: Res<UiScale>,
+    file_dialog: Res<FileDialog>,
+    mut scroll: ResMut<Scroll>,
+    roots: Query<(&ComputedNode, &Children), With<EditorRoot>>,
+    child_nodes: Query<&ComputedNode>,
+) {
+    if file_dialog.open {
+        return;
+    }
+    let deltas: Vec<Vec2> = touches.iter().map(Touch::delta).collect();
+    let Some(pan) = two_finger_pan_delta(&deltas) else {
+        return;
+    };
+    // Dragging right should carry the content right with the fingers, which
+    // means scrolling *back* towards the start. Divided by `UiScale` for the
+    // same reason `drag_grid_scrollbar` does it: touch deltas are window
+    // pixels, `Scroll::px` is content pixels.
+    scroll.px = (scroll.px - pan.x / ui_scale.0).max(0.0);
+
+    let Ok((root, children)) = roots.single() else {
+        return;
+    };
+    // `ComputedNode` sizes are physical; everything else here is logical.
+    let inv = root.inverse_scale_factor();
+    let viewport_h = root.size().y * inv;
+    let heights: Vec<f32> = children
+        .iter()
+        .filter_map(|child| child_nodes.get(child).ok())
+        .map(|node| node.size().y * inv)
+        .collect();
+    let max_y = vertical_overflow_px(viewport_h, &heights);
+    // Dragging *up* (negative y) should reveal what's below, so the offset
+    // grows as the fingers move up.
+    scroll.y_px = (scroll.y_px - pan.y / ui_scale.0).clamp(0.0, max_y);
+}
+
 pub(super) fn apply_scroll(
     scroll: Res<Scroll>,
     mut state: ResMut<EditorState>,
     mut content: Query<&mut Node, With<GridContent>>,
+    mut roots: Query<&mut Node, (With<EditorRoot>, Without<GridContent>)>,
 ) {
     if let Ok(mut node) = content.single_mut() {
         node.left = Val::Px(-scroll.px);
+    }
+    // Shifts the entire editor up so the fixed chrome below the grid (mod
+    // panel, status bar) can be reached on a screen too short to show it —
+    // see `Scroll::y_px`. Untouched at 0, which is every desktop case.
+    if let Ok(mut node) = roots.single_mut() {
+        node.top = Val::Px(-scroll.y_px);
     }
     let base = (scroll.px / BEAT_W) as usize;
     if state.scroll_beat != base {

@@ -2316,3 +2316,87 @@ fn a_time_signature_round_trips_through_save_and_load() {
     assert_eq!(loaded.time_signature, "6/8");
     assert_eq!(loaded.beats_per_bar(), 3);
 }
+
+// ── two_finger_pan_delta ──────────────────────────────────────────────────
+
+use bevy::math::Vec2;
+
+#[test]
+fn one_finger_is_not_a_pan_gesture() {
+    // A single touch is note placement/drag/resize — panning must not steal
+    // it, which is the whole reason the gesture needs two fingers.
+    assert_eq!(
+        super::interaction::two_finger_pan_delta(&[Vec2::new(30.0, 0.0)]),
+        None
+    );
+}
+
+#[test]
+fn no_touches_is_not_a_pan_gesture() {
+    assert_eq!(super::interaction::two_finger_pan_delta(&[]), None);
+}
+
+#[test]
+fn three_fingers_is_not_a_pan_gesture() {
+    let deltas = [
+        Vec2::new(5.0, 0.0),
+        Vec2::new(5.0, 0.0),
+        Vec2::new(5.0, 0.0),
+    ];
+    assert_eq!(super::interaction::two_finger_pan_delta(&deltas), None);
+}
+
+#[test]
+fn two_fingers_moving_together_pan_by_their_shared_motion() {
+    // Both fingers drag 20px right; the view should follow by 20px, not 40.
+    let deltas = [Vec2::new(20.0, 4.0), Vec2::new(20.0, -4.0)];
+    let pan = super::interaction::two_finger_pan_delta(&deltas).expect("two touches pan");
+    assert!((pan.x - 20.0).abs() < f32::EPSILON, "got {pan:?}");
+}
+
+#[test]
+fn a_pinch_barely_pans() {
+    // Fingers moving apart have near-opposite deltas, so averaging cancels
+    // them — this is what lets a future pinch-zoom coexist with panning
+    // instead of the view lurching sideways every time you zoom.
+    let deltas = [Vec2::new(-25.0, 0.0), Vec2::new(25.0, 0.0)];
+    let pan = super::interaction::two_finger_pan_delta(&deltas).expect("two touches pan");
+    assert!(
+        pan.x.abs() < f32::EPSILON,
+        "pinch should not pan, got {pan:?}"
+    );
+}
+
+#[test]
+fn an_off_centre_pinch_pans_only_by_its_drift() {
+    // A pinch that also drifts right: one finger moves +30, the other -10,
+    // so the gesture's real translation is +10.
+    let deltas = [Vec2::new(30.0, 0.0), Vec2::new(-10.0, 0.0)];
+    let pan = super::interaction::two_finger_pan_delta(&deltas).expect("two touches pan");
+    assert!((pan.x - 10.0).abs() < f32::EPSILON, "got {pan:?}");
+}
+
+// ── vertical_overflow_px ──────────────────────────────────────────────────
+
+#[test]
+fn a_view_that_already_fits_cannot_be_panned_vertically() {
+    // Desktop: everything fits, so the gesture must be inert rather than
+    // letting the player drag the whole editor off the top of the window.
+    assert_eq!(
+        super::interaction::vertical_overflow_px(800.0, &[5.0, 424.0, 200.0]),
+        0.0
+    );
+}
+
+#[test]
+fn overflow_is_exactly_what_hangs_off_the_bottom() {
+    // Phone-shaped: 5px progress bar + 424px chrome + 120px form = 549,
+    // against ~400 of viewport, so 149px has to be reachable by panning.
+    let overflow = super::interaction::vertical_overflow_px(400.0, &[5.0, 424.0, 120.0]);
+    assert!((overflow - 149.0).abs() < f32::EPSILON, "got {overflow}");
+}
+
+#[test]
+fn an_empty_root_has_no_overflow() {
+    assert_eq!(super::interaction::vertical_overflow_px(400.0, &[]), 0.0);
+}

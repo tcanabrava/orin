@@ -152,6 +152,7 @@ impl Plugin for SongEditor2Plugin {
                         interaction::auto_scroll,
                         interaction::pan_keys,
                         interaction::pan_wheel,
+                        interaction::pan_touch,
                         interaction::apply_scroll,
                         interaction::update_grid_scrollbar,
                         interaction::update_scrollbar_markers
