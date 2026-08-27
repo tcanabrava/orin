@@ -70,6 +70,9 @@ pub(super) fn spawn_mod_panel(
 ) {
     root.spawn((
         EditorToolbar,
+        // Read by `interaction::wheel_toolbar`, so a wheel gesture over the
+        // toolbar scrolls it instead of panning the grid sideways.
+        bevy::picking::hover::Hovered::default(),
         Node {
             width: Val::Px(toolbar_width(style)),
             height: Val::Percent(100.0),

@@ -543,9 +543,62 @@ pub(super) fn drag_toolbar(
     toolbars: Query<(&ComputedNode, &Children), With<EditorToolbar>>,
     child_nodes: Query<&ComputedNode>,
 ) {
-    let Ok((toolbar, children)) = toolbars.single() else {
+    let Some(max_y) = toolbar_max_scroll(&toolbars, &child_nodes) else {
         return;
     };
+    // Dragging up moves the content up, revealing what's below it — same
+    // sign convention as `pan_touch`'s vertical axis.
+    scroll.y_px = (scroll.y_px - ev.delta.y / ui_scale.0).clamp(0.0, max_y);
+}
+
+/// Scrolls the tool sidebar on wheel input, while the pointer is over it.
+///
+/// The hover gate is what keeps this and [`pan_wheel`] from both firing on
+/// one gesture: that one only pans while the *grid* is hovered, this one
+/// only while the *toolbar* is, and the two never overlap. Wheel messages
+/// are drained every frame either way, so an unapplied gesture can't linger
+/// and scroll something later once the pointer moves.
+pub(super) fn wheel_toolbar(
+    mut wheel: MessageReader<MouseWheel>,
+    file_dialog: Res<FileDialog>,
+    mut scroll: ResMut<ToolbarScroll>,
+    hovered: Query<&Hovered, With<EditorToolbar>>,
+    toolbars: Query<(&ComputedNode, &Children), With<EditorToolbar>>,
+    child_nodes: Query<&ComputedNode>,
+) {
+    if file_dialog.open {
+        wheel.clear();
+        return;
+    }
+    let mut delta = 0.0;
+    for ev in wheel.read() {
+        delta += if ev.y != 0.0 { ev.y } else { ev.x };
+    }
+    if delta == 0.0 || !hovered.single().is_ok_and(Hovered::get) {
+        return;
+    }
+    let Some(max_y) = toolbar_max_scroll(&toolbars, &child_nodes) else {
+        return;
+    };
+    // One notch moves by a button's rough height, so a flick covers the
+    // palette rather than creeping a few pixels.
+    scroll.y_px = (scroll.y_px - delta * TOOLBAR_WHEEL_STEP).clamp(0.0, max_y);
+}
+
+/// One wheel notch's worth of toolbar scroll, in logical px — roughly one
+/// button plus its gap, so the palette moves a whole entry at a time.
+const TOOLBAR_WHEEL_STEP: f32 = 44.0;
+
+/// How far the sidebar's content can scroll before its bottom edge reaches
+/// the viewport's, or `None` when there's no toolbar to measure.
+///
+/// Shared by [`drag_toolbar`] and [`wheel_toolbar`] so the two can't drift
+/// into disagreeing about where the end of the list is.
+fn toolbar_max_scroll(
+    toolbars: &Query<(&ComputedNode, &Children), With<EditorToolbar>>,
+    child_nodes: &Query<&ComputedNode>,
+) -> Option<f32> {
+    let (toolbar, children) = toolbars.single().ok()?;
     let inv = toolbar.inverse_scale_factor();
     let viewport_h = toolbar.size().y * inv;
     let content_h: f32 = children
@@ -553,10 +606,7 @@ pub(super) fn drag_toolbar(
         .filter_map(|child| child_nodes.get(child).ok())
         .map(|node| node.size().y * inv)
         .sum();
-    let max_y = (content_h - viewport_h).max(0.0);
-    // Dragging up moves the content up, revealing what's below it — same
-    // sign convention as `pan_touch`'s vertical axis.
-    scroll.y_px = (scroll.y_px - ev.delta.y / ui_scale.0).clamp(0.0, max_y);
+    Some((content_h - viewport_h).max(0.0))
 }
 
 /// Applies [`ToolbarScroll`] to the sidebar's content column, the same way
