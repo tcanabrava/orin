@@ -115,6 +115,11 @@ notify-debouncer-full = { workspace = true }
 dev = [
     "bevy/dev",
     "bevy/debug",
+    # The Bevy Remote Protocol, for driving a running game from outside
+    # (screenshots, video capture, state inspection) — see src/dev_capture.rs
+    # and docs/remote_control.md. Native-only in bevy_internal, so enabling
+    # it costs a wasm build nothing.
+    "bevy/bevy_remote",
     "harmonicon-audio/dev",
     "harmonicon-platform/dev",
     "harmonicon-song/dev",

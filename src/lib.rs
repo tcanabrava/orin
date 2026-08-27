@@ -8,6 +8,12 @@
 //! (`crates/harmonicon-android`). Both entry points are thin wrappers around
 //! `run()`, so there is still exactly one place the app is assembled.
 
+/// Dev-only remote control: screenshots, video capture and live state
+/// inspection over the Bevy Remote Protocol. Compiled out entirely without
+/// `--features dev`, since it serves unauthenticated RPC.
+#[cfg(feature = "dev")]
+mod dev_capture;
+
 use bevy::asset::AssetPlugin;
 use bevy::image::ImageSamplerDescriptor;
 use bevy::prelude::*;
@@ -179,6 +185,9 @@ pub fn run() {
         harmonicon_ui::dialogs::text_input::TextInputPlugin,
         harmonicon_ui::dialogs::tooltip::TooltipPlugin,
     ));
+
+    #[cfg(feature = "dev")]
+    app.add_plugins(dev_capture::DevCapturePlugin);
 
     app.add_message::<PitchEvent>()
         .init_resource::<AudioFrame>()
