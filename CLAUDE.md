@@ -159,6 +159,24 @@ Manual testing needs a mic, audio out, and a display.
     dependency on the game target-gated, so on every other target it builds
     as an empty cdylib (4.2 MB, zero Bevy symbols) instead of relinking the
     whole app on each desktop `cargo build`.
+- **A `--features dev` build serves the Bevy Remote Protocol** on
+  `127.0.0.1:15702` (`src/dev_capture.rs`), so a *running* game can be
+  inspected, mutated, screenshotted (`target/screenshots/`) and recorded
+  (`target/video/`) from a shell with no rebuild — `docs/remote_control.md`
+  has the verified request shapes. Never shipped: it is unauthenticated and
+  can mutate arbitrary world state, which is why it rides on the
+  compile-time `dev` feature rather than a runtime flag. Three things that
+  bite:
+  - **Only reflected, registered types are reachable** (BRP goes through
+    `AppTypeRegistry`). Bevy's own components cover the whole UI tree; this
+    codebase's own types need `#[derive(Reflect)]` + `register_type` each,
+    and today only `dev_capture::VideoCapture` has it.
+  - **Type paths are exact**: UI text is `bevy_ui::widget::text::Text`, not
+    `bevy_text::text::Text` — the latter exists, is registered, and matches
+    nothing on a UI node.
+  - **BRP cannot see rendering.** It reports the string, so it would never
+    have caught the five tofu glyphs a screenshot did. State via BRP,
+    appearance via the PNG.
 - **Per-crate architecture notes live in `crates/<name>/CLAUDE.md`.** Each
   crate documents its own load-bearing facts; they load when you're working
   in that crate rather than all at once. Start there for anything
