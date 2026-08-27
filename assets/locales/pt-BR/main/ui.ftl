@@ -812,3 +812,6 @@ tutorial-title-song-editor = Editor de Canções
 tutorial-body-song-editor = Monte ou edite uma partitura nesta grade, depois toque-a ou pratique junto com ela ao vivo.
 tutorial-title-help-about = Ajuda / Sobre
 tutorial-body-help-about = Abra a documentação, leia sobre o Harmonicon, refaça este tour ou veja os créditos.
+
+editor-tab-chart = Partitura
+editor-tab-details = Detalhes

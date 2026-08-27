@@ -814,3 +814,6 @@ tutorial-title-song-editor = Song Editor
 tutorial-body-song-editor = Build or edit a chart by hand on this grid, then play it back or practice along with it live.
 tutorial-title-help-about = Help / About
 tutorial-body-help-about = Open the documentation, read about Harmonicon, retake this tour, or check the credits.
+
+editor-tab-chart = Chart
+editor-tab-details = Details

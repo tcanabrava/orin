@@ -15,6 +15,7 @@ use super::view_scroll::drag_grid_scrollbar;
 use super::{BEAT_W, HOLE_COL_W, NOTE_PAD, ROW_H, grid_height};
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::AudioSettings;
+use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::settings::ActionButtonStyle;
 use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 
@@ -22,6 +23,25 @@ use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 
 #[derive(Component)]
 pub(super) struct EditorRoot;
+
+/// The tab bar's parent slot, so the bar can be spawned with `Commands`
+/// after the tree is built (`spawn_tab_bar` needs a real parent `Entity`).
+#[derive(Component)]
+pub(super) struct EditorTabBarSlot;
+
+/// The "Chart" tab's content: the grid and its chrome.
+#[derive(Component)]
+pub(super) struct ChartTabPanel;
+
+/// The "Details" tab's content: the meta/lesson form and status bar.
+///
+/// A tab rather than a third row in the column, because on a short screen
+/// the grid alone can fill the viewport and the form then has nowhere to
+/// live — see `mod_panel::spawn_mod_panel` for the same reasoning applied
+/// to the toolbar. Hidden with `Display::None`, not `Visibility::Hidden`,
+/// which would still reserve the layout space this is trying to reclaim.
+#[derive(Component)]
+pub(super) struct DetailsTabPanel;
 
 /// The vertical tool sidebar down the left edge of the Song Editor — the
 /// clipping viewport. Its single child is [`EditorToolbarContent`], which is
@@ -371,6 +391,10 @@ pub(super) fn setup(
     // combobox, built inline below in this same system, can use it directly
     // as its full-screen backdrop parent without waiting for a command flush.
     let root_id = root_ec.id();
+    // Captured out of the children closure the same way `spawn_scroll_area`
+    // captures its own area entity — `spawn_tab_bar` takes `Commands` and a
+    // parent `Entity`, neither of which exist inside `with_children`.
+    let mut tab_slot = Entity::PLACEHOLDER;
     root_ec.with_children(|root| {
         // The tool sidebar, first child so it lands on the left edge.
         spawn_mod_panel(
@@ -414,12 +438,37 @@ pub(super) fn setup(
                 ));
             });
 
-            // Fixed chrome: the grid row (own horizontal scroll) + mod
-            // panel — kept out of the form `ScrollArea` below, since sharing
-            // one scrollable area between the grid and the form fields let
-            // scrolling either one move both (a horizontal-scrollbar drag on
-            // the grid would also drag the page vertically on a small window).
-            spawn_fixed_chrome(root, &loc, colors, hole_count, bravura.as_deref());
+            // Filled in after this closure by `spawn_tab_bar`, which needs a
+            // real parent `Entity` and so can't run inside `with_children`.
+            tab_slot = root
+                .spawn((
+                    EditorTabBarSlot,
+                    Node {
+                        flex_shrink: 0.0,
+                        padding: UiRect::axes(Val::Px(6.0), Val::Px(4.0)),
+                        ..default()
+                    },
+                ))
+                .id();
+
+            // Fixed chrome: the grid row (own horizontal scroll), kept out of
+            // the form `ScrollArea` below, since sharing one scrollable area
+            // between the grid and the form fields let scrolling either one
+            // move both (a horizontal-scrollbar drag on the grid would also
+            // drag the page vertically on a small window).
+            root.spawn((
+                ChartTabPanel,
+                Node {
+                    width: Val::Percent(100.0),
+                    flex_direction: FlexDirection::Column,
+                    flex_grow: 1.0,
+                    min_height: Val::Px(0.0),
+                    ..default()
+                },
+            ))
+            .with_children(|chart| {
+                spawn_fixed_chrome(chart, &loc, colors, hole_count, bravura.as_deref());
+            });
 
             // The form fields (meta form, lesson form, status bar), in their
             // own scrollable column — a fully expanded lesson-details panel
@@ -430,13 +479,18 @@ pub(super) fn setup(
             // flexbox "min-height: auto" gotcha). The sibling `Scrollbar`
             // (`scroll::spawn_editor_scrollbar`) is what makes the fact that
             // this scrolls at all visible to the player.
-            root.spawn(Node {
-                width: Val::Percent(100.0),
-                flex_direction: FlexDirection::Row,
-                flex_grow: 1.0,
-                min_height: Val::Px(0.0),
-                ..default()
-            })
+            root.spawn((
+                DetailsTabPanel,
+                Node {
+                    width: Val::Percent(100.0),
+                    flex_direction: FlexDirection::Row,
+                    flex_grow: 1.0,
+                    min_height: Val::Px(0.0),
+                    // The Chart tab is what opens first.
+                    display: Display::None,
+                    ..default()
+                },
+            ))
             .with_children(|outer| {
                 let scroll_area = outer
                     .spawn((
@@ -464,6 +518,46 @@ pub(super) fn setup(
             });
         });
     });
+
+    // Chart / Details. Splitting the form off into its own tab is what frees
+    // the vertical space the grid needs on a short screen — see
+    // `DetailsTabPanel`.
+    let labels = [
+        String::from(loc.msg("editor-tab-chart")),
+        String::from(loc.msg("editor-tab-details")),
+    ];
+    harmonicon_ui::dialogs::tab_bar::spawn_tab_bar(
+        &mut commands,
+        tab_slot,
+        &labels,
+        0,
+        on_editor_tab_select,
+    );
+}
+
+/// Shows whichever tab was picked and hides the other. `Display::None`
+/// rather than `Visibility::Hidden`, which would keep reserving the layout
+/// space the split exists to reclaim.
+fn on_editor_tab_select(
+    ev: On<harmonicon_ui::dialogs::tab_bar::TabSelect>,
+    mut chart: Query<&mut Node, (With<ChartTabPanel>, Without<DetailsTabPanel>)>,
+    mut details: Query<&mut Node, (With<DetailsTabPanel>, Without<ChartTabPanel>)>,
+) {
+    let show_chart = ev.index == 0;
+    if let Ok(mut node) = chart.single_mut() {
+        node.display = if show_chart {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+    if let Ok(mut node) = details.single_mut() {
+        node.display = if show_chart {
+            Display::None
+        } else {
+            Display::Flex
+        };
+    }
 }
 
 /// The editor's always-visible chrome, above the scrollable form area: the
