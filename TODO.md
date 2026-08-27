@@ -4,6 +4,42 @@ Open, actionable items only — once something lands, delete it from here
 rather than annotating it done (git log and commit messages are the
 historical record; see `CLAUDE.md`).
 
+## Mobile
+
+- [ ] **Nothing persists on Android.** `dirs::config_dir()` returns `None`
+  there, so `settings.rs` logs "No config directory available; settings not
+  saved" and `profile.rs` does the same silently — **lesson progress, best
+  scores and options are all lost on exit**, which makes the Android build
+  demo-only. `AndroidApp::internal_data_path()` gives the app's private
+  directory; the work is threading a platform-supplied path into
+  `settings`/`profile`, which currently derive their own location from
+  `dirs`. Highest-value mobile item by some distance.
+- [ ] **`CompactLayout` is width-only.** `responsive::is_compact` takes just
+  an effective *width* against a 900 px breakpoint, but a phone in landscape
+  is wide and **short** — 2400x1080, roughly 400 logical px tall at Android
+  DPI — so nothing in the app adapts to limited height. The Song Editor
+  works around it (left toolbar, Details tab, two-finger pan), but Play
+  2D/3D have the same exposure and no workaround. A height-aware breakpoint
+  fixes it once for every screen rather than per-page.
+- [ ] **Touch gestures are unverified on real hardware.** The two-finger pan
+  and the toolbar's drag-scroll are unit-tested and the sidebar was checked
+  on an emulator, but multi-touch can't be scripted there (`adb shell input`
+  has no multi-touch; raw `sendevent` never reaches the app). See
+  `docs/android.md`.
+
+## Tooling
+
+- [ ] **A glyph missing from every bundled font fails silently.** Five
+  locale strings shipped tofu boxes in all three languages until a
+  screenshot caught one. `font_fallback.rs` lists what the subsetted
+  fallbacks cover, but nothing checks that list against the fonts, or
+  against the characters actually used. A test parsing the bundled fonts'
+  cmaps and asserting every non-ASCII character in `assets/locales/**` and
+  in source-level glyph literals resolves would close it — `read-fonts` is
+  already in the tree via Bevy's text stack, so no new dependency. This is
+  exactly the "add a rule, add a check" rule in `CLAUDE.md`, currently
+  unenforced.
+
 ## Content
 
 - [ ] **Only one bundled example artist** (`assets/songs/Example Artist`,

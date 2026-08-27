@@ -172,9 +172,14 @@ jobs:
       # API 28 is not arbitrary: cpal's Android backend links libaaudio, which
       # only exists in the NDK sysroot from API 26 up. It must stay in step
       # with minSdk in packaging/android/app/build.gradle.kts.
+      # Deliberately sets no NDK env var. The runner already exports a valid
+      # ANDROID_NDK_ROOT and cargo-ndk reads it; an earlier attempt to set
+      # ANDROID_NDK_HOME from ${{ env.ANDROID_NDK_LATEST_HOME }} resolved to
+      # the *empty string* (that variable isn't visible in a workflow `env:`
+      # context), and an empty ANDROID_NDK_HOME beats the correct
+      # ANDROID_NDK_ROOT — failing with "Error detecting NDK version for
+      # path" and a bare "No such file or directory".
       - name: Run cargo ndk check
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
         run: cargo ndk -t arm64-v8a -P 28 check -p harmonicon-android
 
   # Run cargo fmt --all -- --check
