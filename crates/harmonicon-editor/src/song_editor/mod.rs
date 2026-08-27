@@ -59,6 +59,7 @@ mod timeline_overlay;
 mod transport;
 mod ui;
 mod undo;
+mod view_scroll;
 mod waveform;
 
 // ── Dialog purposes ───────────────────────────────────────────────────────────
@@ -150,15 +151,15 @@ impl Plugin for SongEditor2Plugin {
                 (
                     (
                         playback::advance_playhead,
-                        interaction::auto_scroll,
-                        interaction::pan_keys,
-                        interaction::pan_wheel,
-                        interaction::pan_touch,
-                        interaction::wheel_toolbar,
-                        interaction::apply_scroll,
-                        interaction::apply_toolbar_scroll,
-                        interaction::update_grid_scrollbar,
-                        interaction::update_scrollbar_markers
+                        view_scroll::auto_scroll,
+                        view_scroll::pan_keys,
+                        view_scroll::pan_wheel,
+                        view_scroll::pan_touch,
+                        view_scroll::wheel_toolbar,
+                        view_scroll::apply_scroll,
+                        view_scroll::apply_toolbar_scroll,
+                        view_scroll::update_grid_scrollbar,
+                        view_scroll::update_scrollbar_markers
                             .run_if(resource_exists_and_changed::<state::EditorState>),
                         scroll::update_editor_scrollbar_visibility,
                         ui::rebuild_grid_on_resize,

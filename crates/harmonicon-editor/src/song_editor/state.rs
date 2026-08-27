@@ -519,7 +519,7 @@ pub(super) struct Scroll {
     /// landscape at typical Android DPI, which leaves the mod panel, status
     /// bar and form entirely off-screen and unreachable.
     ///
-    /// Only ever moved by [`interaction::pan_touch`](super::interaction::
+    /// Only ever moved by [`view_scroll::pan_touch`](super::interaction::
     /// pan_touch); on desktop it stays 0 and this costs nothing.
     pub(super) y_px: f32,
 }

@@ -13,7 +13,6 @@ use bevy::ui_widgets::Activate;
 use bevy::ui_widgets::Button as WidgetButton;
 
 use super::grid::{OUT_OF_SCALE_MIX, OUT_OF_SCALE_TINT, TEMPO_MARKER_COLOR, mix_srgba};
-use super::interaction::{SCROLLBAR_BLOW_COLOR, SCROLLBAR_DRAW_COLOR};
 use super::state::{
     ContentKind, Dir, EditorState, FIELDS, Field, HARP_KEYS, HarmonicaKind, PASS_CRITERIA_KINDS,
     POSITIONS, PROGRESSIONS, Pitch, TECHNIQUE_NAMES, cycle_next, pitch_color,
@@ -23,6 +22,7 @@ use super::ui::{
     ContentKindText, EditorRoot, HarmonicaKindText, HoleColumnContent, LegendColumn, MetaFieldBox,
     MetaFieldText, MidiTrackComboboxSlot, ScaleComboboxSlot, SnapModeText,
 };
+use super::view_scroll::{SCROLLBAR_BLOW_COLOR, SCROLLBAR_DRAW_COLOR};
 use super::{HEADER_H, MIDI_PURPOSE, MUSIC_PURPOSE, ROW_H, SILENCE_ROW_H, grid_height};
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::Scale;

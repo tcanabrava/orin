@@ -2083,7 +2083,7 @@ fn tick_at_clamps_outside_the_surfaces_own_bounds() {
 #[test]
 fn scrollbar_marker_maps_ticks_onto_track_percentages() {
     // A note from tick 25 to 50 of a 100-tick song: left 25%, width 25%.
-    let (left, width) = super::interaction::scrollbar_marker(25, 25, 100);
+    let (left, width) = super::view_scroll::scrollbar_marker(25, 25, 100);
     assert_eq!(left, 25.0);
     assert_eq!(width, 25.0);
 }
@@ -2091,14 +2091,14 @@ fn scrollbar_marker_maps_ticks_onto_track_percentages() {
 #[test]
 fn scrollbar_marker_floors_the_width_of_a_tiny_note() {
     // One tick of a very long song would be invisibly thin without the floor.
-    let (_, width) = super::interaction::scrollbar_marker(0, 1, 10_000);
+    let (_, width) = super::view_scroll::scrollbar_marker(0, 1, 10_000);
     assert!(width >= 0.3);
 }
 
 #[test]
 fn scrollbar_marker_never_pokes_past_the_track_end() {
     // A floored marker on the song's very last tick must stay inside 100%.
-    let (left, width) = super::interaction::scrollbar_marker(9_999, 1, 10_000);
+    let (left, width) = super::view_scroll::scrollbar_marker(9_999, 1, 10_000);
     assert!(left + width <= 100.0);
 }
 
@@ -2326,14 +2326,14 @@ fn one_finger_is_not_a_pan_gesture() {
     // A single touch is note placement/drag/resize — panning must not steal
     // it, which is the whole reason the gesture needs two fingers.
     assert_eq!(
-        super::interaction::two_finger_pan_delta(&[Vec2::new(30.0, 0.0)]),
+        super::view_scroll::two_finger_pan_delta(&[Vec2::new(30.0, 0.0)]),
         None
     );
 }
 
 #[test]
 fn no_touches_is_not_a_pan_gesture() {
-    assert_eq!(super::interaction::two_finger_pan_delta(&[]), None);
+    assert_eq!(super::view_scroll::two_finger_pan_delta(&[]), None);
 }
 
 #[test]
@@ -2343,14 +2343,14 @@ fn three_fingers_is_not_a_pan_gesture() {
         Vec2::new(5.0, 0.0),
         Vec2::new(5.0, 0.0),
     ];
-    assert_eq!(super::interaction::two_finger_pan_delta(&deltas), None);
+    assert_eq!(super::view_scroll::two_finger_pan_delta(&deltas), None);
 }
 
 #[test]
 fn two_fingers_moving_together_pan_by_their_shared_motion() {
     // Both fingers drag 20px right; the view should follow by 20px, not 40.
     let deltas = [Vec2::new(20.0, 4.0), Vec2::new(20.0, -4.0)];
-    let pan = super::interaction::two_finger_pan_delta(&deltas).expect("two touches pan");
+    let pan = super::view_scroll::two_finger_pan_delta(&deltas).expect("two touches pan");
     assert!((pan.x - 20.0).abs() < f32::EPSILON, "got {pan:?}");
 }
 
@@ -2360,7 +2360,7 @@ fn a_pinch_barely_pans() {
     // them — this is what lets a future pinch-zoom coexist with panning
     // instead of the view lurching sideways every time you zoom.
     let deltas = [Vec2::new(-25.0, 0.0), Vec2::new(25.0, 0.0)];
-    let pan = super::interaction::two_finger_pan_delta(&deltas).expect("two touches pan");
+    let pan = super::view_scroll::two_finger_pan_delta(&deltas).expect("two touches pan");
     assert!(
         pan.x.abs() < f32::EPSILON,
         "pinch should not pan, got {pan:?}"
@@ -2372,7 +2372,7 @@ fn an_off_centre_pinch_pans_only_by_its_drift() {
     // A pinch that also drifts right: one finger moves +30, the other -10,
     // so the gesture's real translation is +10.
     let deltas = [Vec2::new(30.0, 0.0), Vec2::new(-10.0, 0.0)];
-    let pan = super::interaction::two_finger_pan_delta(&deltas).expect("two touches pan");
+    let pan = super::view_scroll::two_finger_pan_delta(&deltas).expect("two touches pan");
     assert!((pan.x - 10.0).abs() < f32::EPSILON, "got {pan:?}");
 }
 
@@ -2383,7 +2383,7 @@ fn a_view_that_already_fits_cannot_be_panned_vertically() {
     // Desktop: everything fits, so the gesture must be inert rather than
     // letting the player drag the whole editor off the top of the window.
     assert_eq!(
-        super::interaction::vertical_overflow_px(800.0, &[5.0, 424.0, 200.0]),
+        super::view_scroll::vertical_overflow_px(800.0, &[5.0, 424.0, 200.0]),
         0.0
     );
 }
@@ -2392,11 +2392,11 @@ fn a_view_that_already_fits_cannot_be_panned_vertically() {
 fn overflow_is_exactly_what_hangs_off_the_bottom() {
     // Phone-shaped: 5px progress bar + 424px chrome + 120px form = 549,
     // against ~400 of viewport, so 149px has to be reachable by panning.
-    let overflow = super::interaction::vertical_overflow_px(400.0, &[5.0, 424.0, 120.0]);
+    let overflow = super::view_scroll::vertical_overflow_px(400.0, &[5.0, 424.0, 120.0]);
     assert!((overflow - 149.0).abs() < f32::EPSILON, "got {overflow}");
 }
 
 #[test]
 fn an_empty_root_has_no_overflow() {
-    assert_eq!(super::interaction::vertical_overflow_px(400.0, &[]), 0.0);
+    assert_eq!(super::view_scroll::vertical_overflow_px(400.0, &[]), 0.0);
 }

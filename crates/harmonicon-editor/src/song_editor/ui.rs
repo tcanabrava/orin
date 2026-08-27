@@ -7,11 +7,11 @@ use bevy::prelude::*;
 use bevy::ui_widgets::ScrollArea;
 use bevy::window::WindowResized;
 
-use super::interaction::drag_grid_scrollbar;
 use super::meta_form::{spawn_hole_column, spawn_hole_column_rows};
 use super::mod_panel::spawn_mod_panel;
 use super::playback::{EditorAudio, EditorProgressFill, Playhead, PlayheadLine};
 use super::state::{EditorState, Scroll, TimelineTool};
+use super::view_scroll::drag_grid_scrollbar;
 use super::{BEAT_W, HOLE_COL_W, NOTE_PAD, ROW_H, grid_height};
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::AudioSettings;
@@ -30,7 +30,7 @@ pub(super) struct EditorRoot;
 pub(super) struct EditorToolbar;
 
 /// The scrollable column inside [`EditorToolbar`]. Offset by
-/// `interaction::apply_toolbar_scroll` rather than wrapped in a `ScrollArea`,
+/// `view_scroll::apply_toolbar_scroll` rather than wrapped in a `ScrollArea`,
 /// so that a drag anywhere on the toolbar scrolls it — a scrollbar thumb is
 /// far too small a target on a phone, and there is no wheel there at all.
 #[derive(Component)]
@@ -53,14 +53,14 @@ pub(super) struct GridRowContainer;
 /// The horizontal scrollbar's track, spanning only the grid area's own
 /// width (not the hole column) below it — hidden entirely when the song's
 /// notes all fit within the visible width, since there's nothing to scroll
-/// to. See `interaction::update_grid_scrollbar`.
+/// to. See `view_scroll::update_grid_scrollbar`.
 #[derive(Component)]
 pub(super) struct GridScrollTrack;
 
 /// One note's tiny rectangle on the scrollbar track — together they sketch
 /// the whole song in miniature (horizontal = time, vertical = hole lane),
 /// so the scrollbar doubles as a minimap of where the notes are. Rebuilt by
-/// `interaction::update_scrollbar_markers` whenever the notes change.
+/// `view_scroll::update_scrollbar_markers` whenever the notes change.
 #[derive(Component)]
 pub(super) struct GridScrollMarker;
 
@@ -492,7 +492,7 @@ fn spawn_fixed_chrome(
         spawn_hole_column(row, colors, hole_count, loc);
         row.spawn((
             GridArea,
-            // So `interaction::pan_wheel` only pans horizontally
+            // So `view_scroll::pan_wheel` only pans horizontally
             // while the pointer is actually over the grid.
             Hovered::default(),
             // Read by `interaction::handle_copy_paste` to resolve the tick

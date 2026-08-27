@@ -21,7 +21,7 @@ use harmonicon_platform::theme::SongEditorColors;
 
 /// Hides the editor's vertical scrollbar entirely once the current content
 /// fits without scrolling — same "don't show a scrollbar with nothing to
-/// scroll to" convention `interaction::update_grid_scrollbar` already uses
+/// scroll to" convention `view_scroll::update_grid_scrollbar` already uses
 /// for the grid's own horizontal one.
 pub(super) fn update_editor_scrollbar_visibility(
     areas: Query<&ComputedNode, With<ScrollArea>>,

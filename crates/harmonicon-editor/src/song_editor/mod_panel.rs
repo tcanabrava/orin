@@ -44,7 +44,7 @@ use harmonicon_ui::dialogs::combobox;
 ///
 /// Taller than the viewport is expected, so the column scrolls: see
 /// [`EditorToolbarContent`](super::ui::EditorToolbarContent) and
-/// `interaction::drag_toolbar`.
+/// `view_scroll::drag_toolbar`.
 /// How wide the tool sidebar is, in logical px, for a given button style.
 ///
 /// Glyph-only buttons need barely more than the glyph itself, which is the
@@ -70,7 +70,7 @@ pub(super) fn spawn_mod_panel(
 ) {
     root.spawn((
         EditorToolbar,
-        // Read by `interaction::wheel_toolbar`, so a wheel gesture over the
+        // Read by `view_scroll::wheel_toolbar`, so a wheel gesture over the
         // toolbar scrolls it instead of panning the grid sideways.
         bevy::picking::hover::Hovered::default(),
         Node {
@@ -90,7 +90,7 @@ pub(super) fn spawn_mod_panel(
         },
         BackgroundColor(colors.panel_bg),
     ))
-    .observe(super::interaction::drag_toolbar)
+    .observe(super::view_scroll::drag_toolbar)
     .with_children(|outer| {
         outer
             .spawn((
