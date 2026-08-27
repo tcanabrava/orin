@@ -3373,7 +3373,6 @@ name = "harmonicon-app"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "dirs",
  "figment",
  "harmonicon-audio",
  "harmonicon-core",

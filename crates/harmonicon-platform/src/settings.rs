@@ -144,7 +144,7 @@ impl Default for Settings {
 }
 
 fn settings_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|dir| dir.join("harmonicon").join("settings.json"))
+    super::paths::config_file("settings.json")
 }
 
 /// Defaults overlaid with whatever the file provides (missing file → defaults).
@@ -161,7 +161,7 @@ fn load_settings() -> Settings {
 
 fn save_settings(settings: &Settings) {
     let Some(path) = settings_path() else {
-        warn!("No config directory available; settings not saved");
+        warn!("No writable config directory; settings not saved");
         return;
     };
     if let Some(parent) = path.parent()

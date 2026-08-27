@@ -170,7 +170,7 @@ pub fn record_lesson(record: &mut LessonRecord, passed: bool, accuracy: f32) {
 }
 
 fn profile_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|dir| dir.join("harmonicon").join("profile.json"))
+    harmonicon_platform::paths::config_file("profile.json")
 }
 
 fn load_profile() -> PlayerProfile {
@@ -186,7 +186,7 @@ fn load_profile() -> PlayerProfile {
 
 pub fn save_profile(profile: &PlayerProfile) {
     let Some(path) = profile_path() else {
-        warn!("No config directory available; profile not saved");
+        warn!("No writable config directory; profile not saved");
         return;
     };
     if let Some(parent) = path.parent()

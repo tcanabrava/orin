@@ -213,15 +213,11 @@ not-gotten-to:
 Ordered by value, not effort. All three came out of actually running the
 Android build; see `TODO.md` for the full statements.
 
-1. **Android persistence.** `dirs::config_dir()` is `None` on Android, so
-   progress, scores and settings vanish on exit — the port is demo-only
-   until `settings`/`profile` take a platform-supplied path
-   (`AndroidApp::internal_data_path()`) instead of deriving their own.
-2. **Height-aware `CompactLayout`.** `is_compact` keys on width alone, so
+1. **Height-aware `CompactLayout`.** `is_compact` keys on width alone, so
    nothing adapts to a short screen. The Song Editor has bespoke
    workarounds; Play 2D/3D have the same exposure and none. Fix it in
    `responsive.rs` so every screen benefits.
-3. **A glyph-coverage check.** Tofu in a locale string is invisible until
+2. **A glyph-coverage check.** Tofu in a locale string is invisible until
    someone looks at a rendered frame. A test against the bundled fonts'
    cmaps would make it a build failure instead.
 

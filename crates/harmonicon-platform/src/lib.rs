@@ -11,6 +11,7 @@
 
 pub mod assets_management;
 pub mod localization;
+pub mod paths;
 pub mod responsive;
 pub mod settings;
 pub mod theme;

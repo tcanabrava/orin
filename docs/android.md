@@ -31,16 +31,21 @@ real frame rates, and whether the Song Editor is usable on a phone at all.
 Two bugs were found *only* by running it, both since fixed — see
 "Two runtime-only failures" below. Neither was visible at build time.
 
-## Known gap: nothing persists
+## Persistence
 
-`dirs::config_dir()` returns `None` on Android, so `settings.rs` logs *"No
-config directory available; settings not saved"* and `profile.rs` does the
-same silently. **Lesson progress, best scores and options are all lost on
-exit.** That makes the Android build effectively demo-only until fixed.
+`dirs::config_dir()` returns `None` on Android — an app has no XDG config
+directory, only a sandbox — so every save used to silently no-op and all
+progress was lost on exit.
 
-The fix is not hard — `AndroidApp::internal_data_path()` gives the app's
-private directory — but it means threading a platform-supplied path into
-`settings`/`profile`, which currently derive their own location from `dirs`.
+`harmonicon_platform::paths::config_dir` is now the single answer to "where
+do we write", `#[cfg]`-split: `dirs` on desktop,
+`AndroidApp::internal_data_path()` (via bevy's `ANDROID_APP`) on Android.
+Both `settings.json` and `profile.json` go through it.
+
+Verified on the emulator: `settings.json` appears in
+`/data/data/io.github.tcanabrava.harmonicon/files/`, and corrupting it makes
+the app log *"Could not read settings"* on the next launch — so both
+directions are wired, not just the write.
 
 ## Building
 
@@ -53,7 +58,14 @@ cd packaging/android
 
 Requires the SDK (platform 35, build-tools 35.0.1), **NDK 28.2.13676358**, a
 JDK 17+ (Android Studio's bundled `jbr` works), and `cargo-ndk`. Gradle comes
-from the committed wrapper. If your SDK isn't at `$ANDROID_HOME`, put
+from the committed wrapper.
+
+**If `cargoNdkBuild` fails with "found crate ... compiled by an incompatible
+version of rustc", it is almost certainly a stale Gradle daemon.** The daemon
+captures its environment (including `PATH`) when it starts and reuses it for
+every later build, so a `PATH` change — or picking up a second `cargo` from
+`~/.cargo/bin` that differs from the system one — keeps biting long after you
+fixed it in your shell. `./gradlew --stop` and build again. If your SDK isn't at `$ANDROID_HOME`, put
 `sdk.dir=/path/to/sdk` in `packaging/android/local.properties` (gitignored).
 
 The Gradle build invokes `cargo ndk` itself — there is no separate Rust step

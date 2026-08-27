@@ -6,14 +6,6 @@ historical record; see `CLAUDE.md`).
 
 ## Mobile
 
-- [ ] **Nothing persists on Android.** `dirs::config_dir()` returns `None`
-  there, so `settings.rs` logs "No config directory available; settings not
-  saved" and `profile.rs` does the same silently — **lesson progress, best
-  scores and options are all lost on exit**, which makes the Android build
-  demo-only. `AndroidApp::internal_data_path()` gives the app's private
-  directory; the work is threading a platform-supplied path into
-  `settings`/`profile`, which currently derive their own location from
-  `dirs`. Highest-value mobile item by some distance.
 - [ ] **`CompactLayout` is width-only.** `responsive::is_compact` takes just
   an effective *width* against a 900 px breakpoint, but a phone in landscape
   is wide and **short** — 2400x1080, roughly 400 logical px tall at Android
