@@ -16,14 +16,14 @@ use super::grid::group_move_targets;
 use super::material::EditorNoteMaterial;
 use super::playback::Playhead;
 use super::state::{
-    Dir, DragKind, EditorState, Expr, GridNote, Pitch, Scroll, TimelineSelection, VIBRATO_HZ_MAX,
-    VIBRATO_HZ_MIN, VIBRATO_HZ_STEP, WAH_HZ_MAX, WAH_HZ_MIN, WAH_HZ_STEP, enforce_direction,
-    enforce_expr, max_bend, note_rect, overblow_ok, overdraw_ok, pitch_compatible,
-    pitch_forced_dir,
+    Dir, DragKind, EditorState, Expr, GridNote, Pitch, Scroll, TimelineSelection, ToolbarScroll,
+    VIBRATO_HZ_MAX, VIBRATO_HZ_MIN, VIBRATO_HZ_STEP, WAH_HZ_MAX, WAH_HZ_MIN, WAH_HZ_STEP,
+    enforce_direction, enforce_expr, max_bend, note_rect, overblow_ok, overdraw_ok,
+    pitch_compatible, pitch_forced_dir,
 };
 use super::ui::{
-    EditorRoot, GridArea, GridContent, GridScrollMarker, GridScrollThumb, GridScrollTrack,
-    GroupMoveGhost, ModButton, MoveGhost, NoteView,
+    EditorRoot, EditorToolbar, EditorToolbarContent, GridArea, GridContent, GridScrollMarker,
+    GridScrollThumb, GridScrollTrack, GroupMoveGhost, ModButton, MoveGhost, NoteView,
 };
 use super::{AppState, BEAT_W, HEADER_H, NOTE_PAD, ROW_H, TICK_W, TICKS_PER_BEAT};
 use harmonicon_platform::theme::LoadedTheme;
@@ -522,6 +522,54 @@ pub(super) fn two_finger_pan_delta(touch_deltas: &[Vec2]) -> Option<Vec2> {
     match touch_deltas {
         [a, b] => Some((*a + *b) / 2.0),
         _ => None,
+    }
+}
+
+/// Scrolls the tool sidebar by dragging anywhere on it.
+///
+/// A drag rather than a scrollbar because the sidebar is deliberately narrow
+/// — a thumb inside a 56 px column is an unhittable target on a phone, and
+/// there is no wheel there at all. Dragging the surface itself is the
+/// standard touch idiom, and it costs desktop nothing (the wheel still works
+/// via the ordinary hover path elsewhere).
+///
+/// Buttons inside the sidebar keep working: `bevy_picking` only starts a
+/// drag once the pointer actually *moves* while pressed, so a stationary
+/// press still resolves to the button's own `Activate`.
+pub(super) fn drag_toolbar(
+    ev: On<Pointer<Drag>>,
+    ui_scale: Res<UiScale>,
+    mut scroll: ResMut<ToolbarScroll>,
+    toolbars: Query<(&ComputedNode, &Children), With<EditorToolbar>>,
+    child_nodes: Query<&ComputedNode>,
+) {
+    let Ok((toolbar, children)) = toolbars.single() else {
+        return;
+    };
+    let inv = toolbar.inverse_scale_factor();
+    let viewport_h = toolbar.size().y * inv;
+    let content_h: f32 = children
+        .iter()
+        .filter_map(|child| child_nodes.get(child).ok())
+        .map(|node| node.size().y * inv)
+        .sum();
+    let max_y = (content_h - viewport_h).max(0.0);
+    // Dragging up moves the content up, revealing what's below it — same
+    // sign convention as `pan_touch`'s vertical axis.
+    scroll.y_px = (scroll.y_px - ev.delta.y / ui_scale.0).clamp(0.0, max_y);
+}
+
+/// Applies [`ToolbarScroll`] to the sidebar's content column, the same way
+/// [`apply_scroll`] offsets the grid and the editor root.
+pub(super) fn apply_toolbar_scroll(
+    scroll: Res<ToolbarScroll>,
+    mut content: Query<&mut Node, With<EditorToolbarContent>>,
+) {
+    if !scroll.is_changed() {
+        return;
+    }
+    if let Ok(mut node) = content.single_mut() {
+        node.top = Val::Px(-scroll.y_px);
     }
 }
 

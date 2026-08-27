@@ -134,6 +134,7 @@ impl Plugin for SongEditor2Plugin {
             )
             .add_systems(OnExit(AppState::SongEditor2), ui::cleanup)
             .init_resource::<state::Scroll>()
+            .init_resource::<state::ToolbarScroll>()
             .init_resource::<practice::PracticeState>()
             .init_resource::<record::RecordState>()
             .init_resource::<state::TimelineSelection>()
@@ -154,6 +155,7 @@ impl Plugin for SongEditor2Plugin {
                         interaction::pan_wheel,
                         interaction::pan_touch,
                         interaction::apply_scroll,
+                        interaction::apply_toolbar_scroll,
                         interaction::update_grid_scrollbar,
                         interaction::update_scrollbar_markers
                             .run_if(resource_exists_and_changed::<state::EditorState>),

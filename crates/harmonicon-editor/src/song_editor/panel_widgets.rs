@@ -223,11 +223,15 @@ pub(super) fn mod_button(
 }
 
 pub(super) fn panel_separator(panel: &mut ChildSpawnerCommands) {
+    // A horizontal rule: the toolbar is a vertical column (see
+    // `mod_panel::spawn_mod_panel`), so a group divider runs across it, not
+    // down it. This was a 1x28 vertical tick back when the panel was a
+    // horizontal strip.
     panel.spawn((
         Node {
-            width: Val::Px(1.0),
-            height: Val::Px(28.0),
-            margin: UiRect::horizontal(Val::Px(4.0)),
+            width: Val::Percent(100.0),
+            height: Val::Px(1.0),
+            margin: UiRect::vertical(Val::Px(4.0)),
             ..default()
         },
         BackgroundColor(Color::srgb(0.30, 0.30, 0.40)),

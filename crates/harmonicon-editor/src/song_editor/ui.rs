@@ -11,11 +11,10 @@ use super::interaction::drag_grid_scrollbar;
 use super::meta_form::{spawn_hole_column, spawn_hole_column_rows};
 use super::mod_panel::spawn_mod_panel;
 use super::playback::{EditorAudio, EditorProgressFill, Playhead, PlayheadLine};
-use super::state::{EditorState, Mode, Scroll, TimelineTool};
+use super::state::{EditorState, Scroll, TimelineTool};
 use super::{BEAT_W, HOLE_COL_W, NOTE_PAD, ROW_H, grid_height};
 use bevy_fluent::prelude::Localization;
 use harmonicon_audio::AudioSettings;
-use harmonicon_audio::pitch_detect::PitchAlgorithm;
 use harmonicon_platform::settings::ActionButtonStyle;
 use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 
@@ -23,6 +22,19 @@ use harmonicon_platform::theme::{LoadedTheme, SongEditorColors};
 
 #[derive(Component)]
 pub(super) struct EditorRoot;
+
+/// The vertical tool sidebar down the left edge of the Song Editor — the
+/// clipping viewport. Its single child is [`EditorToolbarContent`], which is
+/// what actually moves when the toolbar is scrolled.
+#[derive(Component)]
+pub(super) struct EditorToolbar;
+
+/// The scrollable column inside [`EditorToolbar`]. Offset by
+/// `interaction::apply_toolbar_scroll` rather than wrapped in a `ScrollArea`,
+/// so that a drag anywhere on the toolbar scrolls it — a scrollbar thumb is
+/// far too small a target on a phone, and there is no wheel there at all.
+#[derive(Component)]
+pub(super) struct EditorToolbarContent;
 
 #[derive(Component)]
 pub(super) struct GridArea;
@@ -345,7 +357,11 @@ pub(super) fn setup(
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
-            flex_direction: FlexDirection::Column,
+            // A *row*: the tool sidebar down the left, everything else in a
+            // column beside it. Vertical space is the scarce axis in this
+            // screen (see `mod_panel::spawn_mod_panel`), so the toolbar
+            // spends width instead.
+            flex_direction: FlexDirection::Row,
             ..default()
         },
         BackgroundColor(colors.editor_bg),
@@ -356,101 +372,111 @@ pub(super) fn setup(
     // as its full-screen backdrop parent without waiting for a command flush.
     let root_id = root_ec.id();
     root_ec.with_children(|root| {
-        root.spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Px(5.0),
-                flex_shrink: 0.0,
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
-        ))
-        .with_children(|bar| {
-            bar.spawn((
-                EditorProgressFill,
-                Node {
-                    width: Val::Percent(0.0),
-                    height: Val::Percent(100.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.35, 0.75, 1.0)),
-            ));
-        });
-
-        // Fixed chrome: the grid row (own horizontal scroll) + mod
-        // panel — kept out of the form `ScrollArea` below, since sharing
-        // one scrollable area between the grid and the form fields let
-        // scrolling either one move both (a horizontal-scrollbar drag on
-        // the grid would also drag the page vertically on a small window).
-        spawn_fixed_chrome(
+        // The tool sidebar, first child so it lands on the left edge.
+        spawn_mod_panel(
             root,
             &loc,
             colors,
             mode,
-            hole_count,
             root_id,
             audio.pitch_algorithm,
-            bravura.as_deref(),
             *action_button_style,
         );
-
-        // The form fields (meta form, lesson form, status bar), in their
-        // own scrollable column — a fully expanded lesson-details panel
-        // routinely exceeds a laptop window's height. Same
-        // `Overflow::scroll_y()` + `ScrollArea` pattern `menu::pages::
-        // lessons`/`dialogs::file_dialog` use; `min_height: Val::Px(0.0)`
-        // lets this flex item shrink below its content size (the
-        // flexbox "min-height: auto" gotcha). The sibling `Scrollbar`
-        // (`scroll::spawn_editor_scrollbar`) is what makes the fact that
-        // this scrolls at all visible to the player.
+        // Everything else stacks in a column beside it. `min_width: 0` is
+        // the flexbox "min-width: auto" gotcha: without it this refuses to
+        // shrink below its content and the grid pushes the toolbar off.
         root.spawn(Node {
-            width: Val::Percent(100.0),
-            flex_direction: FlexDirection::Row,
+            flex_direction: FlexDirection::Column,
             flex_grow: 1.0,
-            min_height: Val::Px(0.0),
+            min_width: Val::Px(0.0),
+            height: Val::Percent(100.0),
             ..default()
         })
-        .with_children(|outer| {
-            let scroll_area = outer
-                .spawn((
+        .with_children(|root| {
+            root.spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Px(5.0),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.55)),
+            ))
+            .with_children(|bar| {
+                bar.spawn((
+                    EditorProgressFill,
                     Node {
-                        flex_direction: FlexDirection::Column,
-                        flex_grow: 1.0,
-                        min_height: Val::Px(0.0),
-                        overflow: Overflow::scroll_y(),
+                        width: Val::Percent(0.0),
+                        height: Val::Percent(100.0),
                         ..default()
                     },
-                    ScrollArea,
-                ))
-                .with_children(|scroll| {
-                    super::scroll::spawn_form_scroll_content(
-                        scroll,
-                        &loc,
-                        colors,
-                        &state,
-                        compact.0,
-                        state.legend_visible,
-                    );
-                })
-                .id();
-            super::scroll::spawn_editor_scrollbar(outer, scroll_area, colors);
+                    BackgroundColor(Color::srgb(0.35, 0.75, 1.0)),
+                ));
+            });
+
+            // Fixed chrome: the grid row (own horizontal scroll) + mod
+            // panel — kept out of the form `ScrollArea` below, since sharing
+            // one scrollable area between the grid and the form fields let
+            // scrolling either one move both (a horizontal-scrollbar drag on
+            // the grid would also drag the page vertically on a small window).
+            spawn_fixed_chrome(root, &loc, colors, hole_count, bravura.as_deref());
+
+            // The form fields (meta form, lesson form, status bar), in their
+            // own scrollable column — a fully expanded lesson-details panel
+            // routinely exceeds a laptop window's height. Same
+            // `Overflow::scroll_y()` + `ScrollArea` pattern `menu::pages::
+            // lessons`/`dialogs::file_dialog` use; `min_height: Val::Px(0.0)`
+            // lets this flex item shrink below its content size (the
+            // flexbox "min-height: auto" gotcha). The sibling `Scrollbar`
+            // (`scroll::spawn_editor_scrollbar`) is what makes the fact that
+            // this scrolls at all visible to the player.
+            root.spawn(Node {
+                width: Val::Percent(100.0),
+                flex_direction: FlexDirection::Row,
+                flex_grow: 1.0,
+                min_height: Val::Px(0.0),
+                ..default()
+            })
+            .with_children(|outer| {
+                let scroll_area = outer
+                    .spawn((
+                        Node {
+                            flex_direction: FlexDirection::Column,
+                            flex_grow: 1.0,
+                            min_height: Val::Px(0.0),
+                            overflow: Overflow::scroll_y(),
+                            ..default()
+                        },
+                        ScrollArea,
+                    ))
+                    .with_children(|scroll| {
+                        super::scroll::spawn_form_scroll_content(
+                            scroll,
+                            &loc,
+                            colors,
+                            &state,
+                            compact.0,
+                            state.legend_visible,
+                        );
+                    })
+                    .id();
+                super::scroll::spawn_editor_scrollbar(outer, scroll_area, colors);
+            });
         });
     });
 }
 
 /// The editor's always-visible chrome, above the scrollable form area: the
-/// grid row (hole column + grid + its own horizontal scrollbar) and the mod
-/// panel. Kept out of the `ScrollArea` — see [`setup`]'s own comment for why.
+/// grid row (hole column + grid + its own horizontal scrollbar). Kept out of
+/// the `ScrollArea` — see [`setup`]'s own comment for why. The tool palette
+/// is no longer here: it's the left sidebar `setup` spawns as this column's
+/// sibling (`mod_panel::spawn_mod_panel`).
 fn spawn_fixed_chrome(
     root: &mut ChildSpawnerCommands,
     loc: &Localization,
     colors: SongEditorColors,
-    mode: Mode,
     hole_count: u8,
-    editor_root: Entity,
-    algorithm: PitchAlgorithm,
     bravura: Option<&harmonicon_ui::music_score::BravuraFont>,
-    action_button_style: ActionButtonStyle,
 ) {
     root.spawn((
         GridRowContainer,
@@ -626,14 +652,4 @@ fn spawn_fixed_chrome(
             },
         ));
     });
-
-    spawn_mod_panel(
-        root,
-        loc,
-        colors,
-        mode,
-        editor_root,
-        algorithm,
-        action_button_style,
-    );
 }

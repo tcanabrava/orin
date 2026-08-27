@@ -490,6 +490,17 @@ impl EditorState {
     }
 }
 
+/// Vertical scroll of the left tool sidebar, in logical pixels.
+///
+/// Its own resource rather than a field on [`Scroll`] because the two move
+/// for completely unrelated reasons — this one only ever from a drag on the
+/// sidebar itself — and change detection on [`Scroll`] already drives grid
+/// work that has nothing to do with the toolbar.
+#[derive(Resource, Default)]
+pub(super) struct ToolbarScroll {
+    pub(super) y_px: f32,
+}
+
 /// Continuous view offset in pixels. Kept separate from [`EditorState`]
 /// so scrolling doesn't trigger a grid rebuild.
 #[derive(Resource, Default)]
