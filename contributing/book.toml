@@ -7,10 +7,23 @@ src = "src"
 
 [preprocessor.plantuml]
 # Requires a `plantuml` executable on PATH (or `java -jar plantuml.jar`,
-# which mdbook-plantuml also auto-detects). See contributing/README.md for
+# which mdbook-plantuml also auto-detects) — and a JRE either way, since
+# PlantUML is a Java program. Without one, the build aborts on the whole
+# book rather than skipping the diagram. See contributing/README.md for
 # install instructions per platform. If you've installed PlantUML as a jar
 # rather than a native package, uncomment and point this at it instead:
-# plantuml_cmd = "java -jar /path/to/plantuml.jar"
+# plantuml-cmd = "java -jar /path/to/plantuml.jar"
+#
+# Keys here are kebab-case — mdbook-plantuml's Config derives
+# `rename_all = "kebab-case"`, and `#[serde(default)]` means a snake_case
+# key isn't rejected, it's silently ignored and you get the default back.
+
+# A diagram that fails to render is a *build* failure, not a blank space on
+# the published page. The default is the other way round, which is the wrong
+# trade now that this book deploys to GitHub Pages: a silently-missing
+# diagram looks identical to a chapter that simply never had one, so nobody
+# would notice a broken `@startuml` until a reader hit it.
+fail-on-error = true
 
 [output.html]
 default-theme = "navy"

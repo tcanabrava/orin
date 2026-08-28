@@ -45,8 +45,13 @@ plain jar that just needs a JRE — download it from
 
 ```toml
 [preprocessor.plantuml]
-plantuml_cmd = "java -jar /path/to/plantuml.jar"
+plantuml-cmd = "java -jar /path/to/plantuml.jar"
 ```
+
+Note the **kebab-case** key. `mdbook-plantuml`'s config derives
+`rename_all = "kebab-case"` with `#[serde(default)]`, so a snake_case
+`plantuml_cmd` isn't rejected — it's silently ignored, and you get the
+default back with no warning.
 
 Then, from this directory:
 
@@ -54,6 +59,17 @@ Then, from this directory:
 mdbook build   # writes static HTML to contributing/book/ (gitignored)
 mdbook serve   # local dev server with live rebuild, http://localhost:3000
 ```
+
+`book.toml` sets `fail-on-error = true`, so a diagram that doesn't parse
+fails the build instead of leaving a blank space on the page. That matters
+because this book is published (see below) and a missing diagram is
+indistinguishable from a chapter that never had one.
+
+## Published
+
+Both this book and the player's guide deploy to GitHub Pages on every push
+to `main` that touches them — `.github/workflows/pages.yaml`. This one
+lands at `/architecture/`, the player's guide at `/guide/`.
 
 ## Keeping it current
 

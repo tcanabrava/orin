@@ -25,9 +25,14 @@ than accumulating history (git log/commit messages are the historical record):
   stable so the `![...](images/foo.png)` references throughout
   `docs/book/src/*.md` don't need touching.
 - `contributing/` — a *second* mdBook, the contributor architecture guide.
-  17 of its chapters embed ```plantuml blocks, so building it needs a
-  `plantuml` on PATH **and a JRE** — without either, `mdbook build` aborts
-  the whole book rather than skipping the diagram.
+  16 of its chapters embed ```plantuml blocks (34 diagrams), so building it
+  needs a `plantuml` on PATH **and a JRE** — PlantUML is a Java program, and
+  without one `mdbook build` aborts the whole book rather than skipping the
+  diagram. `book.toml` sets `fail-on-error = true` so a diagram that doesn't
+  *parse* fails the build too, rather than publishing a blank space. Keys in
+  that `[preprocessor.plantuml]` block are **kebab-case**: the config derives
+  `rename_all = "kebab-case"` with `#[serde(default)]`, so a snake_case key
+  is silently ignored rather than rejected.
 
 Both books publish to one GitHub Pages site
 (`.github/workflows/pages.yaml`): `/guide/` is `docs/book`,
