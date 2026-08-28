@@ -1,4 +1,4 @@
-# Driving a running game from outside
+# Driving a Running Game from Outside
 
 `--features dev` starts a [Bevy Remote Protocol][brp] server — JSON-RPC over
 HTTP on `127.0.0.1:15702` — so a running game can be inspected, mutated,
@@ -96,7 +96,8 @@ is registered, and matches nothing on a UI node).
 `world.mutate_components`/`world.mutate_resources` change state live, and
 `world.write_message`/`world.trigger_event` fire messages and events without
 synthesising input — useful precisely where synthetic input is unreliable
-(see `docs/android.md` on sub-frame taps being dropped).
+(see [Building and Running on Android](android-build.md) on sub-frame taps
+being dropped).
 
 ### The catch: only reflected, registered types are visible
 

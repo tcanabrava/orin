@@ -117,7 +117,7 @@ dev = [
     "bevy/debug",
     # The Bevy Remote Protocol, for driving a running game from outside
     # (screenshots, video capture, state inspection) — see src/dev_capture.rs
-    # and docs/remote_control.md. Native-only in bevy_internal, so enabling
+    # and contributing/src/remote-control.md. Native-only in bevy_internal, so enabling
     # it costs a wasm build nothing.
     "bevy/bevy_remote",
     "harmonicon-audio/dev",

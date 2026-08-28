@@ -114,7 +114,7 @@ remains:
   watcher (`notify-debouncer-full`), none of which have browser
   equivalents.
 - Android: **a real APK builds; it has never been run on a device.** See
-  `docs/android.md` for the full record and `PLAN.md` for what landed.
+  `contributing/src/android-build.md` for the full record and `PLAN.md` for what landed.
   `packaging/android` (Gradle + cargo-ndk) emits a signed, installable APK
   with verified contents, and CI type-checks the target — so the port can't
   silently rot. It has been run on an emulator — it launches, renders, loads assets from

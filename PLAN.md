@@ -114,7 +114,7 @@ one-line index of what's landed.
   permission-prompt flow.
 - **Android port: a real APK builds and runs on an emulator; never on real
   hardware.**
-  `docs/android.md` is the full record, including exactly what is and isn't
+  `contributing/src/android-build.md` is the full record, including exactly what is and isn't
   verified. `packaging/android` (Gradle + cargo-ndk, alongside the existing
   flatpak/macos/windows packaging) emits a signed 147 MB APK whose contents
   were inspected rather than assumed — arm64 cdylib exporting `android_main`
@@ -219,7 +219,7 @@ Android build; see `TODO.md` for the full statements.
    `responsive.rs` so every screen benefits.
 
 Then, needing hardware: confirm the mic actually captures usably through a
-phone, and a touch/hit-target pass. `docs/android.md` lists the rest.
+phone, and a touch/hit-target pass. `contributing/src/android-build.md` lists the rest.
 
 ## Working practices
 

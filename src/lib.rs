@@ -141,7 +141,7 @@ pub fn run() {
                 // `audio_system::audio_input`/`pitch_detect`) are emitted at
                 // `info`, and a span below the configured level is dropped
                 // before it reaches Tracy or any other backend at all
-                // (docs/profiling.md), no matter how the trace feature is
+                // (contributing/src/profiling.md), no matter how the trace feature is
                 // wired up.
                 #[cfg(not(feature = "trace_tracy"))]
                 filter: "warn,bevy_render::camera=error".into(),

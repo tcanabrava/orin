@@ -102,7 +102,7 @@ dependencies at `opt-level = 3`, so debug builds are already playable.
 ### Optional: dev feature
 
 `dev` turns on Bevy's dev tools, the asset file watcher, and a
-[Bevy Remote Protocol](docs/remote_control.md) server on `127.0.0.1:15702`
+[Bevy Remote Protocol](contributing/src/remote-control.md) server on `127.0.0.1:15702`
 that lets you inspect, screenshot and record a *running* game from a shell.
 Never ship it: that server is unauthenticated and can mutate arbitrary world
 state, which is exactly why it rides on a compile-time feature.
@@ -129,7 +129,7 @@ suite, doctests included. Ship neither.
 # Web — see contributing/src/cross-platform-wasm.md
 trunk serve --release
 
-# Android — see docs/android.md
+# Android — see contributing/src/android-build.md
 cd packaging/android && ./gradlew assembleRelease
 ```
 
@@ -225,7 +225,7 @@ src/                   # Binaries + the composition root
   main.rs              # Desktop entry point (three lines: calls `run()`)
   dev_capture.rs       # `--features dev` only: Bevy Remote Protocol server, so a
                        #   running game can be inspected, screenshotted and recorded
-                       #   from a shell (docs/remote_control.md)
+                       #   from a shell (contributing/src/remote-control.md)
   bin/
     hole_editor.rs     # 3D harmonica hole-layout editor
     note_editor.rs     # Visual editor for 2D note layouts

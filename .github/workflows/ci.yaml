@@ -143,7 +143,7 @@ jobs:
   # the root package and this silently loses the activity backend.
   #
   # This checks compilation only. Building an actual APK additionally needs
-  # the SDK, a JDK and Gradle — see packaging/android/ and docs/android.md.
+  # the SDK, a JDK and Gradle — see packaging/android/ and contributing/src/android-build.md.
   android_check:
     name: Android
     runs-on: ubuntu-latest

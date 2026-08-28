@@ -17,7 +17,7 @@ historical record; see `CLAUDE.md`).
   and the toolbar's drag-scroll are unit-tested and the sidebar was checked
   on an emulator, but multi-touch can't be scripted there (`adb shell input`
   has no multi-touch; raw `sendevent` never reaches the app). See
-  `docs/android.md`.
+  `contributing/src/android-build.md`.
 
 ## Content
 

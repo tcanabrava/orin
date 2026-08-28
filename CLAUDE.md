@@ -20,11 +20,22 @@ than accumulating history (git log/commit messages are the historical record):
 - `docs/book/` — player-facing mdBook user guide (`mdbook build`/`mdbook
   serve` from that directory); update it when a user-visible feature
   changes, not just internal ones. `docs/book/src/images/*.png` are real
-  captures of a running game, taken over BRP (`docs/remote_control.md`) —
-  re-take one the same way when a screen changes, and keep the filename
-  stable so the `![...](images/foo.png)` references throughout
-  `docs/book/src/*.md` don't need touching.
+  captures of a running game, taken over BRP
+  (`contributing/src/remote-control.md`) — re-take one the same way when a
+  screen changes, and keep the filename stable so the
+  `![...](images/foo.png)` references throughout `docs/book/src/*.md` don't
+  need touching.
 - `contributing/` — a *second* mdBook, the contributor architecture guide.
+  **Contributor-facing reference lives here, not in `docs/`**: anything a
+  contributor would want to *read* (the Android build/run story, the BRP
+  remote-control workflow, Tracy profiling) is a chapter in
+  `contributing/src/` and gets published. What stays loose in `docs/` is
+  planning and process — `lessons_plan.md`, `physical_design_plan.md`,
+  `gameplay_validation.md` — which describe unshipped work or internal
+  procedure and would read as public promises. Adding a chapter means a
+  file in `contributing/src/` **and** an entry in its `SUMMARY.md`; mdBook
+  silently ignores a file no `SUMMARY.md` lists, and only files under
+  `src/` are included at all.
   16 of its chapters embed ```plantuml blocks (34 diagrams), so building it
   needs a `plantuml` on PATH **and a JRE** — PlantUML is a Java program, and
   without one `mdbook build` aborts the whole book rather than skipping the
@@ -147,14 +158,14 @@ Manual testing needs a mic, audio out, and a display.
   - **A new crate must forward the `dev`/`trace_tracy` features** to its own
     `bevy` (`"harmonicon-x/dev"`), or feature unification breaks and the
     tree ends up with two differently-configured Bevy builds.
-- **Profiling is Tracy-based** — see `docs/profiling.md` for the whole
+- **Profiling is Tracy-based** — see `contributing/src/profiling.md` for the whole
   story (why the `LogPlugin` filter is feature-gated, and which paths need
   a manual span because Bevy's per-system instrumentation can't reach
   them). Add a span for anything running off the main schedule (another
   thread, an asset loader, a decode task) or burning real time inside one
   system call.
 - **Android's APK builds but has never been run on a device** —
-  `docs/android.md` has the whole story, and is the file to read before
+  `contributing/src/android-build.md` has the whole story, and is the file to read before
   touching anything mobile. `packaging/android` (Gradle + cargo-ndk, matching
   `packaging/{flatpak,macos,windows}`) produces a signed installable APK, and
   CI's `android_check` job type-checks the target. Nobody has launched it, and
@@ -181,7 +192,7 @@ Manual testing needs a mic, audio out, and a display.
 - **A `--features dev` build serves the Bevy Remote Protocol** on
   `127.0.0.1:15702` (`src/dev_capture.rs`), so a *running* game can be
   inspected, mutated, screenshotted (`target/screenshots/`) and recorded
-  (`target/video/`) from a shell with no rebuild — `docs/remote_control.md`
+  (`target/video/`) from a shell with no rebuild — `contributing/src/remote-control.md`
   has the verified request shapes. Never shipped: it is unauthenticated and
   can mutate arbitrary world state, which is why it rides on the
   compile-time `dev` feature rather than a runtime flag. Every image in
@@ -226,7 +237,7 @@ Manual testing needs a mic, audio out, and a display.
   | `harmonicon-editor` | the whole Song Editor (record, MIDI import, undo, timeline tools, tempo map) |
   | `harmonicon-menu` | the guided tutorial tour, menu page scrolling |
   | `harmonicon-bench` | benchmark-first pitch-detection workflow |
-  | `harmonicon-android` | (no separate file — `docs/android.md` covers the whole port) |
+  | `harmonicon-android` | (no separate file — `contributing/src/android-build.md` covers the whole port) |
 
 ## Procedural workflows
 

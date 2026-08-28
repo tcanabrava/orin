@@ -3,7 +3,8 @@
 The Android port builds a real, installable APK and runs. This chapter is
 the *architectural* half — the shape the port forced on the codebase, and
 the traps that cost the most time. For build commands, emulator setup and
-the current verified/unverified split, see `docs/android.md`.
+the current verified/unverified split, see [Building and Running on
+Android](android-build.md).
 
 ## Android inverted the entry point
 

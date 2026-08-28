@@ -20,7 +20,7 @@
 //!   screenshot per frame until it runs out, numbering them into a
 //!   per-recording directory under [`VIDEO_DIR`]. Encoding to an actual
 //!   video file is left to `ffmpeg` outside the game — see
-//!   `docs/remote_control.md`.
+//!   `contributing/src/remote-control.md`.
 //!
 //! Navigation is the other half of this, and mostly needs no code here:
 //! `NextState<AppState>`/`NextState<MenuPage>` are reflected, so

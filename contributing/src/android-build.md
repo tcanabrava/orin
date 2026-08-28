@@ -1,4 +1,8 @@
-# Android
+# Building and Running on Android
+
+The operational half of the Android port — how to build it, how to run it on
+an emulator, and exactly how far it has actually been taken. For the *shape*
+the port forced on the codebase, see [Android](android.md).
 
 ## Status: runs on an emulator; never run on real hardware
 
