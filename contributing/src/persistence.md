@@ -14,8 +14,13 @@ pitch algorithm, input device, latency calibration, UI theme, adaptive
 difficulty on/off) and `profile.rs` (`PlayerProfile` — per-song best
 scores, per-technique best accuracy, Bending Trainer drill records,
 total play time) both persist to JSON under the platform config
-directory (via `figment`, layered so a fresh install gets sensible
-defaults without a config file needing to exist yet), but they save on
+directory — `harmonicon_platform::paths::config_dir`, the single answer to
+"where do we write", `#[cfg]`-split because Android has no such thing as an
+XDG config directory (`dirs::config_dir()` returns `None` there, so every
+save silently no-opped and all progress was lost on exit; the sandbox path
+comes from `AndroidApp::internal_data_path()` instead). Loading goes through
+`figment`, layered so a fresh install gets sensible
+defaults without a config file needing to exist yet, but they save on
 opposite schedules, matched to how often each actually changes:
 
 ```plantuml

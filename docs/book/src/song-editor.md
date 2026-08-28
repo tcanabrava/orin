@@ -6,11 +6,33 @@ without writing JSON directly.
 
 ![Song Editor screen](images/song-editor.png)
 
+## Layout
+
+The screen has three parts:
+
+- The **tool sidebar** down the left edge, holding every action: Back,
+  the mode buttons, undo/redo, the note techniques, and Save/Load. It
+  scrolls — **drag it** or use the **mouse wheel** over it — because on a
+  short screen the whole palette doesn't fit at once.
+- The **note grid**, one lane per harmonica hole, under the **Chart**
+  tab.
+- The song's metadata (tempo, key, position, title, background music,
+  and the lesson fields) under the **Details** tab.
+
+Chart and Details are tabs rather than stacked panels so the grid gets the
+full height of the window — on a laptop screen, and especially on a phone,
+the grid alone can fill it.
+
+The sidebar's buttons can show **icons only, text only, or both** — set it
+under Options → *Button style*. Icons-only makes the sidebar much narrower;
+every button keeps a tooltip either way, so hovering always tells you what
+it does.
+
 ## Modes
 
 - **Edit mode** — place, move, resize, and delete notes on the grid.
   Click an empty cell to add a note; drag a note's edges to resize it or
-  its body to move it. The **mod panel** on the side sets the selected
+  its body to move it. The **tool sidebar** sets the selected
   note's technique: Blow/Draw direction, bend depth, overblow/overdraw,
   slide (chromatic only), wah/vibrato rate, or delete it outright.
   **Ctrl+click** adds or removes a note from the selection instead of
@@ -82,7 +104,7 @@ reaching outside this scale" flag rather than an error. The third column
 next to the meta-form fields is a full legend for every color the editor
 uses, in case any of this is unclear at a glance.
 
-The **Scale** field, just above the mod panel, picks that reference scale:
+The **Scale** field, in the Details tab, picks that reference scale:
 
 - **1st/2nd/3rd Position** — the blues scale, rooted at the harp's own key,
   a fifth above it, or a whole step above it respectively (matching the
@@ -144,7 +166,7 @@ Record Lesson to add the curriculum fields on top.
 
 ## Erasing and removing parts of a song
 
-The **Select** tool in the mod panel (next to Delete) turns the ruler above
+The **Select** tool in the sidebar (next to Delete) turns the ruler above
 the grid into a range selector for a whole span of time rather than one
 note at a time — handy for a song built from an imported MIDI track that
 starts later than beat 1, or just cutting a section you don't want.

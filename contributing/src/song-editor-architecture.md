@@ -72,6 +72,7 @@ package "UI shell" {
   [ui.rs\n(marker components)] as ui
   [material.rs\n(note-cell shader material)] as material
   [scroll.rs / waveform.rs] as scroll
+  [view_scroll.rs\n(pan/zoom of the *view*)] as view_scroll
 }
 
 grid ..> state
@@ -85,8 +86,31 @@ midi_import ..> pitch_map
 harpchart ..> state
 panel ..> state
 meta_form ..> state
+view_scroll ..> state
 @enduml
 ```
+
+### The screen is a row, not a column
+
+The editor root is a **row**: a vertical tool sidebar down the left, and
+everything else in a column beside it. Within that column, the note grid
+and the metadata form are **tabs** (`ChartTabPanel`/`DetailsTabPanel`,
+toggled with `Display::None` so the hidden one reserves no space).
+
+Both choices are about *height*, and both were driven by running the game
+on a phone. A landscape screen is wide and short — 2400x1080, roughly 400
+logical px tall at Android DPI — while the grid alone needs about 424. The
+tool palette used to be a horizontal strip *below* the grid, which put it
+off the bottom of the screen with nothing able to scroll to it, because it
+sits in the fixed chrome outside the form's `ScrollArea`. Turning it
+vertical spends width, which that screen has in abundance, instead of
+height, which it does not.
+
+`view_scroll.rs` owns everything that moves the *view* rather than the
+content: the grid's horizontal pan (keys, wheel, scrollbar), the
+two-finger touch pan, and the sidebar's own drag/wheel scrolling. It was
+split out of `interaction.rs` for the file-size budget, but the group was
+always coherent — none of it touches a note.
 
 This split follows a consistent pattern also visible elsewhere in the
 codebase (see [Module Boundaries and Dependency Rules](

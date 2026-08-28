@@ -86,7 +86,7 @@ dependency, and in practice catches what it's meant to.
 
 ## Integration tests: schema validation and physical structure
 
-Two top-level suites under `tests/` check properties that span *many*
+Three top-level suites under `tests/` check properties that span *many*
 files at once, which don't naturally belong inside any single module's
 own unit tests:
 
@@ -100,6 +100,25 @@ own unit tests:
 - **`tests/physical_design.rs`** — the file-size budget enforcement
   described in [Module Boundaries and Dependency Rules](
   module-dependency-rules.md).
+- **`tests/glyph_coverage.rs`** — every character the game draws must
+  exist in one of the bundled fonts. A character missing from all of them
+  renders as a **tofu box**: it compiles, passes every other test, and is
+  visible only in a rendered frame, in the right language. Five shipped
+  that way in all three locales before this existed.
+
+  It deliberately reads the **font binaries'** `cmap` tables rather than
+  `dialogs::font_fallback`'s hand-maintained lists, because that list is a
+  statement of intent — adding a codepoint to it without also re-subsetting
+  the `.ttf` leaves the glyph exactly as missing. It covers both locale
+  values and `\u{...}` escapes in source, since button icons live in
+  source and a locale-only scan would miss every one of them.
+
+  Three deliberate exclusions, each of which was a false positive while
+  writing it: `Bravura.otf` counts as coverage (the notation staff draws
+  SMuFL private-use codepoints with it), invisible formatting characters
+  are skipped (bidi isolates have no glyph by design — `localization::
+  strip_bidi_isolates` names U+2068/U+2069 precisely to remove them), and
+  nothing below U+2000 is checked.
 
 ## Developer tools as their own kind of testing infrastructure
 

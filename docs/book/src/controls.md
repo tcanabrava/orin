@@ -58,3 +58,28 @@ columns: transport actions on the left, practice aids on the right.
 
 See [Playing a Song](playing-a-song.md#pausing-and-quitting) for what each
 of these actually does.
+
+---
+
+## Touch
+
+Harmonicon runs on Android, where there's no keyboard and no mouse wheel.
+Every keyboard-only action has an on-screen equivalent, plus two gestures
+in the Song Editor:
+
+- **Drag the tool sidebar** to scroll it, when the palette is taller than
+  the screen. (A scrollbar thumb in a column that narrow is not a
+  realistic target for a thumb.)
+- **Two-finger drag** anywhere on the editor to pan the view — sideways
+  through the chart, and vertically if anything is off-screen. Two fingers
+  rather than one, because one finger is already placing, moving and
+  resizing notes.
+
+Switching Options → *Button style* to **icons only** makes the sidebar much
+narrower, which is worth doing on a phone: a landscape screen is wide and
+short, so spending width costs you nothing and spending height costs you
+the grid.
+
+Touch is **not yet verified on real hardware** — it's been exercised on an
+emulator only, and hit-target sizes in particular haven't been tuned for
+fingers.

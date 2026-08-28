@@ -101,13 +101,42 @@ dependencies at `opt-level = 3`, so debug builds are already playable.
 
 ### Optional: dev feature
 
-For local iteration, the `dev` feature dynamic-links Bevy and enables its dev
-tools and the asset file watcher (never ship a build with it — the dynamic
-linking needs Bevy's `.so` alongside the binary):
+`dev` turns on Bevy's dev tools, the asset file watcher, and a
+[Bevy Remote Protocol](docs/remote_control.md) server on `127.0.0.1:15702`
+that lets you inspect, screenshot and record a *running* game from a shell.
+Never ship it: that server is unauthenticated and can mutate arbitrary world
+state, which is exactly why it rides on a compile-time feature.
 
 ```bash
 cargo run --features dev
 ```
+
+`dynamic_linking` is separate, and opt-in on top:
+
+```bash
+cargo run --features dev,dynamic_linking   # ~7s relink instead of ~91s
+```
+
+The two are split because they want opposite things — dynamic linking makes
+the edit/run loop far faster, but breaks `cargo test` outright (rustdoc's
+doctest binary can't load a dynamically-linked stdlib, so every doctest
+fails). Keeping them apart means `cargo test --features dev` runs the whole
+suite, doctests included. Ship neither.
+
+### Other platforms
+
+```bash
+# Web — see contributing/src/cross-platform-wasm.md
+trunk serve --release
+
+# Android — see docs/android.md
+cd packaging/android && ./gradlew assembleRelease
+```
+
+Both build and run. The web build plays but cannot hear you: cpal has no
+browser microphone backend yet. The Android APK runs on an emulator and has
+never been tried on real hardware — in particular nobody has confirmed a
+phone microphone captures usably, which for this game is the whole product.
 
 ---
 
@@ -153,18 +182,22 @@ landing quietly.
 
 ## Project layout
 
-A Cargo workspace: eleven library crates under `crates/`, and a root package
-holding just the binary. Each crate may depend only on ones *earlier* in this
-list, so the layering is enforced by Cargo rather than by convention — a
-circular dependency between crates simply cannot be expressed.
+A Cargo workspace: twelve library crates under `crates/`, and a root package
+holding the binaries plus the composition root. Each crate may depend only on
+ones *earlier* in this list, so the layering is enforced by Cargo rather than
+by convention — a circular dependency between crates simply cannot be
+expressed.
 
 ```
 crates/
   harmonicon-core/     # Pure logic, NO Bevy: music theory, chart types, scoring
                        #   math, pitch/MIDI conversion, the harmonica synth, WAV.
                        #   Builds and tests in seconds; keep it engine-free.
-  harmonicon-audio/    # Microphone capture (cpal), the FFT pitch-detection
-                       #   pipeline, offline waveform analysis
+  harmonicon-dsp/      # Pure DSP, NO Bevy: the FFT/YIN/pYIN/MPM/NMF pitch
+                       #   detectors and their windowing. 33 crates in its
+                       #   dependency tree, so it tests in seconds.
+  harmonicon-audio/    # Microphone capture (cpal) and the ECS-facing wrapper
+                       #   around harmonicon-dsp, plus offline waveform analysis
   harmonicon-platform/ # Asset discovery, Fluent localization, persisted settings,
                        #   visual theme, the narrow-window breakpoint
   harmonicon-song/     # Chart/manifest asset loading, MIDI-backed songs, and the
@@ -180,9 +213,19 @@ crates/
   harmonicon-menu/     # Page state machine, routing, one file per screen
   harmonicon-bench/    # Developer tooling: pitch-detection benchmark + synthetic
                        #   dataset generator (not shipped game code)
+  harmonicon-android/  # `android_main` only — the one crate *above* the root, and
+                       #   the only cdylib. Its dependency on the game is
+                       #   target-gated, so off Android it builds empty.
 
-src/                   # The binary only
-  main.rs              # Entry point: registers every plugin, mic capture, pitch loop
+src/                   # Binaries + the composition root
+  lib.rs               # Composition root: `run()` registers every plugin. A library
+                       #   because Android never calls `main` — it loads a shared
+                       #   object and calls `android_main`, so both entry points are
+                       #   thin wrappers around one shared `run()`.
+  main.rs              # Desktop entry point (three lines: calls `run()`)
+  dev_capture.rs       # `--features dev` only: Bevy Remote Protocol server, so a
+                       #   running game can be inspected, screenshotted and recorded
+                       #   from a shell (docs/remote_control.md)
   bin/
     hole_editor.rs     # 3D harmonica hole-layout editor
     note_editor.rs     # Visual editor for 2D note layouts

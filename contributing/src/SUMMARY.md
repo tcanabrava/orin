@@ -15,6 +15,7 @@
 - [Localization and Theming](localization-and-theming.md)
 - [Persistence](persistence.md)
 - [Native vs. WebAssembly](cross-platform-wasm.md)
+- [Android](android.md)
 - [Module Boundaries and Dependency Rules](module-dependency-rules.md)
 - [Testing Strategy](testing-strategy.md)
 - [Glossary](glossary.md)
