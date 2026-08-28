@@ -48,6 +48,14 @@ plain jar that just needs a JRE — download it from
 plantuml-cmd = "java -jar /path/to/plantuml.jar"
 ```
 
+**Graphviz is required too, and installing PlantUML may not bring it.**
+PlantUML lays out everything except sequence diagrams by shelling out to
+`dot`; Debian/Ubuntu make graphviz a *Recommends* of `plantuml`, so
+`--no-install-recommends` (or a minimal container) leaves you without it.
+The symptom is not an error — PlantUML exits 0 and renders an image whose
+text reads "Cannot find Graphviz", citing a hardcoded `/opt/local/bin/dot`
+that has nothing to do with your machine. `dot -V` is the quick check.
+
 Note the **kebab-case** key. `mdbook-plantuml`'s config derives
 `rename_all = "kebab-case"` with `#[serde(default)]`, so a snake_case
 `plantuml_cmd` isn't rejected — it's silently ignored, and you get the

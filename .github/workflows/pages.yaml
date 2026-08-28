@@ -66,15 +66,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 17 of the architecture chapters embed ```plantuml blocks, and
-      # mdbook-plantuml shells out to render them. The Debian package pulls a
-      # JRE with it, which is the actual requirement — mdbook-plantuml probes
+      # 16 of the architecture chapters embed ```plantuml blocks (34 diagrams),
+      # and mdbook-plantuml shells out to render them. The Debian package pulls
+      # a JRE with it, which is the actual requirement — mdbook-plantuml probes
       # for `plantuml` first and `java -jar plantuml.jar` second, and aborts
       # the whole build (not just the diagram) when it finds neither.
+      #
+      # **graphviz is not optional, and is not a dependency of `plantuml`.**
+      # PlantUML lays out everything except sequence diagrams by shelling out
+      # to Graphviz's `dot`, but Debian/Ubuntu list graphviz as a *Recommends*
+      # — so `--no-install-recommends` drops it and every non-sequence diagram
+      # fails. It fails in a uniquely unhelpful way, too: PlantUML exits 0 and
+      # emits a *rendered SVG* reading "Cannot find Graphviz", naming a
+      # hardcoded `/opt/local/bin/dot` (a MacPorts path) that has nothing to do
+      # with the machine. Without `fail-on-error` in book.toml, that image is
+      # what would have been published.
       - name: Install PlantUML
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends plantuml
+          sudo apt-get install -y --no-install-recommends plantuml graphviz
+          # Fail loudly here rather than 30 chapters later: PlantUML reports a
+          # missing `dot` as a rendered image, not a non-zero exit.
+          dot -V
 
       # Both are `cargo install` builds from source; caching the resulting
       # binaries turns a ~2-minute compile into a download. Keyed on the
