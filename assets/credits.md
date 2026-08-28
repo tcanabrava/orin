@@ -38,8 +38,10 @@ by John Lee Hooker
 
 ### FONTS
 
-Ubuntu Sans Mono
-Noto Sans Symbols
+FreeSans — GNU FreeFont
+Bravura — Steinberg (SIL Open Font License)
+Noto Emoji, Noto Sans Symbols 2 — Google (SIL Open Font License)
+DejaVu Sans — DejaVu Fonts (Bitstream Vera License)
 
 ---
 
