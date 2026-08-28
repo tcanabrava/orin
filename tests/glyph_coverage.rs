@@ -46,21 +46,26 @@ fn repo_root() -> PathBuf {
 }
 
 /// Every codepoint a font's `cmap` can actually render.
+///
+/// Read with `skrifa` (Google's fontations) rather than `ttf-parser`, whose
+/// author has declared it unmaintained (RUSTSEC-2026-0192). `ttf-parser` is
+/// still in the lock — Bevy reaches it through `winit`/`ab_glyph` — but a
+/// *transitive* dependency is Bevy's to move off, whereas naming it here made
+/// it one of ours, which is exactly the case `deny.toml` treats as
+/// actionable. `skrifa` was already in the tree via Bevy's text stack, so
+/// this costs no extra compile.
+///
+/// `Charmap::mappings` resolves the best Unicode subtable itself, so unlike
+/// the raw-subtable walk this replaces, there's no need to filter out old
+/// Mac encodings that would report codepoints in a different space entirely.
 fn cmap_codepoints(path: &Path) -> BTreeSet<u32> {
     let data = std::fs::read(path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-    let face = ttf_parser::Face::parse(&data, 0)
-        .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
-    let mut out = BTreeSet::new();
-    for subtable in face.tables().cmap.expect("font has no cmap").subtables {
-        // Non-unicode subtables (old Mac encodings) would report codepoints
-        // in a different space entirely, so they'd be actively misleading.
-        if subtable.is_unicode() {
-            subtable.codepoints(|cp| {
-                out.insert(cp);
-            });
-        }
-    }
-    out
+    let font =
+        skrifa::FontRef::new(&data).unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+    skrifa::MetadataProvider::charmap(&font)
+        .mappings()
+        .map(|(codepoint, _glyph)| codepoint)
+        .collect()
 }
 
 /// The union of everything the bundled fonts can draw: `FreeSans` plus the

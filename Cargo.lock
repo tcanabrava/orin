@@ -3355,9 +3355,9 @@ dependencies = [
  "rustfft",
  "serde",
  "serde_json",
+ "skrifa 0.44.0",
  "sys-locale",
  "thiserror 2.0.20",
- "ttf-parser",
  "unic-langid",
  "winit",
 ]

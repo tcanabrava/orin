@@ -191,8 +191,16 @@ getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 [dev-dependencies]
 # Reads the bundled fonts' cmaps in tests/glyph_coverage.rs, so "does this
 # character actually render" is decided by the font binary rather than by a
-# hand-maintained list. Already in the lock via bevy's text stack.
-ttf-parser = "0.25"
+# hand-maintained list. Already in the lock via bevy's text stack, so it adds
+# nothing to build.
+#
+# Deliberately not `ttf-parser`, which does the same job and was used here
+# first: its author has declared it unmaintained (RUSTSEC-2026-0192). It
+# remains in the lock regardless — Bevy reaches it via winit/ab_glyph — but
+# `deny.toml` sets `unmaintained = "workspace"`, which exempts a transitive
+# crate and flags one this workspace names directly. Naming it here turned
+# Bevy's problem into ours and failed `cargo deny`.
+skrifa = "0.44"
 
 # Switches on the shared MIDI test constructors; see harmonicon-core's Cargo.toml.
 harmonicon-core = { path = "crates/harmonicon-core", features = ["test-support"] }
