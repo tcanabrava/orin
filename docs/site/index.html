@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+  The published site's front door.
+
+  GitHub Pages serves one site per repository, so the two mdBooks can't each
+  be a site of their own — they're built into /guide/ and /architecture/ and
+  this page is what sits above them. It is deliberately plain, dependency-free
+  HTML rather than a third mdBook: it has two links on it, and pulling in
+  another book (with its own build, its own SUMMARY.md and its own theme) to
+  hold them would cost more than it explains.
+
+  Colours are lifted from mdBook's "navy" theme, which is what both books set
+  as their default, so moving between this page and either book doesn't flash.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harmonicon — Documentation</title>
+<style>
+  :root { --bg: #161923; --fg: #bcbdd0; --dim: #797b8c; --card: #1e222f;
+          --edge: #2b2f43; --link: #2b79a2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 3rem 1.5rem; background: var(--bg); color: var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         line-height: 1.6; }
+  main { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: 2.6rem; margin: 0 0 .3rem; font-weight: 600; color: #fff; }
+  .tagline { color: var(--dim); margin: 0 0 2.5rem; font-size: 1.05rem; }
+  a.card { display: block; text-decoration: none; color: inherit;
+           background: var(--card); border: 1px solid var(--edge);
+           border-radius: 8px; padding: 1.4rem 1.6rem; margin-bottom: 1rem;
+           transition: border-color .15s ease, transform .15s ease; }
+  a.card:hover { border-color: var(--link); transform: translateY(-2px); }
+  a.card h2 { margin: 0 0 .35rem; font-size: 1.3rem; color: #fff; font-weight: 600; }
+  a.card p { margin: 0; color: var(--dim); font-size: .97rem; }
+  footer { margin-top: 2.5rem; color: var(--dim); font-size: .9rem; }
+  footer a { color: var(--link); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Harmonicon</h1>
+  <p class="tagline">A rhythm game for diatonic and chromatic harmonica — you
+  play a real harmonica into the microphone, and it scores you against a
+  scrolling chart.</p>
+
+  <a class="card" href="guide/">
+    <h2>Player's Guide &rarr;</h2>
+    <p>Getting set up, calibrating your microphone, the two play modes,
+    lessons, Jam Session, and the Song Editor.</p>
+  </a>
+
+  <a class="card" href="architecture/">
+    <h2>System Architecture &rarr;</h2>
+    <p>For contributors: how the subsystems fit together — the audio input
+    pipeline, the gameplay clock, scoring, the chart format, and the crate
+    boundaries that keep them apart.</p>
+  </a>
+
+  <footer>
+    Source on <a href="https://github.com/tcanabrava/harmonicon">GitHub</a>.
+  </footer>
+</main>
+</body>
+</html>

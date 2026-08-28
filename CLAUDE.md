@@ -24,6 +24,19 @@ than accumulating history (git log/commit messages are the historical record):
   re-take one the same way when a screen changes, and keep the filename
   stable so the `![...](images/foo.png)` references throughout
   `docs/book/src/*.md` don't need touching.
+- `contributing/` — a *second* mdBook, the contributor architecture guide.
+  17 of its chapters embed ```plantuml blocks, so building it needs a
+  `plantuml` on PATH **and a JRE** — without either, `mdbook build` aborts
+  the whole book rather than skipping the diagram.
+
+Both books publish to one GitHub Pages site
+(`.github/workflows/pages.yaml`): `/guide/` is `docs/book`,
+`/architecture/` is `contributing`, and `docs/site/index.html` is the
+front door above them. Pages serves one site per repository, which is why
+they're subdirectories rather than two deployments. The workflow builds on
+every PR touching either book and deploys only on `main`; the URL prefix
+is derived from the repo name at build time, so renaming the repository
+doesn't break it.
 
 ## Commands
 

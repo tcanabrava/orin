@@ -1,0 +1,142 @@
+name: Docs site
+
+# Publishes both mdBooks to GitHub Pages as one site:
+#
+#   /               docs/site/index.html  — the front door
+#   /guide/         docs/book/            — the player's guide
+#   /architecture/  contributing/         — the contributor architecture book
+#
+# Pages serves one site per repository, which is why the two books are
+# subdirectories of a shared artifact rather than two deployments.
+#
+# Separate from ci.yaml on purpose: deploying needs `pages: write` and
+# `id-token: write`, and granting those to the workflow that runs the test
+# suite would widen its token for no reason.
+#
+# One-time setup, in the repository's own settings (nothing here can do it):
+# Settings -> Pages -> Build and deployment -> Source: **GitHub Actions**.
+# Until that's switched over, `deploy-pages` fails with a "Pages site not
+# found"-style error even though the build succeeded.
+
+on:
+  # The two path lists are duplicated rather than shared through a YAML
+  # anchor: GitHub Actions' workflow parser doesn't support anchors/aliases,
+  # and silently ignoring one would mean this never triggers.
+  push:
+    branches: [main]
+    paths:
+      - 'docs/book/**'
+      - 'docs/site/**'
+      - 'contributing/**'
+      - '.github/workflows/pages.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/book/**'
+      - 'docs/site/**'
+      - 'contributing/**'
+      - '.github/workflows/pages.yaml'
+  # So the site can be republished without a doc change — after flipping the
+  # Pages source over, or to recover a bad deploy.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time, and never cancel one midway: a half-applied
+# deploy leaves the live site inconsistent, which a cancelled test run
+# doesn't.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Pinned rather than floating: mdBook's generated HTML changes between
+  # minor versions, and a docs site is not worth debugging on a morning when
+  # nothing in the repository changed.
+  MDBOOK_VERSION: '0.5.4'
+  MDBOOK_PLANTUML_VERSION: '2.0.0'
+
+jobs:
+  build:
+    name: Build both books
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 17 of the architecture chapters embed ```plantuml blocks, and
+      # mdbook-plantuml shells out to render them. The Debian package pulls a
+      # JRE with it, which is the actual requirement — mdbook-plantuml probes
+      # for `plantuml` first and `java -jar plantuml.jar` second, and aborts
+      # the whole build (not just the diagram) when it finds neither.
+      - name: Install PlantUML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends plantuml
+
+      # Both are `cargo install` builds from source; caching the resulting
+      # binaries turns a ~2-minute compile into a download. Keyed on the
+      # versions above, so a bump busts it on its own.
+      - name: Cache mdBook binaries
+        id: mdbook-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/mdbook
+            ~/.cargo/bin/mdbook-plantuml
+          key: mdbook-${{ runner.os }}-${{ env.MDBOOK_VERSION }}-${{ env.MDBOOK_PLANTUML_VERSION }}
+
+      - name: Install mdBook
+        if: steps.mdbook-cache.outputs.cache-hit != 'true'
+        run: |
+          cargo install --locked "mdbook@${MDBOOK_VERSION}"
+          cargo install --locked "mdbook-plantuml@${MDBOOK_PLANTUML_VERSION}"
+
+      # site-url is what mdBook puts in front of the absolute links on its
+      # generated 404 page. Without it a mistyped URL under /guide/ renders a
+      # 404 whose every link points at the domain root, i.e. off the site.
+      # Derived from the repository name rather than hardcoded, so renaming
+      # the repo doesn't quietly break it.
+      - name: Build the player's guide
+        env:
+          MDBOOK_OUTPUT__HTML__SITE_URL: /${{ github.event.repository.name }}/guide/
+        run: mdbook build docs/book
+
+      - name: Build the architecture book
+        env:
+          MDBOOK_OUTPUT__HTML__SITE_URL: /${{ github.event.repository.name }}/architecture/
+        run: mdbook build contributing
+
+      - name: Assemble the site
+        run: |
+          mkdir -p site
+          cp docs/site/index.html site/
+          cp -r docs/book/book site/guide
+          cp -r contributing/book site/architecture
+          test -f site/guide/index.html
+          test -f site/architecture/index.html
+
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    # Pull requests build (so a broken book fails review) but never publish.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
