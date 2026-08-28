@@ -19,11 +19,11 @@ than accumulating history (git log/commit messages are the historical record):
   update it when changing gameplay/timing behaviour
 - `docs/book/` — player-facing mdBook user guide (`mdbook build`/`mdbook
   serve` from that directory); update it when a user-visible feature
-  changes, not just internal ones. `docs/book/src/images/*.png` are
-  placeholder screenshots (script-generated captioned frames) pending real
-  captures — keep the filenames stable when swapping them in so the
-  `![...](images/foo.png)` references throughout `docs/book/src/*.md`
-  don't need touching.
+  changes, not just internal ones. `docs/book/src/images/*.png` are real
+  captures of a running game, taken over BRP (`docs/remote_control.md`) —
+  re-take one the same way when a screen changes, and keep the filename
+  stable so the `![...](images/foo.png)` references throughout
+  `docs/book/src/*.md` don't need touching.
 
 ## Commands
 
@@ -166,15 +166,27 @@ Manual testing needs a mic, audio out, and a display.
   (`target/video/`) from a shell with no rebuild — `docs/remote_control.md`
   has the verified request shapes. Never shipped: it is unauthenticated and
   can mutate arbitrary world state, which is why it rides on the
-  compile-time `dev` feature rather than a runtime flag. Three things that
-  bite:
+  compile-time `dev` feature rather than a runtime flag. Every image in
+  `docs/book/src/images/` was captured this way. Four things that bite:
   - **Only reflected, registered types are reachable** (BRP goes through
     `AppTypeRegistry`). Bevy's own components cover the whole UI tree; this
     codebase's own types need `#[derive(Reflect)]` + `register_type` each,
-    and today only `dev_capture::VideoCapture` has it.
+    which today means `dev_capture::VideoCapture`,
+    `NextState<AppState>`/`NextState<MenuPage>`, and
+    `bevy_ui_widgets::Activate`.
+  - **`NextState` only reaches screens needing no prior selection.** Play
+    2D/3D, Jam Session and Results each want a `SelectedSong` first, and
+    that holds a `Handle<SongManifest>` — not expressible as a JSON value.
+    Those are reached by *clicking*: `world.trigger_event` on `Activate`
+    is a remote click on any button, since every click handler here is an
+    `On<Activate>` on a real `bevy_ui_widgets::Button` (the rule in the
+    table below is what makes this work at all). `dev_capture` registers
+    `Activate` for exactly this — `bevy_ui_widgets` derives `Reflect` on
+    it but never registers it.
   - **Type paths are exact**: UI text is `bevy_ui::widget::text::Text`, not
     `bevy_text::text::Text` — the latter exists, is registered, and matches
-    nothing on a UI node.
+    nothing on a UI node. Likewise the state resource is
+    `bevy_state::state::resources::NextState<T>`, not `…::states::`.
   - **BRP cannot see rendering.** It reports the string, so it would never
     have caught the five tofu glyphs a screenshot did. State via BRP,
     appearance via the PNG.
