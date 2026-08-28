@@ -42,8 +42,12 @@ pub struct TrackMuteCell(usize);
 #[derive(Component, Clone, Copy)]
 pub struct TrackMuteIcon(usize);
 
-const SOUND_ICON: &str = "\u{1F50A}"; // 🔊
-const MUTED_ICON: &str = "\u{1F507}"; // 🔇
+const SOUND_ICON: &str = "\u{1F50A}"; // 🔊 — subsetted into fallback_emoji.ttf
+// ⊘ rather than the matching 🔇: that codepoint is in none of the bundled
+// fonts, so it drew as a box. Whoever subsetted the speaker glyph took the
+// "on" state and missed the "off" one. The muted button also turns red
+// (MUTED_BG), so the state reads clearly despite the mixed symbol families.
+const MUTED_ICON: &str = "\u{2298}";
 const MUTED_BG: Color = Color::srgb(0.30, 0.14, 0.14);
 const UNMUTED_BG: Color = Color::srgb(0.16, 0.30, 0.18);
 

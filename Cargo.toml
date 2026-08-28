@@ -189,5 +189,10 @@ getrandom = { version = "0.4", features = ["wasm_js"] }
 getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 
 [dev-dependencies]
+# Reads the bundled fonts' cmaps in tests/glyph_coverage.rs, so "does this
+# character actually render" is decided by the font binary rather than by a
+# hand-maintained list. Already in the lock via bevy's text stack.
+ttf-parser = "0.25"
+
 # Switches on the shared MIDI test constructors; see harmonicon-core's Cargo.toml.
 harmonicon-core = { path = "crates/harmonicon-core", features = ["test-support"] }

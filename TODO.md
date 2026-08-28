@@ -19,19 +19,6 @@ historical record; see `CLAUDE.md`).
   has no multi-touch; raw `sendevent` never reaches the app). See
   `docs/android.md`.
 
-## Tooling
-
-- [ ] **A glyph missing from every bundled font fails silently.** Five
-  locale strings shipped tofu boxes in all three languages until a
-  screenshot caught one. `font_fallback.rs` lists what the subsetted
-  fallbacks cover, but nothing checks that list against the fonts, or
-  against the characters actually used. A test parsing the bundled fonts'
-  cmaps and asserting every non-ASCII character in `assets/locales/**` and
-  in source-level glyph literals resolves would close it — `read-fonts` is
-  already in the tree via Bevy's text stack, so no new dependency. This is
-  exactly the "add a rule, add a check" rule in `CLAUDE.md`, currently
-  unenforced.
-
 ## Content
 
 - [ ] **Only one bundled example artist** (`assets/songs/Example Artist`,

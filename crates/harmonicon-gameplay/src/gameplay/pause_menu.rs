@@ -123,7 +123,7 @@ fn spawn_practice_speed_row(
         .id();
     commands.entity(row).with_children(|r| {
         r.spawn((
-            Text::new("\u{1F422}"),
+            Text::new("\u{00BD}"), // ½ — practice speed; see tests/glyph_coverage.rs
             TextFont {
                 font_size: FontSize::Px(15.0),
                 ..default()
