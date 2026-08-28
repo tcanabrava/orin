@@ -22,6 +22,13 @@
 //!   video file is left to `ffmpeg` outside the game — see
 //!   `docs/remote_control.md`.
 //!
+//! Navigation is the other half of this, and mostly needs no code here:
+//! `NextState<AppState>`/`NextState<MenuPage>` are reflected, so
+//! `world.mutate_resources` reaches any screen that needs no prior
+//! selection. The ones that *do* need one — a song picked, a jam
+//! generated, the guided tour started — are reached by clicking their
+//! button, which is why this plugin registers `Activate`.
+//!
 //! Never shipped: BRP is an unauthenticated RPC server that can read and
 //! mutate arbitrary world state, which is fine bound to localhost on a
 //! developer's machine and nowhere else. Gated on `--features dev`, which
@@ -82,6 +89,20 @@ impl Plugin for DevCapturePlugin {
             // resource at all — BRP reaches everything through
             // `AppTypeRegistry`.
             .register_type::<VideoCapture>()
+            // `Activate` is what every button in this codebase listens for
+            // (see the click-handler rule in `CLAUDE.md`), so registering it
+            // makes `world.trigger_event` a remote *click* on any button —
+            // which reaches the screens no amount of `NextState` juggling
+            // can, because they need a selection first: picking a song,
+            // starting a generated jam, starting the guided tour.
+            //
+            // It carries its own target entity, so the entity to click is
+            // part of the payload rather than a separate parameter.
+            // `bevy_ui_widgets` derives `Reflect` on it but never registers
+            // it, so this is the only thing making it reachable — and it is
+            // deliberately here, in the dev-only module, rather than
+            // alongside the widget plumbing.
+            .register_type::<bevy::ui_widgets::Activate>()
             .add_observer(save_capture)
             .add_systems(Update, drive_video_capture);
         info!("Bevy Remote Protocol listening on 127.0.0.1:15702 (--features dev)");

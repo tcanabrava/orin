@@ -102,14 +102,64 @@ synthesising input — useful precisely where synthetic input is unreliable
 
 BRP reaches everything through `AppTypeRegistry`. Bevy's own components are
 registered, which covers the whole UI tree, text, transforms and windows.
-**This codebase's own types are not** — `EditorToolbar`, `MicStatus`,
-`Scroll`, `AppState` and friends are plain `#[derive(Component)]`/`Resource`,
-so `world.list_resources` shows exactly one Harmonicon type today:
-`VideoCapture`, which derives `Reflect` and calls `register_type` precisely
-so it can be driven from outside.
+**Most of this codebase's own types are not** — `EditorToolbar`,
+`MicStatus`, `Scroll` and friends are plain `#[derive(Component)]`/
+`Resource`, so `world.list_resources` shows only the handful that derive
+`Reflect` and call `register_type` precisely so they can be driven from
+outside: `VideoCapture`, and `NextState<AppState>`/`NextState<MenuPage>`.
 
 Add `#[derive(Reflect)]` + `app.register_type::<T>()` per type as the need
 arises, rather than blanket-deriving it.
+
+## Navigating: two ways, and when each one works
+
+Screens that need no prior selection are one `NextState` write away:
+
+```bash
+brp '{"jsonrpc":"2.0","id":7,"method":"world.mutate_resources","params":
+     {"resource":"bevy_state::state::resources::NextState<harmonicon_menu::menu::routing::MenuPage>",
+      "path":"","value":{"Pending":"Options"}}}'
+```
+
+Note the exact path: `bevy_state::state::resources::NextState`, not
+`…::states::NextState`. Swap `MenuPage` for
+`harmonicon_app::app::AppState` (`"Calibration"`, `"SongEditor2"`,
+`"BendingTrainer"`, …) for the screens outside the menu hierarchy.
+
+**That is as far as state alone gets you.** Play 2D/3D, Jam Session and
+Results all need a `SelectedSong` first, which holds a `Handle<SongManifest>`
+— not something a JSON value can express. So the other way is to *click the
+button*, which is why `dev_capture` registers `bevy_ui_widgets::Activate`:
+
+```bash
+brp '{"jsonrpc":"2.0","id":8,"method":"world.trigger_event","params":
+     {"event":"bevy_ui_widgets::Activate","value":{"entity":4294966678}}}'
+```
+
+`Activate` carries its own target, so the entity goes in the payload rather
+than in a separate parameter. Since every click handler in this codebase is
+an `On<Activate>` on a real `bevy_ui_widgets::Button` (see `CLAUDE.md`), one
+trigger reaches any of them.
+
+Finding the entity is the fiddly part. A label lives on a `Text` node that
+may sit **several levels below** the entity carrying `Button` —
+`dialogs/button.rs` wraps its content in a shell — so resolve it by walking
+`bevy_ecs::hierarchy::ChildOf` upward until you hit an entity in the
+`Button` set, rather than assuming the text's immediate parent is the
+button.
+
+One trap worth knowing: **query the text nodes and the hierarchy in as few
+round trips as you can.** Menu pages despawn and respawn their whole subtree
+on navigation, so an entity id read in one request can be gone by the next,
+which looks exactly like "this button doesn't exist".
+
+## What it's already used for
+
+Every image in `docs/book/src/images/` is a real capture taken this way —
+nine of the fifteen by setting `NextState` alone, the rest (gameplay, the
+jam grid, the results screen, the tour overlay, the microphone dropdown) by
+clicking through to them. If a screen changes, re-take that one PNG under
+the same filename; the `![...](images/foo.png)` references don't move.
 
 ## What this does *not* give you
 
