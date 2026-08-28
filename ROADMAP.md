@@ -9,8 +9,72 @@ implementation notes live in `PLAN.md`.
 
 **0.2 "Trustworthy" and 0.3 "Practice" are fully shipped** (see `PLAN.md`'s
 Shipped section). No release tags have been cut for either yet
-(`Cargo.toml` still says `0.1.0`; the newest tag is `v0.0.1.1`); cut one
-per phase once its exit criteria pass.
+(`Cargo.toml` still says `0.1.0`; the newest tag is `v0.0.9.1`, from a
+release line that never tracked these phase numbers); reconciling the two
+is part of 1.0 below.
+
+## 1.0 — "Ready for strangers" (desktop)
+
+**A readiness gate, not the end of the roadmap.** 1.0 does *not* require
+0.5–0.7: those milestones are *more*, and 1.0 is about what a first-time
+player hits before any of it matters.
+
+Definition: **a stranger with a C harmonica installs it, gets their
+microphone working, and learns something, without hitting a dead end.**
+
+Scope is **desktop only** — Linux, Windows, macOS. Android and wasm are
+deliberately post-1.0 (see 0.7+): Android's mic has never been verified on
+real hardware, and for this game mic capture *is* the product, so shipping
+1.0 on an unverified input path risks the one first impression that can't
+be retaken. wasm has no mic at all until cpal gains Web Audio input.
+
+### 1.0-rc1 — the first ten minutes
+
+There is **no first-run experience**: no `first_run`/`has_seen` flag exists
+anywhere in the tree. Calibration is reachable only from inside Options, and
+the guided tour only from Help / About. A new player is shown four buttons,
+none of which is "set up your microphone", by a game that does nothing
+useful without one.
+
+- First-launch detection (absence of `profile.json`, via
+  `harmonicon_platform::paths`) leading into calibrate → guided tour → a
+  beginner lesson, every step skippable and re-runnable.
+- Surface mic trouble where a confused player is actually looking.
+  `MicStatus::{Failed, AwaitingPermission}` and its Options banner already
+  exist; nothing shows them on the screens where the silence is noticed.
+
+### 1.0-rc2 — don't lose the player's work
+
+92 `.unwrap()` calls sit outside test modules, **46 of them in
+`harmonicon-editor`**, where a panic costs unsaved authoring work.
+
+- Triage those 46 first: anything reachable from a user action becomes a
+  recoverable error rather than a panic.
+- Then `harmonicon-core`'s 24, which is chart parsing — reached by any
+  hand-edited, third-party or `~/Harmonicon` drop-in chart.
+- A corrupt chart, a mic device that disappears mid-session, and an
+  unreadable theme should each degrade, not abort.
+
+### 1.0-rc3 — content that matches the theme
+
+**No bundled song is blues**, though blues/jazz is the stated theme of the
+project. The 11 shipped charts are 3 demos plus public-domain classical and
+traditional melodies (Bach, Handel, Beethoven, Greensleeves, …). A blues
+starter pack across the four difficulties is the gap.
+
+Authoring it is rights-sensitive and needs real musical judgment, so it
+belongs to a person — `TODO.md` already says as much. What *is* automatable
+is the supporting work: chart validation, difficulty calibration against the
+existing scoring primitives, and Record-mode tooling.
+
+### 1.0 — release engineering
+
+- **Reconcile the version.** `Cargo.toml` has said `0.1.0` through 0.2, 0.3
+  and most of 0.4; the tag line ran to `v0.0.9.1` independently.
+- Flathub submission — the flatpak workflow already builds.
+- Real signing keys in place of the debug ones.
+- Clear the four line-budget allowlist entries (`gameplay_2d`,
+  `gameplay_3d`, `bending_trainer`, `options`). Cleanup, not a gate.
 
 ## 0.4 — "Blues school" (curriculum & jam) — in progress
 

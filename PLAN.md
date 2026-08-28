@@ -208,10 +208,39 @@ not-gotten-to:
    without a build/test/clippy cycle per file, per explicit instruction —
    a final sanity build was still run at the end of the whole pass.
 
-## Next up (mobile + tooling)
+## Road to 1.0 (desktop)
+
+`ROADMAP.md`'s 1.0 section defines the bar and why the scope is desktop
+only. Execution order, most valuable first:
+
+1. **First-run flow** (rc1). Nothing exists today — grep for `first_run`/
+   `has_seen` and the tree comes back empty. Build it as a state the app
+   enters when `profile.json` is absent, not as a flag each screen checks;
+   `AppState` already carries a `Startup` variant that currently just falls
+   through to `Menu`. Steps chain calibrate → tour → a beginner lesson,
+   each skippable, and the whole thing re-runnable from Help / About so
+   it's testable without deleting a profile.
+2. **Mic trouble where it's noticed** (rc1). `MicStatus::{Failed,
+   AwaitingPermission}` and the Options banner already exist; Play 2D/3D
+   and Jam Session don't surface either, so a dead mic reads as "the game
+   isn't scoring me".
+3. **Unwrap triage** (rc2), `harmonicon-editor`'s 46 first — a panic there
+   costs unsaved authoring. Then `harmonicon-core`'s 24 on the chart-parse
+   path, which any drop-in chart reaches. Not a blanket sweep: the target
+   is *user-reachable* panics, and an `unwrap` on an invariant the type
+   system can't express is fine where it's genuinely unreachable.
+4. **Blues starter pack** (rc3) — **not to be authored unsupervised**, same
+   rights/judgment reasoning as `TODO.md`'s content item. The automatable
+   half is validation and difficulty calibration.
+5. **Release engineering**: version reconciliation, Flathub, signing keys,
+   and the four line-budget splits.
+
+## Post-1.0 (mobile + tooling)
 
 Ordered by value, not effort. All three came out of actually running the
-Android build; see `TODO.md` for the full statements.
+Android build; see `TODO.md` for the full statements. Deliberately after
+1.0 — `ROADMAP.md` explains why an unverified mic path shouldn't carry a
+1.0 label.
 
 1. **Height-aware `CompactLayout`.** `is_compact` keys on width alone, so
    nothing adapts to a short screen. The Song Editor has bespoke
