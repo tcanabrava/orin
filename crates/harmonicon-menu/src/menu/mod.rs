@@ -26,6 +26,11 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
             .add_sub_state::<MenuPage>()
+            // So the Bevy Remote Protocol can move between screens from
+            // outside — see AppState's doc comment. `init_state` registers
+            // the state itself; `NextState` is what you actually write to.
+            .register_type::<bevy::state::state::NextState<AppState>>()
+            .register_type::<bevy::state::state::NextState<MenuPage>>()
             .init_resource::<SelectedArtist>()
             .init_resource::<pages::lessons::SelectedLesson>()
             .init_resource::<pages::lessons::SelectedUnitIx>()

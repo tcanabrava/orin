@@ -16,7 +16,12 @@ use harmonicon_song::song::SongManifest;
 
 // ── App-level states ──────────────────────────────────────────────────────────
 
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+/// `Reflect` so the Bevy Remote Protocol can *drive* the app from outside —
+/// `world.mutate_resources` on `NextState<AppState>` moves between screens
+/// with no synthetic input at all. That's what captures the user guide's
+/// screenshots (`docs/remote_control.md`); BRP reaches nothing that isn't
+/// reflected and registered.
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 pub enum AppState {
     #[default]
     Startup,

@@ -16,7 +16,8 @@ use super::pages::tutorial;
 
 // ── Menu sub-states (only active while AppState == Menu) ──────────────────────
 
-#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
+/// `Reflect` for the same reason as [`AppState`] — see its doc comment.
+#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 #[source(AppState = AppState::Menu)]
 pub(crate) enum MenuPage {
     #[default]

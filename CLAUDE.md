@@ -81,7 +81,8 @@ Manual testing needs a mic, audio out, and a display.
   | Crate | Holds | Bevy? |
   |---|---|---|
   | `harmonicon-core` | music theory, chart types, scoring math, pitch/MIDI conversion, the harmonica synth, WAV, grid snapping | **no** |
-  | `harmonicon-audio` | cpal capture, FFT pitch detection, waveform analysis | yes |
+  | `harmonicon-dsp` | the five pitch detectors (FFT/YIN/pYIN/MPM/NMF) and their windowing | **no** |
+  | `harmonicon-audio` | cpal capture, the ECS wrapper over `harmonicon-dsp`, waveform analysis | yes |
   | `harmonicon-platform` | asset discovery, localization, settings, theme, responsive | yes |
   | `harmonicon-song` | chart/manifest loading, MIDI-backed songs, lessons | yes |
   | `harmonicon-app` | state machine, routing flags, profile | yes |
@@ -392,6 +393,7 @@ because prose is not a check.
 | Click handlers are `On<Activate>`, never `On<Pointer<Click>>` | `Pointer<Click>` is the obvious Bevy reflex, and compiles fine — it just skips keyboard users | `build.rs` (`pointer_click_violations`); a genuinely non-button surface opts out with a `not-a-widget-button:` comment |
 | `WorldAssetRoot`, not `SceneRoot`, for GLB/scene assets | `SceneRoot` is what Bevy examples show, and it compiles — it just renders nothing | `build.rs` (`scene_root_violations`) |
 | Vibrato integrates frequency over time, never `freq × t` | the naive form looks right and drifts pitch upward | `synth::vibrato_phase_mod` + its boundedness test |
+| Every character drawn must be in a bundled font | picking a nice-looking glyph "just works" in an editor and silently draws a box in the game | `tests/glyph_coverage.rs` (reads the fonts' cmaps, not the fallback lists) |
 
 **If you add a rule to this table, add a check with it.** Anything here
 without one is a known liability, not a settled convention — every rule
