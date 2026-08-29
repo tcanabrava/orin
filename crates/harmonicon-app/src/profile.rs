@@ -173,6 +173,34 @@ fn profile_path() -> Option<PathBuf> {
     harmonicon_platform::paths::config_file("profile.json")
 }
 
+/// Whether this looks like the player's very first launch — no
+/// `profile.json` on disk yet. Consumed once by `menu::routing::
+/// route_menu_entry`, which lands on the welcome page instead of the main
+/// menu when it's set.
+///
+/// A resource rather than a flag each screen re-checks, because the answer
+/// must be sampled *before* anything writes a profile: the welcome flow
+/// itself ends by saving one, so a later `Path::exists` would report `false`
+/// and the flow would appear never to have run.
+#[derive(Resource, Default, Debug)]
+pub struct FirstRun(pub bool);
+
+/// True only when a profile *could* be written and none is there yet.
+///
+/// The "could be written" half matters: with no writable config directory
+/// (`config_dir()` is `None`), finishing the welcome flow could never be
+/// recorded, so it would greet the player again on every single launch.
+/// Skipping it entirely is the better failure — it's a nicety, and an
+/// unskippable one that repeats forever is worse than none.
+///
+/// Deliberately a file-existence check rather than "is `PlayerProfile`
+/// empty": `load_profile` merges through figment, which silently treats a
+/// missing file the same as an empty one, and a player who has genuinely
+/// played nothing yet shouldn't be re-onboarded on their second launch.
+fn is_first_run() -> bool {
+    profile_path().is_some_and(|path| !path.exists())
+}
+
 fn load_profile() -> PlayerProfile {
     let mut figment = Figment::from(Serialized::defaults(PlayerProfile::default()));
     if let Some(path) = profile_path() {
@@ -230,6 +258,9 @@ pub struct ProfilePlugin;
 impl Plugin for ProfilePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayerProfile>()
+            // Sampled at plugin build, i.e. before `apply_loaded_profile` and
+            // long before anything can save — see `is_first_run`.
+            .insert_resource(FirstRun(is_first_run()))
             .add_systems(Startup, apply_loaded_profile)
             .add_systems(
                 Update,

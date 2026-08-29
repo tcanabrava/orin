@@ -817,3 +817,11 @@ tutorial-body-help-about = Open the documentation, read about Harmonicon, retake
 
 editor-tab-chart = Chart
 editor-tab-details = Details
+# First-launch greeting (menu::pages::welcome) — shown once, when no
+# profile.json exists yet.
+welcome-title = Welcome to Harmonicon
+welcome-body = You play a real harmonica into your microphone, and Harmonicon listens and scores you as the notes scroll by. Nothing works until it can hear you, so start there. A C diatonic harmonica suits almost everything here.
+welcome-setup-mic = Set up your microphone
+welcome-tour = Take the guided tour
+welcome-lessons = Start with a lesson
+welcome-skip = Skip for now

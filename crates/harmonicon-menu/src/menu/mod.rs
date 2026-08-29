@@ -55,6 +55,20 @@ impl Plugin for MenuPlugin {
             .add_systems(OnEnter(AppState::Menu), routing::route_menu_entry)
             // Each page manages its own lifetime.
             .add_systems(OnEnter(MenuPage::Main), pages::main_menu::setup_main_menu)
+            .add_systems(
+                OnEnter(MenuPage::Welcome),
+                pages::welcome::setup_welcome_menu,
+            )
+            // `cleanup_menu` is not optional — every page below registers it,
+            // and without it this page's nodes stay on screen underneath the
+            // next one.
+            .add_systems(
+                OnExit(MenuPage::Welcome),
+                (
+                    scene::cleanup_menu,
+                    pages::welcome::persist_profile_on_welcome_exit,
+                ),
+            )
             .add_systems(OnExit(MenuPage::Main), scene::cleanup_menu)
             .add_systems(OnEnter(MenuPage::Play), pages::play::setup_play_menu)
             .add_systems(OnExit(MenuPage::Play), scene::cleanup_menu)

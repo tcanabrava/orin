@@ -815,3 +815,11 @@ tutorial-body-help-about = Abra a documentação, leia sobre o Harmonicon, refa�
 
 editor-tab-chart = Partitura
 editor-tab-details = Detalhes
+# Saudação de primeira execução (menu::pages::welcome) — exibida uma única
+# vez, quando ainda não existe profile.json.
+welcome-title = Bem-vindo ao Harmonicon
+welcome-body = Você toca uma gaita de verdade no seu microfone, e o Harmonicon escuta e pontua enquanto as notas passam. Nada funciona até que ele consiga te ouvir, então comece por aí. Uma gaita diatônica em Dó serve para quase tudo aqui.
+welcome-setup-mic = Configurar o microfone
+welcome-tour = Fazer o tour guiado
+welcome-lessons = Começar com uma lição
+welcome-skip = Pular por enquanto

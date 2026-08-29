@@ -815,3 +815,11 @@ tutorial-body-help-about = Abre la documentación, lee sobre Harmonicon, repite 
 
 editor-tab-chart = Partitura
 editor-tab-details = Detalles
+# Saludo de primer arranque (menu::pages::welcome) — se muestra una sola
+# vez, cuando aún no existe profile.json.
+welcome-title = Bienvenido a Harmonicon
+welcome-body = Tocas una armónica real en tu micrófono, y Harmonicon escucha y te puntúa mientras las notas avanzan. Nada funciona hasta que pueda oírte, así que empieza por ahí. Una armónica diatónica en Do sirve para casi todo lo de aquí.
+welcome-setup-mic = Configurar el micrófono
+welcome-tour = Hacer el tour guiado
+welcome-lessons = Empezar con una lección
+welcome-skip = Omitir por ahora

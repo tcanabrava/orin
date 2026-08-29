@@ -22,6 +22,11 @@ use super::pages::tutorial;
 pub(crate) enum MenuPage {
     #[default]
     Main,
+    /// First-launch greeting: point the player at microphone setup, the
+    /// guided tour, and a first lesson, instead of dropping them on `Main`
+    /// with no indication that this game needs a working mic. Reached only
+    /// via `harmonicon_app::profile::FirstRun`, never from another page.
+    Welcome,
     Play,
     ArtistList,
     SongList,
@@ -61,6 +66,8 @@ pub(crate) fn handle_menu_escape(
     }
     let target = match page.get() {
         MenuPage::Main => return,
+        // Escape is the keyboard equivalent of the page's own "Skip for now".
+        MenuPage::Welcome => MenuPage::Main,
         MenuPage::Play | MenuPage::Options | MenuPage::HelpAbout => MenuPage::Main,
         MenuPage::Lessons | MenuPage::JamSessionMenu => MenuPage::Play,
         MenuPage::ModeSelect => MenuPage::Play,
@@ -103,6 +110,7 @@ pub(crate) fn route_menu_entry(
     tour: Option<Res<tutorial::TutorialTour>>,
     lesson: Option<Res<harmonicon_song::lessons::LessonContext>>,
     generated_jam: Option<Res<harmonicon_app::app::GeneratedJamSession>>,
+    mut first_run: ResMut<harmonicon_app::profile::FirstRun>,
     mut ret_song: ResMut<ReturnToSongList>,
     mut ret_opts: ResMut<ReturnToOptions>,
     mut ret_play: ResMut<ReturnToPlay>,
@@ -122,6 +130,16 @@ pub(crate) fn route_menu_entry(
         if tutorial::tour_finished(&tour) {
             commands.remove_resource::<tutorial::TutorialTour>();
         }
+        return;
+    }
+    // Ahead of every flag below, but *behind* the tour: the welcome page's
+    // own "Take the tour" button starts a tour and then re-enters `Menu`,
+    // which would otherwise bounce straight back to Welcome and strand the
+    // player. Consumed on the first pass, so returning to the menu later in
+    // the same session lands on `Main` like any other visit.
+    if first_run.0 {
+        first_run.0 = false;
+        next_page.set(MenuPage::Welcome);
         return;
     }
     if lesson.is_some() {
@@ -149,5 +167,92 @@ pub(crate) fn route_menu_entry(
     } else if ret_help.0 {
         ret_help.0 = false;
         next_page.set(MenuPage::HelpAbout);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::state::app::StatesPlugin;
+    use harmonicon_app::app::{ReturnToHelpAbout, ReturnToOptions, ReturnToPlay, ReturnToSongList};
+    use harmonicon_app::profile::FirstRun;
+
+    /// An app with every resource `route_menu_entry` reads, in `Menu` with
+    /// the sub-state active, and the system wired to run once per `update`.
+    fn routing_app(first_run: bool) -> App {
+        let mut app = App::new();
+        app.add_plugins(StatesPlugin)
+            .init_state::<AppState>()
+            .add_sub_state::<MenuPage>()
+            .insert_resource(FirstRun(first_run))
+            .init_resource::<ReturnToSongList>()
+            .init_resource::<ReturnToOptions>()
+            .init_resource::<ReturnToPlay>()
+            .init_resource::<ReturnToHelpAbout>()
+            .add_systems(Update, route_menu_entry);
+        app.world_mut()
+            .resource_mut::<NextState<AppState>>()
+            .set(AppState::Menu);
+        app.update();
+        app
+    }
+
+    fn current_page(app: &App) -> MenuPage {
+        app.world().resource::<State<MenuPage>>().get().clone()
+    }
+
+    #[test]
+    fn a_first_launch_lands_on_the_welcome_page() {
+        let mut app = routing_app(true);
+        app.update();
+        assert_eq!(current_page(&app), MenuPage::Welcome);
+    }
+
+    #[test]
+    fn the_welcome_page_is_shown_only_once_per_session() {
+        let mut app = routing_app(true);
+        app.update();
+        assert_eq!(current_page(&app), MenuPage::Welcome);
+        assert!(
+            !app.world().resource::<FirstRun>().0,
+            "FirstRun must be consumed on the first routing pass, or every \
+             later return to the menu would bounce back to Welcome"
+        );
+
+        // Simulate leaving the menu and coming back, the way quitting a song
+        // does: routing runs again and must now behave like any other visit.
+        app.world_mut()
+            .resource_mut::<NextState<MenuPage>>()
+            .set(MenuPage::Play);
+        app.update();
+        app.update();
+        assert_eq!(current_page(&app), MenuPage::Play);
+    }
+
+    #[test]
+    fn a_returning_player_lands_on_the_main_menu() {
+        let mut app = routing_app(false);
+        app.update();
+        assert_eq!(current_page(&app), MenuPage::Main);
+    }
+
+    #[test]
+    fn escape_leaves_the_welcome_page_for_the_main_menu() {
+        // Mirrors the page's own "Skip for now" button. Welcome deliberately
+        // has no header Back button, so if Escape didn't work it would trap a
+        // keyboard user on the very first screen they ever see.
+        let mut app = routing_app(true);
+        app.add_systems(Update, handle_menu_escape)
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<GameplayMode>();
+        app.update();
+        assert_eq!(current_page(&app), MenuPage::Welcome);
+
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        app.update();
+        app.update();
+        assert_eq!(current_page(&app), MenuPage::Main);
     }
 }
