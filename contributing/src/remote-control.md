@@ -154,6 +154,22 @@ round trips as you can.** Menu pages despawn and respawn their whole subtree
 on navigation, so an entity id read in one request can be gone by the next,
 which looks exactly like "this button doesn't exist".
 
+**A stale entity id can kill the game, not just fail.** `world.trigger_event`
+on a despawned entity is harmless, but `world.insert_components` and
+`world.mutate_components` panic inside `bevy_remote` itself — the panic
+propagates through `process_remote_requests` and takes the process down:
+
+```
+thread 'main' panicked at bevy_remote-0.19.1/src/builtin_methods.rs:1194
+Note that interacting with a despawned entity is the most common cause
+```
+
+Gameplay is worse than menus for this, because a scene can vanish on its own
+schedule: a song that reaches its end tears down every `GameplayRoot` entity
+and moves to `Results` with no input from you. Re-query immediately before
+mutating, and don't assume an id you captured before a `sleep` is still
+alive.
+
 ## What it's already used for
 
 Every image in `docs/book/src/images/` is a real capture taken this way —

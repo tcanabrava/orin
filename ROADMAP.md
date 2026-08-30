@@ -43,17 +43,39 @@ useful without one.
   `MicStatus::{Failed, AwaitingPermission}` and its Options banner already
   exist; nothing shows them on the screens where the silence is noticed.
 
-### 1.0-rc2 — don't lose the player's work
+### 1.0-rc2 — don't lose the player's work — **largely already true**
 
-92 `.unwrap()` calls sit outside test modules, **46 of them in
-`harmonicon-editor`**, where a panic costs unsaved authoring work.
+An earlier draft of this section claimed 92 `.unwrap()`s outside test
+modules, 46 of them in `harmonicon-editor`. **That number was wrong**, and
+the correction is worth keeping because the same mistake is easy to repeat:
+the scan treated any file without a literal `#[cfg(test)]` line as
+production code, so it swallowed `song_editor/tests.rs` whole (a pure test
+file — `tests.rs` carries its `cfg` on the `mod` declaration, which is why
+`physical_design.rs` exempts those files from the line budget too) and also
+missed `#[cfg(any(test, feature = "test-support"))]`.
 
-- Triage those 46 first: anything reachable from a user action becomes a
-  recoverable error rather than a panic.
-- Then `harmonicon-core`'s 24, which is chart parsing — reached by any
-  hand-edited, third-party or `~/Harmonicon` drop-in chart.
-- A corrupt chart, a mic device that disappears mid-session, and an
-  unreadable theme should each degrade, not abort.
+Counted properly — excluding `tests.rs` and stopping at the first `cfg`
+gate — it is **four**, and all four are safe:
+
+| | |
+|---|---|
+| `core/midi_file.rs` | behind `#[cfg(any(test, feature = "test-support"))]`; not in a shipped build |
+| `core/note_parser.rs` | `analyze_notes` has no caller outside its own tests — dead `pub` code |
+| `dsp/lib.rs` ×2 | guarded by construction: `n < 2` returns early, and `nmf_dict` is assigned in the branch immediately above |
+
+The three degradation paths this section asked for are already in place:
+the chart loader is fully `Result`-based over a typed `SongLoadError`
+(including schema validation), and the theme loader falls back to defaults
+with a `warn!` rather than aborting.
+
+What remains genuinely open, and is *not* yet verified:
+
+- A microphone that disappears **mid-session** (unplugged while playing),
+  as opposed to one that fails at startup.
+- The nine `.expect(...)` calls are all programmer invariants with real
+  messages ("embedded song schema must compile", "checked by caller"), and
+  the four `unreachable!()` are enum arms behind prior filtering. Worth a
+  read, not a rewrite.
 
 ### 1.0-rc3 — content that matches the theme
 

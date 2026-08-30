@@ -224,11 +224,13 @@ only. Execution order, most valuable first:
    AwaitingPermission}` and the Options banner already exist; Play 2D/3D
    and Jam Session don't surface either, so a dead mic reads as "the game
    isn't scoring me".
-3. **Unwrap triage** (rc2), `harmonicon-editor`'s 46 first — a panic there
-   costs unsaved authoring. Then `harmonicon-core`'s 24 on the chart-parse
-   path, which any drop-in chart reaches. Not a blanket sweep: the target
-   is *user-reachable* panics, and an `unwrap` on an invariant the type
-   system can't express is fine where it's genuinely unreachable.
+3. **Unwrap triage** (rc2) — **done, and it was almost entirely a
+   measurement error.** The "92, 46 in the editor" figure counted
+   `song_editor/tests.rs` as production code. The real count outside test
+   code is four, all safe; the chart and theme loaders already degrade
+   rather than abort. See `ROADMAP.md` for the breakdown and the counting
+   pitfall. Still open: a mic unplugged *mid-session*, which nothing has
+   exercised.
 4. **Blues starter pack** (rc3) — **not to be authored unsupervised**, same
    rights/judgment reasoning as `TODO.md`'s content item. The automatable
    half is validation and difficulty calibration.

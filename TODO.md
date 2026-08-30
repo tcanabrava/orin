@@ -8,21 +8,12 @@ historical record; see `CLAUDE.md`).
 
 See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
 
-- [ ] **No first-run experience at all.** `first_run`/`has_seen`/
-  `onboarding` appear nowhere in the tree. Calibration is reachable only
-  from inside Options and the guided tour only from Help / About, so a new
-  player is shown four buttons — none of which is "set up your microphone"
-  — by a game that does nothing useful without one. Build it as a state
-  entered when `profile.json` is absent, not a flag each screen checks.
-- [ ] **A dead microphone is invisible during play.** `MicStatus::{Failed,
-  AwaitingPermission}` and its Options banner exist, but Play 2D/3D and Jam
-  Session surface neither, so a broken mic reads as "the game isn't scoring
-  me" rather than "the game can't hear you".
-- [ ] **92 user-reachable `.unwrap()`s outside test modules**, 46 in
-  `harmonicon-editor` (a panic there loses unsaved authoring work) and 24
-  in `harmonicon-core`'s chart parsing (reached by any hand-edited or
-  drop-in chart). Target user-reachable panics specifically — an `unwrap`
-  on a genuinely unreachable invariant is fine.
+- [ ] **A microphone unplugged mid-session is untested.** Startup failure
+  is handled (`MicStatus::Failed`, the Options banner, and now the in-play
+  warning), but nothing has exercised a device disappearing *while*
+  `AppState::Playing`. This is what's left of the old "user-reachable
+  panics" item: that one turned out to be a miscount — four `.unwrap()`s
+  exist outside test code and all four are safe (see `ROADMAP.md` 1.0-rc2).
 - [ ] **No blues content is bundled**, though blues/jazz is the project's
   stated theme: all 11 shipped charts are demos or public-domain classical/
   traditional. Same rights-and-judgment constraint as the content item
