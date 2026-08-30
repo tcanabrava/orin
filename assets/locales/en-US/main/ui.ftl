@@ -833,3 +833,8 @@ mic-warning-failed = No microphone — nothing you play will be scored. Check Op
 mic-warning-permission = Waiting for microphone permission.
 options-mic-failed = No microphone: {$reason}
 options-mic-awaiting-permission = Waiting for microphone permission — grant it, then retry
+# Shown in the picker beside a detector that can only resolve one note at a
+# time, because choosing one makes every chord in a chart unhittable.
+algo-single-notes-only = single notes only
+# In-play banner for that combination (gameplay::warning_banner).
+chord-warning-monophonic = This song has chords, and the chosen pitch detector hears one note at a time. Pick FFT or NMF in Options to score them.

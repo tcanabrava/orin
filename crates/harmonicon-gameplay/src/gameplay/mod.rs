@@ -20,7 +20,6 @@ mod hud;
 mod judge;
 pub mod lifecycle;
 pub mod metronome_overlay;
-pub mod mic_warning_overlay;
 mod modifier_legend;
 mod music_score_bridge;
 pub mod note_tail_2d;
@@ -36,6 +35,7 @@ mod song_waveform_material;
 mod state;
 pub mod twelve_bar_blues_overlay;
 mod wait_freeze_overlay;
+pub mod warning_banner;
 
 pub use harmonicon_core::scoring::{
     HitQuality, NoteOutcome, classify_note, compute_points, sustain_points,

@@ -678,7 +678,7 @@ pub fn setup(
                 left_id,
                 root_id,
                 &loc.msg("bending-detect-label"),
-                &algo_labels(),
+                &algo_labels(&loc),
                 audio.pitch_algorithm.label(),
                 on_algo_selected,
             );

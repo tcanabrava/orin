@@ -307,7 +307,7 @@ fn spawn_left_column(
         parent,
         page_root,
         &loc.msg("options-pitch-detect"),
-        &algo_labels(),
+        &algo_labels(loc),
         settings.pitch_algorithm.label(),
         on_algo_selected,
     );

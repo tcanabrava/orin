@@ -830,3 +830,8 @@ mic-warning-failed = Sem microfone — nada do que você tocar será pontuado. V
 mic-warning-permission = Aguardando permissão do microfone.
 options-mic-failed = Sem microfone: {$reason}
 options-mic-awaiting-permission = Aguardando permissão do microfone — conceda e tente novamente
+# Exibido no seletor ao lado de um detector que só resolve uma nota por vez,
+# já que escolhê-lo torna impossível acertar qualquer acorde da partitura.
+algo-single-notes-only = só notas isoladas
+# Aviso durante o jogo para essa combinação (gameplay::warning_banner).
+chord-warning-monophonic = Esta música tem acordes, e o detector de tom escolhido ouve uma nota por vez. Escolha FFT ou NMF nas Opções para pontuá-los.

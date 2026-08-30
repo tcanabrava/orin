@@ -577,7 +577,7 @@ pub(super) fn spawn_mod_panel(
                         record_group_id,
                         editor_root,
                         &loc.msg("editor-record-detect-label"),
-                        &algo_labels(),
+                        &algo_labels(loc),
                         algorithm.label(),
                         on_algo_selected,
                     );
