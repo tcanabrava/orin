@@ -215,6 +215,9 @@ pub fn run() {
         // parks on a permission prompt there. See `audio_input::
         // retry_capture_when_permission_granted`.
         .add_systems(Update, audio_input::retry_capture_when_permission_granted)
+        // A device that dies *after* the stream opened — unplugged mid-song.
+        // Not gated to any state: Options needs to reflect it too.
+        .add_systems(Update, audio_input::detect_stream_failure)
         .add_systems(Update, pipeline::process_audio)
         .add_systems(
             Update,

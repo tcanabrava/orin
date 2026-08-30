@@ -8,12 +8,6 @@ historical record; see `CLAUDE.md`).
 
 See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
 
-- [ ] **A microphone unplugged mid-session is untested.** Startup failure
-  is handled (`MicStatus::Failed`, the Options banner, and now the in-play
-  warning), but nothing has exercised a device disappearing *while*
-  `AppState::Playing`. This is what's left of the old "user-reachable
-  panics" item: that one turned out to be a miscount — four `.unwrap()`s
-  exist outside test code and all four are safe (see `ROADMAP.md` 1.0-rc2).
 - [ ] **No blues content is bundled**, though blues/jazz is the project's
   stated theme: all 11 shipped charts are demos or public-domain classical/
   traditional. Same rights-and-judgment constraint as the content item

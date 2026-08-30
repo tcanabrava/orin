@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use bevy::log::{error, info, info_span};
-use bevy::prelude::{Resource, World};
+use bevy::prelude::{Res, ResMut, Resource, World};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, StreamConfig};
 use crossbeam_channel::{Receiver, Sender, bounded};
@@ -40,11 +40,26 @@ pub struct AudioCapture {
     /// The actually-connected device's name — may differ from the requested
     /// one if it wasn't found and capture fell back to the system default.
     pub device_name: String,
+    /// Stream errors reported by cpal *after* the stream opened successfully
+    /// — above all, the device being unplugged mid-session.
+    ///
+    /// cpal delivers these on its own thread, so they can't touch the `World`
+    /// directly; [`detect_stream_failure`] drains this every frame and turns
+    /// the first one into [`MicStatus::Failed`]. Before this channel existed
+    /// the callback only did an `eprintln!`, which meant a mic unplugged
+    /// during a song left `MicStatus` reading `Connected` forever: the
+    /// Options banner stayed hidden, the in-play warning never appeared, and
+    /// the game just silently stopped scoring.
+    pub errors: Receiver<String>,
 }
 
-/// Whether the microphone capture stream is currently up. Set by
-/// [`start_capture`] (startup and manual retry) so menu UI can show a visible
-/// warning instead of the game silently running "deaf" — see TODO.md.
+/// Whether the microphone capture stream is currently up.
+///
+/// Written from two places, which between them cover both ways a mic can be
+/// unusable: [`start_capture`] (startup, and the Options Retry button) for a
+/// stream that won't open, and [`detect_stream_failure`] for one that opened
+/// and later died. Read by the Options banner and the in-play warning
+/// overlay, so neither has to guess whether the game can hear anything.
 #[derive(Resource, Clone, PartialEq, Debug)]
 pub enum MicStatus {
     Connected {
@@ -57,9 +72,9 @@ pub enum MicStatus {
     /// both require an explicit runtime permission prompt before capture
     /// can succeed — this is somewhere for that state to land distinct
     /// from a hard failure, so the Options page can show "waiting on
-    /// permission" rather than a generic error. Nothing sets this today —
-    /// there's no permission API to check on desktop — this is groundwork
-    /// for a future mobile-specific permission check to use.
+    /// permission" rather than a generic error. Set by `start_capture` when
+    /// `permission::microphone_granted()` says no — which off Android is
+    /// never, since there the check always answers "granted".
     AwaitingPermission,
 }
 
@@ -145,6 +160,47 @@ pub fn start_capture(world: &mut World) {
     }
 }
 
+/// Turns a cpal stream error into [`MicStatus::Failed`], so a microphone
+/// unplugged *mid-session* is reported the same way one that never opened is.
+///
+/// Startup failure was always handled — `start_capture` sets `Failed` when
+/// the stream won't open. A device that dies *after* opening is a different
+/// path entirely: cpal reports it through the stream's error callback on its
+/// own thread, and that callback used to only `eprintln!`. So `MicStatus`
+/// stayed `Connected`, the Options banner stayed hidden, the in-play warning
+/// never fired, and the player just watched their notes stop scoring.
+///
+/// Deliberately does **not** try to reopen the stream. An automatic retry
+/// would need a backoff (cpal errors arrive in bursts), and on a machine with
+/// no working input at all it would probe the audio backend forever. Recovery
+/// stays the explicit Retry button on the Options page, which already exists
+/// and already re-runs `start_capture`.
+pub fn detect_stream_failure(
+    capture: Option<Res<AudioCapture>>,
+    status: Option<ResMut<MicStatus>>,
+) {
+    let (Some(capture), Some(mut status)) = (capture, status) else {
+        return;
+    };
+    // Drain rather than take one: a dying device reports repeatedly, and
+    // anything left queued would re-trigger this on later frames.
+    let mut first: Option<String> = None;
+    while let Ok(reason) = capture.errors.try_recv() {
+        first.get_or_insert(reason);
+    }
+    let Some(reason) = first else {
+        return;
+    };
+    // Only downgrade from `Connected`. A stream error while parked in
+    // `AwaitingPermission` is the *denial* showing up as an I/O failure on
+    // Android — "grant the permission" stays the more useful thing to say —
+    // and overwriting an existing `Failed` would just churn its reason.
+    if status.is_connected() {
+        error!("Audio stream failed: {reason}");
+        *status = MicStatus::Failed { reason };
+    }
+}
+
 /// Polls for the permission dialog being answered, then starts capture for
 /// real.
 ///
@@ -206,6 +262,11 @@ pub fn create_audio_capture(
 
     let (tx, rx) = bounded::<Vec<f32>>(64);
 
+    // Small and bounded: only the first error actually matters (they arrive
+    // in bursts once a device dies), and a full channel must never block
+    // cpal's callback thread — `try_send` drops the surplus.
+    let (err_tx, err_rx) = bounded::<String>(4);
+
     // Pre-warm the recycling pool so even the first few chunks don't need to
     // allocate — see `AudioCapture::free_sender` / `push_chunks`.
     let (free_tx, free_rx) = bounded::<Vec<f32>>(POOL_SIZE);
@@ -214,9 +275,15 @@ pub fn create_audio_capture(
     }
 
     let stream = match sample_format {
-        SampleFormat::F32 => build_stream_f32(&device, &stream_config, channels, tx, free_rx)?,
-        SampleFormat::I16 => build_stream_i16(&device, &stream_config, channels, tx, free_rx)?,
-        SampleFormat::I32 => build_stream_i32(&device, &stream_config, channels, tx, free_rx)?,
+        SampleFormat::F32 => {
+            build_stream_f32(&device, &stream_config, channels, tx, free_rx, err_tx)?
+        }
+        SampleFormat::I16 => {
+            build_stream_i16(&device, &stream_config, channels, tx, free_rx, err_tx)?
+        }
+        SampleFormat::I32 => {
+            build_stream_i32(&device, &stream_config, channels, tx, free_rx, err_tx)?
+        }
         fmt => return Err(format!("unsupported sample format: {fmt:?}").into()),
     };
 
@@ -229,6 +296,7 @@ pub fn create_audio_capture(
             free_sender: free_tx,
             sample_rate,
             device_name,
+            errors: err_rx,
         },
     ))
 }
@@ -243,13 +311,17 @@ fn build_stream_f32(
     channels: usize,
     tx: Sender<Vec<f32>>,
     free_rx: Receiver<Vec<f32>>,
+    errors: Sender<String>,
 ) -> Result<cpal::Stream, cpal::BuildStreamError> {
     let mut buf: Vec<f32> = Vec::with_capacity(CHUNK_SIZE);
     let mut mono: Vec<f32> = Vec::with_capacity(CHUNK_SIZE / 2);
     device.build_input_stream(
         config,
         move |data: &[f32], _| push_chunks(&mut buf, &mut mono, data, channels, &tx, &free_rx),
-        |e| eprintln!("audio stream error: {e}"),
+        // Runs on cpal's thread: `try_send` only, never a blocking send.
+        move |e| {
+            let _ = errors.try_send(e.to_string());
+        },
         None,
     )
 }
@@ -260,6 +332,7 @@ fn build_stream_i16(
     channels: usize,
     tx: Sender<Vec<f32>>,
     free_rx: Receiver<Vec<f32>>,
+    errors: Sender<String>,
 ) -> Result<cpal::Stream, cpal::BuildStreamError> {
     let mut buf: Vec<f32> = Vec::with_capacity(CHUNK_SIZE);
     let mut mono: Vec<f32> = Vec::with_capacity(CHUNK_SIZE / 2);
@@ -271,7 +344,10 @@ fn build_stream_i16(
             converted.extend(data.iter().map(|&s| s as f32 / 32_768.0));
             push_chunks(&mut buf, &mut mono, &converted, channels, &tx, &free_rx);
         },
-        |e| eprintln!("audio stream error: {e}"),
+        // Runs on cpal's thread: `try_send` only, never a blocking send.
+        move |e| {
+            let _ = errors.try_send(e.to_string());
+        },
         None,
     )
 }
@@ -282,6 +358,7 @@ fn build_stream_i32(
     channels: usize,
     tx: Sender<Vec<f32>>,
     free_rx: Receiver<Vec<f32>>,
+    errors: Sender<String>,
 ) -> Result<cpal::Stream, cpal::BuildStreamError> {
     let mut buf: Vec<f32> = Vec::with_capacity(CHUNK_SIZE);
     let mut mono: Vec<f32> = Vec::with_capacity(CHUNK_SIZE / 2);
@@ -293,7 +370,10 @@ fn build_stream_i32(
             converted.extend(data.iter().map(|&s| s as f32 / 2_147_483_648.0));
             push_chunks(&mut buf, &mut mono, &converted, channels, &tx, &free_rx);
         },
-        |e| eprintln!("audio stream error: {e}"),
+        // Runs on cpal's thread: `try_send` only, never a blocking send.
+        move |e| {
+            let _ = errors.try_send(e.to_string());
+        },
         None,
     )
 }
@@ -427,5 +507,93 @@ mod tests {
             recycled_ptr,
             "should reuse the pooled allocation instead of a fresh one"
         );
+    }
+
+    /// An `AudioCapture` whose only live wire is the error channel — the
+    /// sample-path fields are real but unused here, since
+    /// `detect_stream_failure` never touches them.
+    fn capture_reporting(errors: Receiver<String>) -> AudioCapture {
+        let (tx, rx) = bounded::<Vec<f32>>(1);
+        AudioCapture {
+            receiver: rx,
+            free_sender: tx,
+            sample_rate: 44_100,
+            device_name: "Test Device".into(),
+            errors,
+        }
+    }
+
+    fn app_with(status: MicStatus, errors: Receiver<String>) -> bevy::prelude::App {
+        let mut app = bevy::prelude::App::new();
+        app.insert_resource(capture_reporting(errors))
+            .insert_resource(status)
+            .add_systems(bevy::prelude::Update, detect_stream_failure);
+        app
+    }
+
+    #[test]
+    fn a_device_dying_mid_session_downgrades_connected_to_failed() {
+        // The whole point: cpal reports this *after* the stream opened, on
+        // its own thread. Before the error channel existed the status stayed
+        // Connected and the player just watched their notes stop scoring.
+        let (tx, rx) = bounded::<String>(4);
+        tx.try_send("device disconnected".into()).unwrap();
+        let mut app = app_with(
+            MicStatus::Connected {
+                device_name: "Test Device".into(),
+            },
+            rx,
+        );
+        app.update();
+        assert_eq!(
+            *app.world().resource::<MicStatus>(),
+            MicStatus::Failed {
+                reason: "device disconnected".into()
+            }
+        );
+    }
+
+    #[test]
+    fn a_healthy_stream_leaves_the_status_alone() {
+        let (_tx, rx) = bounded::<String>(4);
+        let connected = MicStatus::Connected {
+            device_name: "Test Device".into(),
+        };
+        let mut app = app_with(connected.clone(), rx);
+        app.update();
+        assert_eq!(*app.world().resource::<MicStatus>(), connected);
+    }
+
+    #[test]
+    fn a_stream_error_does_not_overwrite_awaiting_permission() {
+        // On Android a denied RECORD_AUDIO surfaces as an I/O-shaped stream
+        // error; "grant the permission" is the more useful thing to keep
+        // saying than a raw device message.
+        let (tx, rx) = bounded::<String>(4);
+        tx.try_send("permission denied".into()).unwrap();
+        let mut app = app_with(MicStatus::AwaitingPermission, rx);
+        app.update();
+        assert_eq!(
+            *app.world().resource::<MicStatus>(),
+            MicStatus::AwaitingPermission
+        );
+    }
+
+    #[test]
+    fn a_burst_of_errors_is_drained_so_it_only_reports_once() {
+        // A dying device reports repeatedly. Anything left queued would
+        // re-trigger on later frames and churn the reason string.
+        let (tx, rx) = bounded::<String>(4);
+        for _ in 0..3 {
+            tx.try_send("device disconnected".into()).unwrap();
+        }
+        let mut app = app_with(
+            MicStatus::Connected {
+                device_name: "Test Device".into(),
+            },
+            rx,
+        );
+        app.update();
+        assert!(tx.is_empty(), "every queued error should have been drained");
     }
 }
