@@ -302,3 +302,179 @@ fn freq_to_note_rejects_absurdly_high_frequencies() {
     // real harmonica note; must not silently produce a garbage octave.
     assert_eq!(freq_to_note(50_000.0), None);
 }
+
+// ── Chord (polyphonic) detection ──────────────────────────────────────────
+//
+// `scoring::chord_is_sounding` only counts a chord as played when *every*
+// one of its pitches is present at once, so whether a chord in a chart is
+// hittable at all depends entirely on the selected algorithm. These tests
+// pin down which ones can do it, because the answer is not obvious from the
+// UI and picking the wrong one silently makes those notes impossible.
+
+/// Two simultaneous sine tones at `freqs`, one analysis window long.
+fn chord_samples(freqs: &[f32], sample_rate: u32, n: usize) -> Vec<f32> {
+    (0..n)
+        .map(|i| {
+            let t = i as f32 / sample_rate as f32;
+            freqs
+                .iter()
+                .map(|f| 0.4 * (2.0 * PI * f * t).sin())
+                .sum::<f32>()
+        })
+        .collect()
+}
+
+/// D4 + G4 — the interval a real chart in the wild actually uses (the
+/// Windy City Swing chord items).
+const CHORD_D4_G4: [f32; 2] = [293.66, 392.00];
+
+fn hears_both(algo: PitchAlgorithm) -> bool {
+    let sr = 44100u32;
+    let samples = chord_samples(&CHORD_D4_G4, sr, 4096);
+    let mut state = FftState::default();
+    let out = analyze(&samples, sr, &mut state, algo, PitchRange::default());
+    let d4 = out.pitches.iter().any(|p| p.note == "D" && p.octave == 4);
+    let g4 = out.pitches.iter().any(|p| p.note == "G" && p.octave == 4);
+    d4 && g4
+}
+
+#[test]
+fn the_polyphonic_algorithms_hear_both_notes_of_a_chord() {
+    for algo in [PitchAlgorithm::Fft, PitchAlgorithm::Nmf] {
+        assert!(
+            hears_both(algo),
+            "{} is documented as reporting multiple pitches, but missed one \
+             of D4/G4 — chord items in a chart would be unhittable with it",
+            algo.label()
+        );
+    }
+}
+
+#[test]
+fn the_default_algorithm_can_hear_a_chord() {
+    // Separately from the loop above, because *this* is the one a player who
+    // never opens Options is using.
+    assert!(
+        hears_both(PitchAlgorithm::default()),
+        "the default algorithm must be able to score a chord"
+    );
+}
+
+#[test]
+fn the_monophonic_algorithms_cannot_hear_a_chord() {
+    // Not a bug to fix in the detectors — YIN/pYIN/MPM estimate a single
+    // fundamental by construction. Pinned so the limitation is recorded
+    // rather than rediscovered, and so `is_polyphonic` can't drift away
+    // from the measured truth.
+    for algo in [
+        PitchAlgorithm::Yin,
+        PitchAlgorithm::Pyin,
+        PitchAlgorithm::Mcleod,
+    ] {
+        assert!(
+            !hears_both(algo),
+            "{} unexpectedly resolved both chord notes — if that is now real, \
+             update is_polyphonic() to match",
+            algo.label()
+        );
+    }
+}
+
+#[test]
+fn a_monophonic_detector_on_a_chord_can_report_a_note_nobody_played() {
+    // Worth stating outright: pYIN and MPM don't just miss one note of
+    // D4+G4, they resolve F4 — a pitch absent from the signal, roughly
+    // between the two. So the failure mode isn't only "chord unhittable";
+    // it's a wrong note entering scoring.
+    let sr = 44100u32;
+    let samples = chord_samples(&CHORD_D4_G4, sr, 4096);
+    for algo in [PitchAlgorithm::Pyin, PitchAlgorithm::Mcleod] {
+        let mut state = FftState::default();
+        let out = analyze(&samples, sr, &mut state, algo, PitchRange::default());
+        let phantom = out.pitches.iter().any(|p| p.note != "D" && p.note != "G");
+        assert!(
+            phantom,
+            "{} no longer reports a phantom pitch for D4+G4 — good, but this \
+             test documents the opposite; re-measure and update it",
+            algo.label()
+        );
+    }
+}
+
+/// `is_polyphonic` must agree with what the detectors actually do above,
+/// since the UI uses it to warn players away from an unusable combination.
+#[test]
+fn is_polyphonic_matches_measured_behaviour() {
+    for &algo in PitchAlgorithm::all() {
+        assert_eq!(
+            algo.is_polyphonic(),
+            hears_both(algo),
+            "is_polyphonic() disagrees with measured chord detection for {}",
+            algo.label()
+        );
+    }
+}
+
+/// End to end through the *real* synth rather than bare sine tones: a chord
+/// as `render_pcm` actually produces it, analysed by the default detector.
+///
+/// The sine-tone tests above prove the detectors can resolve two pitches in
+/// principle. This one proves the thing a player depends on — that a chord
+/// the game itself sounds (call-and-response demos, the Song Editor's
+/// audition and Play button) comes back out as both of its notes. A synth
+/// change that made chord voices cancel, or clip, or share one envelope
+/// would pass every test above and fail this one.
+#[test]
+fn a_chord_from_the_real_synth_is_heard_as_both_notes() {
+    use harmonicon_core::synth::{Expr, PhraseNote, SAMPLE_RATE, render_pcm};
+
+    // Same tick, same length: `render_pcm` sums voices into one buffer, so
+    // this is a genuine simultaneity, not two notes in sequence.
+    let chord = [
+        PhraseNote {
+            tick: 0,
+            len: 8,
+            freq: Some(CHORD_D4_G4[0]),
+            expr: Expr::None,
+        },
+        PhraseNote {
+            tick: 0,
+            len: 8,
+            freq: Some(CHORD_D4_G4[1]),
+            expr: Expr::None,
+        },
+    ];
+    let pcm = render_pcm(&chord, 0.05);
+    assert!(
+        pcm.len() > 4096,
+        "synth produced too little audio to analyse"
+    );
+
+    // Skip the attack: the envelope's opening ramp is a transient, and pitch
+    // detection wants the steady state — the same reason the live path
+    // analyses mid-note windows rather than onsets.
+    let start = (SAMPLE_RATE as f32 * 0.05) as usize;
+    let window = &pcm[start..start + 4096];
+
+    let mut state = FftState::default();
+    let out = analyze(
+        window,
+        SAMPLE_RATE,
+        &mut state,
+        PitchAlgorithm::default(),
+        PitchRange::default(),
+    );
+    let names: Vec<String> = out
+        .pitches
+        .iter()
+        .map(|p| format!("{}{}", p.note, p.octave))
+        .collect();
+    assert!(
+        out.pitches.iter().any(|p| p.note == "D" && p.octave == 4),
+        "expected D4 from the synthesized chord, got {names:?}"
+    );
+    assert!(
+        out.pitches.iter().any(|p| p.note == "G" && p.octave == 4),
+        "expected G4 from the synthesized chord, got {names:?}"
+    );
+}

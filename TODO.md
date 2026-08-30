@@ -8,6 +8,16 @@ historical record; see `CLAUDE.md`).
 
 See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
 
+- [ ] **A monophonic pitch algorithm makes chord items unhittable, silently.**
+  `scoring::chord_is_sounding` needs every pitch of a chord present at once,
+  and YIN/pYIN/MPM resolve one fundamental by construction — measured, pYIN
+  and MPM turn D4+G4 into a phantom F4, a note nobody played. So selecting
+  one of those in Options quietly makes every chord in a chart impossible,
+  with nothing anywhere saying why. `PitchAlgorithm::is_polyphonic()` now
+  exists and is test-pinned against measured behaviour; **what's missing is
+  surfacing it** — warn in the Options picker, warn at song start when the
+  chart contains chords, or refuse the combination. Bundled exposure is one
+  `split` item (Toccata), but user-authored charts use chords freely.
 - [ ] **No blues content is bundled**, though blues/jazz is the project's
   stated theme: all 11 shipped charts are demos or public-domain classical/
   traditional. Same rights-and-judgment constraint as the content item

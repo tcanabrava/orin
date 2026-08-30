@@ -97,6 +97,21 @@ pub enum PitchAlgorithm {
 }
 
 impl PitchAlgorithm {
+    /// Whether this detector can resolve two simultaneous notes.
+    ///
+    /// Load-bearing, not trivia: `scoring::chord_is_sounding` requires
+    /// *every* pitch of a chord to be present at once, so a chart's chord
+    /// items are simply unhittable under a monophonic detector. Worse, a
+    /// monophonic detector fed a chord doesn't just drop a note — measured,
+    /// pYIN and MPM resolve D4+G4 as a phantom F4, a pitch nobody played.
+    ///
+    /// Kept honest by `is_polyphonic_matches_measured_behaviour`, which
+    /// compares this against what the detectors actually do rather than
+    /// letting the two drift.
+    pub fn is_polyphonic(self) -> bool {
+        matches!(self, PitchAlgorithm::Fft | PitchAlgorithm::Nmf)
+    }
+
     /// All selectable algorithms, in display order.
     pub fn all() -> &'static [PitchAlgorithm] {
         &[
