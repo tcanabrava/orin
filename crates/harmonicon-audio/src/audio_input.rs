@@ -63,6 +63,16 @@ pub enum MicStatus {
     AwaitingPermission,
 }
 
+impl MicStatus {
+    /// Whether capture is actually running. Anything else means the game is
+    /// deaf, and every screen that cares says so — the Options banner and
+    /// the in-play warning overlay both branch on exactly this, so "what
+    /// counts as working" has one definition rather than one per screen.
+    pub fn is_connected(&self) -> bool {
+        matches!(self, MicStatus::Connected { .. })
+    }
+}
+
 /// Names of every input device the current host reports, in host-listed
 /// order. Empty (rather than an error) if enumeration itself fails — callers
 /// treat "no devices" and "enumeration failed" the same way.

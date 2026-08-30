@@ -24,9 +24,9 @@ use super::state::{
 };
 use super::{
     adaptive_difficulty, bending_trainer, call_response, countdown_overlay, gameplay_2d,
-    gameplay_3d, harmonica_overlay, metronome_overlay, modifier_legend, music_score_bridge,
-    note_tail_2d, note_tail_3d, pause_menu, phrase_overlay, results, song_progress_overlay,
-    twelve_bar_blues_overlay, wait_freeze_overlay,
+    gameplay_3d, harmonica_overlay, metronome_overlay, mic_warning_overlay, modifier_legend,
+    music_score_bridge, note_tail_2d, note_tail_3d, pause_menu, phrase_overlay, results,
+    song_progress_overlay, twelve_bar_blues_overlay, wait_freeze_overlay,
 };
 
 pub struct GameplayPlugin;
@@ -61,6 +61,7 @@ impl Plugin for GameplayPlugin {
             note_tail_2d::NoteTail2dPlugin,
             note_tail_3d::NoteTail3dPlugin,
             song_progress_overlay::SongProgressPlugin,
+            mic_warning_overlay::MicWarningPlugin,
             wait_freeze_overlay::WaitFreezePlugin,
             music_score_bridge::MusicScoreBridgePlugin,
         ))
@@ -102,6 +103,8 @@ impl Plugin for GameplayPlugin {
                 lifecycle::setup_scoring_config,
                 adaptive_difficulty::setup_adaptive_difficulty,
                 pause_menu::setup_pause_menu,
+                // Every mode, unlike the 2D/3D-only overlays below.
+                mic_warning_overlay::setup_mic_warning,
                 gameplay_2d::setup.run_if(|m: Res<GameplayMode>| *m == GameplayMode::Play2D),
                 gameplay_3d::setup.run_if(|m: Res<GameplayMode>| *m == GameplayMode::Play3D),
                 // Call-and-response cues need `SongNotes`' response notes to

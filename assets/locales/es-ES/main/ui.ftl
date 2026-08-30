@@ -823,3 +823,11 @@ welcome-setup-mic = Configurar el micrófono
 welcome-tour = Hacer el tour guiado
 welcome-lessons = Empezar con una lección
 welcome-skip = Omitir por ahora
+# Problemas de micrófono. `mic-warning-*` es el aviso durante el juego
+# (gameplay::mic_warning_overlay), breve y sin el error bruto del
+# dispositivo; `options-mic-*` es el aviso de Opciones, donde los detalles
+# son justo lo que se busca.
+mic-warning-failed = Sin micrófono — nada de lo que toques se puntuará. Revisa las Opciones.
+mic-warning-permission = Esperando permiso del micrófono.
+options-mic-failed = Sin micrófono: {$reason}
+options-mic-awaiting-permission = Esperando permiso del micrófono — concédelo y reinténtalo

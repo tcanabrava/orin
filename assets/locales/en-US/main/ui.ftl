@@ -825,3 +825,11 @@ welcome-setup-mic = Set up your microphone
 welcome-tour = Take the guided tour
 welcome-lessons = Start with a lesson
 welcome-skip = Skip for now
+# Microphone trouble. `mic-warning-*` is the in-play overlay
+# (gameplay::mic_warning_overlay), deliberately terse and free of the raw
+# device error; `options-mic-*` is the Options banner, where the specifics
+# are what the player came for.
+mic-warning-failed = No microphone — nothing you play will be scored. Check Options.
+mic-warning-permission = Waiting for microphone permission.
+options-mic-failed = No microphone: {$reason}
+options-mic-awaiting-permission = Waiting for microphone permission — grant it, then retry

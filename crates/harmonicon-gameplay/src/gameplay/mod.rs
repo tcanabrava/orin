@@ -20,6 +20,7 @@ mod hud;
 mod judge;
 pub mod lifecycle;
 pub mod metronome_overlay;
+pub mod mic_warning_overlay;
 mod modifier_legend;
 mod music_score_bridge;
 pub mod note_tail_2d;

@@ -873,7 +873,9 @@ fn connected_device_name(status: &MicStatus) -> Option<&str> {
 /// Whether the mic warning banner (and the device combobox it stands in
 /// for) should be visible — anything other than a successful connection.
 fn mic_banner_visible(status: &MicStatus) -> bool {
-    !matches!(status, MicStatus::Connected { .. })
+    // Delegated rather than re-matched, so this page and the in-play warning
+    // overlay can't drift apart on what counts as a working microphone.
+    !status.is_connected()
 }
 
 /// A dismiss-free warning banner, hidden only once the microphone actually
@@ -886,7 +888,7 @@ fn spawn_mic_banner(
     loc: &Localization,
 ) {
     let visible = mic_banner_visible(status);
-    let text = mic_banner_text(status);
+    let text = mic_banner_text(status, loc);
 
     let banner = commands
         .spawn((
@@ -927,13 +929,33 @@ fn spawn_mic_banner(
     commands.entity(parent).add_child(banner);
 }
 
-fn mic_banner_text(status: &MicStatus) -> String {
+/// The banner's message. Unlike the in-play warning
+/// (`gameplay::mic_warning_overlay`), this one *does* include the raw
+/// `Failed { reason }` string: Options is where a player has come to fix
+/// the problem, so the underlying cpal error ("Device not available") is
+/// the useful part, even untranslated.
+fn mic_banner_text(status: &MicStatus, loc: &Localization) -> String {
     match status {
-        MicStatus::Failed { reason } => format!("No microphone: {reason}"),
+        MicStatus::Failed { reason } => String::from(loc.msg_args(
+            mic_banner_key(status).unwrap_or_default(),
+            &[("reason", reason.clone())],
+        )),
         MicStatus::AwaitingPermission => {
-            "Waiting for microphone permission — grant it, then retry".to_string()
+            String::from(loc.msg(mic_banner_key(status).unwrap_or_default()))
         }
         MicStatus::Connected { .. } => String::new(),
+    }
+}
+
+/// Which Fluent key the banner uses, or `None` when connected. Split out of
+/// [`mic_banner_text`] so that "does each status get its own message" stays
+/// testable — the text itself now needs a `Localization`, which a unit test
+/// has no cheap way to build.
+fn mic_banner_key(status: &MicStatus) -> Option<&'static str> {
+    match status {
+        MicStatus::Connected { .. } => None,
+        MicStatus::AwaitingPermission => Some("options-mic-awaiting-permission"),
+        MicStatus::Failed { .. } => Some("options-mic-failed"),
     }
 }
 
@@ -962,6 +984,7 @@ fn mic_retry_button_scene(tooltip: String) -> impl Scene {
 /// (e.g. after a Retry click or a device-picker selection).
 fn update_mic_banner(
     status: Res<MicStatus>,
+    loc: Res<Localization>,
     mut banners: Query<&mut Node, With<MicBanner>>,
     mut texts: Query<&mut Text, With<MicBannerText>>,
 ) {
@@ -976,7 +999,7 @@ fn update_mic_banner(
             Display::None
         };
     }
-    let text = mic_banner_text(&status);
+    let text = mic_banner_text(&status, &loc);
     for mut t in &mut texts {
         **t = text.clone();
     }
@@ -1307,20 +1330,15 @@ mod tests {
     #[test]
     fn mic_banner_text_is_distinct_per_status() {
         assert_eq!(
-            mic_banner_text(&MicStatus::Connected {
+            mic_banner_key(&MicStatus::Connected {
                 device_name: "Mic".into(),
             }),
-            ""
-        );
-        assert!(
-            mic_banner_text(&MicStatus::Failed {
-                reason: "no device".into(),
-            })
-            .contains("no device")
+            None,
+            "a working mic has nothing to say"
         );
         assert_ne!(
-            mic_banner_text(&MicStatus::AwaitingPermission),
-            mic_banner_text(&MicStatus::Failed {
+            mic_banner_key(&MicStatus::AwaitingPermission),
+            mic_banner_key(&MicStatus::Failed {
                 reason: "no device".into(),
             }),
             "awaiting-permission needs its own message, not the generic failure one"
