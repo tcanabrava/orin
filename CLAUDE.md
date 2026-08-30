@@ -435,6 +435,7 @@ because prose is not a check.
 | `WorldAssetRoot`, not `SceneRoot`, for GLB/scene assets | `SceneRoot` is what Bevy examples show, and it compiles — it just renders nothing | `build.rs` (`scene_root_violations`) |
 | Vibrato integrates frequency over time, never `freq × t` | the naive form looks right and drifts pitch upward | `synth::vibrato_phase_mod` + its boundedness test |
 | Every character drawn must be in a bundled font | picking a nice-looking glyph "just works" in an editor and silently draws a box in the game | `tests/glyph_coverage.rs` (reads the fonts' cmaps, not the fallback lists) |
+| A release tag must equal `Cargo.toml`'s version | nothing links them, and the packaging reads the *tag* while the About page reads `CARGO_PKG_VERSION` — so they drift silently and only disagree in front of a player | `release.yaml`'s `check_version_matches_tag`, which every release job `needs` |
 
 **If you add a rule to this table, add a check with it.** Anything here
 without one is a known liability, not a settled convention — every rule

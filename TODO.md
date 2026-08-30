@@ -18,8 +18,6 @@ See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
   stated theme: all 11 shipped charts are demos or public-domain classical/
   traditional. Same rights-and-judgment constraint as the content item
   below — **not to be authored unsupervised**.
-- [ ] **The version is unreconciled.** `Cargo.toml` has said `0.1.0` since
-  before 0.2 shipped; the tag line ran independently to `v0.0.9.1`.
 
 ## Mobile (post-1.0)
 

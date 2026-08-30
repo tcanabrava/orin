@@ -18,8 +18,41 @@ env:
 
 jobs:
 
+  # The version in Cargo.toml, the git tag, and what the packaged installers
+  # report all have to agree — and until this job existed they didn't:
+  # Cargo.toml said 0.1.0 through every 0.0.x tag, so the About page inside
+  # the game named a version no release had ever carried, while the Windows
+  # and macOS packaging derived theirs from the tag instead.
+  #
+  # Runs before anything is built or published, and everything else `needs`
+  # it, so a mismatched tag fails in seconds rather than after four platform
+  # builds have already uploaded artifacts.
+  check_version_matches_tag:
+    name: Tag matches Cargo.toml
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare
+        shell: bash
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          tag="${tag#v}"
+          # The first `version =` under [package] — crates/ members have their
+          # own, and `grep -m1` on the root manifest is the one that feeds
+          # CARGO_PKG_VERSION.
+          manifest=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          echo "tag=$tag  Cargo.toml=$manifest"
+          if [ "$tag" != "$manifest" ]; then
+            echo "::error::Tag '$tag' does not match Cargo.toml version '$manifest'."
+            echo "Bump the version in Cargo.toml (and the <releases> block in"
+            echo "packaging/flatpak/*.metainfo.xml) to match the tag, or retag."
+            exit 1
+          fi
+
   # Build for Linux
   release-linux:
+    needs: check_version_matches_tag
     runs-on: ubuntu-latest
 
     steps:
@@ -69,6 +102,7 @@ jobs:
 
   # Build for Windows
   release-windows:
+    needs: check_version_matches_tag
     runs-on: windows-latest
 
     steps:
@@ -115,6 +149,7 @@ jobs:
 
   # Build for MacOS x86_64
   release-macOS-intel:
+    needs: check_version_matches_tag
     runs-on: macOS-latest
 
     steps:
@@ -181,6 +216,7 @@ jobs:
 
   # Build for MacOS Apple Silicon
   release-macOS-apple-silicon:
+    needs: check_version_matches_tag
     runs-on: macOS-latest
 
     steps:
@@ -239,6 +275,7 @@ jobs:
   # flatpak.yaml verifies on every push/PR (that workflow only builds, never
   # exports/bundles — this is what actually produces something installable).
   release-flatpak:
+    needs: check_version_matches_tag
     runs-on: ubuntu-latest
 
     steps:
