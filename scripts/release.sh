@@ -149,6 +149,39 @@ fi
 
 # ── Edits ────────────────────────────────────────────────────────────────────
 
+TOUCHED=("$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO" "$CHANGELOG")
+SNAPSHOT_DIR=""
+
+# --dry-run has to put the tree back exactly as it found it, and `git
+# checkout --` is the wrong tool for that now: since a version-only dirty
+# tree is allowed through, HEAD is *not* necessarily what the caller had.
+# Restoring from HEAD silently threw away a hand-edited version — which is
+# how this was found.
+snapshot_touched() {
+    SNAPSHOT_DIR=$(mktemp -d)
+    local f
+    for f in "${TOUCHED[@]}"; do
+        [ -f "$f" ] || continue
+        mkdir -p "$SNAPSHOT_DIR/$(dirname "$f")"
+        cp -p "$f" "$SNAPSHOT_DIR/$f"
+    done
+}
+
+restore_touched() {
+    [ -n "$SNAPSHOT_DIR" ] && [ -d "$SNAPSHOT_DIR" ] || return 0
+    local f
+    for f in "${TOUCHED[@]}"; do
+        if [ -f "$SNAPSHOT_DIR/$f" ]; then
+            cp -p "$SNAPSHOT_DIR/$f" "$f"
+        else
+            # Didn't exist before this run — CHANGELOG.md, first release.
+            rm -f "$f"
+        fi
+    done
+    rm -rf "$SNAPSHOT_DIR"
+    SNAPSHOT_DIR=""
+}
+
 apply_edits() {
     # Root [package] only: `0,/re/` bounds the substitution to the first match.
     sed -i "0,/^version = \"$CURRENT\"/s//version = \"$NEXT\"/" "$CARGO_TOML"
@@ -218,22 +251,16 @@ write_changelog() {
 }
 
 if [ "$DRY_RUN" -eq 1 ]; then
+    snapshot_touched
+    # Restore even if an edit dies partway (`set -e`), so a failed preview
+    # can't leave the tree half-bumped.
+    trap restore_touched EXIT
     echo "would change:"
     apply_edits
     echo
     echo "would then: commit, tag $TAG, and push both to origin/$RELEASE_BRANCH"
     echo "reverting the edits (--dry-run)"
-    # Safe to discard rather than stash: the clean-tree check above already
-    # refused to get this far if any of these four had uncommitted work in
-    # them, so the only changes being thrown away are the ones just made.
-    git checkout -- "$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO"
-    # `git checkout --` can't undo a file that isn't tracked yet, which
-    # CHANGELOG.md isn't on the very first release.
-    if git ls-files --error-unmatch "$CHANGELOG" >/dev/null 2>&1; then
-        git checkout -- "$CHANGELOG"
-    else
-        rm -f "$CHANGELOG"
-    fi
+    restore_touched
     exit 0
 fi
 
