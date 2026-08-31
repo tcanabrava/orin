@@ -167,8 +167,37 @@ jobs:
           targets: aarch64-linux-android
       - name: Install Dependencies
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
+      # The cache above restores `~/.cargo/bin/` but *not* `~/.cargo/
+      # .crates.toml`, which is cargo's record of what it installed. So on a
+      # cache hit the binaries are on disk while cargo believes it never
+      # installed them, and a bare `cargo install` aborts the job with
+      # "binary `cargo-ndk` already exists in destination. Add --force".
+      #
+      # That asymmetry is why this never reproduces locally: with the ledger
+      # intact cargo recognises the package and merely warns ("Ignored
+      # package ... is already installed"), exit 0. Adding `.crates.toml` to
+      # the cache would also fix it, but relying on the binary itself is one
+      # less thing to keep in step.
+      #
+      # It failed on any run that restored a cache rather than building one,
+      # which is why it stayed hidden until two runs shared a Cargo.toml hash
+      # (the cache key).
+      #
+      # Pinned rather than floating, matching how pages.yaml pins mdbook: the
+      # cache key doesn't include this version, so "skip if present" alone
+      # would silently freeze whatever version first got cached.
+      # `cargo ndk`, not `cargo-ndk` — the binary refuses to be invoked
+      # directly ("This binary may only be called via `cargo ndk`") and would
+      # otherwise always look like a version mismatch.
       - name: Install cargo-ndk
-        run: cargo install cargo-ndk --locked
+        env:
+          CARGO_NDK_VERSION: '4.1.2'
+        run: |
+          if [ "$(cargo ndk --version 2>/dev/null)" = "cargo-ndk ${CARGO_NDK_VERSION}" ]; then
+            echo "cargo-ndk ${CARGO_NDK_VERSION} restored from cache"
+          else
+            cargo install cargo-ndk --locked --version "${CARGO_NDK_VERSION}" --force
+          fi
       # API 28 is not arbitrary: cpal's Android backend links libaaudio, which
       # only exists in the NDK sysroot from API 26 up. It must stay in step
       # with minSdk in packaging/android/app/build.gradle.kts.
