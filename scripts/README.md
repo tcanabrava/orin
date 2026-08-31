@@ -21,6 +21,7 @@ push, and printing a diffstat first.
 | `Cargo.lock` | carries the workspace's own package version; refreshed by `cargo metadata`, not by hand |
 | `packaging/android/app/build.gradle.kts` | `versionName` **and** `versionCode` |
 | `packaging/flatpak/*.metainfo.xml` | prepends a `<release>` entry dated today; Flathub reads this |
+| `CHANGELOG.md` | prepends a section for the new tag, one bullet per commit subject since the last tag |
 
 **Not** touched, on purpose:
 
@@ -44,15 +45,39 @@ installs an APK.
 `release.yaml`'s `check_version_matches_tag` catches a tag that disagrees
 with `Cargo.toml`, but nothing catches the packaging files.
 
+### The changelog
+
+Each release prepends a section to `CHANGELOG.md`, newest first, built from
+`git log --no-merges` since the last tag — one bullet per commit subject.
+
+Subjects rather than a hand-written summary because this project's commit
+messages already lead with a real sentence about what changed. The useful
+changelog is sitting in them, and anything maintained alongside would be a
+second thing to keep true.
+
+### A dirty tree, when it's only the version
+
+Bumping often starts by hand — editing `Cargo.toml` to line the manifest back
+up with the tags, which also touches `Cargo.lock`. Refusing that would be
+refusing the normal way in, so the script allows it and sweeps it into the
+release commit.
+
+The exemption is narrow on purpose. Only those two files may be modified,
+**and** every changed line in them must itself be a `version = "x.y.z"` line
+— a dependency bump in `Cargo.lock` is not a version-only change. Anything
+else is still refused, because an unrelated half-finished edit must not ride
+along in a commit called `Release vX.Y.Z`.
+
 ### Refusals
 
 It stops rather than doing something surprising when:
 
+- any *other* uncommitted change is present (see above);
 - the new version wouldn't be **above** the current one, or above the
   highest existing tag (comparison is `sort -V`, and the tag line's
   four-component strays like `v0.0.9.1` are normalised to three parts);
 - the tag already exists;
-- the working tree is dirty, or you're not on `main`;
+- you're not on `main`;
 - the branch is behind `origin/main`;
 - `minor` or `patch` would reach 100, which would break the Android
   `versionCode` encoding (`major*10000 + minor*100 + patch` — chosen because

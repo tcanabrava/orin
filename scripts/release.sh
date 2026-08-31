@@ -33,6 +33,7 @@ CARGO_TOML="Cargo.toml"
 CARGO_LOCK="Cargo.lock"
 GRADLE="packaging/android/app/build.gradle.kts"
 METAINFO="packaging/flatpak/io.github.tcanabrava.harmonicon.metainfo.xml"
+CHANGELOG="CHANGELOG.md"
 RELEASE_BRANCH="main"
 
 die() { printf '\nrelease: %s\n' "$*" >&2; exit 1; }
@@ -107,8 +108,35 @@ printf '\nrelease %s -> %s (tag %s)\n\n' "$CURRENT" "$NEXT" "$TAG"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ "$BRANCH" = "$RELEASE_BRANCH" ] \
     || die "on branch '$BRANCH'; releases are cut from '$RELEASE_BRANCH'"
-[ -z "$(git status --porcelain --untracked-files=no)" ] \
-    || die "working tree has uncommitted changes; commit or stash them first"
+# A bump often starts by hand — editing Cargo.toml to line the manifest back
+# up with the tags, which also touches Cargo.lock. Refusing that is refusing
+# the normal way in, so it's allowed through and swept into the release
+# commit. Anything else is still refused: an unrelated half-finished change
+# must not ride along in a commit called "Release vX.Y.Z".
+only_version_is_uncommitted() {
+    local changed
+    changed=$(git status --porcelain --untracked-files=no | cut -c4-)
+    [ -n "$changed" ] || return 0
+    local f
+    while IFS= read -r f; do
+        case "$f" in
+            "$CARGO_TOML" | "$CARGO_LOCK") ;;
+            *) return 1 ;;
+        esac
+    done <<< "$changed"
+    # ...and inside those two, every changed line must itself be a version
+    # line. A dependency bump in Cargo.lock is not a version-only change.
+    ! git diff -U0 -- "$CARGO_TOML" "$CARGO_LOCK" \
+        | grep -E '^[+-]' \
+        | grep -vE '^(\+\+\+|---)' \
+        | grep -qvE '^[+-]version = "[0-9]+\.[0-9]+\.[0-9]+"$'
+}
+
+if ! only_version_is_uncommitted; then
+    printf '\nuncommitted changes beyond the version:\n' >&2
+    git status --short --untracked-files=no >&2
+    die "commit or stash them first"
+fi
 
 # Only for a real release: a preview shouldn't need the network, and being
 # behind origin only matters for something about to be pushed.
@@ -144,6 +172,49 @@ apply_edits() {
         "$METAINFO"
     step "$METAINFO"
     step "                      <release version=\"$NEXT\" date=\"$TODAY\" />"
+
+    write_changelog
+    step "$CHANGELOG            $(changelog_body | grep -c '^-') entry/entries under $TAG"
+}
+
+# Commit subjects since the last tag reachable from HEAD, one bullet each.
+#
+# Subjects rather than a hand-written summary because this project's commit
+# messages already lead with a real sentence about what changed — the useful
+# changelog is sitting in them, and anything hand-maintained alongside would
+# be a second thing to keep true.
+changelog_body() {
+    local since
+    since=$(git describe --tags --abbrev=0 2>/dev/null || true)
+    local range=""
+    [ -n "$since" ] && range="${since}..HEAD"
+    local subjects
+    # shellcheck disable=SC2086
+    subjects=$(git log --no-merges --format='- %s' $range)
+    if [ -z "$subjects" ]; then
+        printf -- '- No changes recorded since %s.\n' "${since:-the start of history}"
+    else
+        printf '%s\n' "$subjects"
+    fi
+}
+
+# Prepends this release's section. Newest first, so the top of the file is
+# always the current release.
+write_changelog() {
+    local body
+    body=$(changelog_body)
+    local existing=""
+    if [ -f "$CHANGELOG" ]; then
+        # Everything after the title, which is re-emitted below.
+        existing=$(tail -n +2 "$CHANGELOG")
+    fi
+    {
+        printf '# Changelog\n\n'
+        printf '## %s — %s\n\n' "$TAG" "$TODAY"
+        printf '%s\n' "$body"
+        [ -n "$existing" ] && printf '%s\n' "$existing"
+    } > "$CHANGELOG.tmp"
+    mv "$CHANGELOG.tmp" "$CHANGELOG"
 }
 
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -156,6 +227,13 @@ if [ "$DRY_RUN" -eq 1 ]; then
     # refused to get this far if any of these four had uncommitted work in
     # them, so the only changes being thrown away are the ones just made.
     git checkout -- "$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO"
+    # `git checkout --` can't undo a file that isn't tracked yet, which
+    # CHANGELOG.md isn't on the very first release.
+    if git ls-files --error-unmatch "$CHANGELOG" >/dev/null 2>&1; then
+        git checkout -- "$CHANGELOG"
+    else
+        rm -f "$CHANGELOG"
+    fi
     exit 0
 fi
 
@@ -172,7 +250,7 @@ WRITTEN=$(cargo metadata --offline --format-version 1 --no-deps \
 # ── Commit, tag, push ────────────────────────────────────────────────────────
 
 echo
-git --no-pager diff --stat -- "$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO"
+git --no-pager diff --stat -- "$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO" "$CHANGELOG"
 echo
 read -r -p "Commit, tag $TAG, and push to origin/$RELEASE_BRANCH? [y/N] " reply
 case "$reply" in
@@ -180,7 +258,7 @@ case "$reply" in
     *) echo "aborted; edits left in the working tree for inspection"; exit 1 ;;
 esac
 
-git add "$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO"
+git add "$CARGO_TOML" "$CARGO_LOCK" "$GRADLE" "$METAINFO" "$CHANGELOG"
 git commit -q -m "Release $TAG"
 # Annotated: `git describe` and the release workflow both prefer a real tag
 # object over a lightweight ref.
