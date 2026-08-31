@@ -56,8 +56,8 @@ android {
         applicationId = "io.github.tcanabrava.harmonicon"
         minSdk = minSdkVersion
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 10
+        versionName = "0.0.10"
         ndk { abiFilters.addAll(abis) }
     }
 
