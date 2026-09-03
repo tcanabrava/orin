@@ -18,6 +18,7 @@ pub mod chart;
 pub mod config_file;
 pub mod harmonica;
 pub mod harmonica_constraints;
+pub mod harp_remap;
 pub mod midi;
 /// Standard MIDI File parsing — named apart from [`midi`], which is pitch
 /// and note-number conversion. Re-exported by the game as `song::midi`.

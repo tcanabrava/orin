@@ -418,9 +418,12 @@ fn build_valid_notes_excludes_unrelated_notes() {
 fn frequency_range_spans_lowest_to_highest_valid_note() {
     let chart = test_chart();
     let (lo, hi) = chart.harmonica.frequency_range().expect("has a layout");
-    // Lowest note is hole-1 blow (C4 ≈ 261.6 Hz), highest is hole-10 blow (C7 ≈ 2093 Hz).
+    // Lowest is hole-1 blow (C4 ≈ 261.6 Hz). The top is hole 10's *overdraw*
+    // (C#7 ≈ 2217 Hz), a semitone above its blow reed — once the valid set
+    // includes over-techniques, the detector's search range has to reach
+    // them too, or it would never look where those notes actually are.
     assert!((lo - 261.63).abs() < 1.0, "expected ~C4, got {lo}");
-    assert!((hi - 2093.0).abs() < 1.0, "expected ~C7, got {hi}");
+    assert!((hi - 2217.46).abs() < 1.0, "expected ~C#7, got {hi}");
 }
 
 #[test]
@@ -669,4 +672,48 @@ fn hole_1_overblow_is_a_semitone_above_draw() {
         hole_notes(&richter_harp("C"), 1).over.as_deref(),
         Some("D#4")
     );
+}
+
+/// Every over-technique pitch must be in the valid set.
+///
+/// `judge::score_notes` filters detected pitches through
+/// `build_valid_notes` before scoring anything, so a pitch missing here is
+/// not merely undocumented — it is unhittable. Seven of a C harp's eight
+/// over-pitches used to be absent (hole 8's survived only by coinciding
+/// with a bend), which meant a chart note carrying `Modifier::Overblow`
+/// could never be scored, with nothing on screen to explain why. Latent
+/// only because no shipped chart uses one yet.
+#[test]
+fn the_valid_note_set_includes_overblows_and_overdraws() {
+    use crate::pitch_map::HARP_KEYS;
+    for key in HARP_KEYS {
+        let harp = richter_harp(key);
+        let valid = harp.build_valid_notes();
+        for hole in 1..=harp.hole_count() {
+            let Some(over) = hole_notes(&harp, hole).over else {
+                continue;
+            };
+            let midi = note_to_midi(&over).and_then(|m| u8::try_from(m).ok());
+            let Some(midi) = midi else { continue };
+            assert!(
+                valid.contains(&midi),
+                "{key} harp: hole {hole}'s over-note {over} (MIDI {midi}) is not in \
+                 build_valid_notes, so score_notes would discard it"
+            );
+        }
+    }
+}
+
+/// The set must not have grown into notes the harp cannot make: widening it
+/// loosens the noise gate, so this pins the shape rather than just the size.
+#[test]
+fn the_valid_note_set_still_excludes_a_pitch_the_harp_cannot_produce() {
+    let harp = richter_harp("C");
+    let valid = harp.build_valid_notes();
+    // A semitone below hole 1 blow (C4) is below the instrument entirely:
+    // no reed, no bend toward it, no over-technique.
+    let below = note_to_midi("B3")
+        .and_then(|m| u8::try_from(m).ok())
+        .unwrap();
+    assert!(!valid.contains(&below));
 }

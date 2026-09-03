@@ -850,6 +850,22 @@ impl Harmonica {
                             set.extend(u8::try_from(m).ok());
                         }
                     }
+                    // Overblows and overdraws. These were missing, and the
+                    // omission was not cosmetic: `judge::score_notes` filters
+                    // every detected pitch through this set, so a note
+                    // requiring an over-technique was discarded before it
+                    // could be scored — unhittable, with nothing to explain
+                    // why. On a C harp seven of the eight over-pitches were
+                    // absent (hole 8's only survived by coinciding with a
+                    // bend). No shipped chart uses `Modifier::Overblow` yet,
+                    // which is why it stayed latent.
+                    let hole = u8::try_from(i + 1).unwrap_or(u8::MAX);
+                    let over = match hole {
+                        1 | 4 | 5 | 6 => note_to_midi(d).map(|m| m + 1),
+                        7..=10 => note_to_midi(b).map(|m| m + 1),
+                        _ => None,
+                    };
+                    set.extend(over.and_then(|m| u8::try_from(m).ok()));
                 }
             }
             Harmonica::Chromatic {
