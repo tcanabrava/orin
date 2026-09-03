@@ -237,6 +237,88 @@ only. Execution order, most valuable first:
 5. **Release engineering**: version reconciliation, Flathub, signing keys,
    and the four line-budget splits.
 
+## Bring your own harp, bring your own songs
+
+`ROADMAP.md` has the shape and the reasoning; this is the order. Phase 0
+serves both features, so it goes first regardless of which one ships.
+
+### Phase 0 — the pitch↔hole primitive, in a crate that can be reached
+
+`song_editor::pitch_map`'s `map_pitch`/`map_pitch_playable` are the only
+inverse mapping in the tree and are `pub(super)` in `harmonicon-editor`,
+which sits above gameplay and would be above an importer. Move them into
+`harmonicon-core`.
+
+Not a copy-paste: they're written against editor-local `Dir`, `Pitch` and
+`HarmonicaKind`, which restate core's own `Action`, `Modifier` and
+`Harmonica` variants. The move is a re-expression in core's vocabulary,
+returning `(hole, Action, Option<Modifier>)`. The editor then calls the
+moved functions and drops its duplicates, or keeps thin adapters if the
+diff gets unwieldy — decide when the shape is visible, not now.
+
+Then extend it with **overblow/overdraw**, which it does not do today
+(exact match, bends within `max_bend`'s per-hole caps, and the chromatic
+slide are all it resolves). This is the piece with actual musical content:
+on a Richter harp the overblows sit on holes 1/4/5/6 and overdraws on
+7/9/10, and the resulting pitch has to be computed and written into the
+note's own `note` field — `Modifier::Overblow` deliberately doesn't imply
+it (see its doc comment).
+
+Pure functions, so this phase is testable end to end with no Bevy.
+
+### Phase 1 — play a chart on a different harmonica
+
+1. `EffectiveHarmonica { harp, mapping }` resource, defaulting to the
+   chart's own harp with an identity mapping, so nothing changes until
+   something sets it.
+2. Repoint the reads. 22 `.harmonica` sites in `harmonicon-gameplay`, 10
+   in `harmonicon-jam`. Most are display (hole count, labels) and want the
+   effective harp too; sort them as you go rather than assuming.
+3. **The microphone invariant.** `expected_pitch` (via `target_pitch`),
+   `PitchRange` (`frequency_range`) and `ValidHarpNotes`
+   (`build_valid_notes`) must all follow the effective harp. Write the test
+   first: for a chart played on a non-default harp, every expected pitch
+   must be in that harp's own `build_valid_notes()`. That single assertion
+   is what stops the game listening for notes the player can't make.
+4. The pre-play screen, after song selection and before `SongLoading`.
+   Shows what the chart wants (`harp_banner` already renders it), a
+   key/tuning picker, the two modes, and **what the choice costs** — how
+   many notes need a bend, an overblow, or can't be reached at all. A
+   beginner melody quietly turned into an overblow study is a worse outcome
+   than "this harp doesn't fit"; the count is what prevents that.
+
+### Phase 2 — `harmonicon-score`
+
+Follow the `add-crate` skill. Bevy-free, between `harmonicon-core` and
+`harmonicon-song`.
+
+1. The trait and `ScoreTrack`/`ScoreNote` types, with `.harpchart` as the
+   first implementation — the native format going through the same door
+   keeps the trait honest.
+2. MIDI, mostly re-homing `core::midi_file` (`track_name_of`,
+   `extract_notes`, `collect_tempo_map`, `tick_to_seconds`).
+3. Track auto-selection: case-insensitive match against `harmonica`,
+   `gaita`, `mouth harp`, `blues harp`; otherwise the player picks. The
+   Song Editor's existing MIDI track combobox is the model.
+4. Conversion — `ScoreFile + track + Harmonica + mapping → HarpChart` —
+   reusing Phase 0 rather than growing a second mapper.
+
+### Phase 3 — Guitar Pro, after a spike
+
+**Spike first, design second.** The `guitarpro` crate (MIT, v0.4.3,
+codeberg.org/slundi/scorelib) is a candidate only: its gp3/gp4 API is
+unverified, and gpx is a different container again — GP6's proprietary
+BCFS, GP7's zipped XML — which it may not cover at all. The spike answers
+one question: which of gp3/gp4/gp5/gpx can we actually read, and through
+whose code.
+
+Expect the honest outcome for many files to be "this song has no
+harmonica part". A guitar track mapped onto a harp is mostly unreachable
+notes; the name-based lookup is the mitigation, and refusing is better
+than emitting a chart nobody can play. Never bundle Guitar Pro
+transcriptions — they're copyrighted; opening one from `~/Harmonicon` is
+the supported path.
+
 ## Post-1.0 (mobile + tooling)
 
 Ordered by value, not effort. All three came out of actually running the

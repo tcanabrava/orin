@@ -23,6 +23,40 @@ See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
   traditional. Same rights-and-judgment constraint as the content item
   below — **not to be authored unsupervised**.
 
+## Bring your own harp, bring your own songs (post-1.0)
+
+`ROADMAP.md` has the reasoning, `PLAN.md` the order. Phase 0 blocks both.
+
+- [ ] **The pitch↔hole mapper is trapped in `harmonicon-editor`.**
+  `song_editor::pitch_map`'s `map_pitch`/`map_pitch_playable` are the tree's
+  only inverse mapping and are `pub(super)` in a crate above gameplay.
+  Move to `harmonicon-core`, re-expressed in core's own `Action`/`Modifier`
+  vocabulary instead of the editor's `Dir`/`Pitch`/`HarmonicaKind`.
+- [ ] **The mapper can't do overblows or overdraws.** It resolves exact
+  notes, bends within `max_bend`'s per-hole caps, and the chromatic slide —
+  nothing else. Reaching the notes a diatonic harp otherwise can't make
+  means adding them (Richter: overblow on 1/4/5/6, overdraw on 7/9/10), and
+  computing the resulting pitch into the note's own `note` field, since
+  `Modifier::Overblow` deliberately doesn't imply it.
+- [ ] **A chart's harmonica is a hard requirement.** Own a G harp and a
+  C-harp chart is unplayable. Needs an `EffectiveHarmonica` resource, a
+  pre-play picker, and the two mapping modes (same holes / transpose).
+- [ ] **The mic must listen to the harp being played, not the one written
+  down.** `expected_pitch`, `PitchRange` and `ValidHarpNotes` all derive
+  from `chart.harmonica` today; all three have to follow the effective harp
+  or the game listens for pitches the player cannot produce. Test it
+  directly: every expected pitch must be in the effective harp's own
+  `build_valid_notes()`.
+- [ ] **No score format but `.harpchart` can be played.** Needs
+  `harmonicon-score` (Bevy-free, above core, below song) with one trait
+  over `.harpchart`, MIDI and Guitar Pro, plus track auto-selection by name
+  (`harmonica`/`gaita`/`mouth harp`/`blues harp`) and a picker when nothing
+  matches.
+- [ ] **Guitar Pro support rests on an unverified crate.** `guitarpro`
+  (MIT, v0.4.3) is a candidate; its gp3/gp4 API is unconfirmed and gpx is a
+  different container entirely (GP6 BCFS, GP7 zipped XML). Spike before
+  designing on it.
+
 ## Mobile (post-1.0)
 
 - [ ] **`CompactLayout` is width-only.** `responsive::is_compact` takes just

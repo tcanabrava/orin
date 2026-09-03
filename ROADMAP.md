@@ -98,6 +98,74 @@ existing scoring primitives, and Record-mode tooling.
 - Clear the four line-budget allowlist entries (`gameplay_2d`,
   `gameplay_3d`, `bending_trainer`, `options`). Cleanup, not a gate.
 
+## Bring your own harp, bring your own songs (post-1.0)
+
+Two features that share one primitive, which is why they're planned
+together: **mapping a pitch onto a harmonica's holes**, and its inverse.
+That primitive exists today as `song_editor::pitch_map`'s `map_pitch` /
+`map_pitch_playable`, `pub(super)` inside `harmonicon-editor` — reachable
+by neither gameplay nor an importer. Extracting it into
+`harmonicon-core` is Phase 0 for both.
+
+### Play a chart on the harmonica you actually own
+
+A chart declares the harp it was written for, and today that's a hard
+requirement: `harp_banner` tells you "Use a C harmonica" and if you own a
+G, that's the end of it. A pre-play screen should let you pick a different
+harmonica and choose what that means:
+
+- **Same holes** — the tab is unchanged and the music transposes with the
+  harp. Nearly free: keep `(hole, action)` and recompute the expected pitch
+  from the chosen harp. Needs one guard, that the chart doesn't want more
+  holes than the harp has.
+- **Transpose** — the music is unchanged and the tab is recomputed.
+  `map_pitch_playable` resolves exact notes, bends within each hole's cap,
+  and the chromatic slide; it does **not** currently do overblows or
+  overdraws, and covering the notes a diatonic harp otherwise can't reach
+  means teaching it those. Anything still unreachable stays visible and
+  unscored rather than counting as a miss.
+
+**The invariant that makes or breaks this is what the microphone is
+listening for.** `expected_pitch`, `PitchRange` (from
+`Harmonica::frequency_range`) and `ValidHarpNotes` all currently derive
+from `chart.harmonica`; every one has to follow the *effective* harp
+instead, or the game listens for pitches the player physically cannot
+produce and scores nothing. That deserves a dedicated test rather than
+trust.
+
+Automatically generated overblows carry their own risk worth watching:
+they're an advanced technique, and a transposition that silently turns a
+beginner melody into an overblow study is a worse outcome than saying the
+harp doesn't fit. The pre-play screen should say what a choice will cost
+("needs 3 overblows") before it's made.
+
+### Play songs from other formats
+
+A `harmonicon-score` crate — Bevy-free, above `harmonicon-core` and below
+`harmonicon-song` — exposing every score format behind one trait, the
+native `.harpchart` included so it isn't a special case. Formats: MIDI
+(largely re-homing what `core::midi_file` already does), and Guitar Pro
+gp3/gp4/gp5 plus the gpx container.
+
+Track selection matches a name against `harmonica`/`gaita`/`mouth harp`/
+`blues harp`, case-insensitively; with no match the player picks, modelled
+on the Song Editor's existing MIDI track combobox.
+
+Two things to go in open-eyed:
+
+- **The `guitarpro` crate (MIT, v0.4.3, updated 2026-08) is a candidate,
+  not a decision.** Its gp3/gp4 coverage and API shape are unverified, and
+  gpx is a different container entirely (GP6's proprietary BCFS, GP7's
+  zipped XML) that it may not touch at all. A spike comes before any design
+  rests on it.
+- **A guitar track converted to harmonica is mostly unplayable** — wrong
+  range, chords throughout, notes off the harp. The name-based track lookup
+  is the real mitigation; where a file has no harmonica part, "this song
+  has no harmonica in it" is a better answer than a chart nobody can play.
+  Guitar Pro transcriptions are also typically copyrighted: fine to open
+  from `~/Harmonicon`, never to bundle (same rule as `TODO.md`'s content
+  item).
+
 ## 0.4 — "Blues school" (curriculum & jam) — in progress
 
 Adaptive difficulty, the jam-session position/scale overlays, the lessons
