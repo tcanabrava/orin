@@ -128,11 +128,7 @@ fn bends_scenario(harp: &Harmonica) -> SyntheticScenario {
             items.push(SyntheticItem {
                 start_secs: t,
                 duration_secs: NOTE_DUR_SECS,
-                events: vec![SyntheticEvent {
-                    hole,
-                    action: action.clone(),
-                    midi,
-                }],
+                events: vec![SyntheticEvent { hole, action, midi }],
             });
             t += STEP_SECS;
         }
@@ -192,11 +188,7 @@ fn chords_scenario(harp: &Harmonica) -> SyntheticScenario {
                 Action::Draw => &hn.draw,
             };
             if let Some(midi) = note.as_deref().and_then(to_midi_u8) {
-                events.push(SyntheticEvent {
-                    hole,
-                    action: action.clone(),
-                    midi,
-                });
+                events.push(SyntheticEvent { hole, action, midi });
             }
         }
         if events.len() < 2 {
@@ -246,12 +238,12 @@ fn octaves_scenario(harp: &Harmonica) -> SyntheticScenario {
                     events: vec![
                         SyntheticEvent {
                             hole: hole_a,
-                            action: action.clone(),
+                            action,
                             midi: ma,
                         },
                         SyntheticEvent {
                             hole: hole_b,
-                            action: action.clone(),
+                            action,
                             midi: mb,
                         },
                     ],
@@ -302,7 +294,7 @@ fn render_scenario(
             });
             events.push(NoteEvent {
                 hole: ev.hole,
-                action: ev.action.clone(),
+                action: ev.action,
                 note: Some(midi_to_note(ev.midi as i32)),
                 modifiers: None,
             });

@@ -114,9 +114,7 @@ pub(super) const LESSON_FIELDS: [(Field, &str); 8] = [
 ];
 
 /// All valid diatonic harp keys in chromatic order.
-pub(super) const HARP_KEYS: [&str; 12] = [
-    "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B",
-];
+pub(super) use harmonicon_core::pitch_map::HARP_KEYS;
 
 /// Playing positions in the order harmonica players commonly reach for them:
 /// 1st (straight), 2nd (cross harp, the blues staple), 3rd through 5th, and
@@ -539,15 +537,19 @@ pub(super) struct TimelineSelection {
 // ── Note model logic ─────────────────────────────────────────────────────────
 
 pub(super) fn pitch_compatible(pitch: Pitch, hole: u8) -> bool {
-    match pitch {
-        Pitch::Normal => true,
-        Pitch::Bend(depth) => depth <= max_bend(hole) + f32::EPSILON,
-        Pitch::Overblow => overblow_ok(hole),
-        Pitch::Overdraw => overdraw_ok(hole),
-        // The slide button works on every chromatic hole, so dragging a
-        // slide note never needs to be denied on that basis.
-        Pitch::Slide => true,
-    }
+    // Delegated so the editor's idea of what a hole can physically do can't
+    // drift from the resolver's — `pitch_map` decides which notes are
+    // reachable, and this decides which the UI will let you place.
+    harmonicon_core::pitch_map::technique_fits_hole(
+        match pitch {
+            Pitch::Normal => harmonicon_core::pitch_map::Technique::Natural,
+            Pitch::Bend(depth) => harmonicon_core::pitch_map::Technique::Bend(depth),
+            Pitch::Overblow => harmonicon_core::pitch_map::Technique::Overblow,
+            Pitch::Overdraw => harmonicon_core::pitch_map::Technique::Overdraw,
+            Pitch::Slide => harmonicon_core::pitch_map::Technique::Slide,
+        },
+        hole,
+    )
 }
 
 /// Returns the localization key for the reason a pitch is not allowed on a hole,
@@ -574,24 +576,13 @@ pub(super) const WAH_HZ_MIN: f32 = 2.0;
 pub(super) const WAH_HZ_MAX: f32 = 5.0;
 pub(super) const WAH_HZ_STEP: f32 = 1.0;
 
-pub(super) fn max_bend(hole: u8) -> f32 {
-    match hole {
-        2 | 3 | 10 => 1.5,
-        1 | 6 | 8 | 9 => 1.0,
-        4 | 5 | 7 => 0.5,
-        _ => 0.0,
-    }
-}
+pub(super) use harmonicon_core::pitch_map::max_bend;
 
 /// Matches `song::harmonica::hole_notes`'s `over` field exactly — holes
 /// 1/4/5/6 only, or the pitch resolves to nothing downstream.
-pub(super) fn overblow_ok(hole: u8) -> bool {
-    matches!(hole, 1 | 4 | 5 | 6)
-}
+pub(super) use harmonicon_core::pitch_map::overblow_ok;
 
-pub(super) fn overdraw_ok(hole: u8) -> bool {
-    (7..=10).contains(&hole)
-}
+pub(super) use harmonicon_core::pitch_map::overdraw_ok;
 
 /// The breath direction `pitch` physically requires, if any — `Overblow`
 /// only exists while *blowing*, `Overdraw` only while *drawing*, regardless

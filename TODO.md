@@ -27,17 +27,6 @@ See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
 
 `ROADMAP.md` has the reasoning, `PLAN.md` the order. Phase 0 blocks both.
 
-- [ ] **The pitch↔hole mapper is trapped in `harmonicon-editor`.**
-  `song_editor::pitch_map`'s `map_pitch`/`map_pitch_playable` are the tree's
-  only inverse mapping and are `pub(super)` in a crate above gameplay.
-  Move to `harmonicon-core`, re-expressed in core's own `Action`/`Modifier`
-  vocabulary instead of the editor's `Dir`/`Pitch`/`HarmonicaKind`.
-- [ ] **The mapper can't do overblows or overdraws.** It resolves exact
-  notes, bends within `max_bend`'s per-hole caps, and the chromatic slide —
-  nothing else. Reaching the notes a diatonic harp otherwise can't make
-  means adding them (Richter: overblow on 1/4/5/6, overdraw on 7/9/10), and
-  computing the resulting pitch into the note's own `note` field, since
-  `Modifier::Overblow` deliberately doesn't imply it.
 - [ ] **A chart's harmonica is a hard requirement.** Own a G harp and a
   C-harp chart is unplayable. Needs an `EffectiveHarmonica` resource, a
   pre-play picker, and the two mapping modes (same holes / transpose).

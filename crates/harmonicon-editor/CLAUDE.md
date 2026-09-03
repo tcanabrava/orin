@@ -22,14 +22,25 @@ load-bearing about *this* crate.
   track's notes onto the editor's tick grid (quantized, same resolution
   manually-placed notes already use) and resolves each MIDI pitch onto a
   harp key via `pitch_map::map_pitch` — an exact blow/draw match, else a
-  bend within `state::max_bend`'s per-hole cap (diatonic) or a slide
-  (chromatic, one semitone up), else the nearest playable note — reusing
-  `state::pitch_compatible` so an import can never produce a note the
-  editor's own UI wouldn't allow. (`song_editor::pitch_map` holds all
-  pitch-onto-harp resolution — `map_pitch`, its no-fallback sibling
-  `map_pitch_playable`, and `suggest_key` — shared between MIDI import
-  and live recording, which want opposite fallback behaviour; see the
-  recording bullet below.) The key itself isn't just whatever was
+  bend within `max_bend`'s per-hole cap (diatonic), an overblow/overdraw,
+  or a slide (chromatic, one semitone up), else the nearest playable note
+  — reusing `state::pitch_compatible` so an import can never produce a
+  note the editor's own UI wouldn't allow. (**The resolution itself lives
+  in `harmonicon_core::pitch_map`**, where gameplay and score importers
+  can reach it too; `song_editor::pitch_map` is the thin adapter
+  translating core's `HoleAssignment` into the editor's own `Dir`/`Pitch`
+  — the vocabulary the mod-panel buttons produce and a `GridNote` stores.
+  It keeps the `map_pitch` / no-fallback `map_pitch_playable` /
+  `suggest_key` names its two callers already used, MIDI import and live
+  recording, which want opposite fallback behaviour; see the recording
+  bullet below. `state`'s `max_bend`/`overblow_ok`/`overdraw_ok`/
+  `HARP_KEYS` are re-exports of core's and `pitch_compatible` delegates to
+  `technique_fits_hole`, so what the UI lets you place cannot drift from
+  what the resolver considers reachable. Core's resolver also reaches
+  overblows and overdraws, which the editor's own never did — those
+  pitches previously fell through to the nearest-note fallback, so a MIDI
+  import could silently relocate a note the harp could actually have
+  played.) The key itself isn't just whatever was
   already selected: `on_midi_track_selected` first scores every
   `state::HARP_KEYS` entry via `suggest_key`/`key_fit_score` (the fraction
   of the track's raw MIDI pitches landing on an exact blow/draw match —

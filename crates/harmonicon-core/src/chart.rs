@@ -389,7 +389,10 @@ pub struct NoteEvent {
     pub modifiers: Option<Vec<Modifier>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Breath direction. `Copy`/`Eq` because it is two fieldless variants that
+/// get compared and passed around constantly — `pitch_map` returns one in
+/// every resolution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Action {
     Blow,

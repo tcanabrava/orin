@@ -219,7 +219,7 @@ mod tests {
                 .iter()
                 .map(|(hole, action)| NoteEvent {
                     hole: *hole,
-                    action: action.clone(),
+                    action: *action,
                     note: None,
                     modifiers: None,
                 })

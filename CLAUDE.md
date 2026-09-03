@@ -109,7 +109,7 @@ Manual testing needs a mic, audio out, and a display.
 
   | Crate | Holds | Bevy? |
   |---|---|---|
-  | `harmonicon-core` | music theory, chart types, scoring math, pitch/MIDI conversion, the harmonica synth, WAV, grid snapping | **no** |
+  | `harmonicon-core` | music theory, chart types, scoring math, pitch/MIDI conversion, pitch→hole resolution (`pitch_map`), the harmonica synth, WAV, grid snapping | **no** |
   | `harmonicon-dsp` | the five pitch detectors (FFT/YIN/pYIN/MPM/NMF) and their windowing | **no** |
   | `harmonicon-audio` | cpal capture, the ECS wrapper over `harmonicon-dsp`, waveform analysis | yes |
   | `harmonicon-platform` | asset discovery, localization, settings, theme, responsive | yes |
