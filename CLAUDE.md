@@ -87,28 +87,40 @@ cargo clippy --all-targets -- -D warnings               # what CI runs
 
 # Working on pure logic? Skip the engine entirely — seconds, not a minute:
 cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
-# Debug builds are big; two things keep them from becoming enormous.
+# Debug builds were 300 GB of `target/`. Three settings in Cargo.toml keep
+# a clean full build *plus the whole test suite* at 7.1 GB, and the game
+# binary at 287 MB (it was 2,410 MB). Each was measured, not guessed:
 #
-# 1. `[profile.dev.package."*"] debug = false` (Cargo.toml). That glob is
-#    dependencies *only* — Cargo excludes workspace members — so Bevy loses
-#    its debug info while our own crates keep theirs. Measured on the
-#    `harmonicon` binary: 2.41 GB -> 0.63 GB, because 2.16 GB of the
-#    original was `.debug_*` and almost all of it was Bevy's. Stepping
-#    through our code still works; stepping into Bevy's internals no longer
-#    does. Put `debug = true` back on that block if you ever need to.
+#   [profile.dev.package."*"] debug = false   2410 MB -> 644 MB
+#     Dependencies only — Cargo's `"*"` glob excludes workspace members, so
+#     Bevy loses its debug info and our own crates keep theirs. 2.16 GB of
+#     that original 2.41 GB was `.debug_*`, nearly all Bevy's.
 #
-# 2. **Cargo never garbage-collects `target/`.** Every distinct feature set
-#    or source state leaves another full binary behind and nothing removes
-#    it. This reached 300 GB (99 stale binaries over 1 GB each, 201 GB of
-#    them, going back weeks). There is no cargo command for it; either
-#    `cargo clean` and pay a full rebuild, or sweep by age:
+#   [profile.dev] debug = "line-tables-only"   644 MB -> 380 MB
+#     Keeps `.debug_line`, which is all a backtrace needs to name a file and
+#     line (verified with a real panic). Drops the variable/type detail a
+#     step debugger wants. `.debug_line` is only 13 MB of the binary; the
+#     rest was `.debug_str`/`.debug_info` type names.
 #
-#      find target/debug/deps -maxdepth 1 -type f -size +500M -mtime +7 -delete
-#      rm -rf target/debug/incremental    # a cache; cargo rebuilds it
+#   [profile.dev] split-debuginfo = "unpacked" 380 MB -> 287 MB
+#     Debug info stays in the object files rather than being copied into
+#     every binary that links them, which matters most across the ~50 test
+#     binaries. **The binary now depends on those `.o` files staying in
+#     `target/`** — copy it elsewhere and backtraces lose their line
+#     numbers. Fine for a dev profile; don't carry it into `release`.
 #
-#    Deleting artifacts can only cost rebuild time, never correctness —
-#    cargo re-derives whatever it still needs. `cargo-sweep` automates the
-#    same idea if you'd rather install it.
+# Put `debug = true` back on the dependency block to step through Bevy.
+#
+# Separately: **cargo never garbage-collects `target/`.** Every distinct
+# feature set or source state leaves another binary behind and nothing
+# removes it — that is how 300 GB happened (99 stale binaries over 1 GB
+# each). There is no cargo subcommand for it:
+#
+#   find target/debug/deps -maxdepth 1 -type f -size +200M -mtime +7 -delete
+#   rm -rf target/debug/incremental    # a cache; cargo rebuilds it
+#
+# Deleting artifacts can only cost rebuild time, never correctness — cargo
+# re-derives whatever it still needs. `cargo-sweep` automates the same idea.
 
 # Profiling: start the Tracy UI (https://github.com/wolfpld/tracy), click
 # "Connect", then:

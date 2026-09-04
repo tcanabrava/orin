@@ -166,6 +166,12 @@ path = "src/bin/hole_editor.rs"
 
 [profile.dev]
 opt-level = 1
+# Enough debug info for a backtrace to name a file and line, without the
+# full variable/type detail a step debugger wants. Measured below.
+debug = "line-tables-only"
+# Debug info stays in the object files instead of being copied into every
+# binary that links them. Measured below.
+split-debuginfo = "unpacked"
 
 # Dependencies only — Cargo's `"*"` glob deliberately excludes workspace
 # members, so this leaves our own crates fully debuggable.
