@@ -209,17 +209,30 @@ pub fn remap_event(
                     playable: false,
                 };
             };
-            // Least disturbance first: if the note's own hole and breath
-            // already sound the right pitch on the target harp, keep them.
-            // Without this, resolving picks the lowest hole producing that
-            // pitch and shuffles the tab even when the harps are identical —
-            // hole 3 blow and hole 2 draw are both G4 on a C harp, so a
-            // no-op transposition would silently rewrite one into the other.
-            if target_harp.wind_direction_midi(hole, &action) == Some(target) {
+            // Least disturbance first: if the note *as written* already
+            // sounds the right pitch on the target harp — same hole, same
+            // breath, same technique — keep all of it.
+            //
+            // Two reasons, and the second is the load-bearing one:
+            //
+            // Without it, resolving picks the lowest hole producing that
+            // pitch and shuffles the tab even when the harps are identical:
+            // hole 3 blow and hole 2 draw are both G4 on a C harp.
+            //
+            // And re-resolving a *bent* note can fail outright, so a
+            // transposition onto the chart's own harmonica would report its
+            // own notes as unplayable. `map_pitch_playable` caps bends with
+            // `max_bend`, while `build_valid_notes` (and charts in the wild)
+            // treat the whole blow-to-draw gap as bendable — hole 3 draw
+            // bends a full three semitones there but only 1.5 by the cap.
+            // Those two disagree, which is its own bug (see `TODO.md`);
+            // this check means the disagreement cannot cost a player notes
+            // the chart already asked for.
+            if source_pitch(hole, action, None, modifiers, target_harp) == Some(target) {
                 return RemappedEvent {
                     hole,
                     action,
-                    modifiers: expression_only(modifiers),
+                    modifiers: modifiers.to_vec(),
                     midi: Some(target),
                     playable: true,
                 };

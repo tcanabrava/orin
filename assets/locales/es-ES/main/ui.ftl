@@ -839,7 +839,7 @@ chord-warning-monophonic = Esta canción tiene acordes, y el detector de tono el
 # "¿Qué armónica tienes?" (menu::pages::harp_check) — entre elegir la
 # canción y cargarla.
 harp-check-title = Tu armónica
-harp-check-intro = Esta canción se escribió para una armónica concreta. Si la tuya es otra, dilo aquí y elige qué debe conservar el cambio.
+harp-check-intro = Si la tuya es otra, dilo aquí y elige qué debe conservar el cambio.
 harp-check-key = Tono
 harp-check-type = Tipo
 harp-check-mapping = Cuando la armónica sea distinta
@@ -850,3 +850,8 @@ harp-check-cost-clean = Se toca tal como está escrito en esta armónica.
 harp-check-cost-bends = {$count} nota(s) necesitan un bend
 harp-check-cost-overblows = {$count} nota(s) necesitan un overblow
 harp-check-cost-unreachable = {$count} nota(s) no se pueden tocar en esta armónica
+# Nombra la armónica para la que se escribió la canción, en la página de
+# elección.
+harp-check-chart-harp = Escrita para una armónica {$kind} en {$key}.
+harp-kind-diatonic = diatónica
+harp-kind-chromatic = cromática

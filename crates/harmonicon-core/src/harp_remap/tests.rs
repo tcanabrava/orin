@@ -386,3 +386,65 @@ fn same_holes_refuses_an_overblow_on_a_hole_that_cannot_overblow() {
     );
     assert!(!out.playable);
 }
+
+#[test]
+fn transposing_onto_the_charts_own_harp_never_loses_a_bent_note() {
+    // Found on screen: a real chart bends hole 3 draw by -1.5 and -0.5
+    // semitones, and transposing it onto its *own* C harp reported two
+    // notes as unplayable. Re-resolving the pitch went through max_bend,
+    // which caps hole 3 at 1.5, while the chart (and build_valid_notes)
+    // treat the whole blow-to-draw gap as bendable.
+    let c = richter_harp("C");
+    for semitones in [-0.5, -1.0, -1.5, -2.0] {
+        let out = remap_event(
+            3,
+            Action::Draw,
+            Some("B4"),
+            &[bend(semitones)],
+            &c,
+            &c,
+            HarpMapping::Transpose,
+        );
+        assert!(
+            out.playable,
+            "a {semitones} bend on hole 3 draw became unplayable on the chart's own harp"
+        );
+        assert_eq!((out.hole, out.action), (3, Action::Draw), "the tab moved");
+        assert_eq!(
+            out.midi,
+            source_pitch(3, Action::Draw, Some("B4"), &[bend(semitones)], &c),
+            "the sounding pitch changed"
+        );
+    }
+}
+
+#[test]
+fn the_same_harp_is_the_identity_for_bent_notes_too() {
+    // The broader property the test above is one case of: whatever the
+    // chart asked for, asking for it again on the same harmonica must
+    // return exactly the same note.
+    let c = richter_harp("C");
+    for (hole, action) in playable_positions(&c) {
+        let natural = c.wind_direction_label(hole, &action);
+        for depth in [0.0f32, -0.5, -1.0] {
+            let mods: Vec<Modifier> = if depth == 0.0 {
+                vec![]
+            } else {
+                vec![bend(depth)]
+            };
+            for mapping in HarpMapping::all() {
+                let out = remap_event(hole, action, Some(&natural), &mods, &c, &c, *mapping);
+                if !out.playable {
+                    // Only legitimate where the chart itself asked for a
+                    // bend the hole doesn't have.
+                    continue;
+                }
+                assert_eq!(
+                    (out.hole, out.action),
+                    (hole, action),
+                    "{mapping:?} moved hole {hole} {action:?} on its own harp"
+                );
+            }
+        }
+    }
+}

@@ -838,7 +838,7 @@ chord-warning-monophonic = Esta música tem acordes, e o detector de tom escolhi
 # "Qual gaita você tem?" (menu::pages::harp_check) — entre escolher a
 # música e carregá-la.
 harp-check-title = Sua gaita
-harp-check-intro = Esta música foi escrita para uma gaita específica. Se a sua for outra, informe aqui e escolha o que a troca deve preservar.
+harp-check-intro = Se a sua for outra, informe aqui e escolha o que a troca deve preservar.
 harp-check-key = Tom
 harp-check-type = Tipo
 harp-check-mapping = Quando a gaita for diferente
@@ -849,3 +849,7 @@ harp-check-cost-clean = Toca como está escrito nesta gaita.
 harp-check-cost-bends = {$count} nota(s) exigem bend
 harp-check-cost-overblows = {$count} nota(s) exigem overblow
 harp-check-cost-unreachable = {$count} nota(s) não podem ser tocadas nesta gaita
+# Nomeia a gaita para a qual a música foi escrita, na página de escolha.
+harp-check-chart-harp = Escrita para uma gaita {$kind} em {$key}.
+harp-kind-diatonic = diatônica
+harp-kind-chromatic = cromática

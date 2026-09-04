@@ -84,23 +84,49 @@ impl HarpChoice {
 #[derive(Component)]
 pub(crate) struct HarpCostLabel;
 
-fn kind_labels() -> Vec<String> {
-    vec!["Diatonic".to_string(), "Chromatic".to_string()]
+/// The line naming the harmonica the chart was written for.
+#[derive(Component)]
+pub(crate) struct ChartHarpLabel;
+
+fn kind_label(kind: HarpKind, loc: &Localization) -> String {
+    String::from(match kind {
+        HarpKind::Diatonic => loc.msg("harp-kind-diatonic"),
+        HarpKind::Chromatic => loc.msg("harp-kind-chromatic"),
+    })
 }
 
-fn kind_from_label(label: &str) -> HarpKind {
-    if label == "Chromatic" {
+fn kind_labels(loc: &Localization) -> Vec<String> {
+    vec![
+        kind_label(HarpKind::Diatonic, loc),
+        kind_label(HarpKind::Chromatic, loc),
+    ]
+}
+
+/// Resolved against the same localized labels the list was built from, for
+/// the same reason the mapping combobox is: matching an English literal
+/// would stop working the moment the player isn't running in English.
+fn kind_from_label(label: &str, loc: &Localization) -> HarpKind {
+    if label == kind_label(HarpKind::Chromatic, loc) {
         HarpKind::Chromatic
     } else {
         HarpKind::Diatonic
     }
 }
 
-fn kind_label(kind: HarpKind) -> &'static str {
-    match kind {
-        HarpKind::Diatonic => "Diatonic",
-        HarpKind::Chromatic => "Chromatic",
-    }
+/// "C diatonic" — the harmonica a chart asks for, named rather than merely
+/// alluded to. Without this the page said a song "was written for one
+/// harmonica" and never said which, which is the one fact a player needs
+/// before they can tell whether theirs differs.
+pub(crate) fn harp_name(harp: &Harmonica, loc: &Localization) -> String {
+    let kind = match harp {
+        Harmonica::Chromatic { .. } => HarpKind::Chromatic,
+        Harmonica::Diatonic { .. } => HarpKind::Diatonic,
+    };
+    let key = detected_harp_key(harp).unwrap_or_else(|| "?".to_string());
+    String::from(loc.msg_args(
+        "harp-check-chart-harp",
+        &[("key", key), ("kind", kind_label(kind, loc))],
+    ))
 }
 
 fn mapping_labels(loc: &Localization) -> Vec<String> {
@@ -223,6 +249,19 @@ pub(crate) fn setup_harp_check(
         .id();
     commands.entity(root).add_child(intro);
 
+    let written_for = commands
+        .spawn((
+            Text::new(""),
+            TextFont {
+                font_size: FontSize::Px(18.0),
+                ..default()
+            },
+            TextColor(Color::srgb(0.95, 0.95, 1.0)),
+            ChartHarpLabel,
+        ))
+        .id();
+    commands.entity(root).add_child(written_for);
+
     combobox::spawn_combobox(
         &mut commands,
         root,
@@ -240,10 +279,12 @@ pub(crate) fn setup_harp_check(
         root,
         page_root,
         &loc.msg("harp-check-type"),
-        &kind_labels(),
-        kind_label(choice.kind),
-        |ev: On<combobox::ComboboxSelect>, mut choice: ResMut<HarpChoice>| {
-            choice.kind = kind_from_label(&ev.value);
+        &kind_labels(&loc),
+        &kind_label(choice.kind, &loc),
+        |ev: On<combobox::ComboboxSelect>,
+         mut choice: ResMut<HarpChoice>,
+         loc: Res<Localization>| {
+            choice.kind = kind_from_label(&ev.value, &loc);
         },
     );
 
@@ -342,6 +383,7 @@ pub(crate) fn refresh_harp_cost(
     selected: Option<Res<SelectedSong>>,
     manifests: Res<Assets<SongManifest>>,
     mut labels: Query<&mut Text, With<HarpCostLabel>>,
+    mut harp_labels: Query<&mut Text, (With<ChartHarpLabel>, Without<HarpCostLabel>)>,
 ) {
     let Some(chart) = selected
         .as_ref()
@@ -355,6 +397,11 @@ pub(crate) fn refresh_harp_cost(
     } else if !choice.is_changed() {
         return;
     }
+    let written_for = harp_name(&chart.harmonica, &loc);
+    for mut label in &mut harp_labels {
+        *label = Text::new(written_for.clone());
+    }
+
     let baseline = cost_of(&chart, &baseline_choice(&chart));
     let text = cost_message(&cost_of(&chart, &choice), &baseline, &loc);
     for mut label in &mut labels {

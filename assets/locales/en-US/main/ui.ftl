@@ -841,7 +841,7 @@ chord-warning-monophonic = This song has chords, and the chosen pitch detector h
 # "Which harmonica are you holding?" (menu::pages::harp_check) — between
 # picking a song and loading it.
 harp-check-title = Your harmonica
-harp-check-intro = This song was written for one harmonica. If you have a different one, say so here and pick what the swap should keep.
+harp-check-intro = If you have a different one, say so here and pick what the swap should keep.
 harp-check-key = Key
 harp-check-type = Type
 harp-check-mapping = When the harp differs
@@ -852,3 +852,7 @@ harp-check-cost-clean = Plays as written on this harmonica.
 harp-check-cost-bends = {$count} note(s) need a bend
 harp-check-cost-overblows = {$count} note(s) need an overblow
 harp-check-cost-unreachable = {$count} note(s) can't be played on this harmonica
+# Names the harmonica a chart was written for, on the harp-check page.
+harp-check-chart-harp = Written for a {$key} {$kind} harmonica.
+harp-kind-diatonic = diatonic
+harp-kind-chromatic = chromatic
