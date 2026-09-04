@@ -167,8 +167,17 @@ path = "src/bin/hole_editor.rs"
 [profile.dev]
 opt-level = 1
 
+# Dependencies only — Cargo's `"*"` glob deliberately excludes workspace
+# members, so this leaves our own crates fully debuggable.
 [profile.dev.package."*"]
+# Bevy is unusable at opt-level 0; this is what makes a debug build playable.
 opt-level = 3
+# ...and this is what stops it filling the disk. A debug `harmonicon` was
+# 2.41 GB, of which 2.16 GB (90%) was `.debug_*` sections, almost all of it
+# Bevy's. Stepping through Bevy's internals is not something this project
+# does; stepping through *our* code still works, since the profile above
+# doesn't apply to workspace members.
+debug = false
 
 # Two incompatible `getrandom` majors sit in the dependency tree at once —
 # 0.4.x via `rand`/Bevy, 0.3.x via `ahash` — and each refuses to target

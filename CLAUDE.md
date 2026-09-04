@@ -87,6 +87,29 @@ cargo clippy --all-targets -- -D warnings               # what CI runs
 
 # Working on pure logic? Skip the engine entirely — seconds, not a minute:
 cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
+# Debug builds are big; two things keep them from becoming enormous.
+#
+# 1. `[profile.dev.package."*"] debug = false` (Cargo.toml). That glob is
+#    dependencies *only* — Cargo excludes workspace members — so Bevy loses
+#    its debug info while our own crates keep theirs. Measured on the
+#    `harmonicon` binary: 2.41 GB -> 0.63 GB, because 2.16 GB of the
+#    original was `.debug_*` and almost all of it was Bevy's. Stepping
+#    through our code still works; stepping into Bevy's internals no longer
+#    does. Put `debug = true` back on that block if you ever need to.
+#
+# 2. **Cargo never garbage-collects `target/`.** Every distinct feature set
+#    or source state leaves another full binary behind and nothing removes
+#    it. This reached 300 GB (99 stale binaries over 1 GB each, 201 GB of
+#    them, going back weeks). There is no cargo command for it; either
+#    `cargo clean` and pay a full rebuild, or sweep by age:
+#
+#      find target/debug/deps -maxdepth 1 -type f -size +500M -mtime +7 -delete
+#      rm -rf target/debug/incremental    # a cache; cargo rebuilds it
+#
+#    Deleting artifacts can only cost rebuild time, never correctness —
+#    cargo re-derives whatever it still needs. `cargo-sweep` automates the
+#    same idea if you'd rather install it.
+
 # Profiling: start the Tracy UI (https://github.com/wolfpld/tracy), click
 # "Connect", then:
 cargo run --release --features trace_tracy
