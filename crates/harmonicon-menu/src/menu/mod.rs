@@ -32,6 +32,7 @@ impl Plugin for MenuPlugin {
             .register_type::<bevy::state::state::NextState<AppState>>()
             .register_type::<bevy::state::state::NextState<MenuPage>>()
             .init_resource::<SelectedArtist>()
+            .init_resource::<pages::harp_check::HarpChoice>()
             .init_resource::<pages::lessons::SelectedLesson>()
             .init_resource::<pages::lessons::SelectedUnitIx>()
             .add_message::<pages::lessons::LessonUnitChanged>()
@@ -87,6 +88,21 @@ impl Plugin for MenuPlugin {
                 pages::song_list::setup_song_list,
             )
             .add_systems(OnExit(MenuPage::SongList), scene::cleanup_menu)
+            .add_systems(
+                OnEnter(MenuPage::HarpCheck),
+                (
+                    pages::harp_check::reset_harp_choice,
+                    pages::harp_check::setup_harp_check,
+                )
+                    .chain(),
+            )
+            .add_systems(OnExit(MenuPage::HarpCheck), scene::cleanup_menu)
+            // The chart may still be decoding when the page is built, so the
+            // cost line is filled in on whichever frame it resolves.
+            .add_systems(
+                Update,
+                pages::harp_check::refresh_harp_cost.run_if(in_state(MenuPage::HarpCheck)),
+            )
             .add_systems(
                 OnEnter(MenuPage::ModeSelect),
                 pages::mode_select::setup_mode_select,

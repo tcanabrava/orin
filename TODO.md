@@ -27,15 +27,10 @@ See `ROADMAP.md`'s 1.0 section for the bar and `PLAN.md` for the order.
 
 `ROADMAP.md` has the reasoning, `PLAN.md` the order. Phase 0 blocks both.
 
-- [ ] **A chart's harmonica is a hard requirement.** Own a G harp and a
-  C-harp chart is unplayable. Needs an `EffectiveHarmonica` resource, a
-  pre-play picker, and the two mapping modes (same holes / transpose).
-- [ ] **The mic must listen to the harp being played, not the one written
-  down.** `expected_pitch`, `PitchRange` and `ValidHarpNotes` all derive
-  from `chart.harmonica` today; all three have to follow the effective harp
-  or the game listens for pitches the player cannot produce. Test it
-  directly: every expected pitch must be in the effective harp's own
-  `build_valid_notes()`.
+- [ ] **The harp picker is only on the song-list route.** Lessons and the
+  guided tour still force the chart's own harmonica — deliberate for now (a
+  lesson prescribes its harp as part of the teaching), but a player who
+  doesn't own that key can't take those lessons at all.
 - [ ] **No score format but `.harpchart` can be played.** Needs
   `harmonicon-score` (Bevy-free, above core, below song) with one trait
   over `.harpchart`, MIDI and Guitar Pro, plus track auto-selection by name

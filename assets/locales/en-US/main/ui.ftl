@@ -838,3 +838,17 @@ options-mic-awaiting-permission = Waiting for microphone permission — grant it
 algo-single-notes-only = single notes only
 # In-play banner for that combination (gameplay::warning_banner).
 chord-warning-monophonic = This song has chords, and the chosen pitch detector hears one note at a time. Pick FFT or NMF in Options to score them.
+# "Which harmonica are you holding?" (menu::pages::harp_check) — between
+# picking a song and loading it.
+harp-check-title = Your harmonica
+harp-check-intro = This song was written for one harmonica. If you have a different one, say so here and pick what the swap should keep.
+harp-check-key = Key
+harp-check-type = Type
+harp-check-mapping = When the harp differs
+harp-check-same-holes = Same holes (the tune changes key)
+harp-check-transpose = Same tune (the holes change)
+harp-check-play = Play
+harp-check-cost-clean = Plays as written on this harmonica.
+harp-check-cost-bends = {$count} note(s) need a bend
+harp-check-cost-overblows = {$count} note(s) need an overblow
+harp-check-cost-unreachable = {$count} note(s) can't be played on this harmonica

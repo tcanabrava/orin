@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy::ui_widgets::Activate;
 use bevy_fluent::Localization;
 
-use harmonicon_app::app::{AppState, SelectedArtist, SelectedSong};
+use harmonicon_app::app::{SelectedArtist, SelectedSong};
 use harmonicon_platform::assets_management::AvailableSongs;
 use harmonicon_platform::localization::LocalizationExt;
 use harmonicon_platform::theme::LoadedTheme;
@@ -38,19 +38,23 @@ pub(crate) fn setup_song_list(
         sorted.sort_unstable_by(|a, b| a.name.cmp(&b.name));
         for song in &sorted {
             let path = song.asset_path.clone();
-            // The mode is already chosen — picking a song starts the game.
+            // The mode is already chosen; picking a song asks which
+            // harmonica the player actually has before loading it.
             spawn_button(
                 &mut commands,
                 root,
                 &song.name,
                 move |_: On<Activate>,
                       asset_server: Res<AssetServer>,
-                      mut state: ResMut<NextState<AppState>>,
+                      mut page: ResMut<NextState<MenuPage>>,
                       mut commands: Commands| {
                     commands.insert_resource(SelectedSong(
                         asset_server.load::<SongManifest>(path.clone()),
                     ));
-                    state.set(AppState::SongLoading);
+                    // Holding the handle starts the load, so the harp page
+                    // usually has a decoded chart to price a choice against
+                    // by the time it needs one.
+                    page.set(MenuPage::HarpCheck);
                 },
             );
         }

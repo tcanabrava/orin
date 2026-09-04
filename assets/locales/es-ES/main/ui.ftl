@@ -836,3 +836,17 @@ options-mic-awaiting-permission = Esperando permiso del micrófono — concédel
 algo-single-notes-only = solo notas sueltas
 # Aviso durante el juego para esa combinación (gameplay::warning_banner).
 chord-warning-monophonic = Esta canción tiene acordes, y el detector de tono elegido oye una nota a la vez. Elige FFT o NMF en Opciones para puntuarlos.
+# "¿Qué armónica tienes?" (menu::pages::harp_check) — entre elegir la
+# canción y cargarla.
+harp-check-title = Tu armónica
+harp-check-intro = Esta canción se escribió para una armónica concreta. Si la tuya es otra, dilo aquí y elige qué debe conservar el cambio.
+harp-check-key = Tono
+harp-check-type = Tipo
+harp-check-mapping = Cuando la armónica sea distinta
+harp-check-same-holes = Mismos agujeros (la melodía cambia de tono)
+harp-check-transpose = Misma melodía (cambian los agujeros)
+harp-check-play = Tocar
+harp-check-cost-clean = Se toca tal como está escrito en esta armónica.
+harp-check-cost-bends = {$count} nota(s) necesitan un bend
+harp-check-cost-overblows = {$count} nota(s) necesitan un overblow
+harp-check-cost-unreachable = {$count} nota(s) no se pueden tocar en esta armónica

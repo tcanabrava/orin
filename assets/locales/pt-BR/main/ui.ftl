@@ -835,3 +835,17 @@ options-mic-awaiting-permission = Aguardando permissão do microfone — conceda
 algo-single-notes-only = só notas isoladas
 # Aviso durante o jogo para essa combinação (gameplay::warning_banner).
 chord-warning-monophonic = Esta música tem acordes, e o detector de tom escolhido ouve uma nota por vez. Escolha FFT ou NMF nas Opções para pontuá-los.
+# "Qual gaita você tem?" (menu::pages::harp_check) — entre escolher a
+# música e carregá-la.
+harp-check-title = Sua gaita
+harp-check-intro = Esta música foi escrita para uma gaita específica. Se a sua for outra, informe aqui e escolha o que a troca deve preservar.
+harp-check-key = Tom
+harp-check-type = Tipo
+harp-check-mapping = Quando a gaita for diferente
+harp-check-same-holes = Mesmos furos (a música muda de tom)
+harp-check-transpose = Mesma música (os furos mudam)
+harp-check-play = Tocar
+harp-check-cost-clean = Toca como está escrito nesta gaita.
+harp-check-cost-bends = {$count} nota(s) exigem bend
+harp-check-cost-overblows = {$count} nota(s) exigem overblow
+harp-check-cost-unreachable = {$count} nota(s) não podem ser tocadas nesta gaita

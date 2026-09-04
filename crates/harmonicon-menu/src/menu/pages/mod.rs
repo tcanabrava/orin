@@ -8,6 +8,7 @@
 pub(crate) mod artist_list;
 pub(crate) mod calibration;
 pub(crate) mod credits;
+pub(crate) mod harp_check;
 pub(crate) mod help_about;
 pub(crate) mod jam_generate;
 pub(crate) mod jam_session;

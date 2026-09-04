@@ -30,6 +30,10 @@ pub(crate) enum MenuPage {
     Play,
     ArtistList,
     SongList,
+    /// "Which harmonica are you holding?" — between picking a song and
+    /// loading it. Only on the song-list route; a lesson prescribes its own
+    /// harp and the guided tour drives itself.
+    HarpCheck,
     ModeSelect,
     Options,
     Theme,
@@ -81,6 +85,7 @@ pub(crate) fn handle_menu_escape(
         },
         MenuPage::JamGenerate => MenuPage::JamSessionMenu,
         MenuPage::SongList => MenuPage::ArtistList,
+        MenuPage::HarpCheck => MenuPage::SongList,
         MenuPage::Theme => MenuPage::Options,
         MenuPage::LessonReader => MenuPage::Lessons,
         MenuPage::About => MenuPage::HelpAbout,
