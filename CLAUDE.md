@@ -116,13 +116,18 @@ cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
 # removes it — that is how 300 GB happened (99 stale binaries over 1 GB
 # each). Cargo has no subcommand for this; `cargo-sweep` does:
 
-cargo sweep --maxsize 20GB   # evict oldest until under a cap — this is the
-                             # one that stops 300 GB recurring, since it
-                             # bounds the tree rather than trusting an age
+# This runs on every commit already — scripts/git-hooks/post-commit, a
+# ~0.04s no-op while under the cap. By hand:
+cargo sweep --maxsize 20GB   # evict stale artifacts until the rest fits
 cargo sweep --time 7         # or by age: anything untouched for a week
 cargo sweep --installed      # artifacts from toolchains rustup no longer has
 # `--dry-run` on any of them first. Deleting artifacts can only cost rebuild
 # time, never correctness — cargo re-derives whatever it still needs.
+#
+# `--maxsize` caps *accumulation*, not the tree: a freshly built 3.0 GB tree
+# under `--maxsize 1GB` cleans nothing, since that is what a current build
+# needs. Which is why it is safe on a hook — it can't decide your working
+# set is the problem.
 
 # Profiling: start the Tracy UI (https://github.com/wolfpld/tracy), click
 # "Connect", then:

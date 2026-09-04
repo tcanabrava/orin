@@ -1,0 +1,51 @@
+#!/bin/sh
+# Keeps target/ under a size cap, on every commit.
+#
+# Cargo never garbage-collects target/: each distinct feature set or source
+# state leaves another full binary behind and nothing removes it. This repo
+# reached 300 GB that way — 99 stale binaries over 1 GB each, accumulated in
+# about a week. See CLAUDE.md's Commands section.
+#
+# Why `post-commit`:
+#   - Git ignores this hook's exit code, so a sweep can never fail or block
+#     a commit. `pre-commit` would put disk housekeeping in the way of your
+#     work, which is the wrong trade for a cache.
+#   - Committing is a good enough clock. It happens often enough to keep the
+#     cap honest and needs no timer or daemon.
+#
+# Why `--maxsize` rather than `--time`: an age rule lets the tree grow
+# without limit inside its window, which is exactly how 300 GB happened —
+# on 3 September none of it was a week old, so `--time 7` would have
+# deleted nothing.
+#
+# `--maxsize` is a cap on *accumulation*, not on the tree. Observed: with a
+# freshly built 3.0 GB tree, `--maxsize 1GB` cleans nothing, because what's
+# there is what a current build needs. It evicts stale artifacts until the
+# rest fits, and stops. That is the behaviour you want from something
+# wired to every commit — it can't decide your working set is the problem.
+#
+# Deleting build artifacts can only ever cost rebuild time, never
+# correctness: cargo re-derives whatever it still needs. The one real
+# annoyance is sweeping while a build runs in another terminal, which may
+# make that build redo work. Under the cap this exits in ~0.04s having done
+# nothing, which is the overwhelmingly common case.
+
+# 20 GB against a measured 7.1 GB for a clean build plus the entire test
+# suite — room for a few feature-set variants (dev, plain, wasm) before
+# anything is evicted, without ever approaching the old figure.
+MAXSIZE=20GB
+
+# A fresh clone that hasn't installed cargo-sweep must not have every commit
+# print an error. Silence is the right behaviour here: the hook is
+# maintenance, not policy.
+command -v cargo-sweep >/dev/null 2>&1 || exit 0
+
+# Only speak up when something was actually freed, so ordinary commits stay
+# quiet. Failure is ignored on purpose — the commit already happened, and a
+# sweep that couldn't run is not worth a scary message.
+output=$(cargo sweep --maxsize "$MAXSIZE" 2>&1) || exit 0
+case "$output" in
+    *"Cleaned nothing"*) ;;
+    *) printf 'post-commit: %s\n' "$(printf '%s' "$output" | tail -1)" ;;
+esac
+exit 0
