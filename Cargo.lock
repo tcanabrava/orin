@@ -3531,6 +3531,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonicon-score"
+version = "0.1.0"
+dependencies = [
+ "harmonicon-core",
+ "midly",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "harmonicon-song"
 version = "0.1.0"
 dependencies = [

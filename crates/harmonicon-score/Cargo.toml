@@ -1,0 +1,27 @@
+[package]
+name = "harmonicon-score"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+# Deliberately no Bevy, for the same reason `harmonicon-core` has none: this
+# is file parsing and note maths, so it compiles and tests in seconds. Asset
+# loading through the `AssetServer` belongs a level up, in `harmonicon-song`.
+#
+# Version specs are copied from the root manifest rather than guessed — two
+# incompatible copies of the same crate in the tree surface as an unrelated
+# trait-bound error, not as a version complaint.
+[dependencies]
+harmonicon-core = { path = "../harmonicon-core", version = "*" }
+midly = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+# Switches on the shared MIDI event constructors (`smf_bytes`, `note_on`,
+# `meta`) so tests can build real files instead of checking in fixtures.
+harmonicon-core = { path = "../harmonicon-core", features = ["test-support"] }
