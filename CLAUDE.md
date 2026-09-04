@@ -114,13 +114,15 @@ cargo test -p harmonicon-core   # ~200 tests, no Bevy in its dependency tree
 # Separately: **cargo never garbage-collects `target/`.** Every distinct
 # feature set or source state leaves another binary behind and nothing
 # removes it — that is how 300 GB happened (99 stale binaries over 1 GB
-# each). There is no cargo subcommand for it:
-#
-#   find target/debug/deps -maxdepth 1 -type f -size +200M -mtime +7 -delete
-#   rm -rf target/debug/incremental    # a cache; cargo rebuilds it
-#
-# Deleting artifacts can only cost rebuild time, never correctness — cargo
-# re-derives whatever it still needs. `cargo-sweep` automates the same idea.
+# each). Cargo has no subcommand for this; `cargo-sweep` does:
+
+cargo sweep --maxsize 20GB   # evict oldest until under a cap — this is the
+                             # one that stops 300 GB recurring, since it
+                             # bounds the tree rather than trusting an age
+cargo sweep --time 7         # or by age: anything untouched for a week
+cargo sweep --installed      # artifacts from toolchains rustup no longer has
+# `--dry-run` on any of them first. Deleting artifacts can only cost rebuild
+# time, never correctness — cargo re-derives whatever it still needs.
 
 # Profiling: start the Tracy UI (https://github.com/wolfpld/tracy), click
 # "Connect", then:
