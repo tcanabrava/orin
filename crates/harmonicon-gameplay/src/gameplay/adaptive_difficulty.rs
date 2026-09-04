@@ -299,11 +299,12 @@ pub fn first_unresolved_index(notes: &[ScheduledNote]) -> usize {
 /// the chord/split-badge tags parallel to the rebuilt notes; 3D has no such
 /// badge and discards them.
 pub fn rebuild_song_notes(
+    effective: &harmonicon_app::app::EffectiveHarmonica,
     chart: &harmonicon_core::chart::HarpChart,
     adaptive: &AdaptiveDifficulty,
     song_notes: &mut super::SongNotes,
 ) -> Vec<Option<&'static str>> {
-    let (mut new_notes, new_tags) = super::build_scheduled_notes(chart, adaptive);
+    let (mut new_notes, new_tags) = super::build_scheduled_notes(effective, chart, adaptive);
     carry_over_note_state(&song_notes.notes, &mut new_notes);
     song_notes.cursor = first_unresolved_index(&new_notes);
     song_notes.notes = new_notes;
@@ -389,6 +390,7 @@ mod tests {
             amp_samples: Vec::new(),
             phrase_section: section,
             chord_pitches: Vec::new(),
+            playable: true,
             force_wait: false,
         }
     }
@@ -632,6 +634,7 @@ mod tests {
             amp_samples: Vec::new(),
             phrase_section: 0,
             chord_pitches: Vec::new(),
+            playable: true,
             force_wait: false,
         }
     }

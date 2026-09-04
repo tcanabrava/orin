@@ -211,6 +211,7 @@ mod tests {
                 amp_samples: Vec::new(),
                 phrase_section: 0,
                 chord_pitches,
+                playable: true,
                 force_wait: false,
             }],
             cursor: 0,

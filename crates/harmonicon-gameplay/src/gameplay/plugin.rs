@@ -71,6 +71,7 @@ impl Plugin for GameplayPlugin {
         .init_resource::<PitchGate>()
         .init_resource::<MusicStarted>()
         .init_resource::<ValidHarpNotes>()
+        .init_resource::<harmonicon_app::app::EffectiveHarmonica>()
         .init_resource::<SongNotes>()
         .init_resource::<adaptive_difficulty::AdaptiveDifficulty>()
         .init_resource::<gameplay_2d::NoteRenderAssets>()

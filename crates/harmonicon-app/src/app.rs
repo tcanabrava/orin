@@ -10,8 +10,9 @@
 
 use bevy::prelude::*;
 
-use harmonicon_core::chart::Scale;
-use harmonicon_core::harmonica::Progression;
+use harmonicon_core::chart::{HarpChart, Scale};
+use harmonicon_core::harmonica::{Harmonica, Progression};
+use harmonicon_core::harp_remap::HarpMapping;
 use harmonicon_song::song::SongManifest;
 
 // ── App-level states ──────────────────────────────────────────────────────────
@@ -119,6 +120,47 @@ pub fn tour_active(tour: Res<TourActive>) -> bool {
 
 #[derive(Resource)]
 pub struct SelectedSong(pub Handle<SongManifest>);
+
+/// The harmonica the player will actually put to their mouth, when it isn't
+/// the one the chart was written for.
+///
+/// `None` means "play the chart's own harp", which is the default and the
+/// overwhelmingly common case — so nothing has to populate this when a song
+/// loads, and the feature costs nothing until someone opts in. Resolve it
+/// against a chart with [`Self::harp_for`] rather than reading the field:
+/// that keeps the fallback in one place.
+///
+/// **Everything the microphone depends on must resolve through here.** A
+/// chart's expected pitches, `PitchRange` and `ValidHarpNotes` all used to
+/// come straight off `chart.harmonica`; if any one of them keeps doing that
+/// while the others don't, the game listens for notes the player's harp
+/// cannot make. `harmonicon_core::harp_remap` documents the same invariant
+/// from the pure side.
+#[derive(Resource, Default, Clone, Debug)]
+pub struct EffectiveHarmonica {
+    pub harp: Option<Harmonica>,
+    pub mapping: HarpMapping,
+}
+
+impl EffectiveHarmonica {
+    /// The harp to actually use for `chart` — the player's choice, or the
+    /// chart's own when they haven't made one.
+    pub fn harp_for<'a>(&'a self, chart: &'a HarpChart) -> &'a Harmonica {
+        self.harp.as_ref().unwrap_or(&chart.harmonica)
+    }
+
+    /// Whether the player has chosen a harp other than the chart's.
+    pub fn is_substituted(&self) -> bool {
+        self.harp.is_some()
+    }
+
+    /// Back to the chart's own harmonica. Called when a song ends, so one
+    /// song's substitution can't leak into the next.
+    pub fn clear(&mut self) {
+        self.harp = None;
+        self.mapping = HarpMapping::default();
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct SelectedArtist(pub String);

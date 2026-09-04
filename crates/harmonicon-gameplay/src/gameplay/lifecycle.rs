@@ -7,7 +7,7 @@
 use bevy::audio::Volume;
 use bevy::prelude::*;
 
-use harmonicon_app::app::{AppState, GameplayMode, SelectedSong};
+use harmonicon_app::app::{AppState, EffectiveHarmonica, GameplayMode, SelectedSong};
 use harmonicon_audio::pitch_detect::{PITCH_RANGE_MARGIN_SEMITONES, PitchRange};
 use harmonicon_song::song::SongManifest;
 
@@ -39,6 +39,7 @@ const SONG_END_TAIL: f64 = 2.5;
 
 pub(crate) fn setup_scoring_config(
     selected: Res<SelectedSong>,
+    effective: Res<EffectiveHarmonica>,
     manifests: Res<Assets<SongManifest>>,
     mut config: ResMut<ScoringConfig>,
     mut loop_cfg: ResMut<LoopConfig>,
@@ -54,8 +55,8 @@ pub(crate) fn setup_scoring_config(
     // Size the detector to this harmonica instead of a fixed constant, so a
     // Low-F/Low-D harp's low notes aren't cut off by a floor tuned for
     // standard keys (see TODO.md).
-    *pitch_range = chart
-        .harmonica
+    *pitch_range = effective
+        .harp_for(chart)
         .frequency_range()
         .map(|(lo, hi)| PitchRange::from_freqs([lo, hi], PITCH_RANGE_MARGIN_SEMITONES))
         .unwrap_or_default();
@@ -155,10 +156,15 @@ pub(crate) fn cleanup_gameplay(
     mut commands: Commands,
     roots: Query<Entity, With<GameplayRoot>>,
     mut pitch_range: ResMut<PitchRange>,
+    mut effective: ResMut<EffectiveHarmonica>,
 ) {
     for e in &roots {
         commands.entity(e).despawn();
     }
+    // A harmonica chosen for *this* song must not silently apply to the
+    // next one — the pre-play screen asks per song, so the answer expires
+    // with it. Same end-of-life point the pitch range uses below.
+    effective.clear();
     // Leaving Playing/BendingTrainer drops the chart- or key-derived range;
     // menus and the spectrogram fall back to the default until another chart
     // (or the trainer) sets it again.

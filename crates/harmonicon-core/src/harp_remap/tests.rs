@@ -341,3 +341,48 @@ fn the_charts_own_harp_costs_nothing_extra() {
     assert!(cost.is_complete());
     assert_eq!((cost.bends, cost.overblows), (0, 0));
 }
+
+#[test]
+fn same_holes_reads_an_overblow_from_the_over_note_not_the_reed() {
+    // An overblow does not sound its hole's blow reed, so keeping the tab
+    // must re-derive the *over* note on the new harp. Reading the reed
+    // would preserve the tab and report a pitch the player won't produce —
+    // the same failure as honouring the chart's own note name, reached by a
+    // different route.
+    let c = richter_harp("C");
+    let g = richter_harp("G");
+    let out = remap_event(
+        4,
+        Action::Blow,
+        Some("D#5"),
+        &[Modifier::Overblow],
+        &c,
+        &g,
+        HarpMapping::SameHoles,
+    );
+    assert!(out.playable);
+    let expected = hole_notes(&g, 4).over.as_deref().and_then(note_to_midi);
+    assert_eq!(out.midi.map(|m| m as i32), expected);
+    assert_ne!(
+        out.midi,
+        g.wind_direction_midi(4, &Action::Blow),
+        "an overblow must not report its blow reed's pitch"
+    );
+}
+
+#[test]
+fn same_holes_refuses_an_overblow_on_a_hole_that_cannot_overblow() {
+    // Holes 2/3 have no overblow. Keeping the tab onto such a hole has to
+    // report unplayable rather than inventing a pitch.
+    let c = richter_harp("C");
+    let out = remap_event(
+        2,
+        Action::Blow,
+        None,
+        &[Modifier::Overblow],
+        &c,
+        &c,
+        HarpMapping::SameHoles,
+    );
+    assert!(!out.playable);
+}

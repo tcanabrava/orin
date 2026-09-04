@@ -288,6 +288,13 @@ pub(crate) fn score_notes(
 
     for i in pending {
         let note = &mut song_notes.notes[i];
+        // A note the player's harp cannot produce is not part of the
+        // performance: never hit, never missed, absent from the stats. It
+        // stays visible so the chart still reads correctly — see
+        // `ScheduledNote::playable`.
+        if !note.playable {
+            continue;
+        }
         let offset = judged - note.time;
         // A note counts as "playing" only on a fresh attack: the pitch must be
         // sounding and not already consumed by an earlier note in this sustain.

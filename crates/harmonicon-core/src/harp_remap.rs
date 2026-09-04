@@ -29,7 +29,7 @@
 //! is meant to prevent, and one that would affect every shipped chart.
 
 use crate::chart::{Action, Modifier};
-use crate::harmonica::Harmonica;
+use crate::harmonica::{Harmonica, hole_notes};
 use crate::midi::note_to_midi;
 use crate::pitch_map::{Technique, map_pitch_playable, technique_fits_hole};
 
@@ -153,16 +153,44 @@ pub fn remap_event(
             // Deliberately *not* `explicit`: that note names the chart's
             // own harp. Re-deriving from the target harp is the whole
             // point — see this module's header.
-            let natural = target_harp.wind_direction_label(hole, &action);
+            //
+            // Which note to re-derive depends on the technique, because an
+            // over-technique or a slide does not sound its hole's blow/draw
+            // reed. Reading the reed for those would keep the tab but report
+            // the wrong pitch — the same class of error as honouring
+            // `explicit`, just arrived at differently.
             let depth = bend_depth(modifiers);
-            let midi = note_to_midi(&natural)
-                .map(|m| m - depth.round() as i32)
-                .and_then(|m| u8::try_from(m).ok());
+            let over = modifiers
+                .iter()
+                .any(|m| matches!(m, Modifier::Overblow | Modifier::Overdraw));
+            let slide = modifiers.iter().any(|m| matches!(m, Modifier::Slide));
+
+            let midi = if over {
+                hole_notes(target_harp, hole)
+                    .over
+                    .as_deref()
+                    .and_then(note_to_midi)
+                    .and_then(|m| u8::try_from(m).ok())
+            } else {
+                let natural = target_harp.wind_direction_label(hole, &action);
+                note_to_midi(&natural)
+                    .map(|m| m - depth.round() as i32 + i32::from(slide))
+                    .and_then(|m| u8::try_from(m).ok())
+            };
+
             // A hole that exists on the source harp may not bend as far on
-            // the target, and may not exist at all on a shorter one.
-            let playable = midi.is_some()
-                && hole <= target_harp.hole_count()
-                && (depth == 0.0 || technique_fits_hole(Technique::Bend(depth), hole));
+            // the target, may not overblow at all, and may not exist on a
+            // shorter one.
+            let technique_ok = if over {
+                modifiers.iter().all(|m| match m {
+                    Modifier::Overblow => technique_fits_hole(Technique::Overblow, hole),
+                    Modifier::Overdraw => technique_fits_hole(Technique::Overdraw, hole),
+                    _ => true,
+                })
+            } else {
+                depth == 0.0 || technique_fits_hole(Technique::Bend(depth), hole)
+            };
+            let playable = midi.is_some() && hole <= target_harp.hole_count() && technique_ok;
             RemappedEvent {
                 hole,
                 action,

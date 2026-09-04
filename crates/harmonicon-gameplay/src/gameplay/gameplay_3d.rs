@@ -7,7 +7,7 @@ use bevy_fluent::Localization;
 use harmonicon_core::chart::{Action, HarpChart};
 use harmonicon_core::harmonica::twelve_bar;
 
-use harmonicon_app::app::SelectedSong;
+use harmonicon_app::app::{EffectiveHarmonica, SelectedSong};
 use harmonicon_platform::assets_management::{
     HarmonicaModelConfig, HoleConfig, SelectedHarmonicaModel, SelectedNoteTheme3d, ShowNoteNumbers,
 };
@@ -281,13 +281,14 @@ fn create_hit_zone(commands: &mut Commands, center_x: f32, total_width: f32) {
 /// entities yet; notes spawn lazily in a `LOOKAHEAD` window around the
 /// playhead, mirroring `gameplay_2d::spawn_visible_notes`.
 fn build_song_notes_3d(
+    effective: &EffectiveHarmonica,
     chart: &HarpChart,
     head_mesh: Handle<Mesh>,
     cfg: NoteCube3dConfig,
     holes: Vec<HoleConfig>,
     adaptive: &AdaptiveDifficulty,
 ) -> (super::SongNotes, NoteRenderAssets3D) {
-    let (notes, _) = super::build_scheduled_notes(chart, adaptive);
+    let (notes, _) = super::build_scheduled_notes(effective, chart, adaptive);
     let hole_count = chart.harmonica.hole_count();
     (
         super::SongNotes { notes, cursor: 0 },
@@ -317,6 +318,7 @@ fn build_song_notes_3d(
 /// `spawn_visible_notes_3d` re-spawns everything within `LOOKAHEAD` fresh
 /// next frame, using the corrected indices.
 pub(super) fn resync_notes_on_adaptive_change(
+    effective: Res<EffectiveHarmonica>,
     mut commands: Commands,
     selected: Res<SelectedSong>,
     manifests: Res<Assets<SongManifest>>,
@@ -330,7 +332,12 @@ pub(super) fn resync_notes_on_adaptive_change(
     let Some(manifest) = manifests.get(&selected.0) else {
         return;
     };
-    super::adaptive_difficulty::rebuild_song_notes(&manifest.chart, &adaptive, &mut song_notes);
+    super::adaptive_difficulty::rebuild_song_notes(
+        &effective,
+        &manifest.chart,
+        &adaptive,
+        &mut song_notes,
+    );
     for entity in &visuals {
         commands.entity(entity).despawn();
     }
@@ -599,6 +606,7 @@ pub(super) struct HudContext<'w> {
 }
 
 pub fn setup(
+    effective: Res<EffectiveHarmonica>,
     mut commands: Commands,
     selected: Res<SelectedSong>,
     manifests: Res<Assets<SongManifest>>,
@@ -672,6 +680,7 @@ pub fn setup(
     };
     let note_cfg = manifest.assets_3d_config.clone();
     let (notes, assets) = build_song_notes_3d(
+        &effective,
         chart,
         head_mesh,
         note_cfg,

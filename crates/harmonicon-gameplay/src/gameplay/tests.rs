@@ -153,6 +153,7 @@ fn loop_test_note(time: f64) -> ScheduledNote {
         amp_samples: vec![(0.0, 0.5)],
         phrase_section: 0,
         chord_pitches: Vec::new(),
+        playable: true,
         force_wait: false,
     }
 }
@@ -643,6 +644,9 @@ fn cleanup_despawns_only_gameplay_entities() {
     // leaving unrelated entities (e.g. the persistent camera) untouched.
     let mut world = World::new();
     world.init_resource::<PitchRange>();
+    // Cleanup also expires the per-song harmonica choice, so the resource
+    // has to exist here as it does in the real plugin.
+    world.init_resource::<harmonicon_app::app::EffectiveHarmonica>();
     let scene_a = world.spawn(GameplayRoot).id();
     let scene_b = world.spawn((GameplayRoot, Transform::default())).id();
     let keep = world.spawn_empty().id();
@@ -683,6 +687,7 @@ fn overlap_test_note(time: f64) -> ScheduledNote {
         amp_samples: Vec::new(),
         phrase_section: 0,
         chord_pitches: Vec::new(),
+        playable: true,
         force_wait: false,
     }
 }
@@ -1196,6 +1201,7 @@ fn end_to_end_synthetic_song_drives_score_combo_and_stats() {
             amp_samples: Vec::new(),
             phrase_section: 0,
             chord_pitches: Vec::new(),
+            playable: true,
             force_wait: false,
         }
     }

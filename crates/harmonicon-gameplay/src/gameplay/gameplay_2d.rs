@@ -6,7 +6,7 @@ use bevy::asset::AssetPath;
 use bevy::prelude::*;
 use bevy::ui::ComputedNode;
 use bevy_fluent::Localization;
-use harmonicon_app::app::SelectedSong;
+use harmonicon_app::app::{EffectiveHarmonica, SelectedSong};
 use harmonicon_core::chart::{Action, Modifier};
 use harmonicon_core::harmonica::twelve_bar;
 use harmonicon_platform::localization::LocalizationExt;
@@ -55,6 +55,7 @@ pub fn setup(
     manifests: Res<Assets<SongManifest>>,
     mut clock: ResMut<super::GameplayClock>,
     mut music_started: ResMut<MusicStarted>,
+    effective: Res<EffectiveHarmonica>,
     mut valid_notes: ResMut<ValidHarpNotes>,
     mut song_notes: ResMut<SongNotes>,
     mut render_assets: ResMut<NoteRenderAssets>,
@@ -85,7 +86,11 @@ pub fn setup(
 
     clock.set_free(-COUNTDOWN);
     music_started.0 = false;
-    valid_notes.0 = manifest.chart.harmonica.build_valid_notes();
+    // The harp actually being played, not the one the chart names — this is
+    // the set `judge::score_notes` filters every detected pitch through, so
+    // leaving it on the chart's harp would discard everything the player
+    // sounds on a substituted one.
+    valid_notes.0 = effective.harp_for(&manifest.chart).build_valid_notes();
 
     let chart = &manifest.chart;
 
@@ -95,7 +100,7 @@ pub fn setup(
     // *visuals* are spawned later, lazily, by `spawn_visible_notes` as each
     // one enters the `LOOKAHEAD` window — a long/dense chart no longer pays
     // for every note's UI subtree (and comet-tail material) at song load.
-    let (notes, play_mode_tags) = super::build_scheduled_notes(chart, &adaptive);
+    let (notes, play_mode_tags) = super::build_scheduled_notes(&effective, chart, &adaptive);
     *song_notes = SongNotes { notes, cursor: 0 };
     *render_assets = NoteRenderAssets {
         head_image: Some(head_image.clone()),
@@ -458,6 +463,7 @@ pub(super) fn spawn_gameplay_music_score(commands: &mut Commands, bravura: &Brav
 /// `spawn_visible_notes` re-spawns everything within `LOOKAHEAD` fresh next
 /// frame, using the corrected indices.
 pub(super) fn resync_notes_on_adaptive_change(
+    effective: Res<EffectiveHarmonica>,
     mut commands: Commands,
     selected: Res<SelectedSong>,
     manifests: Res<Assets<SongManifest>>,
@@ -472,8 +478,12 @@ pub(super) fn resync_notes_on_adaptive_change(
     let Some(manifest) = manifests.get(&selected.0) else {
         return;
     };
-    let new_tags =
-        super::adaptive_difficulty::rebuild_song_notes(&manifest.chart, &adaptive, &mut song_notes);
+    let new_tags = super::adaptive_difficulty::rebuild_song_notes(
+        &effective,
+        &manifest.chart,
+        &adaptive,
+        &mut song_notes,
+    );
     render_assets.play_mode_tags = new_tags;
     for entity in &visuals {
         commands.entity(entity).despawn();

@@ -9,7 +9,9 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 
+use harmonicon_app::app::EffectiveHarmonica;
 use harmonicon_core::chart::{Action, HarpChart, Modifier, PlayMode};
+use harmonicon_core::harp_remap;
 use harmonicon_core::midi::note_to_midi;
 
 use super::adaptive_difficulty::{AdaptiveDifficulty, track_items, unlocked_flags};
@@ -81,6 +83,16 @@ pub struct ScheduledNote {
     /// together, not just its own — built on the chart format's existing
     /// multi-event `TrackItem` shape rather than a new schema field.
     pub chord_pitches: Vec<u8>,
+    /// False when the harmonica actually being played cannot produce this
+    /// note at all — only possible once `EffectiveHarmonica` substitutes a
+    /// different harp (see `harmonicon_core::harp_remap`).
+    ///
+    /// `judge::score_notes` skips these entirely rather than letting them
+    /// resolve: `expected_pitch: None` would look like the same thing but
+    /// isn't, because a note that can never be "playing" still falls through
+    /// to `NoteOutcome::Missed` when its window passes. A player must not be
+    /// marked down for a note their harp physically cannot make.
+    pub playable: bool,
     /// From the chart's `TrackItem::call` — this note is the "response"
     /// half of a call-and-response phrase. `clock::tick_clock`'s
     /// wait-freeze condition treats it like `WaitForNoteMode` being on
@@ -256,6 +268,7 @@ pub fn play_mode_label(mode: Option<&PlayMode>) -> Option<&'static str> {
 /// badge; 3D has none). Sorted by `time` — `score_notes`/the spawn-window
 /// helpers above all rely on that.
 pub fn build_scheduled_notes(
+    effective: &EffectiveHarmonica,
     chart: &HarpChart,
     adaptive: &AdaptiveDifficulty,
 ) -> (Vec<ScheduledNote>, Vec<Option<&'static str>>) {
@@ -273,39 +286,70 @@ pub fn build_scheduled_notes(
         let tag = play_mode_label(item.play_mode.as_ref());
         // Each event's own modifiers/expected pitch, computed once up front
         // so the chord-target set (below) doesn't need to redo it.
-        let event_data: Vec<(Vec<Modifier>, Option<u8>)> = item
+        // (hole, action, modifiers, expected pitch, playable). Only the
+        // pitch and modifiers move for an ordinary chart; hole and action
+        // change only under `HarpMapping::Transpose`.
+        let event_data: Vec<(u8, Action, Vec<Modifier>, Option<u8>, bool)> = item
             .events
             .iter()
             .map(|event| {
                 let modifiers = event.modifiers.clone().unwrap_or_default();
-                let natural_pitch = event.note.clone().unwrap_or_else(|| {
-                    chart
-                        .harmonica
-                        .wind_direction_label(event.hole, &event.action)
-                });
-                let expected_pitch = target_pitch(&natural_pitch, &modifiers);
-                (modifiers, expected_pitch)
+                match &effective.harp {
+                    // The overwhelmingly common case, kept on exactly the
+                    // path it has always taken. A chart played on its own
+                    // harmonica must not change behaviour because this
+                    // feature exists, and routing it through the remapper
+                    // "for consistency" would risk precisely that — the
+                    // chart's explicit `note` is authoritative here and
+                    // encodes pitches (an overblow's, a slide's) that a
+                    // blow/draw layout lookup cannot reproduce.
+                    None => {
+                        let natural_pitch = event.note.clone().unwrap_or_else(|| {
+                            chart
+                                .harmonica
+                                .wind_direction_label(event.hole, &event.action)
+                        });
+                        let expected_pitch = target_pitch(&natural_pitch, &modifiers);
+                        (event.hole, event.action, modifiers, expected_pitch, true)
+                    }
+                    Some(target) => {
+                        let r = harp_remap::remap_event(
+                            event.hole,
+                            event.action,
+                            event.note.as_deref(),
+                            &modifiers,
+                            &chart.harmonica,
+                            target,
+                            effective.mapping,
+                        );
+                        (r.hole, r.action, r.modifiers, r.midi, r.playable)
+                    }
+                }
             })
             .collect();
         // A real chord/octave-split needs every sibling pitch sounding at
         // once (see `ScheduledNote::chord_pitches`) — a `TrackItem` with
         // only one event stays an ordinary single note, untouched by this.
         let chord_pitches: Vec<u8> = if item.events.len() > 1 {
-            event_data.iter().filter_map(|(_, p)| *p).collect()
+            event_data
+                .iter()
+                .filter(|(.., playable)| *playable)
+                .filter_map(|(_, _, _, p, _)| *p)
+                .collect()
         } else {
             Vec::new()
         };
-        for (event, (modifiers, expected_pitch)) in item.events.iter().zip(event_data) {
+        for (hole, action, modifiers, expected_pitch, playable) in event_data {
             let (unlocked, section) = flags.next().unwrap_or((true, 0));
             if !unlocked {
                 continue;
             }
-            let is_blow = matches!(event.action, Action::Blow);
+            let is_blow = matches!(action, Action::Blow);
             combined.push((
                 ScheduledNote {
                     time: t,
                     duration: item.duration,
-                    hole: event.hole,
+                    hole,
                     is_blow,
                     expected_pitch,
                     hit: false,
@@ -317,6 +361,7 @@ pub fn build_scheduled_notes(
                     amp_samples: Vec::new(),
                     phrase_section: section,
                     chord_pitches: chord_pitches.clone(),
+                    playable,
                     force_wait: item.call,
                 },
                 tag,
@@ -368,6 +413,8 @@ pub fn notes_to_notation(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use harmonicon_core::harmonica::{chromatic_harp, richter_harp};
+    use harmonicon_core::harp_remap::HarpMapping;
 
     // ── play_mode_label ───────────────────────────────────────────────────────
 
@@ -413,7 +460,11 @@ mod tests {
                  "events":[{"hole":1,"action":"blow"}]}
             ]"#,
         );
-        let (notes, tags) = build_scheduled_notes(&chart, &AdaptiveDifficulty::default());
+        let (notes, tags) = build_scheduled_notes(
+            &EffectiveHarmonica::default(),
+            &chart,
+            &AdaptiveDifficulty::default(),
+        );
         assert_eq!(notes.len(), 2);
         assert_eq!(tags.len(), 2);
         // Sorted by time even though the track listed them out of order.
@@ -436,7 +487,11 @@ mod tests {
                  ]}
             ]"#,
         );
-        let (notes, tags) = build_scheduled_notes(&chart, &AdaptiveDifficulty::default());
+        let (notes, tags) = build_scheduled_notes(
+            &EffectiveHarmonica::default(),
+            &chart,
+            &AdaptiveDifficulty::default(),
+        );
         assert_eq!(notes.len(), 2);
         assert_eq!(tags, vec![Some("chord"), Some("chord")]);
         // Both siblings carry the same chord_pitches set (both natural
@@ -453,12 +508,151 @@ mod tests {
                  "events":[{"hole":1,"action":"blow"}]}
             ]"#,
         );
-        let (notes, _) = build_scheduled_notes(&chart, &AdaptiveDifficulty::default());
+        let (notes, _) = build_scheduled_notes(
+            &EffectiveHarmonica::default(),
+            &chart,
+            &AdaptiveDifficulty::default(),
+        );
         assert_eq!(notes.len(), 1);
         assert!(notes[0].chord_pitches.is_empty());
         assert!(
             notes[0].force_wait,
             "call: true carries through to force_wait"
         );
+    }
+
+    // ── Playing on a substituted harmonica ────────────────────────────────────
+
+    /// Every note of a small chart, as `(hole, is_blow, expected_pitch)`.
+    fn scheduled(effective: &EffectiveHarmonica, chart: &HarpChart) -> Vec<(u8, bool, Option<u8>)> {
+        let (notes, _) = build_scheduled_notes(effective, chart, &AdaptiveDifficulty::default());
+        notes
+            .iter()
+            .map(|n| (n.hole, n.is_blow, n.expected_pitch))
+            .collect()
+    }
+
+    fn three_note_chart() -> HarpChart {
+        c_diatonic_chart(
+            r#"[
+                {"time":0.0,"duration":0.5,"call":false,"phrase":"p1",
+                 "events":[{"hole":1,"action":"blow","note":"C4"}]},
+                {"time":0.5,"duration":0.5,"call":false,"phrase":"p1",
+                 "events":[{"hole":4,"action":"blow","note":"C5"}]},
+                {"time":1.0,"duration":0.5,"call":false,"phrase":"p1",
+                 "events":[{"hole":2,"action":"draw","note":"G4"}]}
+            ]"#,
+        )
+    }
+
+    #[test]
+    fn no_substitution_leaves_a_chart_exactly_as_it_was() {
+        // The default must be free. Anything else means this feature changed
+        // how every existing chart plays.
+        let chart = three_note_chart();
+        let notes = scheduled(&EffectiveHarmonica::default(), &chart);
+        assert_eq!(
+            notes,
+            vec![
+                (1, true, Some(60)),  // C4
+                (4, true, Some(72)),  // C5
+                (2, false, Some(67)), // G4
+            ]
+        );
+    }
+
+    #[test]
+    fn same_holes_keeps_the_tab_and_moves_every_expected_pitch() {
+        let chart = three_note_chart();
+        let effective = EffectiveHarmonica {
+            harp: Some(richter_harp("G")),
+            mapping: HarpMapping::SameHoles,
+        };
+        let notes = scheduled(&effective, &chart);
+        let holes: Vec<(u8, bool)> = notes.iter().map(|(h, b, _)| (*h, *b)).collect();
+        assert_eq!(
+            holes,
+            vec![(1, true), (4, true), (2, false)],
+            "same-holes must not move the tab"
+        );
+        let g = richter_harp("G");
+        assert_eq!(
+            notes.iter().map(|(_, _, p)| *p).collect::<Vec<_>>(),
+            vec![
+                g.wind_direction_midi(1, &Action::Blow),
+                g.wind_direction_midi(4, &Action::Blow),
+                g.wind_direction_midi(2, &Action::Draw),
+            ],
+            "expected pitches must follow the G harp, not the chart's C"
+        );
+    }
+
+    #[test]
+    fn transpose_keeps_every_expected_pitch_and_moves_the_tab() {
+        let chart = three_note_chart();
+        let effective = EffectiveHarmonica {
+            harp: Some(richter_harp("G")),
+            mapping: HarpMapping::Transpose,
+        };
+        let original = scheduled(&EffectiveHarmonica::default(), &chart);
+        let moved = scheduled(&effective, &chart);
+        assert_eq!(
+            moved.iter().map(|(_, _, p)| *p).collect::<Vec<_>>(),
+            original.iter().map(|(_, _, p)| *p).collect::<Vec<_>>(),
+            "transposing must preserve what the piece sounds like"
+        );
+    }
+
+    /// The wiring half of the microphone invariant. `harp_remap`'s own tests
+    /// prove the arithmetic; this proves that what `build_scheduled_notes`
+    /// actually hands to scoring agrees with the harp `ValidHarpNotes` will
+    /// be built from — the two are set in different files, and a chart's
+    /// expected pitch outside that set can never be scored.
+    #[test]
+    fn every_expected_pitch_is_one_the_chosen_harp_can_produce() {
+        let chart = three_note_chart();
+        for key in ["C", "G", "A", "F", "Bb"] {
+            let harp = richter_harp(key);
+            let valid = harp.build_valid_notes();
+            for mapping in HarpMapping::all() {
+                let effective = EffectiveHarmonica {
+                    harp: Some(harp.clone()),
+                    mapping: *mapping,
+                };
+                let (notes, _) =
+                    build_scheduled_notes(&effective, &chart, &AdaptiveDifficulty::default());
+                for note in &notes {
+                    if !note.playable {
+                        continue;
+                    }
+                    let Some(midi) = note.expected_pitch else {
+                        continue;
+                    };
+                    assert!(
+                        valid.contains(&midi),
+                        "{key} harp, {mapping:?}: hole {} expects MIDI {midi}, \
+                         which ValidHarpNotes would filter out",
+                        note.hole
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_note_the_chosen_harp_cannot_play_is_marked_unplayable() {
+        // Hole 12 on a chart written for a chromatic, played on a 10-hole
+        // diatonic. It must not be scoreable — and `judge` skips exactly on
+        // this flag, because an unreachable note would otherwise resolve as
+        // a miss.
+        let chart = c_diatonic_chart(
+            r#"[{"time":0.0,"duration":0.5,"events":[{"hole":1,"action":"blow","note":"C4"}]}]"#,
+        );
+        let effective = EffectiveHarmonica {
+            harp: Some(chromatic_harp("C")),
+            mapping: HarpMapping::SameHoles,
+        };
+        let (notes, _) = build_scheduled_notes(&effective, &chart, &AdaptiveDifficulty::default());
+        assert!(notes.iter().all(|n| n.playable), "hole 1 exists on both");
     }
 }
