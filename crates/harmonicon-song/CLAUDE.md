@@ -97,6 +97,38 @@ load-bearing about *this* crate.
     instead of erroring — the game would just hang on the loading screen
     with no message, rather than "complain."
 
+- **A `.mid` can be a song's chart, not just its backing track**
+  (`song::midi_song`). Dropping a MIDI into
+  `~/Harmonicon/songs/<artist>/<song>/song/` makes it playable: a second
+  `AssetLoader` (`MidiSongLoader`, registered for `mid`/`midi` alongside
+  `SongChartLoader`) converts it through `harmonicon-score` at load time.
+  Only the *chart* differs between the two loaders — background, backing
+  audio, waveform and note art are shared via `loader::assemble_manifest`,
+  split out of `SongChartLoader::load_inner` for exactly that reason.
+  - **`song/music.mid` already meant backing audio** for a charted song
+    (`SongManifest::midi_tracks`). Both readings are legitimate, so
+    `assets_management::scan_artist_song` looks for a `.harpchart` in one
+    pass and only falls back to `.mid`/`.midi` in a second — first-match
+    over one `read_dir` would sometimes have played a charted song's
+    backing track *as* its chart, nondeterministically.
+  - **The harmonica is chosen, not assumed.** A MIDI says nothing about
+    harmonicas, so `midi_song::suggested_harp` picks the key needing the
+    fewest bends via `pitch_map::suggest_key` — and prefers a diatonic
+    unless a chromatic genuinely fits better, since a chromatic reaches
+    every note and would otherwise always win. The player can change it on
+    the harp-check screen, whose cost readout is what says whether the
+    guess was good.
+  - **Title and artist come from the folder, not the file.** MIDI's
+    convention is that the title is the *first track's* name, which for a
+    harmonica file is usually "Harmonica" — observed in the game as a song
+    called exactly that before it was fixed.
+  - A track named harmonica/gaita/mouth harp/blues harp wins; failing
+    that, a lone playable track is used, and **several unnamed tracks are
+    refused** rather than guessed. Picking "the busiest" would routinely
+    choose a guitar, and an asset loader has nowhere to ask. A part where
+    under 80% of notes are reachable is likewise refused, with the counts
+    in the message.
+
 - **Lessons** (`harmonicon-song`'s `lessons/` — `manifest.rs`/`catalog.rs`/`progress.rs` —
   plus `harmonicon-menu`'s `menu/pages/lessons.rs`; design in `docs/lessons_plan.md`):
   `assets/lessons/<unit>/<lesson>/lesson.json` (schema

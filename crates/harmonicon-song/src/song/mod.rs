@@ -12,7 +12,10 @@ use std::path::PathBuf;
 
 pub use harmonicon_core::chart::HarpChart;
 pub use harmonicon_core::harmonica::Harmonica;
+mod midi_song;
+
 pub use loader::SongChartLoader;
+pub use midi_song::MidiSongLoader;
 
 use bevy::{asset::AssetPath, audio::AudioSource, image::Image, prelude::*};
 
@@ -160,6 +163,10 @@ pub struct SongPlugin;
 impl Plugin for SongPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<SongManifest>()
-            .register_asset_loader(SongChartLoader);
+            .register_asset_loader(SongChartLoader)
+            // A `.mid` dropped in as a song's chart, converted at load time
+            // via `harmonicon-score`. Distinct from `song/music.mid`, which
+            // is backing audio for a `.harpchart` song — see `midi_song`.
+            .register_asset_loader(MidiSongLoader);
     }
 }

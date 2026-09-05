@@ -407,24 +407,38 @@ pub fn scan_artist_song(
         }
 
         // The files for the music are inside of `song` subdirectory.
+        //
+        // A `.harpchart` always wins over a `.mid`, and the two are checked
+        // in separate passes rather than by first-match: `song/music.mid`
+        // is *backing audio* for a charted song, so a directory holding
+        // both would otherwise pick whichever `read_dir` happened to yield
+        // first and sometimes play the backing track as the chart. A MIDI
+        // is only the chart when nothing else is (see
+        // `harmonicon_song::song::midi_song`).
         let song_file = (|| {
-            for song_file in std::fs::read_dir(song_dir.path().join("song")).ok()? {
-                let entry = song_file.ok()?;
-                let path = entry.path();
-                let is_music_file = path.extension().is_some_and(|ext| ext == "harpchart");
-
-                if is_music_file {
-                    return Some(entry);
-                }
-            }
-            None
+            let entries: Vec<_> = std::fs::read_dir(song_dir.path().join("song"))
+                .ok()?
+                .flatten()
+                .collect();
+            let has_extension = |entry: &std::fs::DirEntry, want: &[&str]| {
+                entry
+                    .path()
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| want.contains(&e))
+            };
+            entries
+                .iter()
+                .find(|e| has_extension(e, &["harpchart"]))
+                .or_else(|| entries.iter().find(|e| has_extension(e, &["mid", "midi"])))
+                .map(|e| e.path())
         })();
 
         let Some(song_file) = song_file else {
             continue;
         };
 
-        let Some(cleaned_path) = clean_song_path(&song_file.path()) else {
+        let Some(cleaned_path) = clean_song_path(&song_file) else {
             continue;
         };
 

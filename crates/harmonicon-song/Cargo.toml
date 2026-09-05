@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 harmonicon-core = { path = "../harmonicon-core", version = "*" }
+harmonicon-score = { path = "../harmonicon-score", version = "*" }
 harmonicon-audio = { path = "../harmonicon-audio", version = "*" }
 harmonicon-platform = { path = "../harmonicon-platform", version = "*" }
 bevy = { workspace = true }
@@ -25,3 +26,8 @@ trace_tracy = ["bevy/trace_tracy", "harmonicon-audio/trace_tracy", "harmonicon-p
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# The shared MIDI event constructors, so tests can build real files rather
+# than checking in fixtures — same reason harmonicon-score enables them.
+harmonicon-core = { path = "../harmonicon-core", features = ["test-support"] }

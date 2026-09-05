@@ -139,168 +139,182 @@ impl SongChartLoader {
             )));
         }
 
-        // Materialise the parent path before calling load() to avoid holding
-        // an immutable borrow on load_context across its mutable load() calls.
-        let song_folder = load_context
-            .path()
-            .path()
-            .parent() // songs/{artist}/{name}/song/
-            .unwrap_or(std::path::Path::new(""))
-            .parent() // songs/{artist}/{name}/
-            .unwrap_or(std::path::Path::new(""))
-            .to_path_buf();
-
-        // The source this manifest itself was loaded from (bundled `assets/`,
-        // or the external `~/Harmonicon` drop folder registered as
-        // `external://`). Sibling loads below must reuse it explicitly: a bare
-        // `PathBuf`/`&str` always resolves against the *default* source, so
-        // without this, a song loaded from `external://...` would have its
-        // manifest parsed correctly but its music/images silently looked up in
-        // the bundled folder instead.
-        let source = load_context.path().source().clone_owned();
-        let sibling = |rel: std::path::PathBuf| AssetPath::from(rel).with_source(source.clone());
-
-        // Every sibling asset below is checked for existence with
-        // `read_asset_bytes` *before* being handed to `load_context.load()`.
-        // `load()` registers the path as a hard dependency of this manifest
-        // asset; if that path doesn't exist, the dependency fails and
-        // `AssetServer::is_loaded_with_dependencies` never returns true for
-        // the manifest — `menu::check_loading` would then wait on
-        // `SongLoading` forever. Falling back instead (a generated
-        // background, no music, `Handle::default()` for the unused
-        // `elements`) is what lets a song ship with only a chart file, like
-        // `Example Song 3`.
-        let background_path = sibling(song_folder.join("background.png"));
-        let background = match load_context.read_asset_bytes(background_path.clone()).await {
-            Ok(_) => load_context.load::<Image>(background_path),
-            Err(_) => {
-                let seed = format!("{}\u{0}{}", chart.song.artist, chart.song.title);
-                load_context.add_labeled_asset(
-                    "generated_background".to_string(),
-                    generate_background_image(&seed),
-                )
-            }
-        };
-
-        let elements_path = sibling(song_folder.join("elements.png"));
-        let elements = match load_context.read_asset_bytes(elements_path.clone()).await {
-            Ok(_) => load_context.load::<Image>(elements_path),
-            Err(_) => Handle::default(),
-        };
-
-        // Pre-analyze the waveform here (asset load time, off the main
-        // thread) so the progress bar has it ready the instant the song
-        // starts. The same read doubles as the existence check: no
-        // `song/*.ogg`/`*.wav`/`*.mid` means no backing track rather than a
-        // load failure — see `SongManifest::music`'s doc comment.
-        let ogg_path = sibling(song_folder.join("song/music.ogg"));
-        let wav_path = sibling(song_folder.join("song/music.wav"));
-        let mid_path = sibling(song_folder.join("song/music.mid"));
-        let (music, midi_tracks, waveform, music_duration_secs) =
-            if let Ok(bytes) = load_context.read_asset_bytes(ogg_path.clone()).await {
-                let (waveform, duration) = harmonicon_audio::waveform::analyze_ogg_waveform(
-                    &bytes,
-                    harmonicon_audio::waveform::WAVEFORM_BUCKETS,
-                );
-                (
-                    Some(load_context.load::<AudioSource>(ogg_path)),
-                    None,
-                    waveform,
-                    duration,
-                )
-            } else if let Ok(bytes) = load_context.read_asset_bytes(wav_path.clone()).await {
-                let (waveform, duration) = harmonicon_audio::waveform::analyze_wav_waveform(
-                    &bytes,
-                    harmonicon_audio::waveform::WAVEFORM_BUCKETS,
-                );
-                (
-                    Some(load_context.load::<AudioSource>(wav_path)),
-                    None,
-                    waveform,
-                    duration,
-                )
-            } else if let Ok(bytes) = load_context.read_asset_bytes(mid_path.clone()).await {
-                // A raw `.mid` — unlike `.ogg`/`.wav`, this isn't itself
-                // audio the AssetServer can load; each of its tracks is
-                // rendered here into its own `AudioSource` sub-asset
-                // instead (see `load_midi_tracks`), so gameplay never needs
-                // to touch MIDI parsing at all.
-                let (tracks, waveform, duration) = load_midi_tracks(&bytes, load_context);
-                (None, tracks, waveform, duration)
-            } else {
-                (None, None, Vec::new(), 0.0)
-            };
-
-        // Note the song's own 2D image path if it ships one. We deliberately do
-        // NOT `load()` it here: that would make it a manifest dependency, kept
-        // resident for the whole song regardless of mode. gameplay_2d::setup
-        // loads it on demand when entering a 2D game (and it frees on exit).
-        let png_rel = sibling(song_folder.join("2d/note_2d.png"));
-        let assets_2d: Option<AssetPath<'static>> =
-            match load_context.read_asset_bytes(png_rel.clone()).await {
-                Ok(_) => Some(png_rel),
-                Err(_) => None,
-            };
-
-        // Try to read the note layout from the song's own folder; if it has
-        // none, fall back to the default circular.json layout. The fallback
-        // path is a bare string with no `source`, so it always resolves
-        // against the bundled `assets/` source — shared defaults live there
-        // regardless of where the song itself came from.
-        let note_2d_json = match load_context
-            .read_asset_bytes(sibling(song_folder.join("2d/note_2d.json")))
-            .await
-        {
-            Ok(bytes) => String::from_utf8_lossy(&bytes).to_string(),
-            Err(_) => {
-                let res = load_context
-                    .read_asset_bytes("notes/2d/circular.json")
-                    .await;
-                String::from_utf8_lossy(&res.unwrap_or_default()).to_string()
-            }
-        };
-
-        // Note the song's own 3D GLB path if present (without loading it, same
-        // reasoning as 2D above). gameplay_3d::setup loads it with the
-        // `#Mesh0/Primitive0` label when entering a 3D game; otherwise it falls
-        // back to the selected theme's default mesh.
-        let glb_rel = sibling(song_folder.join("3d/note_3d.glb"));
-        let assets_3d: Option<AssetPath<'static>> =
-            match load_context.read_asset_bytes(glb_rel.clone()).await {
-                Ok(_) => Some(glb_rel),
-                Err(_) => None,
-            };
-
-        // 3D note layout: the song's own json if present, else the default
-        // circular.json layout (bundled source, same reasoning as 2D above).
-        let note_3d_json = match load_context
-            .read_asset_bytes(sibling(song_folder.join("3d/note_3d.json")))
-            .await
-        {
-            Ok(bytes) => String::from_utf8_lossy(&bytes).to_string(),
-            Err(_) => {
-                let res = load_context
-                    .read_asset_bytes("notes/3d/circular.json")
-                    .await;
-                String::from_utf8_lossy(&res.unwrap_or_default()).to_string()
-            }
-        };
-
-        Ok(SongManifest {
-            path: song_folder,
-            chart,
-            background,
-            music,
-            midi_tracks,
-            waveform,
-            music_duration_secs,
-            elements,
-            assets_2d,
-            assets_2d_config: serde_json::from_str(&note_2d_json).unwrap_or_default(),
-            assets_3d,
-            assets_3d_config: serde_json::from_str(&note_3d_json).unwrap_or_default(),
-        })
+        assemble_manifest(chart, load_context).await
     }
+}
+
+/// Everything a song needs *besides* its notes: background, backing audio,
+/// waveform, note art.
+///
+/// Split out of [`SongChartLoader::load_inner`] when MIDI songs arrived —
+/// only the way a chart is *produced* differs between formats, and
+/// duplicating this half would have meant a `.mid` song quietly missing a
+/// generated background or its waveform.
+pub(super) async fn assemble_manifest(
+    chart: HarpChart,
+    load_context: &mut LoadContext<'_>,
+) -> Result<SongManifest, SongLoadError> {
+    // Materialise the parent path before calling load() to avoid holding
+    // an immutable borrow on load_context across its mutable load() calls.
+    let song_folder = load_context
+        .path()
+        .path()
+        .parent() // songs/{artist}/{name}/song/
+        .unwrap_or(std::path::Path::new(""))
+        .parent() // songs/{artist}/{name}/
+        .unwrap_or(std::path::Path::new(""))
+        .to_path_buf();
+
+    // The source this manifest itself was loaded from (bundled `assets/`,
+    // or the external `~/Harmonicon` drop folder registered as
+    // `external://`). Sibling loads below must reuse it explicitly: a bare
+    // `PathBuf`/`&str` always resolves against the *default* source, so
+    // without this, a song loaded from `external://...` would have its
+    // manifest parsed correctly but its music/images silently looked up in
+    // the bundled folder instead.
+    let source = load_context.path().source().clone_owned();
+    let sibling = |rel: std::path::PathBuf| AssetPath::from(rel).with_source(source.clone());
+
+    // Every sibling asset below is checked for existence with
+    // `read_asset_bytes` *before* being handed to `load_context.load()`.
+    // `load()` registers the path as a hard dependency of this manifest
+    // asset; if that path doesn't exist, the dependency fails and
+    // `AssetServer::is_loaded_with_dependencies` never returns true for
+    // the manifest — `menu::check_loading` would then wait on
+    // `SongLoading` forever. Falling back instead (a generated
+    // background, no music, `Handle::default()` for the unused
+    // `elements`) is what lets a song ship with only a chart file, like
+    // `Example Song 3`.
+    let background_path = sibling(song_folder.join("background.png"));
+    let background = match load_context.read_asset_bytes(background_path.clone()).await {
+        Ok(_) => load_context.load::<Image>(background_path),
+        Err(_) => {
+            let seed = format!("{}\u{0}{}", chart.song.artist, chart.song.title);
+            load_context.add_labeled_asset(
+                "generated_background".to_string(),
+                generate_background_image(&seed),
+            )
+        }
+    };
+
+    let elements_path = sibling(song_folder.join("elements.png"));
+    let elements = match load_context.read_asset_bytes(elements_path.clone()).await {
+        Ok(_) => load_context.load::<Image>(elements_path),
+        Err(_) => Handle::default(),
+    };
+
+    // Pre-analyze the waveform here (asset load time, off the main
+    // thread) so the progress bar has it ready the instant the song
+    // starts. The same read doubles as the existence check: no
+    // `song/*.ogg`/`*.wav`/`*.mid` means no backing track rather than a
+    // load failure — see `SongManifest::music`'s doc comment.
+    let ogg_path = sibling(song_folder.join("song/music.ogg"));
+    let wav_path = sibling(song_folder.join("song/music.wav"));
+    let mid_path = sibling(song_folder.join("song/music.mid"));
+    let (music, midi_tracks, waveform, music_duration_secs) =
+        if let Ok(bytes) = load_context.read_asset_bytes(ogg_path.clone()).await {
+            let (waveform, duration) = harmonicon_audio::waveform::analyze_ogg_waveform(
+                &bytes,
+                harmonicon_audio::waveform::WAVEFORM_BUCKETS,
+            );
+            (
+                Some(load_context.load::<AudioSource>(ogg_path)),
+                None,
+                waveform,
+                duration,
+            )
+        } else if let Ok(bytes) = load_context.read_asset_bytes(wav_path.clone()).await {
+            let (waveform, duration) = harmonicon_audio::waveform::analyze_wav_waveform(
+                &bytes,
+                harmonicon_audio::waveform::WAVEFORM_BUCKETS,
+            );
+            (
+                Some(load_context.load::<AudioSource>(wav_path)),
+                None,
+                waveform,
+                duration,
+            )
+        } else if let Ok(bytes) = load_context.read_asset_bytes(mid_path.clone()).await {
+            // A raw `.mid` — unlike `.ogg`/`.wav`, this isn't itself
+            // audio the AssetServer can load; each of its tracks is
+            // rendered here into its own `AudioSource` sub-asset
+            // instead (see `load_midi_tracks`), so gameplay never needs
+            // to touch MIDI parsing at all.
+            let (tracks, waveform, duration) = load_midi_tracks(&bytes, load_context);
+            (None, tracks, waveform, duration)
+        } else {
+            (None, None, Vec::new(), 0.0)
+        };
+
+    // Note the song's own 2D image path if it ships one. We deliberately do
+    // NOT `load()` it here: that would make it a manifest dependency, kept
+    // resident for the whole song regardless of mode. gameplay_2d::setup
+    // loads it on demand when entering a 2D game (and it frees on exit).
+    let png_rel = sibling(song_folder.join("2d/note_2d.png"));
+    let assets_2d: Option<AssetPath<'static>> =
+        match load_context.read_asset_bytes(png_rel.clone()).await {
+            Ok(_) => Some(png_rel),
+            Err(_) => None,
+        };
+
+    // Try to read the note layout from the song's own folder; if it has
+    // none, fall back to the default circular.json layout. The fallback
+    // path is a bare string with no `source`, so it always resolves
+    // against the bundled `assets/` source — shared defaults live there
+    // regardless of where the song itself came from.
+    let note_2d_json = match load_context
+        .read_asset_bytes(sibling(song_folder.join("2d/note_2d.json")))
+        .await
+    {
+        Ok(bytes) => String::from_utf8_lossy(&bytes).to_string(),
+        Err(_) => {
+            let res = load_context
+                .read_asset_bytes("notes/2d/circular.json")
+                .await;
+            String::from_utf8_lossy(&res.unwrap_or_default()).to_string()
+        }
+    };
+
+    // Note the song's own 3D GLB path if present (without loading it, same
+    // reasoning as 2D above). gameplay_3d::setup loads it with the
+    // `#Mesh0/Primitive0` label when entering a 3D game; otherwise it falls
+    // back to the selected theme's default mesh.
+    let glb_rel = sibling(song_folder.join("3d/note_3d.glb"));
+    let assets_3d: Option<AssetPath<'static>> =
+        match load_context.read_asset_bytes(glb_rel.clone()).await {
+            Ok(_) => Some(glb_rel),
+            Err(_) => None,
+        };
+
+    // 3D note layout: the song's own json if present, else the default
+    // circular.json layout (bundled source, same reasoning as 2D above).
+    let note_3d_json = match load_context
+        .read_asset_bytes(sibling(song_folder.join("3d/note_3d.json")))
+        .await
+    {
+        Ok(bytes) => String::from_utf8_lossy(&bytes).to_string(),
+        Err(_) => {
+            let res = load_context
+                .read_asset_bytes("notes/3d/circular.json")
+                .await;
+            String::from_utf8_lossy(&res.unwrap_or_default()).to_string()
+        }
+    };
+
+    Ok(SongManifest {
+        path: song_folder,
+        chart,
+        background,
+        music,
+        midi_tracks,
+        waveform,
+        music_duration_secs,
+        elements,
+        assets_2d,
+        assets_2d_config: serde_json::from_str(&note_2d_json).unwrap_or_default(),
+        assets_3d,
+        assets_3d_config: serde_json::from_str(&note_3d_json).unwrap_or_default(),
+    })
 }
 
 /// Renders each of a raw MIDI file's non-empty tracks to its own
