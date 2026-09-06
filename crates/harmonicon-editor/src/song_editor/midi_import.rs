@@ -13,6 +13,14 @@
 //! editor-specific pieces: pitch-to-harp resolution ([`map_pitch`]), key
 //! suggestion ([`suggest_key`]), and tempo-map conversion
 //! ([`editor_tempo_map`]).
+//!
+//! *Which* track is a harmonica part is not an editor question, so the
+//! answer comes from `harmonicon_score`: [`default_track`] defers to
+//! `pick_harmonica_track`, the same rule that applies when a `.mid` is
+//! played directly as a song (`harmonicon_song::song::midi_song`), and a
+//! named match is imported on load rather than merely pre-selected. The
+//! editor keeps the *fallback* the loader can't have — an unnamed file
+//! shows a picker, where a loader has nowhere to ask.
 
 use bevy::prelude::*;
 use midly::Smf;
@@ -24,11 +32,12 @@ use super::{MIDI_PURPOSE, TICKS_PER_BEAT};
 use bevy_fluent::prelude::Localization;
 use harmonicon_core::chart::{TempoPoint, seconds_to_tick};
 use harmonicon_core::midi_file::{
-    collect_tempo_map, extract_notes, note_on_count, notes_to_phrase, tick_to_seconds,
-    ticks_per_quarter, track_name_of,
+    collect_tempo_map, extract_notes, notes_to_phrase, tick_to_seconds, ticks_per_quarter,
 };
 use harmonicon_core::synth::render_pcm;
 use harmonicon_platform::localization::LocalizationExt;
+use harmonicon_score::midi::MidiScore;
+use harmonicon_score::{ScoreFile, ScoreTrack, pick_harmonica_track};
 use harmonicon_ui::dialogs::combobox::{ComboboxSelect, spawn_combobox};
 use harmonicon_ui::dialogs::file_dialog::FileChosen;
 use harmonicon_ui::dialogs::tooltip::Tooltip;
@@ -89,17 +98,52 @@ pub(super) fn track_midi_keys(bytes: &[u8], track_index: usize) -> Result<Vec<u8
 // ── Track listing / import ───────────────────────────────────────────────────
 
 pub(super) fn list_midi_tracks(bytes: &[u8]) -> Result<Vec<MidiTrackInfo>, String> {
-    let smf = Smf::parse(bytes).map_err(|e| e.to_string())?;
-    Ok(smf
-        .tracks
+    let score = MidiScore::parse(bytes.to_vec()).map_err(|e| e.to_string())?;
+    Ok(score
+        .tracks()
         .iter()
-        .enumerate()
-        .map(|(index, t)| MidiTrackInfo {
-            index,
-            name: track_name_of(t).unwrap_or_else(|| format!("Track {index}")),
-            note_count: note_on_count(t),
+        .map(|t| MidiTrackInfo {
+            index: t.index,
+            // A track with no name of its own still needs a label to click,
+            // which is why this fallback lives here and not in `ScoreTrack`
+            // — a reader reports what the file says, and "unnamed" is a
+            // fact the picker's own selection rules depend on.
+            name: t
+                .name
+                .clone()
+                .unwrap_or_else(|| format!("Track {}", t.index)),
+            note_count: t.note_count,
         })
         .collect())
+}
+
+/// Which track the picker should start on.
+///
+/// **Not the first one**, which is what a combobox defaults to and is wrong
+/// nearly every time: a MIDI file's track 0 conventionally carries only
+/// tempo and metadata, so importing it yields an empty grid and the user
+/// has to discover that by trying. Prefers a track *named* for a harmonica
+/// (`harmonicon_score::pick_harmonica_track` — the same rule that picks a
+/// track when a `.mid` is played directly as a song), then simply the first
+/// track with any notes in it.
+pub(super) fn default_track(tracks: &[MidiTrackInfo]) -> Option<usize> {
+    pick_harmonica_track(&score_tracks(tracks))
+        .or_else(|| tracks.iter().find(|t| t.note_count > 0).map(|t| t.index))
+        .or_else(|| tracks.first().map(|t| t.index))
+}
+
+/// The picker's own track list back in `harmonicon_score`'s vocabulary, so
+/// track selection follows one rule whether a MIDI arrives here or is played
+/// directly as a song.
+fn score_tracks(tracks: &[MidiTrackInfo]) -> Vec<ScoreTrack> {
+    tracks
+        .iter()
+        .map(|t| ScoreTrack {
+            index: t.index,
+            name: Some(t.name.clone()),
+            note_count: t.note_count,
+        })
+        .collect()
 }
 
 /// Converts a MIDI tempo map (`(tick, microseconds_per_quarter)`, file `tpq`
@@ -278,7 +322,8 @@ pub(super) fn handle_midi_chosen(
 pub(super) fn rebuild_midi_track_combobox(
     mut loaded: MessageReader<MidiFileLoaded>,
     mut commands: Commands,
-    midi: Option<Res<MidiImport>>,
+    midi: Option<ResMut<MidiImport>>,
+    mut state: ResMut<EditorState>,
     slot: Query<(Entity, Option<&Children>), With<super::ui::MidiTrackComboboxSlot>>,
     editor_root: Query<Entity, With<super::ui::EditorRoot>>,
     loc: Res<Localization>,
@@ -286,7 +331,7 @@ pub(super) fn rebuild_midi_track_combobox(
     if loaded.read().next().is_none() {
         return;
     }
-    let (Ok((slot_entity, children)), Ok(backdrop_parent), Some(midi)) =
+    let (Ok((slot_entity, children)), Ok(backdrop_parent), Some(mut midi)) =
         (slot.single(), editor_root.single(), midi)
     else {
         return;
@@ -301,7 +346,12 @@ pub(super) fn rebuild_midi_track_combobox(
         .iter()
         .map(MidiTrackInfo::option_label)
         .collect();
-    let Some(first) = options.first().cloned() else {
+    // `default_track`, not `options.first()`: track 0 is conventionally the
+    // tempo/metadata track, so defaulting to it shows an empty grid.
+    let Some(selected) = default_track(&midi.tracks)
+        .and_then(|index| midi.tracks.iter().find(|t| t.index == index))
+        .map(MidiTrackInfo::option_label)
+    else {
         return;
     };
     let combo = spawn_combobox(
@@ -310,12 +360,22 @@ pub(super) fn rebuild_midi_track_combobox(
         backdrop_parent,
         &loc.msg("editor-field-midi-track"),
         &options,
-        &first,
+        &selected,
         on_midi_track_selected,
     );
     commands.entity(combo).insert(Tooltip(String::from(
         loc.msg("editor-field-midi-track-tooltip"),
     )));
+
+    // A track the file itself names as the harmonica needs no decision from
+    // the user, so import it now rather than leaving the grid empty behind a
+    // combobox already displaying the right answer — picking the value
+    // that's already shown wouldn't fire a `ComboboxSelect` anyway. An
+    // unnamed file is left alone deliberately: the default above is a guess
+    // worth showing, not one worth acting on.
+    if let Some(index) = pick_harmonica_track(&score_tracks(&midi.tracks)) {
+        import_selected_track(&mut midi, &mut state, index);
+    }
 }
 
 fn on_midi_track_selected(
@@ -323,12 +383,24 @@ fn on_midi_track_selected(
     mut midi: ResMut<MidiImport>,
     mut state: ResMut<EditorState>,
 ) {
-    let Some(info) = midi
+    let Some(index) = midi
         .tracks
         .iter()
         .find(|t| t.option_label() == ev.value)
-        .cloned()
+        .map(|t| t.index)
     else {
+        return;
+    };
+    import_selected_track(&mut midi, &mut state, index);
+}
+
+/// Imports one track into the grid, replacing whatever is there.
+///
+/// Split out of [`on_midi_track_selected`] so a track the file *names* as
+/// the harmonica can be imported the moment the file loads, without
+/// synthesizing a combobox selection the user never made.
+fn import_selected_track(midi: &mut MidiImport, state: &mut EditorState, index: usize) {
+    let Some(info) = midi.tracks.iter().find(|t| t.index == index).cloned() else {
         return;
     };
     // Auto-pick the best-fitting key for this track rather than importing
@@ -417,6 +489,70 @@ mod tests {
     }
 
     // ── list_midi_tracks / option_label ──────────────────────────────────────────
+
+    // ── default_track ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn a_track_named_harmonica_is_the_default_even_when_it_is_not_first() {
+        let bytes = smf_bytes(vec![
+            vec![meta(0, MetaMessage::TrackName(b"Tempo"))],
+            vec![
+                meta(0, MetaMessage::TrackName(b"Guitar")),
+                note_on(0, 40, 100),
+                note_off(10, 40),
+            ],
+            vec![
+                meta(0, MetaMessage::TrackName(b"Harmonica")),
+                note_on(0, 60, 100),
+                note_off(10, 60),
+            ],
+        ]);
+        let tracks = list_midi_tracks(&bytes).unwrap();
+        assert_eq!(default_track(&tracks), Some(2));
+    }
+
+    #[test]
+    fn the_default_skips_a_metadata_only_first_track() {
+        // Track 0 conventionally carries tempo and nothing else, so the
+        // combobox's own "first option" default would show an empty grid.
+        let bytes = smf_bytes(vec![
+            vec![meta(0, MetaMessage::TrackName(b"Conductor"))],
+            vec![
+                meta(0, MetaMessage::TrackName(b"Lead")),
+                note_on(0, 60, 100),
+                note_off(10, 60),
+            ],
+        ]);
+        let tracks = list_midi_tracks(&bytes).unwrap();
+        assert_eq!(default_track(&tracks), Some(1));
+    }
+
+    #[test]
+    fn an_orchestral_harp_track_is_not_treated_as_the_harmonica() {
+        // Bare "harp" is deliberately not a harmonica name; the fallback
+        // still offers it, since it is the only track with notes.
+        let bytes = smf_bytes(vec![vec![
+            meta(0, MetaMessage::TrackName(b"Concert Harp")),
+            note_on(0, 60, 100),
+            note_off(10, 60),
+        ]]);
+        let tracks = list_midi_tracks(&bytes).unwrap();
+        assert!(!harmonicon_score::track::name_says_harmonica(Some(
+            tracks[0].name.as_str()
+        )));
+        assert_eq!(default_track(&tracks), Some(0));
+    }
+
+    #[test]
+    fn a_file_with_no_notes_at_all_is_refused_with_a_reason() {
+        // Listing it and offering a picker of empty tracks would only let
+        // the user discover by clicking that there is nothing to import.
+        let bytes = smf_bytes(vec![vec![meta(0, MetaMessage::TrackName(b"Empty"))]]);
+        let Err(err) = list_midi_tracks(&bytes) else {
+            panic!("a note-free MIDI file was accepted");
+        };
+        assert!(err.contains("no tracks"), "unhelpful message: {err}");
+    }
 
     #[test]
     fn list_midi_tracks_reports_name_and_note_count_per_track() {

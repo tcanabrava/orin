@@ -59,6 +59,21 @@ load-bearing about *this* crate.
   stores the raw file bytes (not a parsed `midly::Smf`, which borrows
   them) and re-parses on demand, so switching the picked track needs no
   lifetime bookkeeping across frames.
+  **Which track is the harmonica is not the editor's question to answer**:
+  `default_track` defers to `harmonicon_score::pick_harmonica_track`, the
+  same rule that applies when a `.mid` is played directly as a song
+  (`harmonicon_song::song::midi_song`), so the two can't disagree about
+  what a harmonica part is called. A *named* match is imported the moment
+  the file loads rather than merely pre-selected — picking the value a
+  combobox already displays fires no `ComboboxSelect`, so pre-selecting
+  alone would leave the grid empty behind the right answer. Failing a
+  name, the picker opens on the first track *with notes* rather than
+  track 0, which conventionally carries only tempo and metadata; the
+  editor deliberately keeps the fallback the asset loader can't have —
+  an ambiguous file shows a chooser, where a loader has nowhere to ask.
+  Track listing goes through `MidiScore` too, which means a MIDI with no
+  notes in any track is now refused with that reason instead of opening
+  a picker full of empty tracks.
 - **The Song Editor can also record notes live** (`song_editor::record`;
   `Mode::Record` is its own top-level mode alongside Edit and Play —
   `state::Mode`, one visibility-toggled button group each, see
